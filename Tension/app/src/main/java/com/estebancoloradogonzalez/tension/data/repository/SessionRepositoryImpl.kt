@@ -1,17 +1,21 @@
 package com.estebancoloradogonzalez.tension.data.repository
 
 import androidx.room.withTransaction
+import com.estebancoloradogonzalez.tension.data.local.dao.ExerciseProgressionDao
+import com.estebancoloradogonzalez.tension.data.local.dao.ExerciseSetDao
 import com.estebancoloradogonzalez.tension.data.local.dao.ModuleVersionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.PlanAssignmentDao
 import com.estebancoloradogonzalez.tension.data.local.dao.RotationStateDao
 import com.estebancoloradogonzalez.tension.data.local.dao.SessionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.SessionExerciseDao
 import com.estebancoloradogonzalez.tension.data.local.database.TensionDatabase
+import com.estebancoloradogonzalez.tension.data.local.entity.ExerciseProgressionEntity
+import com.estebancoloradogonzalez.tension.data.local.entity.ExerciseSetEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.SessionEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.SessionExerciseEntity
 import com.estebancoloradogonzalez.tension.domain.model.ActiveSession
 import com.estebancoloradogonzalez.tension.domain.model.ExerciseSessionStatus
-import com.estebancoloradogonzalez.tension.domain.model.NextSession
+import com.estebancoloradogonzalez.tension.domain.model.RegisterSetInfo
 import com.estebancoloradogonzalez.tension.domain.model.RotationResolver
 import com.estebancoloradogonzalez.tension.domain.model.RotationState
 import com.estebancoloradogonzalez.tension.domain.model.SessionExerciseDetail
@@ -31,6 +35,8 @@ class SessionRepositoryImpl @Inject constructor(
     private val planAssignmentDao: PlanAssignmentDao,
     private val rotationStateDao: RotationStateDao,
     private val moduleVersionDao: ModuleVersionDao,
+    private val exerciseSetDao: ExerciseSetDao,
+    private val exerciseProgressionDao: ExerciseProgressionDao,
     private val database: TensionDatabase,
 ) : SessionRepository {
 
@@ -159,6 +165,61 @@ class SessionRepositoryImpl @Inject constructor(
                     mv?.let { Pair(it.moduleCode, it.versionNumber) }
                 }
             }
+        }
+    }
+
+    override suspend fun getRegisterSetInfo(sessionExerciseId: Long): RegisterSetInfo? {
+        val info = sessionExerciseDao.getExerciseInfoForSet(sessionExerciseId) ?: return null
+        val nextSetNumber = exerciseSetDao.getNextSetNumber(sessionExerciseId)
+        if (nextSetNumber > info.totalSets) return null
+
+        val lastWeightKg = if (info.isBodyweight == 1 || info.isIsometric == 1) {
+            0.0
+        } else {
+            exerciseSetDao.getLastWeightForExercise(info.exerciseId)
+        }
+
+        return RegisterSetInfo(
+            sessionExerciseId = sessionExerciseId,
+            exerciseId = info.exerciseId,
+            exerciseName = info.exerciseName,
+            currentSetNumber = nextSetNumber,
+            totalSets = info.totalSets,
+            lastWeightKg = lastWeightKg,
+            isBodyweight = info.isBodyweight == 1,
+            isIsometric = info.isIsometric == 1,
+            isToTechnicalFailure = info.isToTechnicalFailure == 1,
+        )
+    }
+
+    override suspend fun registerSet(
+        sessionExerciseId: Long,
+        weightKg: Double,
+        reps: Int,
+        rir: Int,
+    ) {
+        database.withTransaction {
+            val nextSetNumber = exerciseSetDao.getNextSetNumber(sessionExerciseId)
+            val info = sessionExerciseDao.getExerciseInfoForSet(sessionExerciseId)
+                ?: throw IllegalStateException("Session exercise not found")
+
+            if (nextSetNumber > info.totalSets) {
+                throw IllegalStateException("Exercise already has maximum sets registered")
+            }
+
+            exerciseSetDao.insert(
+                ExerciseSetEntity(
+                    sessionExerciseId = sessionExerciseId,
+                    setNumber = nextSetNumber,
+                    weightKg = weightKg,
+                    reps = reps,
+                    rir = rir,
+                ),
+            )
+
+            exerciseProgressionDao.insertIfNotExists(
+                ExerciseProgressionEntity(exerciseId = info.exerciseId),
+            )
         }
     }
 }

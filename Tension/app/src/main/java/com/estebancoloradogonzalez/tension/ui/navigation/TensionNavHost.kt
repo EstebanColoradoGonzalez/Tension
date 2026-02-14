@@ -39,6 +39,7 @@ import com.estebancoloradogonzalez.tension.ui.onboarding.RegisterProfileScreen
 import com.estebancoloradogonzalez.tension.ui.profile.ProfileScreen
 import com.estebancoloradogonzalez.tension.ui.profile.WeightHistoryScreen
 import com.estebancoloradogonzalez.tension.ui.session.ActiveSessionScreen
+import com.estebancoloradogonzalez.tension.ui.session.RegisterSetScreen
 import com.estebancoloradogonzalez.tension.ui.settings.SettingsScreen
 
 @Composable
@@ -78,6 +79,7 @@ fun TensionNavHost(
             val showBottomBar = currentRoute != null &&
                 currentRoute != NavigationRoutes.REGISTER &&
                 !currentRoute.startsWith("active-session") &&
+                !currentRoute.startsWith("register-set") &&
                 !(currentRoute.startsWith("exercise-detail") &&
                     navController.previousBackStackEntry?.destination?.route
                         ?.startsWith("active-session") == true)
@@ -242,7 +244,11 @@ fun TensionNavHost(
                         ),
                     ) {
                         ActiveSessionScreen(
-                            onNavigateToRegisterSet = { /* TODO: HU-06 */ },
+                            onNavigateToRegisterSet = { sessionExerciseId ->
+                                navController.navigate(
+                                    NavigationRoutes.registerSetRoute(sessionExerciseId),
+                                )
+                            },
                             onNavigateToSubstitute = { /* TODO: HU-07 */ },
                             onNavigateToExerciseDetail = { exerciseId ->
                                 navController.navigate(
@@ -255,6 +261,17 @@ fun TensionNavHost(
                                     popUpTo(NavigationRoutes.HOME) { inclusive = true }
                                 }
                             },
+                        )
+                    }
+
+                    composable(
+                        route = NavigationRoutes.REGISTER_SET,
+                        arguments = listOf(
+                            navArgument("sessionExerciseId") { type = NavType.LongType },
+                        ),
+                    ) {
+                        RegisterSetScreen(
+                            onNavigateBack = { navController.popBackStack() },
                         )
                     }
                 }

@@ -2,6 +2,7 @@ package com.estebancoloradogonzalez.tension.data.local.dao
 
 import androidx.room.Dao
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import com.estebancoloradogonzalez.tension.data.local.entity.ExerciseProgressionEntity
@@ -15,6 +16,9 @@ interface ExerciseProgressionDao {
 
     @Insert
     suspend fun insert(progression: ExerciseProgressionEntity)
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertIfNotExists(progression: ExerciseProgressionEntity)
 
     @Update
     suspend fun update(progression: ExerciseProgressionEntity)

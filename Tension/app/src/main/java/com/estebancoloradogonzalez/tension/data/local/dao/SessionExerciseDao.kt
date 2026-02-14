@@ -21,6 +21,15 @@ data class SessionExerciseWithDetails(
     val completedSets: Int,
 )
 
+data class SetExerciseInfo(
+    val exerciseId: Long,
+    val exerciseName: String,
+    val isBodyweight: Int,
+    val isIsometric: Int,
+    val isToTechnicalFailure: Int,
+    val totalSets: Int,
+)
+
 @Dao
 interface SessionExerciseDao {
 
@@ -60,4 +69,23 @@ interface SessionExerciseDao {
         """,
     )
     fun getBySessionIdWithDetails(sessionId: Long): Flow<List<SessionExerciseWithDetails>>
+
+    @Query(
+        """
+        SELECT
+            se.exercise_id AS exerciseId,
+            e.name AS exerciseName,
+            e.is_bodyweight AS isBodyweight,
+            e.is_isometric AS isIsometric,
+            e.is_to_technical_failure AS isToTechnicalFailure,
+            COALESCE(pa.sets, 4) AS totalSets
+        FROM session_exercise se
+        INNER JOIN exercise e ON se.exercise_id = e.id
+        INNER JOIN session s ON se.session_id = s.id
+        LEFT JOIN plan_assignment pa ON pa.module_version_id = s.module_version_id
+            AND pa.exercise_id = se.exercise_id
+        WHERE se.id = :sessionExerciseId
+        """,
+    )
+    suspend fun getExerciseInfoForSet(sessionExerciseId: Long): SetExerciseInfo?
 }

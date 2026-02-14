@@ -45,6 +45,24 @@
     <string name="session_substitute">Sustituir</string>
     <string name="session_close">Cerrar Sesión</string>
 
+    <!-- Register Set E2 -->
+    <string name="register_set_title_format">Serie %1$d de %2$d</string>
+    <string name="register_set_weight_label">Peso (Kg)</string>
+    <string name="register_set_weight_bodyweight_label">Peso (Kg) (Peso corporal)</string>
+    <string name="register_set_weight_isometric_label">Peso (Kg) (Isométrico)</string>
+    <string name="register_set_weight_suffix">Kg</string>
+    <string name="register_set_reps_label">Repeticiones</string>
+    <string name="register_set_reps_suffix">reps</string>
+    <string name="register_set_seconds_label">Segundos sostenidos</string>
+    <string name="register_set_seconds_suffix">seg</string>
+    <string name="register_set_seconds_reference">(Referencia: 30\u201345 seg)</string>
+    <string name="register_set_rir_label">RIR</string>
+    <string name="register_set_confirm">Confirmar</string>
+    <string name="register_set_cancel">Cancelar</string>
+    <string name="error_weight_negative">El peso debe ser \u2265 0 Kg</string>
+    <string name="error_reps_min">Las repeticiones deben ser \u2265 1</string>
+    <string name="error_seconds_min">La duración debe ser \u2265 1 segundo</string>
+
     <!-- Settings J1 -->
     <string name="settings_title">Configuración</string>
     <string name="settings_edit_profile">Editar perfil</string>

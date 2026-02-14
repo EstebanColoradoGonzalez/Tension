@@ -38,6 +38,9 @@ interface ModuleVersionDao {
     @Query("SELECT * FROM module_version WHERE id = :moduleVersionId")
     fun getById(moduleVersionId: Long): Flow<ModuleVersionEntity?>
 
+    @Query("SELECT * FROM module_version WHERE module_code = :moduleCode AND version_number = :versionNumber LIMIT 1")
+    fun getByModuleCodeAndVersion(moduleCode: String, versionNumber: Int): Flow<ModuleVersionEntity?>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(versions: List<ModuleVersionEntity>)
 }

@@ -3,9 +3,11 @@ package com.estebancoloradogonzalez.tension.di
 import com.estebancoloradogonzalez.tension.data.repository.ExerciseRepositoryImpl
 import com.estebancoloradogonzalez.tension.data.repository.PlanRepositoryImpl
 import com.estebancoloradogonzalez.tension.data.repository.ProfileRepositoryImpl
+import com.estebancoloradogonzalez.tension.data.repository.SessionRepositoryImpl
 import com.estebancoloradogonzalez.tension.domain.repository.ExerciseRepository
 import com.estebancoloradogonzalez.tension.domain.repository.PlanRepository
 import com.estebancoloradogonzalez.tension.domain.repository.ProfileRepository
+import com.estebancoloradogonzalez.tension.domain.repository.SessionRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -33,4 +35,10 @@ abstract class RepositoryModule {
     abstract fun bindPlanRepository(
         impl: PlanRepositoryImpl,
     ): PlanRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindSessionRepository(
+        impl: SessionRepositoryImpl,
+    ): SessionRepository
 }

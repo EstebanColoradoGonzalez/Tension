@@ -5,22 +5,30 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.estebancoloradogonzalez.tension.data.local.dao.EquipmentTypeDao
 import com.estebancoloradogonzalez.tension.data.local.dao.ExerciseDao
+import com.estebancoloradogonzalez.tension.data.local.dao.ExerciseProgressionDao
+import com.estebancoloradogonzalez.tension.data.local.dao.ExerciseSetDao
 import com.estebancoloradogonzalez.tension.data.local.dao.ModuleDao
 import com.estebancoloradogonzalez.tension.data.local.dao.ModuleVersionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.MuscleZoneDao
 import com.estebancoloradogonzalez.tension.data.local.dao.PlanAssignmentDao
 import com.estebancoloradogonzalez.tension.data.local.dao.ProfileDao
 import com.estebancoloradogonzalez.tension.data.local.dao.RotationStateDao
+import com.estebancoloradogonzalez.tension.data.local.dao.SessionDao
+import com.estebancoloradogonzalez.tension.data.local.dao.SessionExerciseDao
 import com.estebancoloradogonzalez.tension.data.local.dao.WeightRecordDao
 import com.estebancoloradogonzalez.tension.data.local.entity.EquipmentTypeEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.ExerciseEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.ExerciseMuscleZoneEntity
+import com.estebancoloradogonzalez.tension.data.local.entity.ExerciseProgressionEntity
+import com.estebancoloradogonzalez.tension.data.local.entity.ExerciseSetEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.ModuleEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.ModuleVersionEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.MuscleZoneEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.PlanAssignmentEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.ProfileEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.RotationStateEntity
+import com.estebancoloradogonzalez.tension.data.local.entity.SessionEntity
+import com.estebancoloradogonzalez.tension.data.local.entity.SessionExerciseEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.WeightRecordEntity
 
 @Database(
@@ -35,8 +43,12 @@ import com.estebancoloradogonzalez.tension.data.local.entity.WeightRecordEntity
         ExerciseMuscleZoneEntity::class,
         ModuleVersionEntity::class,
         PlanAssignmentEntity::class,
+        SessionEntity::class,
+        SessionExerciseEntity::class,
+        ExerciseProgressionEntity::class,
+        ExerciseSetEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = false,
 )
 @TypeConverters(Converters::class)
@@ -50,4 +62,8 @@ abstract class TensionDatabase : RoomDatabase() {
     abstract fun exerciseDao(): ExerciseDao
     abstract fun moduleVersionDao(): ModuleVersionDao
     abstract fun planAssignmentDao(): PlanAssignmentDao
+    abstract fun sessionDao(): SessionDao
+    abstract fun sessionExerciseDao(): SessionExerciseDao
+    abstract fun exerciseProgressionDao(): ExerciseProgressionDao
+    abstract fun exerciseSetDao(): ExerciseSetDao
 }

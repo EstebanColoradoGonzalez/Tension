@@ -21,8 +21,29 @@
 
     <!-- Home B1 -->
     <string name="home_title">Tension</string>
-    <string name="home_welcome">Bienvenido a Tension</string>
-    <string name="home_description">Tu sistema de decisiones de entrenamiento de fuerza</string>
+    <string name="home_next_session_label">Tu próxima sesión</string>
+    <string name="home_next_session_format">Módulo %1$s \u2014 Versión %2$d</string>
+    <string name="home_start_session">Iniciar Sesión</string>
+    <string name="home_resume_title">Tienes una sesión activa sin cerrar</string>
+    <string name="home_resume_progress">%1$d de %2$d ejercicios completados</string>
+    <string name="home_resume_session">Reanudar Sesión</string>
+    <string name="home_microcycles_label">microciclos</string>
+    <string name="home_alert_badge_description">Alertas activas</string>
+
+    <!-- Active Session E1 -->
+    <string name="session_active_label">Sesión activa</string>
+    <string name="session_module_version_format">Módulo %1$s \u2014 Versión %2$d</string>
+    <string name="session_progress_format">%1$d de %2$d ejercicios completados</string>
+    <string name="session_status_not_started">No Iniciado \u00b7 %1$d/%2$d series</string>
+    <string name="session_status_in_progress">En Ejecución \u00b7 %1$d/%2$d series</string>
+    <string name="session_status_completed">Completado \u00b7 %1$d/%2$d series</string>
+    <string name="session_load_kg_format">%.1f Kg</string>
+    <string name="session_load_no_history">Sin historial \u2014 establecer carga</string>
+    <string name="session_load_bodyweight">Peso corporal</string>
+    <string name="session_load_isometric">Isométrico (30\u201345s)</string>
+    <string name="session_register_set">Registrar</string>
+    <string name="session_substitute">Sustituir</string>
+    <string name="session_close">Cerrar Sesión</string>
 
     <!-- Settings J1 -->
     <string name="settings_title">Configuración</string>

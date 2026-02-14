@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 import com.estebancoloradogonzalez.tension.data.local.entity.RotationStateEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -11,6 +12,9 @@ import kotlinx.coroutines.flow.Flow
 interface RotationStateDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(state: RotationStateEntity)
+
+    @Update
+    suspend fun update(state: RotationStateEntity)
 
     @Query("SELECT * FROM rotation_state WHERE id = 1")
     fun getRotationState(): Flow<RotationStateEntity?>

@@ -38,6 +38,7 @@ import com.estebancoloradogonzalez.tension.ui.home.HomeScreen
 import com.estebancoloradogonzalez.tension.ui.onboarding.RegisterProfileScreen
 import com.estebancoloradogonzalez.tension.ui.profile.ProfileScreen
 import com.estebancoloradogonzalez.tension.ui.profile.WeightHistoryScreen
+import com.estebancoloradogonzalez.tension.ui.session.ActiveSessionScreen
 import com.estebancoloradogonzalez.tension.ui.settings.SettingsScreen
 
 @Composable
@@ -75,7 +76,11 @@ fun TensionNavHost(
             val currentRoute = navBackStackEntry?.destination?.route
 
             val showBottomBar = currentRoute != null &&
-                currentRoute != NavigationRoutes.REGISTER
+                currentRoute != NavigationRoutes.REGISTER &&
+                !currentRoute.startsWith("active-session") &&
+                !(currentRoute.startsWith("exercise-detail") &&
+                    navController.previousBackStackEntry?.destination?.route
+                        ?.startsWith("active-session") == true)
 
             Scaffold(
                 bottomBar = {
@@ -106,6 +111,11 @@ fun TensionNavHost(
                     composable(NavigationRoutes.HOME) {
                         HomeScreen(
                             onNavigateToAlerts = { /* TODO: HU-14+ */ },
+                            onNavigateToActiveSession = { sessionId ->
+                                navController.navigate(
+                                    NavigationRoutes.activeSessionRoute(sessionId),
+                                )
+                            },
                         )
                     }
 
@@ -223,6 +233,29 @@ fun TensionNavHost(
 
                     composable(NavigationRoutes.METRICS) {
                         PlaceholderScreen(stringResource(R.string.nav_metrics))
+                    }
+
+                    composable(
+                        route = NavigationRoutes.ACTIVE_SESSION,
+                        arguments = listOf(
+                            navArgument("sessionId") { type = NavType.LongType },
+                        ),
+                    ) {
+                        ActiveSessionScreen(
+                            onNavigateToRegisterSet = { /* TODO: HU-06 */ },
+                            onNavigateToSubstitute = { /* TODO: HU-07 */ },
+                            onNavigateToExerciseDetail = { exerciseId ->
+                                navController.navigate(
+                                    NavigationRoutes.exerciseDetailRoute(exerciseId),
+                                )
+                            },
+                            onNavigateToSessionSummary = { /* TODO: HU-09 */ },
+                            onNavigateToHome = {
+                                navController.navigate(NavigationRoutes.HOME) {
+                                    popUpTo(NavigationRoutes.HOME) { inclusive = true }
+                                }
+                            },
+                        )
                     }
                 }
             }

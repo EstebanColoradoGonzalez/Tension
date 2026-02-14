@@ -14,8 +14,10 @@ object NavigationRoutes {
     const val EXERCISE_HISTORY = "exercise-history/{exerciseId}"
     const val SESSION_HISTORY = "session-history"
     const val METRICS = "metrics"
+    const val ACTIVE_SESSION = "active-session/{sessionId}"
 
     fun exerciseDetailRoute(exerciseId: Long) = "exercise-detail/$exerciseId"
     fun exerciseHistoryRoute(exerciseId: Long) = "exercise-history/$exerciseId"
     fun planVersionDetailRoute(moduleVersionId: Long) = "plan-version-detail/$moduleVersionId"
+    fun activeSessionRoute(sessionId: Long) = "active-session/$sessionId"
 }

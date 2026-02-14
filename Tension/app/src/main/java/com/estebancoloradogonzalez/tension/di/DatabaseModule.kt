@@ -4,12 +4,16 @@ import android.content.Context
 import androidx.room.Room
 import com.estebancoloradogonzalez.tension.data.local.dao.EquipmentTypeDao
 import com.estebancoloradogonzalez.tension.data.local.dao.ExerciseDao
+import com.estebancoloradogonzalez.tension.data.local.dao.ExerciseProgressionDao
+import com.estebancoloradogonzalez.tension.data.local.dao.ExerciseSetDao
 import com.estebancoloradogonzalez.tension.data.local.dao.ModuleDao
 import com.estebancoloradogonzalez.tension.data.local.dao.ModuleVersionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.MuscleZoneDao
 import com.estebancoloradogonzalez.tension.data.local.dao.PlanAssignmentDao
 import com.estebancoloradogonzalez.tension.data.local.dao.ProfileDao
 import com.estebancoloradogonzalez.tension.data.local.dao.RotationStateDao
+import com.estebancoloradogonzalez.tension.data.local.dao.SessionDao
+import com.estebancoloradogonzalez.tension.data.local.dao.SessionExerciseDao
 import com.estebancoloradogonzalez.tension.data.local.dao.WeightRecordDao
 import com.estebancoloradogonzalez.tension.data.local.database.TensionDatabase
 import com.estebancoloradogonzalez.tension.data.local.seed.PrepopulateCallback
@@ -82,5 +86,25 @@ object DatabaseModule {
     @Provides
     fun providePlanAssignmentDao(database: TensionDatabase): PlanAssignmentDao {
         return database.planAssignmentDao()
+    }
+
+    @Provides
+    fun provideSessionDao(database: TensionDatabase): SessionDao {
+        return database.sessionDao()
+    }
+
+    @Provides
+    fun provideSessionExerciseDao(database: TensionDatabase): SessionExerciseDao {
+        return database.sessionExerciseDao()
+    }
+
+    @Provides
+    fun provideExerciseProgressionDao(database: TensionDatabase): ExerciseProgressionDao {
+        return database.exerciseProgressionDao()
+    }
+
+    @Provides
+    fun provideExerciseSetDao(database: TensionDatabase): ExerciseSetDao {
+        return database.exerciseSetDao()
     }
 }

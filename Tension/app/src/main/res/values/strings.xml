@@ -1,0 +1,109 @@
+<resources>
+    <string name="app_name">Tension</string>
+
+    <!-- Onboarding A1 -->
+    <string name="onboarding_subtitle">Configura tu perfil</string>
+    <string name="weight_label">Peso corporal (Kg)</string>
+    <string name="height_label">Altura (m)</string>
+    <string name="experience_level_label">Nivel de experiencia</string>
+    <string name="experience_beginner">Principiante</string>
+    <string name="experience_intermediate">Intermedio</string>
+    <string name="experience_advanced">Avanzado</string>
+    <string name="register_button">Registrar</string>
+    <string name="error_weight_positive">El peso debe ser un valor positivo</string>
+    <string name="error_height_positive">La altura debe ser un valor positivo</string>
+
+    <!-- Profile C1 -->
+    <string name="profile_title">Mi Perfil</string>
+    <string name="save_button">Guardar</string>
+    <string name="weight_history_link">Ver historial de peso \u2192</string>
+    <string name="save_success">Perfil actualizado correctamente</string>
+
+    <!-- Home B1 -->
+    <string name="home_title">Tension</string>
+    <string name="home_welcome">Bienvenido a Tension</string>
+    <string name="home_description">Tu sistema de decisiones de entrenamiento de fuerza</string>
+
+    <!-- Settings J1 -->
+    <string name="settings_title">Configuración</string>
+    <string name="settings_edit_profile">Editar perfil</string>
+
+    <!-- Weight History C2 -->
+    <string name="weight_history_title">Historial de Peso</string>
+    <string name="weight_history_empty">No hay registros de peso disponibles.</string>
+    <string name="weight_history_initial_record">Registro inicial</string>
+    <string name="weight_history_value_format">%.1f Kg</string>
+
+    <!-- Bottom Navigation -->
+    <string name="nav_home">Inicio</string>
+    <string name="nav_dictionary">Diccionario</string>
+    <string name="nav_history">Historial</string>
+    <string name="nav_metrics">Métricas</string>
+    <string name="nav_settings">Configuración</string>
+
+    <!-- Dictionary D1 -->
+    <string name="dictionary_title">Diccionario</string>
+    <string name="tab_exercises">Ejercicios</string>
+    <string name="tab_plan">Plan</string>
+    <string name="filter_all">Todos</string>
+    <string name="filter_module">Módulo</string>
+    <string name="filter_equipment">Equipo</string>
+    <string name="filter_muscle_zone">Zona</string>
+    <string name="exercise_count_format">Mostrando %1$d de %2$d ejercicios</string>
+    <string name="no_exercises_match">No hay ejercicios que coincidan con los filtros seleccionados.</string>
+    <string name="exercise_supporting_format">Módulo %1$s · %2$s · %3$s</string>
+    <string name="badge_custom">Personalizado</string>
+    <string name="fab_create_exercise">Crear ejercicio</string>
+
+    <!-- Exercise Detail D2 -->
+    <string name="exercise_field_name">Nombre</string>
+    <string name="exercise_field_module">Módulo</string>
+    <string name="exercise_field_equipment">Tipo de equipo</string>
+    <string name="exercise_field_muscle_zone">Zona muscular</string>
+    <string name="exercise_history_link">Ver historial de este ejercicio \u2192</string>
+    <string name="exercise_media_description">Demostración del ejercicio</string>
+    <string name="change_image_description">Cambiar imagen</string>
+    <string name="add_image_description">Agregar imagen</string>
+    <string name="tap_to_add_image">Toca para agregar imagen</string>
+
+    <!-- Create Exercise D5 -->
+    <string name="create_exercise_title">Crear ejercicio</string>
+    <string name="create_exercise_button">Crear</string>
+    <string name="image_optional_hint">La imagen es opcional. Puedes agregarla después.</string>
+    <string name="special_conditions_label">Condiciones especiales</string>
+    <string name="bodyweight_label">Peso corporal</string>
+    <string name="isometric_label">Isométrico</string>
+    <string name="technical_failure_label">Al fallo técnico</string>
+
+    <!-- Exercise History F3 Stub -->
+    <string name="exercise_history_title">Historial de Ejercicio</string>
+
+    <!-- Training Plan D3 -->
+    <string name="version_label_format">Versión %d</string>
+    <string name="exercise_count_format_short">(%d ej.)</string>
+
+    <!-- Plan Version Detail D4 -->
+    <string name="plan_version_title_format">Módulo %1$s \u2014 Versión %2$d</string>
+    <string name="plan_exercise_count_subtitle">%d ejercicios \u00b7 Sin orden obligatorio</string>
+    <string name="prescription_format">%1$d series \u00b7 %2$s</string>
+    <string name="reps_standard_format">%s reps</string>
+    <string name="reps_technical_failure">Al fallo técnico</string>
+    <string name="reps_isometric">30\u201345 seg</string>
+    <string name="unassign_dialog_title">Desasignar ejercicio</string>
+    <string name="unassign_dialog_message">¿Estás seguro de que deseas remover \"%1$s\" de esta
+        versión? El ejercicio permanecerá en el Diccionario.</string>
+    <string name="unassign_dialog_confirm">Desasignar</string>
+    <string name="cancel">Cancelar</string>
+    <string name="assign_exercise_title">Asignar ejercicio</string>
+    <string name="assign_exercise_empty">No hay ejercicios disponibles para asignar en este módulo.</string>
+    <string name="assign_button">Asignar</string>
+    <string name="sets_label">Series</string>
+    <string name="reps_label">Repeticiones</string>
+    <string name="no_exercises_assigned">No hay ejercicios asignados a esta versión.</string>
+    <string name="fab_assign_exercise">Asignar ejercicio</string>
+
+    <!-- General -->
+    <string name="navigate_back">Volver</string>
+    <string name="coming_soon">Próximamente</string>
+    <string name="logo_content_description">Logo de Tension</string>
+</resources>

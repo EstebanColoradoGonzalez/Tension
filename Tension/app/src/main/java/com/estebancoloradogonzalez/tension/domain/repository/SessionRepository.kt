@@ -4,6 +4,7 @@ import com.estebancoloradogonzalez.tension.domain.model.ActiveSession
 import com.estebancoloradogonzalez.tension.domain.model.RegisterSetInfo
 import com.estebancoloradogonzalez.tension.domain.model.RotationState
 import com.estebancoloradogonzalez.tension.domain.model.SessionExerciseDetail
+import com.estebancoloradogonzalez.tension.domain.model.SubstituteExerciseInfo
 import kotlinx.coroutines.flow.Flow
 
 interface SessionRepository {
@@ -15,4 +16,7 @@ interface SessionRepository {
     fun getSessionModuleVersion(sessionId: Long): Flow<Pair<String, Int>?>
     suspend fun getRegisterSetInfo(sessionExerciseId: Long): RegisterSetInfo?
     suspend fun registerSet(sessionExerciseId: Long, weightKg: Double, reps: Int, rir: Int)
+    suspend fun getSubstituteExerciseInfo(sessionExerciseId: Long): SubstituteExerciseInfo?
+    suspend fun getExerciseIdsForSession(sessionId: Long): List<Long>
+    suspend fun substituteExercise(sessionExerciseId: Long, newExerciseId: Long)
 }

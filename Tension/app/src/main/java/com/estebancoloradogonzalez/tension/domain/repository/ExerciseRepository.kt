@@ -24,4 +24,5 @@ interface ExerciseRepository {
     ): Long
     suspend fun updateExerciseImage(exerciseId: Long, mediaResource: String?)
     suspend fun exerciseExistsByNameAndEquipment(name: String, equipmentTypeId: Long): Boolean
+    fun getEligibleSubstitutes(moduleCode: String, excludedExerciseIds: List<Long>): Flow<List<Exercise>>
 }

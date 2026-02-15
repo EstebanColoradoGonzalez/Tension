@@ -30,6 +30,16 @@ data class SetExerciseInfo(
     val totalSets: Int,
 )
 
+data class SessionExerciseForSubstitution(
+    val id: Long,
+    val sessionId: Long,
+    val exerciseId: Long,
+    val originalExerciseId: Long?,
+    val exerciseName: String,
+    val moduleCode: String,
+    val completedSets: Int,
+)
+
 @Dao
 interface SessionExerciseDao {
 
@@ -47,8 +57,8 @@ interface SessionExerciseDao {
             e.name AS exerciseName,
             et.name AS equipmentTypeName,
             GROUP_CONCAT(DISTINCT mz.name) AS muscleZones,
-            pa.sets,
-            pa.reps,
+            COALESCE(pa.sets, 4) AS sets,
+            COALESCE(pa.reps, '8-12') AS reps,
             e.is_bodyweight AS isBodyweight,
             e.is_isometric AS isIsometric,
             e.is_to_technical_failure AS isToTechnicalFailure,
@@ -58,7 +68,7 @@ interface SessionExerciseDao {
         INNER JOIN exercise e ON se.exercise_id = e.id
         INNER JOIN equipment_type et ON e.equipment_type_id = et.id
         INNER JOIN session s ON se.session_id = s.id
-        INNER JOIN plan_assignment pa ON pa.module_version_id = s.module_version_id
+        LEFT JOIN plan_assignment pa ON pa.module_version_id = s.module_version_id
             AND pa.exercise_id = se.exercise_id
         LEFT JOIN exercise_muscle_zone emz ON e.id = emz.exercise_id
         LEFT JOIN muscle_zone mz ON emz.muscle_zone_id = mz.id
@@ -88,4 +98,34 @@ interface SessionExerciseDao {
         """,
     )
     suspend fun getExerciseInfoForSet(sessionExerciseId: Long): SetExerciseInfo?
+
+    @Query(
+        """
+        SELECT
+            se.id,
+            se.session_id AS sessionId,
+            se.exercise_id AS exerciseId,
+            se.original_exercise_id AS originalExerciseId,
+            e.name AS exerciseName,
+            e.module_code AS moduleCode,
+            (SELECT COUNT(*) FROM exercise_set es WHERE es.session_exercise_id = se.id) AS completedSets
+        FROM session_exercise se
+        INNER JOIN exercise e ON se.exercise_id = e.id
+        WHERE se.id = :sessionExerciseId
+        """,
+    )
+    suspend fun getSessionExerciseForSubstitution(sessionExerciseId: Long): SessionExerciseForSubstitution?
+
+    @Query("SELECT exercise_id FROM session_exercise WHERE session_id = :sessionId")
+    suspend fun getExerciseIdsForSession(sessionId: Long): List<Long>
+
+    @Query(
+        """
+        UPDATE session_exercise
+        SET exercise_id = :newExerciseId,
+            original_exercise_id = :originalExerciseId
+        WHERE id = :sessionExerciseId
+        """,
+    )
+    suspend fun updateExerciseId(sessionExerciseId: Long, newExerciseId: Long, originalExerciseId: Long)
 }

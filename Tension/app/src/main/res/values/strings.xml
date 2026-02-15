@@ -63,6 +63,17 @@
     <string name="error_reps_min">Las repeticiones deben ser \u2265 1</string>
     <string name="error_seconds_min">La duración debe ser \u2265 1 segundo</string>
 
+    <!-- Substitute Exercise E3 -->
+    <string name="substitute_exercise_title">Sustituir ejercicio</string>
+    <string name="substitute_exercise_subtitle_format">Reemplazar: %1$s</string>
+    <string name="substitute_exercise_info_line1">Selecciona un ejercicio del mismo módulo como
+        reemplazo.</string>
+    <string name="substitute_exercise_info_line2">La sustitución es puntual y no modifica el Plan.</string>
+    <string name="substitute_exercise_dialog_title_format">¿Sustituir %1$s por %2$s?</string>
+    <string name="substitute_exercise_dialog_text">Esta sustitución es solo para esta sesión.</string>
+    <string name="substitute_exercise_confirm">Confirmar</string>
+    <string name="substitute_exercise_cancel">Cancelar</string>
+
     <!-- Settings J1 -->
     <string name="settings_title">Configuración</string>
     <string name="settings_edit_profile">Editar perfil</string>

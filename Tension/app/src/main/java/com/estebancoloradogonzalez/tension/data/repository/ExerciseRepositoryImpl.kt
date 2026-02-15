@@ -100,6 +100,14 @@ class ExerciseRepositoryImpl @Inject constructor(
         equipmentTypeId: Long,
     ): Boolean = exerciseDao.countByNameAndEquipment(name, equipmentTypeId) > 0
 
+    override fun getEligibleSubstitutes(
+        moduleCode: String,
+        excludedExerciseIds: List<Long>,
+    ): Flow<List<Exercise>> =
+        exerciseDao.getByModuleCodeNotInIds(moduleCode, excludedExerciseIds).map { list ->
+            list.map { it.toDomainModel() }
+        }
+
     private fun com.estebancoloradogonzalez.tension.data.local.dao.ExerciseWithDetails.toDomainModel() =
         Exercise(
             id = id,

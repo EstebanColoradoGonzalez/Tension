@@ -108,6 +108,36 @@ interface ExerciseDao {
         moduleVersionId: Long,
     ): Flow<List<ExerciseWithDetails>>
 
+    @Query(
+        """
+        SELECT 
+            e.id,
+            e.name,
+            e.module_code AS moduleCode,
+            m.name AS moduleName,
+            et.name AS equipmentTypeName,
+            e.is_bodyweight AS isBodyweight,
+            e.is_isometric AS isIsometric,
+            e.is_to_technical_failure AS isToTechnicalFailure,
+            e.is_custom AS isCustom,
+            e.media_resource AS mediaResource,
+            GROUP_CONCAT(mz.name, ', ') AS muscleZones
+        FROM exercise e
+        INNER JOIN module m ON e.module_code = m.code
+        INNER JOIN equipment_type et ON e.equipment_type_id = et.id
+        LEFT JOIN exercise_muscle_zone emz ON e.id = emz.exercise_id
+        LEFT JOIN muscle_zone mz ON emz.muscle_zone_id = mz.id
+        WHERE e.module_code = :moduleCode
+          AND e.id NOT IN (:excludedExerciseIds)
+        GROUP BY e.id
+        ORDER BY e.name ASC
+        """,
+    )
+    fun getByModuleCodeNotInIds(
+        moduleCode: String,
+        excludedExerciseIds: List<Long>,
+    ): Flow<List<ExerciseWithDetails>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(exercises: List<ExerciseEntity>)
 

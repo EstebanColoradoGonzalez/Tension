@@ -19,6 +19,7 @@ import com.estebancoloradogonzalez.tension.domain.model.RegisterSetInfo
 import com.estebancoloradogonzalez.tension.domain.model.RotationResolver
 import com.estebancoloradogonzalez.tension.domain.model.RotationState
 import com.estebancoloradogonzalez.tension.domain.model.SessionExerciseDetail
+import com.estebancoloradogonzalez.tension.domain.model.SubstituteExerciseInfo
 import com.estebancoloradogonzalez.tension.domain.repository.SessionRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -219,6 +220,47 @@ class SessionRepositoryImpl @Inject constructor(
 
             exerciseProgressionDao.insertIfNotExists(
                 ExerciseProgressionEntity(exerciseId = info.exerciseId),
+            )
+        }
+    }
+
+    override suspend fun getSubstituteExerciseInfo(
+        sessionExerciseId: Long,
+    ): SubstituteExerciseInfo? {
+        val info = sessionExerciseDao.getSessionExerciseForSubstitution(sessionExerciseId)
+            ?: return null
+        if (info.completedSets > 0) return null
+        return SubstituteExerciseInfo(
+            sessionExerciseId = sessionExerciseId,
+            currentExerciseId = info.exerciseId,
+            currentExerciseName = info.exerciseName,
+            moduleCode = info.moduleCode,
+            sessionId = info.sessionId,
+        )
+    }
+
+    override suspend fun getExerciseIdsForSession(sessionId: Long): List<Long> {
+        return sessionExerciseDao.getExerciseIdsForSession(sessionId)
+    }
+
+    override suspend fun substituteExercise(
+        sessionExerciseId: Long,
+        newExerciseId: Long,
+    ) {
+        database.withTransaction {
+            val info = sessionExerciseDao.getSessionExerciseForSubstitution(sessionExerciseId)
+                ?: throw IllegalStateException("Session exercise not found")
+
+            if (info.completedSets > 0) {
+                throw IllegalStateException("Cannot substitute exercise with registered sets")
+            }
+
+            val originalExerciseId = info.originalExerciseId ?: info.exerciseId
+
+            sessionExerciseDao.updateExerciseId(
+                sessionExerciseId,
+                newExerciseId,
+                originalExerciseId,
             )
         }
     }

@@ -159,8 +159,8 @@ private fun WeightField(
     onValueChange: (String) -> Unit,
 ) {
     val label = when {
-        uiState.isBodyweight -> stringResource(R.string.register_set_weight_bodyweight_label)
         uiState.isIsometric -> stringResource(R.string.register_set_weight_isometric_label)
+        uiState.isBodyweight -> stringResource(R.string.register_set_weight_bodyweight_label)
         else -> stringResource(R.string.register_set_weight_label)
     }
 

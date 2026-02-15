@@ -40,6 +40,14 @@ data class SessionExerciseForSubstitution(
     val completedSets: Int,
 )
 
+data class SessionExerciseForProgression(
+    val sessionExerciseId: Long,
+    val exerciseId: Long,
+    val isBodyweight: Int,
+    val isIsometric: Int,
+    val moduleCode: String,
+)
+
 @Dao
 interface SessionExerciseDao {
 
@@ -118,6 +126,30 @@ interface SessionExerciseDao {
 
     @Query("SELECT exercise_id FROM session_exercise WHERE session_id = :sessionId")
     suspend fun getExerciseIdsForSession(sessionId: Long): List<Long>
+
+    @Query(
+        """
+        SELECT 
+            se.id AS sessionExerciseId,
+            se.exercise_id AS exerciseId,
+            e.is_bodyweight AS isBodyweight,
+            e.is_isometric AS isIsometric,
+            e.module_code AS moduleCode
+        FROM session_exercise se
+        INNER JOIN exercise e ON se.exercise_id = e.id
+        WHERE se.session_id = :sessionId
+        """,
+    )
+    suspend fun getSessionExercisesForProgression(sessionId: Long): List<SessionExerciseForProgression>
+
+    @Query(
+        """
+        UPDATE session_exercise
+        SET progression_classification = :classification
+        WHERE id = :sessionExerciseId
+        """,
+    )
+    suspend fun updateProgressionClassification(sessionExerciseId: Long, classification: String?)
 
     @Query(
         """

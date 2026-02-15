@@ -14,13 +14,16 @@ import com.estebancoloradogonzalez.tension.data.local.entity.ExerciseSetEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.SessionEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.SessionExerciseEntity
 import com.estebancoloradogonzalez.tension.domain.model.ActiveSession
+import com.estebancoloradogonzalez.tension.domain.model.ExerciseSessionData
 import com.estebancoloradogonzalez.tension.domain.model.ExerciseSessionStatus
 import com.estebancoloradogonzalez.tension.domain.model.RegisterSetInfo
 import com.estebancoloradogonzalez.tension.domain.model.RotationResolver
 import com.estebancoloradogonzalez.tension.domain.model.RotationState
 import com.estebancoloradogonzalez.tension.domain.model.SessionExerciseDetail
+import com.estebancoloradogonzalez.tension.domain.model.SetData
 import com.estebancoloradogonzalez.tension.domain.model.SubstituteExerciseInfo
 import com.estebancoloradogonzalez.tension.domain.repository.SessionRepository
+import com.estebancoloradogonzalez.tension.domain.rules.ProgressionClassificationRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -280,6 +283,10 @@ class SessionRepositoryImpl @Inject constructor(
             }
             sessionDao.updateStatus(sessionId, status)
 
+            // Step 2: Evaluate progression (HU-10)
+            evaluateProgression(sessionId)
+
+            // Step 3: Advance rotation (HU-09)
             val rotationEntity = rotationStateDao.getRotationState().first()
                 ?: throw IllegalStateException("Rotation state not found")
             val currentRotation = RotationState(
@@ -297,6 +304,72 @@ class SessionRepositoryImpl @Inject constructor(
                     currentVersionModuleB = newRotation.currentVersionModuleB,
                     currentVersionModuleC = newRotation.currentVersionModuleC,
                     microcycleCount = newRotation.microcycleCount,
+                ),
+            )
+        }
+    }
+
+    private suspend fun evaluateProgression(sessionId: Long) {
+        val exercises = sessionExerciseDao.getSessionExercisesForProgression(sessionId)
+
+        for (exercise in exercises) {
+            val currentSetDtos = exerciseSetDao.getSetsForSessionExercise(
+                exercise.sessionExerciseId,
+            )
+            if (currentSetDtos.isEmpty()) continue
+
+            val currentData = ExerciseSessionData(
+                sets = currentSetDtos.map { SetData(it.weightKg, it.reps, it.rir) },
+            )
+
+            val previousSetDtos = exerciseSetDao.getLastHistoricalSets(
+                exercise.exerciseId,
+                sessionId,
+            )
+            val previousData = if (previousSetDtos.isNotEmpty()) {
+                ExerciseSessionData(
+                    sets = previousSetDtos.map { SetData(it.weightKg, it.reps, it.rir) },
+                )
+            } else {
+                null
+            }
+
+            val isBodyweight = exercise.isBodyweight == 1
+            val isIsometric = exercise.isIsometric == 1
+
+            val classification = ProgressionClassificationRule.classify(
+                current = currentData,
+                previous = previousData,
+                isBodyweight = isBodyweight,
+                isIsometric = isIsometric,
+            )
+
+            sessionExerciseDao.updateProgressionClassification(
+                exercise.sessionExerciseId,
+                classification?.name,
+            )
+
+            val isMastered = isIsometric &&
+                ProgressionClassificationRule.isIsometricMastered(currentData)
+
+            val currentProgression = exerciseProgressionDao
+                .getByExerciseId(exercise.exerciseId).first()
+
+            if (currentProgression == null) continue
+
+            val (newStatus, newCounter) =
+                ProgressionClassificationRule.resolveNewProgressionState(
+                    currentStatus = currentProgression.status,
+                    currentCounter = currentProgression.sessionsWithoutProgression,
+                    classification = classification,
+                    isIsometric = isIsometric,
+                    isMastered = isMastered,
+                )
+
+            exerciseProgressionDao.update(
+                currentProgression.copy(
+                    status = newStatus,
+                    sessionsWithoutProgression = newCounter,
                 ),
             )
         }

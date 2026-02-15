@@ -7,10 +7,14 @@ data class ActiveSessionUiState(
     val moduleCode: String = "",
     val versionNumber: Int = 0,
     val exercises: List<ExerciseUiItem> = emptyList(),
+    val showCloseDialog: Boolean = false,
+    val isClosing: Boolean = false,
 ) {
     val completedCount: Int get() = exercises.count { it.status == ExerciseSessionStatus.COMPLETED }
     val totalCount: Int get() = exercises.size
     val progress: Float get() = if (totalCount > 0) completedCount.toFloat() / totalCount else 0f
+    val incompleteCount: Int get() = totalCount - completedCount
+    val isAllCompleted: Boolean get() = completedCount == totalCount && totalCount > 0
 }
 
 data class ExerciseUiItem(

@@ -20,11 +20,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.outlined.PhotoCamera
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -33,7 +36,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -60,53 +65,72 @@ fun ActiveSessionScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    BackHandler { /* no-op: user must close session formally */ }
+    LaunchedEffect(Unit) {
+        viewModel.navigateToSessionSummary.collect { sessionId ->
+            onNavigateToSessionSummary(sessionId)
+        }
+    }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        SessionTopBar(
-            moduleCode = uiState.moduleCode,
-            versionNumber = uiState.versionNumber,
-        )
+    BackHandler { viewModel.onCloseSessionRequested() }
 
-        ProgressBar(
-            completedCount = uiState.completedCount,
-            totalCount = uiState.totalCount,
-            progress = uiState.progress,
-        )
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            SessionTopBar(
+                moduleCode = uiState.moduleCode,
+                versionNumber = uiState.versionNumber,
+            )
 
-        LazyColumn(
-            modifier = Modifier
-                .weight(1f)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            item { Spacer(modifier = Modifier.height(8.dp)) }
+            ProgressBar(
+                completedCount = uiState.completedCount,
+                totalCount = uiState.totalCount,
+                progress = uiState.progress,
+            )
 
-            items(uiState.exercises, key = { it.sessionExerciseId }) { exercise ->
-                ExerciseRow(
-                    exercise = exercise,
-                    onRegister = { onNavigateToRegisterSet(exercise.sessionExerciseId) },
-                    onSubstitute = { onNavigateToSubstitute(exercise.sessionExerciseId) },
-                    onViewDetail = { onNavigateToExerciseDetail(exercise.exerciseId) },
-                )
-            }
+            LazyColumn(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                item { Spacer(modifier = Modifier.height(8.dp)) }
 
-            item {
-                Spacer(modifier = Modifier.height(24.dp))
-                OutlinedButton(
-                    onClick = { /* TODO: HU-09 */ },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = Color(0xFF6B4F4F),
-                    ),
-                    border = ButtonDefaults.outlinedButtonBorder.copy(
-                        brush = androidx.compose.ui.graphics.SolidColor(Color(0xFF6B4F4F)),
-                    ),
-                ) {
-                    Text(text = stringResource(R.string.session_close))
+                items(uiState.exercises, key = { it.sessionExerciseId }) { exercise ->
+                    ExerciseRow(
+                        exercise = exercise,
+                        onRegister = { onNavigateToRegisterSet(exercise.sessionExerciseId) },
+                        onSubstitute = { onNavigateToSubstitute(exercise.sessionExerciseId) },
+                        onViewDetail = { onNavigateToExerciseDetail(exercise.exerciseId) },
+                    )
                 }
-                Spacer(modifier = Modifier.height(16.dp))
+
+                item {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    OutlinedButton(
+                        onClick = { viewModel.onCloseSessionRequested() },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !uiState.isClosing,
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = Color(0xFF6B4F4F),
+                        ),
+                        border = ButtonDefaults.outlinedButtonBorder.copy(
+                            brush = androidx.compose.ui.graphics.SolidColor(Color(0xFF6B4F4F)),
+                        ),
+                    ) {
+                        Text(text = stringResource(R.string.session_close))
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
             }
+        }
+
+        if (uiState.showCloseDialog) {
+            CloseSessionDialog(
+                isAllCompleted = uiState.isAllCompleted,
+                incompleteCount = uiState.incompleteCount,
+                isClosing = uiState.isClosing,
+                onConfirm = { viewModel.onCloseSessionConfirmed() },
+                onDismiss = { viewModel.onCloseDialogDismissed() },
+            )
         }
     }
 }
@@ -421,6 +445,75 @@ private fun LoadText(exercise: ExerciseUiItem) {
             MaterialTheme.colorScheme.onSurfaceVariant
         } else {
             MaterialTheme.colorScheme.onSurface
+        },
+    )
+}
+
+@Composable
+private fun CloseSessionDialog(
+    isAllCompleted: Boolean,
+    incompleteCount: Int,
+    isClosing: Boolean,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = if (!isAllCompleted) {
+            {
+                Icon(
+                    imageVector = Icons.Default.Warning,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(24.dp),
+                )
+            }
+        } else {
+            null
+        },
+        title = { Text(text = stringResource(R.string.session_close_title)) },
+        text = {
+            Text(
+                text = if (isAllCompleted) {
+                    stringResource(R.string.session_close_complete_message)
+                } else {
+                    stringResource(R.string.session_close_incomplete_message, incompleteCount)
+                },
+            )
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                enabled = !isClosing,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (isAllCompleted) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.error
+                    },
+                ),
+            ) {
+                if (isClosing) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary,
+                    )
+                } else {
+                    Text(
+                        text = if (isAllCompleted) {
+                            stringResource(R.string.session_close_confirm_complete)
+                        } else {
+                            stringResource(R.string.session_close_confirm_incomplete)
+                        },
+                    )
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, enabled = !isClosing) {
+                Text(text = stringResource(R.string.session_close_cancel))
+            }
         },
     )
 }

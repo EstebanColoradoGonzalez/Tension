@@ -261,7 +261,12 @@ fun TensionNavHost(
                                     NavigationRoutes.exerciseDetailRoute(exerciseId),
                                 )
                             },
-                            onNavigateToSessionSummary = { /* TODO: HU-09 */ },
+                            onNavigateToSessionSummary = { _ ->
+                                // TODO: HU-13 — navigate to session-summary/$sessionId
+                                navController.navigate(NavigationRoutes.HOME) {
+                                    popUpTo(NavigationRoutes.HOME) { inclusive = true }
+                                }
+                            },
                             onNavigateToHome = {
                                 navController.navigate(NavigationRoutes.HOME) {
                                     popUpTo(NavigationRoutes.HOME) { inclusive = true }

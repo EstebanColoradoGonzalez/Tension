@@ -19,4 +19,5 @@ interface SessionRepository {
     suspend fun getSubstituteExerciseInfo(sessionExerciseId: Long): SubstituteExerciseInfo?
     suspend fun getExerciseIdsForSession(sessionId: Long): List<Long>
     suspend fun substituteExercise(sessionExerciseId: Long, newExerciseId: Long)
+    suspend fun closeSession(sessionId: Long)
 }

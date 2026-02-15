@@ -47,4 +47,7 @@ interface SessionDao {
         """,
     )
     fun getActiveSessionWithModuleVersion(): Flow<ActiveSessionInfo?>
+
+    @Query("UPDATE session SET status = :status WHERE id = :sessionId")
+    suspend fun updateStatus(sessionId: Long, status: String)
 }

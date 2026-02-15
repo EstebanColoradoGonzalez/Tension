@@ -45,6 +45,16 @@
     <string name="session_substitute">Sustituir</string>
     <string name="session_close">Cerrar Sesión</string>
 
+    <!-- Close Session Dialog E4 -->
+    <string name="session_close_title">Cerrar sesión</string>
+    <string name="session_close_complete_message">Todos los ejercicios están completados. La sesión
+        se cerrará como Completada.</string>
+    <string name="session_close_incomplete_message">Hay %1$d ejercicios sin completar. La sesión se
+        cerrará como Incompleta. Los datos parciales se conservarán.</string>
+    <string name="session_close_confirm_complete">Cerrar ✓</string>
+    <string name="session_close_confirm_incomplete">Cerrar ⚠️</string>
+    <string name="session_close_cancel">Cancelar</string>
+
     <!-- Register Set E2 -->
     <string name="register_set_title_format">Serie %1$d de %2$d</string>
     <string name="register_set_weight_label">Peso (Kg)</string>

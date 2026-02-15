@@ -20,4 +20,18 @@ object RotationResolver {
         "C" -> versionC
         else -> error("Invalid module code: $moduleCode")
     }
+
+    fun advanceRotation(current: RotationState): RotationState {
+        return if (current.microcyclePosition < 6) {
+            current.copy(microcyclePosition = current.microcyclePosition + 1)
+        } else {
+            current.copy(
+                microcyclePosition = 1,
+                currentVersionModuleA = (current.currentVersionModuleA % 3) + 1,
+                currentVersionModuleB = (current.currentVersionModuleB % 3) + 1,
+                currentVersionModuleC = (current.currentVersionModuleC % 3) + 1,
+                microcycleCount = current.microcycleCount + 1,
+            )
+        }
+    }
 }

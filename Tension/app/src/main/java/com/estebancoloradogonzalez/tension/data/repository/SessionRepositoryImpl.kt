@@ -264,4 +264,41 @@ class SessionRepositoryImpl @Inject constructor(
             )
         }
     }
+
+    override suspend fun closeSession(sessionId: Long) {
+        database.withTransaction {
+            val sessionInfo = sessionDao.getActiveSessionWithModuleVersion().first()
+                ?: throw IllegalStateException("No active session found")
+            if (sessionInfo.sessionId != sessionId) {
+                throw IllegalStateException("Session $sessionId is not the active session")
+            }
+
+            val status = if (sessionInfo.completedExercises == sessionInfo.totalExercises) {
+                "COMPLETED"
+            } else {
+                "INCOMPLETE"
+            }
+            sessionDao.updateStatus(sessionId, status)
+
+            val rotationEntity = rotationStateDao.getRotationState().first()
+                ?: throw IllegalStateException("Rotation state not found")
+            val currentRotation = RotationState(
+                microcyclePosition = rotationEntity.microcyclePosition,
+                currentVersionModuleA = rotationEntity.currentVersionModuleA,
+                currentVersionModuleB = rotationEntity.currentVersionModuleB,
+                currentVersionModuleC = rotationEntity.currentVersionModuleC,
+                microcycleCount = rotationEntity.microcycleCount,
+            )
+            val newRotation = RotationResolver.advanceRotation(currentRotation)
+            rotationStateDao.update(
+                rotationEntity.copy(
+                    microcyclePosition = newRotation.microcyclePosition,
+                    currentVersionModuleA = newRotation.currentVersionModuleA,
+                    currentVersionModuleB = newRotation.currentVersionModuleB,
+                    currentVersionModuleC = newRotation.currentVersionModuleC,
+                    microcycleCount = newRotation.microcycleCount,
+                ),
+            )
+        }
+    }
 }

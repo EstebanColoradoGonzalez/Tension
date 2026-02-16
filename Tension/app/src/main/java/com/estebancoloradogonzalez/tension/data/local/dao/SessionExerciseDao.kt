@@ -46,6 +46,7 @@ data class SessionExerciseForProgression(
     val isBodyweight: Int,
     val isIsometric: Int,
     val moduleCode: String,
+    val loadIncrementKg: Double,
 )
 
 @Dao
@@ -134,9 +135,11 @@ interface SessionExerciseDao {
             se.exercise_id AS exerciseId,
             e.is_bodyweight AS isBodyweight,
             e.is_isometric AS isIsometric,
-            e.module_code AS moduleCode
+            e.module_code AS moduleCode,
+            m.load_increment_kg AS loadIncrementKg
         FROM session_exercise se
         INNER JOIN exercise e ON se.exercise_id = e.id
+        INNER JOIN module m ON e.module_code = m.code
         WHERE se.session_id = :sessionId
         """,
     )

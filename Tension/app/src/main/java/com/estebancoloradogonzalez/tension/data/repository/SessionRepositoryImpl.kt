@@ -23,6 +23,7 @@ import com.estebancoloradogonzalez.tension.domain.model.SessionExerciseDetail
 import com.estebancoloradogonzalez.tension.domain.model.SetData
 import com.estebancoloradogonzalez.tension.domain.model.SubstituteExerciseInfo
 import com.estebancoloradogonzalez.tension.domain.repository.SessionRepository
+import com.estebancoloradogonzalez.tension.domain.rules.DoubleThresholdRule
 import com.estebancoloradogonzalez.tension.domain.rules.ProgressionClassificationRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -366,10 +367,23 @@ class SessionRepositoryImpl @Inject constructor(
                     isMastered = isMastered,
                 )
 
+            // Step 5b: Prescribe load (HU-11)
+            val prescribedLoadKg = if (isBodyweight || isIsometric) {
+                null
+            } else {
+                val meetsThreshold = DoubleThresholdRule.meetsDoubleThreshold(currentData)
+                DoubleThresholdRule.prescribeLoad(
+                    currentAvgWeightKg = currentData.avgWeightKg,
+                    loadIncrementKg = exercise.loadIncrementKg,
+                    meetsThreshold = meetsThreshold,
+                )
+            }
+
             exerciseProgressionDao.update(
                 currentProgression.copy(
                     status = newStatus,
                     sessionsWithoutProgression = newCounter,
+                    prescribedLoadKg = prescribedLoadKg,
                 ),
             )
         }

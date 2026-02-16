@@ -65,54 +65,57 @@ Los siguientes 23 RNFs son restricciones de calidad que aplican al sistema compl
 | HU-09 | Cerrar sesión y avanzar rotación | Cerrar sesión como "Completada" (todas las series de todos los ejercicios registradas) o "Incompleta" (datos parciales conservados). Calcular tonelaje de sesión automáticamente al cerrar (Σ Peso × Repeticiones de todas las series). Avanzar posición en rotación cíclica de módulos y secuencia de versiones únicamente al cerrar sesión. Preservar datos si la app se cierra inesperadamente durante el cierre. | RF18, RF19, RF20, RF21 | RNF10 |
 | HU-10 | Evaluar y clasificar progresión post-sesión | Al cerrar sesión, comparar datos de cada ejercicio contra su último registro histórico del mismo ejercicio (independientemente del módulo-versión). Clasificar progresión: "Progresión positiva" (aumentó carga y/o repeticiones con RIR estable), "Mantenimiento" (misma carga y repeticiones, RIR estable) o "Regresión" (disminuyó carga o repeticiones, o RIR subió ≥ 1.5 con misma carga). Calcular y almacenar RIR promedio de las 4 series como dato derivado. Actualizar estado persistente de progresión del ejercicio (Sin Historial, En Progresión, En Meseta, En Descarga). Para peso corporal: progresión por repeticiones totales. Para isométricos: progresión por segundos sostenidos y marcado "dominado" (4 series ≥ 45s). | RF23, RF24, RF28, RF31, RF32, RF33, RF43 | — |
 | HU-11 | Prescribir carga objetivo según Regla de Doble Umbral | Señalar que un ejercicio está listo para incrementar carga cuando: ≥ 12 repeticiones en al menos 3 de 4 series **Y** RIR promedio de las 4 series ≥ 2. Calcular carga objetivo incrementada: +2.5 Kg para Módulos A y B (tren superior), +5 Kg para Módulo C (tren inferior). Si no se cumple la Regla de Doble Umbral, prescribir misma carga, priorizando progresión en repeticiones dentro del rango 8-12. No aplica a ejercicios de peso corporal (Δmin = 0). | RF25, RF26, RF27, RF31 | — |
-| HU-12 | Detectar regresión y fatiga acumulada | Detectar regresión en un ejercicio cuando: peso igual pero repeticiones caen en ≥ 2 de 4 series, o RIR promedio sube ≥ 1.5 puntos con misma carga y repeticiones similares. Detectar fatiga acumulada del módulo cuando se identifica regresión simultánea en ≥ 50% de los ejercicios de una misma sesión. | RF29, RF30 | — |
+| HU-12 | Motor de Detección: Regresión, Meseta y Necesidad de Descarga | Detectar regresión por caída de repeticiones, aumento de RIR o caída de carga. Detectar fatiga acumulada del módulo (regresión simultánea ≥ 50%). Detectar meseta por 3 sesiones sin progresión con análisis causal (RIR bajo = límite de carga, RIR alto = carga conservadora, estancamiento grupal = fatiga sistémica). Recomendar acciones correctivas escalonadas: sesión 4 (microincremento o extensión de reps), sesión 6 (rotar versión). Detectar necesidad de descarga por módulo cuando ≥ 50% de ejercicios en meseta/regresión. Señales visuales diferenciadas e informativas, no bloqueantes. **Consolida HU-12, HU-14, HU-15, HU-16 originales.** | RF29, RF30, RF34, RF35, RF36, RF37 | RNF05 |
 | HU-13 | Mostrar resumen post-sesión con señales de acción | Al cerrar sesión, mostrar resumen incluyendo: tonelaje total, cantidad de ejercicios completados, clasificación de progresión por ejercicio y señales de acción para la próxima sesión (subir carga, mantener o descargar). Las señales de progresión (↑ Progresión, = Mantenimiento, ↓ Regresión) deben ser visualmente distinguibles mediante colores e iconografía, sin depender únicamente del texto. | RF59 | RNF05 |
-| HU-14 | Detectar y alertar meseta en ejercicios | Detectar estado de "Meseta" cuando no se registra progresión positiva (ni en carga ni en repeticiones) durante 3 sesiones consecutivas del mismo ejercicio. Emitir alerta de meseta con análisis causal: RIR consistentemente bajo (0-1) indica límite de carga, RIR alto (3+) indica carga conservadora, estancamiento grupal indica fatiga sistémica del grupo muscular. Señales visuales diferenciadas con colores e iconografía. | RF34, RF35 | RNF05 |
-| HU-15 | Recomendar acciones correctivas escalonadas ante meseta | Sesión 4 sin progreso: recomendar microincremento de carga o extensión de repeticiones. Sesión 6 sin progreso: recomendar rotar a otra versión del módulo. | RF36 | — |
-| HU-16 | Detectar necesidad de descarga por módulo | Detectar que un módulo requiere descarga cuando ≥ 50% de sus ejercicios están simultáneamente en estado de Meseta o Regresión, o cuando se detecta fatiga acumulada del módulo (vía RF30). | RF37 | — |
-| HU-17 | Activar y gestionar ciclo de descarga completo | Activar modo Descarga (Deload) ajustando prescripción: carga al 60% de la habitual, 4 series, repeticiones en límite inferior (8), RIR objetivo 4-5. Mantener descarga activa durante 1 microciclo completo (A-B-C-A-B-C), sin cambiar versión del módulo. Calcular carga de reinicio post-descarga al 90% de la última carga pre-descarga para cada ejercicio. | RF38, RF39, RF40 | — |
-| HU-18 | Contar microciclos completados | Llevar conteo de microciclos completados, incrementándolo cada vez que los 6 módulos de la rotación (A-B-C-A-B-C) hayan sido ejecutados. | RF41 | — |
-| HU-19 | Calcular KPIs de rendimiento por ejercicio | Tasa de Progresión: porcentaje de sesiones con progresión positiva respecto al total de sesiones del ejercicio, evaluación por defecto cada 4 semanas. Velocidad de Progresión de Carga: diferencia peso actual - peso inicial, dividida por número de sesiones intermedias. | RF44, RF48 | — |
-| HU-20 | Calcular KPIs de volumen por grupo muscular | Tonelaje Acumulado por Grupo Muscular por microciclo: Σ(Peso × Repeticiones) de todas las series de ejercicios del grupo muscular. Distribución de Volumen por Zona Muscular por microciclo: porcentaje de series totales de cada zona respecto al total de series del módulo. | RF45, RF49 | — |
-| HU-21 | Calcular KPIs de intensidad y adherencia | RIR Promedio por Módulo: promedio aritmético de todos los RIR de todas las series del módulo en un período dado. Índice de Adherencia semanal: sesiones completadas / sesiones planificadas (objetivo 4-6) × 100. | RF46, RF47 | — |
-| HU-22 | Monitorear tendencia de progresión por grupo muscular | Evaluar trayectoria del tonelaje acumulado y la tasa de progresión de los ejercicios asociados a cada grupo muscular a lo largo de los últimos 4 a 6 microciclos completados. | RF42 | — |
-| HU-23 | Consultar historial y tendencia de carga de un ejercicio | Historial completo de registros de un ejercicio: fecha, peso, repeticiones, RIR y clasificación de progresión por sesión, ordenados cronológicamente. Visualización de la tendencia de evolución de carga a lo largo del tiempo. | RF50, RF51 | — |
-| HU-24 | Consultar historial de sesiones pasadas | Para cada sesión pasada mostrar: fecha, módulo, versión, estado (Completada/Incompleta), tonelaje total y ejercicios ejecutados con sus datos. | RF60 | — |
-| HU-25 | Consultar evolución de tonelaje por grupo muscular | Tonelaje acumulado por grupo muscular a lo largo de los microciclos. Identificar tendencias ascendentes, estables o en caída. | RF52 | — |
-| HU-26 | Alertas de tasa de progresión baja | Emitir alerta cuando la Tasa de Progresión de un ejercicio sea < 40% en 4 semanas (umbral de alerta). Emitir alerta de crisis cuando sea < 20% en el mismo período. Señales visualmente distinguibles con colores e iconografía. | RF53 | RNF05 |
-| HU-27 | Alertas de RIR por módulo | Emitir alerta cuando RIR Promedio de un módulo sea < 1.5 durante 2+ sesiones, recomendando descarga. Emitir alerta cuando RIR Promedio sea > 3.5 durante 2+ sesiones, recomendando incrementar carga. Señales visualmente distinguibles. | RF54, RF55 | RNF05 |
-| HU-28 | Alertas de adherencia baja | Emitir alerta informativa cuando Adherencia Semanal sea < 60% en una semana. Emitir alerta de crisis si < 60% se mantiene durante 2+ semanas consecutivas. Señales visualmente distinguibles. | RF56 | RNF05 |
-| HU-29 | Alertas de caída de tonelaje por grupo muscular | Emitir alerta cuando tonelaje de un grupo muscular caiga > 10% respecto al microciclo anterior. Emitir crisis cuando caiga > 20%. Verificar si la caída corresponde a descarga planificada o regresión no intencional. Señales visualmente distinguibles. | RF57 | RNF05 |
-| HU-30 | Alertas de inactividad por módulo | Emitir alerta cuando transcurran > 10 días naturales sin ejecutar un módulo. Emitir crisis cuando superen los 14 días. Informar que el grupo muscular asociado puede estar perdiendo adaptaciones. Señales visualmente distinguibles. | RF58 | RNF05 |
-| HU-31 | Exportar respaldo de datos | Generar archivo de backup autodescriptivo (JSON o SQLite exportado) con metadatos de versión para migraciones futuras. Almacenable en almacenamiento externo o compartible vía apps del sistema (Drive, correo). Proceso < 10 segundos para historial de hasta 2 años. Sin cifrado pero con advertencia al usuario. Solo permisos de almacenamiento. | — | RNF15, RNF17, RNF18, RNF26, RNF27 |
-| HU-32 | Importar respaldo de datos | Cargar archivo de backup previamente exportado. Reemplazar datos actuales previa confirmación del usuario. Formato autodescriptivo con metadatos de versión para migraciones. Proceso < 10 segundos para historial de hasta 2 años. | — | RNF16, RNF17, RNF18 |
+| HU-14 | Protocolo de Descarga y Conteo de Microciclos | Activar modo Descarga (Deload) ajustando prescripción: carga al 60% de la habitual, 4 series, repeticiones en límite inferior (8), RIR objetivo 4-5. Mantener descarga activa durante 1 microciclo completo (A-B-C-A-B-C), versiones congeladas. Calcular carga de reinicio post-descarga al 90% de la carga pre-descarga con redondeo protector. Ejercicios bodyweight e isométricos con parámetros de descarga específicos. Llevar conteo persistente de microciclos completados, incluyendo durante descarga. **Consolida HU-17 y HU-18 originales.** | RF38, RF39, RF40, RF41 | — |
+| HU-15 | Analítica y KPIs del Entrenamiento | Panel de analítica completo: Tasa de Progresión y Velocidad de Carga por ejercicio (período configurable, 4 semanas por defecto). Tonelaje Acumulado y Distribución de Volumen por grupo muscular por microciclo, con soporte para ejercicios multi-zona. RIR Promedio por Módulo con interpretación contextual e Índice de Adherencia semanal. Tendencia de progresión por grupo muscular (últimos 4-6 microciclos, clasificación Ascendente/Estable/En declive). Evolución temporal del tonelaje con desglose por los 12 grupos musculares. Manejo de datos insuficientes y exclusiones para peso corporal. **Consolida HU-19, HU-20, HU-21, HU-22 y HU-25 originales.** | RF42, RF44, RF45, RF46, RF47, RF48, RF49, RF52 | — |
+| HU-16 | Historial de Ejercicios y Sesiones | Historial completo de registros de un ejercicio: fecha, peso, repeticiones, RIR y clasificación de progresión por sesión, orden cronológico descendente, independiente del módulo-versión, con tendencia de carga (o repeticiones para bodyweight). Listado de sesiones pasadas con fecha, módulo, versión, estado y tonelaje. Detalle de sesión con ejercicios ejecutados, series, sustituciones reflejadas. Inmutabilidad de datos. Manejo de historial vacío y ejercicios sin registros. **Consolida HU-23 y HU-24 originales.** | RF50, RF51, RF60 | — |
+| HU-17 | Sistema de Alertas | Sistema de alertas proactivas con dos niveles de severidad (alerta y crisis): tasa de progresión baja (< 40% alerta, < 20% crisis, evaluación periódica). RIR por módulo fuera de rango (< 1.5 o > 3.5 sostenido 2+ sesiones, retiro automático). Adherencia semanal baja (< 60% una semana alerta, 2+ semanas crisis). Caída de tonelaje por grupo muscular (> 10% alerta, > 20% crisis, verificación de descarga planificada). Inactividad por módulo (> 10 días alerta, > 14 días crisis, con referencia a grupos musculares afectados). Todas informativas y no bloqueantes, con diferenciación visual por colores e iconografía. **Consolida HU-26, HU-27, HU-28, HU-29 y HU-30 originales.** | RF53, RF54, RF55, RF56, RF57, RF58 | RNF05 |
+| HU-18 | Backup y Restauración | Exportar respaldo completo autodescriptivo (JSON o SQLite) con metadatos de versión. Almacenable en almacenamiento externo o compartible vía apps del sistema. Importar respaldo con validación de formato, confirmación de reemplazo, migración de versiones de esquema y rollback ante error. Proceso < 10 segundos para historial de hasta 2 años. Sin cifrado pero con advertencia. Solo permisos de almacenamiento. **Consolida HU-31 y HU-32 originales.** | — | RNF15, RNF16, RNF17, RNF18, RNF26, RNF27 |
 
 ---
 
-## 5. Matriz de Trazabilidad — Requisitos Funcionales → Historias de Usuario
+## 5. Consolidación de Historias
+
+Las historias HU-12 a HU-18 (post-consolidación) absorben las 21 historias originales HU-12 a HU-32, reduciendo el total de 32 a 18 historias sin perder ningún criterio de aceptación ni requisito funcional. La siguiente tabla documenta la trazabilidad:
+
+| HU Consolidada | HUs Originales Absorbidas | CAs Totales |
+|----------------|--------------------------|-------------|
+| HU-12 | HU-12, HU-14, HU-15, HU-16 | 24 |
+| HU-13 | HU-13 (sin cambios) | 7 |
+| HU-14 | HU-17, HU-18 | 14 |
+| HU-15 | HU-19, HU-20, HU-21, HU-22, HU-25 | 28 |
+| HU-16 | HU-23, HU-24 | 12 |
+| HU-17 | HU-26, HU-27, HU-28, HU-29, HU-30 | 29 |
+| HU-18 | HU-31, HU-32 | 15 |
+| **Total** | **21 → 7** | **129** |
+
+---
+
+## 6. Matriz de Trazabilidad — Requisitos Funcionales → Historias de Usuario
 
 | RF | HU | RF | HU | RF | HU |
 |----|----|----|----|----|----|
-| RF01 | HU-01 | RF21 | HU-09 | RF41 | HU-18 |
-| RF02 | HU-01 | RF22 | HU-06 | RF42 | HU-22 |
+| RF01 | HU-01 | RF21 | HU-09 | RF41 | HU-14 |
+| RF02 | HU-01 | RF22 | HU-06 | RF42 | HU-15 |
 | RF03 | HU-02 | RF23 | HU-10 | RF43 | HU-10 |
-| RF04 | HU-03 | RF24 | HU-10 | RF44 | HU-19 |
-| RF05 | HU-04 | RF25 | HU-11 | RF45 | HU-20 |
-| RF06 | HU-04 | RF26 | HU-11 | RF46 | HU-21 |
-| RF07 | HU-03 | RF27 | HU-11 | RF47 | HU-21 |
-| RF08 | HU-04 | RF28 | HU-10 | RF48 | HU-19 |
-| RF09 | HU-05 | RF29 | HU-12 | RF49 | HU-20 |
-| RF10 | HU-05 | RF30 | HU-12 | RF50 | HU-23 |
-| RF11 | HU-05 | RF31 | HU-10, HU-11 | RF51 | HU-23 |
-| RF12 | HU-05 | RF32 | HU-10 | RF52 | HU-25 |
-| RF13 | HU-06 | RF33 | HU-10 | RF53 | HU-26 |
-| RF14 | HU-06 | RF34 | HU-14 | RF54 | HU-27 |
-| RF15 | HU-06 | RF35 | HU-14 | RF55 | HU-27 |
-| RF16 | HU-07 | RF36 | HU-15 | RF56 | HU-28 |
-| RF17 | HU-06 | RF37 | HU-16 | RF57 | HU-29 |
-| RF18 | HU-09 | RF38 | HU-17 | RF58 | HU-30 |
-| RF19 | HU-09 | RF39 | HU-17 | RF59 | HU-13 |
-| RF20 | HU-09 | RF40 | HU-17 | RF60 | HU-24 |
+| RF04 | HU-03 | RF24 | HU-10 | RF44 | HU-15 |
+| RF05 | HU-04 | RF25 | HU-11 | RF45 | HU-15 |
+| RF06 | HU-04 | RF26 | HU-11 | RF46 | HU-15 |
+| RF07 | HU-03 | RF27 | HU-11 | RF47 | HU-15 |
+| RF08 | HU-04 | RF28 | HU-10 | RF48 | HU-15 |
+| RF09 | HU-05 | RF29 | HU-12 | RF49 | HU-15 |
+| RF10 | HU-05 | RF30 | HU-12 | RF50 | HU-16 |
+| RF11 | HU-05 | RF31 | HU-10, HU-11 | RF51 | HU-16 |
+| RF12 | HU-05 | RF32 | HU-10 | RF52 | HU-15 |
+| RF13 | HU-06 | RF33 | HU-10 | RF53 | HU-17 |
+| RF14 | HU-06 | RF34 | HU-12 | RF54 | HU-17 |
+| RF15 | HU-06 | RF35 | HU-12 | RF55 | HU-17 |
+| RF16 | HU-07 | RF36 | HU-12 | RF56 | HU-17 |
+| RF17 | HU-06 | RF37 | HU-12 | RF57 | HU-17 |
+| RF18 | HU-09 | RF38 | HU-14 | RF58 | HU-17 |
+| RF19 | HU-09 | RF39 | HU-14 | RF59 | HU-13 |
+| RF20 | HU-09 | RF40 | HU-14 | RF60 | HU-16 |
 | | | | | RF61 | HU-03 |
 | | | | | RF62 | HU-03 |
 | | | | | RF63 | HU-04 |
@@ -122,36 +125,36 @@ Los siguientes 23 RNFs son restricciones de calidad que aplican al sistema compl
 
 ---
 
-## 6. Matriz de Trazabilidad — Requisitos No Funcionales → Historias de Usuario
+## 7. Matriz de Trazabilidad — Requisitos No Funcionales → Historias de Usuario
 
-### 6.1 RNFs Específicos (asignados a historias concretas)
+### 7.1 RNFs Específicos (asignados a historias concretas)
 
 | RNF | Historia(s) | Categoría |
 |-----|-------------|-----------|
 | RNF02 | HU-06 | Usabilidad |
 | RNF03 | HU-01, HU-06 | Usabilidad |
 | RNF04 | HU-06 | Usabilidad |
-| RNF05 | HU-13, HU-14, HU-26, HU-27, HU-28, HU-29, HU-30 | Usabilidad |
+| RNF05 | HU-12, HU-13, HU-17 | Usabilidad |
 | RNF10 | HU-06, HU-09 | Confiabilidad |
 | RNF12 | HU-01, HU-06, HU-08 | Confiabilidad |
 | RNF13 | HU-05 | Confiabilidad |
-| RNF15 | HU-31 | Persistencia |
-| RNF16 | HU-32 | Persistencia |
-| RNF17 | HU-31, HU-32 | Persistencia |
-| RNF18 | HU-31, HU-32 | Persistencia |
+| RNF15 | HU-18 | Persistencia |
+| RNF16 | HU-18 | Persistencia |
+| RNF17 | HU-18 | Persistencia |
+| RNF18 | HU-18 | Persistencia |
 | RNF24 | HU-03 | Compatibilidad |
-| RNF26 | HU-31 | Seguridad |
-| RNF27 | HU-31 | Seguridad |
+| RNF26 | HU-18 | Seguridad |
+| RNF27 | HU-18 | Seguridad |
 
 **Resultado: 14 RNFs asignados a historias específicas** ✅
 
-### 6.2 RNFs Transversales (aplicables a todas las historias)
+### 7.2 RNFs Transversales (aplicables a todas las historias)
 
 Los 23 RNFs listados en la §3 de este documento son restricciones de calidad del sistema completo. Se verifican implícitamente durante el refinamiento e implementación de cada historia.
 
 **Resultado: 23 RNFs transversales declarados en §3** ✅
 
-### 6.3 Totalización
+### 7.3 Totalización
 
 | Tipo | Cantidad |
 |------|----------|
@@ -161,7 +164,7 @@ Los 23 RNFs listados en la §3 de este documento son restricciones de calidad de
 
 ---
 
-## 7. Resumen de Cobertura
+## 8. Resumen de Cobertura
 
 | Tipo | Total | Cubiertos | Huérfanos |
 |------|-------|-----------|-----------|
@@ -171,8 +174,11 @@ Los 23 RNFs listados en la §3 de este documento son restricciones de calidad de
 
 | Métrica | Valor |
 |---------|-------|
-| Historias de Usuario | 32 |
-| RFs por historia (promedio) | 2.0 |
-| RFs por historia (máximo) | 4 (HU-05, HU-09) |
-| Historias sin RF (solo RNFs) | 2 (HU-31, HU-32) |
-| Historias sin RNF específicos | 18 (cubiertas por RNFs transversales) |
+| Historias de Usuario | 18 |
+| Historias implementadas (HU-01 a HU-11) | 11 |
+| Historias pendientes (HU-12 a HU-18) | 7 |
+| CAs en historias pendientes | 129 |
+| RFs por historia (promedio) | 3.6 |
+| RFs por historia (máximo) | 8 (HU-15) |
+| Historias sin RF (solo RNFs) | 1 (HU-18) |
+| Historias sin RNF específicos | 11 (cubiertas por RNFs transversales) |

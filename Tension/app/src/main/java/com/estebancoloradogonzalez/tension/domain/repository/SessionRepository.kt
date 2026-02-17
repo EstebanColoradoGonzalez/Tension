@@ -1,5 +1,6 @@
 package com.estebancoloradogonzalez.tension.domain.repository
 
+import com.estebancoloradogonzalez.tension.data.repository.model.SessionSummaryData
 import com.estebancoloradogonzalez.tension.domain.model.ActiveSession
 import com.estebancoloradogonzalez.tension.domain.model.RegisterSetInfo
 import com.estebancoloradogonzalez.tension.domain.model.RotationState
@@ -20,4 +21,5 @@ interface SessionRepository {
     suspend fun getExerciseIdsForSession(sessionId: Long): List<Long>
     suspend fun substituteExercise(sessionExerciseId: Long, newExerciseId: Long)
     suspend fun closeSession(sessionId: Long)
+    suspend fun getSessionSummaryData(sessionId: Long): SessionSummaryData
 }

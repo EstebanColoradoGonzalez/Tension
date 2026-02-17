@@ -49,6 +49,21 @@ data class SessionExerciseForProgression(
     val loadIncrementKg: Double,
 )
 
+data class ExerciseSummaryDto(
+    val exerciseId: Long,
+    val exerciseName: String,
+    val classification: String?,
+    val isBodyweight: Int,
+    val isIsometric: Int,
+    val prescribedLoadKg: Double?,
+    val avgWeightKg: Double,
+    val totalReps: Int,
+    val setCount: Int,
+    val isMastered: Int,
+    val moduleCode: String,
+    val previousTotalReps: Int?,
+)
+
 @Dao
 interface SessionExerciseDao {
 
@@ -163,4 +178,48 @@ interface SessionExerciseDao {
         """,
     )
     suspend fun updateExerciseId(sessionExerciseId: Long, newExerciseId: Long, originalExerciseId: Long)
+
+    @Query(
+        """
+        SELECT
+            se.exercise_id AS exerciseId,
+            e.name AS exerciseName,
+            se.progression_classification AS classification,
+            e.is_bodyweight AS isBodyweight,
+            e.is_isometric AS isIsometric,
+            ep.prescribed_load_kg AS prescribedLoadKg,
+            COALESCE(
+                (SELECT AVG(es.weight_kg) FROM exercise_set es WHERE es.session_exercise_id = se.id),
+                0.0
+            ) AS avgWeightKg,
+            COALESCE(
+                (SELECT SUM(es.reps) FROM exercise_set es WHERE es.session_exercise_id = se.id),
+                0
+            ) AS totalReps,
+            (SELECT COUNT(*) FROM exercise_set es WHERE es.session_exercise_id = se.id) AS setCount,
+            CASE WHEN ep.status = 'MASTERED' THEN 1 ELSE 0 END AS isMastered,
+            e.module_code AS moduleCode,
+            (SELECT SUM(es3.reps)
+             FROM exercise_set es3
+             WHERE es3.session_exercise_id = (
+                 SELECT se3.id
+                 FROM session_exercise se3
+                 INNER JOIN session s3 ON se3.session_id = s3.id
+                 WHERE se3.exercise_id = se.exercise_id
+                   AND s3.id != :sessionId
+                   AND s3.status IN ('COMPLETED', 'INCOMPLETE')
+                 ORDER BY s3.date DESC, s3.id DESC
+                 LIMIT 1
+             )
+            ) AS previousTotalReps
+        FROM session_exercise se
+        INNER JOIN exercise e ON se.exercise_id = e.id
+        LEFT JOIN exercise_progression ep ON e.id = ep.exercise_id
+        WHERE se.session_id = :sessionId
+        GROUP BY se.id
+        HAVING setCount > 0
+        ORDER BY e.name ASC
+        """,
+    )
+    suspend fun getExercisesForSummary(sessionId: Long): List<ExerciseSummaryDto>
 }

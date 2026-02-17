@@ -10,6 +10,7 @@ import com.estebancoloradogonzalez.tension.data.local.dao.RotationStateDao
 import com.estebancoloradogonzalez.tension.data.local.dao.SessionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.SessionExerciseDao
 import com.estebancoloradogonzalez.tension.data.local.database.TensionDatabase
+import com.estebancoloradogonzalez.tension.data.repository.model.SessionSummaryData
 import com.estebancoloradogonzalez.tension.data.local.entity.AlertEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.ExerciseProgressionEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.ExerciseSetEntity
@@ -477,5 +478,15 @@ class SessionRepositoryImpl @Inject constructor(
         } else {
             alertDao.resolveByModuleAndType(moduleCode, "MODULE_REQUIRES_DELOAD", today)
         }
+    }
+
+    override suspend fun getSessionSummaryData(sessionId: Long): SessionSummaryData {
+        val info = sessionDao.getSessionSummaryInfo(sessionId)
+        val exercises = sessionExerciseDao.getExercisesForSummary(sessionId)
+        val moduleRequiresDeload = alertDao.existsActiveByModule(
+            info.moduleCode,
+            "MODULE_REQUIRES_DELOAD",
+        )
+        return SessionSummaryData(info, exercises, moduleRequiresDeload)
     }
 }

@@ -55,6 +55,14 @@
     <string name="session_close_confirm_incomplete">Cerrar ⚠️</string>
     <string name="session_close_cancel">Cancelar</string>
 
+    <!-- Session Summary E5 -->
+    <string name="session_summary_title">Resumen de Sesión</string>
+    <string name="session_summary_completed">Completada ✅</string>
+    <string name="session_summary_incomplete">Incompleta ⚠️</string>
+    <string name="session_summary_exercises_completed">%1$d/%2$d ejercicios completados</string>
+    <string name="session_summary_go_home">Ir al Inicio</string>
+    <string name="session_summary_mastered">\uD83C\uDFC6 Dominado</string>
+
     <!-- Register Set E2 -->
     <string name="register_set_title_format">Serie %1$d de %2$d</string>
     <string name="register_set_weight_label">Peso (Kg)</string>

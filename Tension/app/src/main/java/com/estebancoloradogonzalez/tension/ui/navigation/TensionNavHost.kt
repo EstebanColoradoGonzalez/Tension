@@ -40,6 +40,7 @@ import com.estebancoloradogonzalez.tension.ui.profile.ProfileScreen
 import com.estebancoloradogonzalez.tension.ui.profile.WeightHistoryScreen
 import com.estebancoloradogonzalez.tension.ui.session.ActiveSessionScreen
 import com.estebancoloradogonzalez.tension.ui.session.RegisterSetScreen
+import com.estebancoloradogonzalez.tension.ui.session.SessionSummaryScreen
 import com.estebancoloradogonzalez.tension.ui.session.SubstituteExerciseScreen
 import com.estebancoloradogonzalez.tension.ui.settings.SettingsScreen
 
@@ -82,6 +83,7 @@ fun TensionNavHost(
                 !currentRoute.startsWith("active-session") &&
                 !currentRoute.startsWith("register-set") &&
                 !currentRoute.startsWith("substitute-exercise") &&
+                !currentRoute.startsWith("session-summary") &&
                 !(currentRoute.startsWith("exercise-detail") &&
                     navController.previousBackStackEntry?.destination?.route
                         ?.startsWith("active-session") == true)
@@ -261,10 +263,11 @@ fun TensionNavHost(
                                     NavigationRoutes.exerciseDetailRoute(exerciseId),
                                 )
                             },
-                            onNavigateToSessionSummary = { _ ->
-                                // TODO: HU-13 — navigate to session-summary/$sessionId
-                                navController.navigate(NavigationRoutes.HOME) {
-                                    popUpTo(NavigationRoutes.HOME) { inclusive = true }
+                            onNavigateToSessionSummary = { sessionId ->
+                                navController.navigate(
+                                    NavigationRoutes.sessionSummaryRoute(sessionId),
+                                ) {
+                                    popUpTo(NavigationRoutes.HOME) { inclusive = false }
                                 }
                             },
                             onNavigateToHome = {
@@ -294,6 +297,26 @@ fun TensionNavHost(
                     ) {
                         SubstituteExerciseScreen(
                             onNavigateBack = { navController.popBackStack() },
+                        )
+                    }
+
+                    composable(
+                        route = NavigationRoutes.SESSION_SUMMARY,
+                        arguments = listOf(
+                            navArgument("sessionId") { type = NavType.LongType },
+                        ),
+                    ) {
+                        SessionSummaryScreen(
+                            onNavigateToHome = {
+                                navController.navigate(NavigationRoutes.HOME) {
+                                    popUpTo(NavigationRoutes.HOME) { inclusive = true }
+                                }
+                            },
+                            onNavigateToExerciseHistory = { exerciseId ->
+                                navController.navigate(
+                                    NavigationRoutes.exerciseHistoryRoute(exerciseId),
+                                )
+                            },
                         )
                     }
                 }

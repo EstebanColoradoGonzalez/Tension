@@ -61,4 +61,20 @@ interface PlanAssignmentDao {
 
     @Query("DELETE FROM plan_assignment WHERE module_version_id = :moduleVersionId AND exercise_id = :exerciseId")
     suspend fun delete(moduleVersionId: Long, exerciseId: Long)
+
+    @Query("SELECT COUNT(*) FROM plan_assignment WHERE module_version_id = :moduleVersionId")
+    suspend fun countExercisesForModuleVersion(moduleVersionId: Long): Int
+
+    @Query(
+        """
+        SELECT COUNT(DISTINCT pa.exercise_id)
+        FROM plan_assignment pa
+        LEFT JOIN exercise_progression ep ON pa.exercise_id = ep.exercise_id
+        LEFT JOIN session_exercise se ON pa.exercise_id = se.exercise_id
+            AND se.session_id = :sessionId
+        WHERE pa.module_version_id = :moduleVersionId
+        AND (ep.status = 'IN_PLATEAU' OR se.progression_classification = 'REGRESSION')
+        """,
+    )
+    suspend fun countAffectedForDeload(moduleVersionId: Long, sessionId: Long): Int
 }

@@ -2,6 +2,7 @@ package com.estebancoloradogonzalez.tension.di
 
 import android.content.Context
 import androidx.room.Room
+import com.estebancoloradogonzalez.tension.data.local.dao.AlertDao
 import com.estebancoloradogonzalez.tension.data.local.dao.EquipmentTypeDao
 import com.estebancoloradogonzalez.tension.data.local.dao.ExerciseDao
 import com.estebancoloradogonzalez.tension.data.local.dao.ExerciseProgressionDao
@@ -106,5 +107,10 @@ object DatabaseModule {
     @Provides
     fun provideExerciseSetDao(database: TensionDatabase): ExerciseSetDao {
         return database.exerciseSetDao()
+    }
+
+    @Provides
+    fun provideAlertDao(database: TensionDatabase): AlertDao {
+        return database.alertDao()
     }
 }

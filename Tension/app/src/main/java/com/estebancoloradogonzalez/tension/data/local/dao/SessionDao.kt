@@ -50,4 +50,10 @@ interface SessionDao {
 
     @Query("UPDATE session SET status = :status WHERE id = :sessionId")
     suspend fun updateStatus(sessionId: Long, status: String)
+
+    @Query("SELECT module_version_id FROM session WHERE id = :sessionId")
+    suspend fun getModuleVersionIdBySessionId(sessionId: Long): Long
+
+    @Query("SELECT deload_id FROM session WHERE id = :sessionId")
+    suspend fun getDeloadIdBySessionId(sessionId: Long): Long?
 }

@@ -1,6 +1,7 @@
 package com.estebancoloradogonzalez.tension.data.repository
 
 import androidx.room.withTransaction
+import com.estebancoloradogonzalez.tension.data.local.dao.AlertDao
 import com.estebancoloradogonzalez.tension.data.local.dao.ExerciseProgressionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.ExerciseSetDao
 import com.estebancoloradogonzalez.tension.data.local.dao.ModuleVersionDao
@@ -9,6 +10,7 @@ import com.estebancoloradogonzalez.tension.data.local.dao.RotationStateDao
 import com.estebancoloradogonzalez.tension.data.local.dao.SessionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.SessionExerciseDao
 import com.estebancoloradogonzalez.tension.data.local.database.TensionDatabase
+import com.estebancoloradogonzalez.tension.data.local.entity.AlertEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.ExerciseProgressionEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.ExerciseSetEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.SessionEntity
@@ -16,6 +18,7 @@ import com.estebancoloradogonzalez.tension.data.local.entity.SessionExerciseEnti
 import com.estebancoloradogonzalez.tension.domain.model.ActiveSession
 import com.estebancoloradogonzalez.tension.domain.model.ExerciseSessionData
 import com.estebancoloradogonzalez.tension.domain.model.ExerciseSessionStatus
+import com.estebancoloradogonzalez.tension.domain.model.ProgressionClassification
 import com.estebancoloradogonzalez.tension.domain.model.RegisterSetInfo
 import com.estebancoloradogonzalez.tension.domain.model.RotationResolver
 import com.estebancoloradogonzalez.tension.domain.model.RotationState
@@ -23,7 +26,9 @@ import com.estebancoloradogonzalez.tension.domain.model.SessionExerciseDetail
 import com.estebancoloradogonzalez.tension.domain.model.SetData
 import com.estebancoloradogonzalez.tension.domain.model.SubstituteExerciseInfo
 import com.estebancoloradogonzalez.tension.domain.repository.SessionRepository
+import com.estebancoloradogonzalez.tension.domain.rules.DeloadNeedRule
 import com.estebancoloradogonzalez.tension.domain.rules.DoubleThresholdRule
+import com.estebancoloradogonzalez.tension.domain.rules.ModuleFatigueRule
 import com.estebancoloradogonzalez.tension.domain.rules.ProgressionClassificationRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -42,6 +47,7 @@ class SessionRepositoryImpl @Inject constructor(
     private val moduleVersionDao: ModuleVersionDao,
     private val exerciseSetDao: ExerciseSetDao,
     private val exerciseProgressionDao: ExerciseProgressionDao,
+    private val alertDao: AlertDao,
     private val database: TensionDatabase,
 ) : SessionRepository {
 
@@ -284,8 +290,14 @@ class SessionRepositoryImpl @Inject constructor(
             }
             sessionDao.updateStatus(sessionId, status)
 
-            // Step 2: Evaluate progression (HU-10)
-            evaluateProgression(sessionId)
+            // Step 2: Evaluate progression (HU-10, HU-11, HU-12)
+            val moduleVersionId = sessionDao.getModuleVersionIdBySessionId(sessionId)
+            val deloadId = sessionDao.getDeloadIdBySessionId(sessionId)
+            evaluateProgression(
+                sessionId = sessionId,
+                moduleVersionId = moduleVersionId,
+                isDeloadSession = deloadId != null,
+            )
 
             // Step 3: Advance rotation (HU-09)
             val rotationEntity = rotationStateDao.getRotationState().first()
@@ -310,8 +322,17 @@ class SessionRepositoryImpl @Inject constructor(
         }
     }
 
-    private suspend fun evaluateProgression(sessionId: Long) {
+    private suspend fun evaluateProgression(
+        sessionId: Long,
+        moduleVersionId: Long,
+        isDeloadSession: Boolean,
+    ) {
         val exercises = sessionExerciseDao.getSessionExercisesForProgression(sessionId)
+        val today = LocalDate.now().toString()
+
+        // HU-12: Accumulators for module-level analysis
+        var regressionCount = 0
+        var exercisesWithRecords = 0
 
         for (exercise in exercises) {
             val currentSetDtos = exerciseSetDao.getSetsForSessionExercise(
@@ -379,6 +400,33 @@ class SessionRepositoryImpl @Inject constructor(
                 )
             }
 
+            // Step 5c: Collect classification for module-level analysis (HU-12)
+            if (classification != null) {
+                exercisesWithRecords++
+                if (classification == ProgressionClassification.REGRESSION) {
+                    regressionCount++
+                }
+            }
+
+            // Step 5d: Plateau alert management (HU-12)
+            val previousStatus = currentProgression.status
+            if (previousStatus != "IN_PLATEAU" && newStatus == "IN_PLATEAU") {
+                if (!alertDao.existsActiveByExercise(exercise.exerciseId, "PLATEAU")) {
+                    alertDao.insert(
+                        AlertEntity(
+                            type = "PLATEAU",
+                            level = "HIGH_ALERT",
+                            exerciseId = exercise.exerciseId,
+                            message = "3 sesiones sin progresión",
+                            isActive = 1,
+                            createdAt = today,
+                        ),
+                    )
+                }
+            } else if (previousStatus == "IN_PLATEAU" && newStatus != "IN_PLATEAU") {
+                alertDao.resolveByExerciseAndType(exercise.exerciseId, "PLATEAU", today)
+            }
+
             exerciseProgressionDao.update(
                 currentProgression.copy(
                     status = newStatus,
@@ -386,6 +434,48 @@ class SessionRepositoryImpl @Inject constructor(
                     prescribedLoadKg = prescribedLoadKg,
                 ),
             )
+        }
+
+        // Step 6: Module-level detection (HU-12, post-loop)
+        // DELOAD GUARD: Skip module-level detection during deload sessions
+        if (isDeloadSession) return
+
+        val moduleCode = exercises.firstOrNull()?.moduleCode ?: return
+
+        // CA-12.04, CA-12.05: Module fatigue detection
+        val fatigueDetected = ModuleFatigueRule.detectFatigue(
+            regressionCount,
+            exercisesWithRecords,
+        )
+
+        // CA-12.20, CA-12.21, CA-12.22: Deload need detection
+        val totalExercises = planAssignmentDao.countExercisesForModuleVersion(moduleVersionId)
+        val affectedCount = planAssignmentDao.countAffectedForDeload(
+            moduleVersionId,
+            sessionId,
+        )
+        val deloadNeeded = DeloadNeedRule.needsDeload(
+            affectedCount,
+            totalExercises,
+            fatigueDetected,
+        )
+
+        if (deloadNeeded) {
+            // CA-12.20, CA-12.21, CA-12.23, CA-12.24
+            if (!alertDao.existsActiveByModule(moduleCode, "MODULE_REQUIRES_DELOAD")) {
+                alertDao.insert(
+                    AlertEntity(
+                        type = "MODULE_REQUIRES_DELOAD",
+                        level = "HIGH_ALERT",
+                        moduleCode = moduleCode,
+                        message = "≥50% ejercicios en meseta/regresión",
+                        isActive = 1,
+                        createdAt = today,
+                    ),
+                )
+            }
+        } else {
+            alertDao.resolveByModuleAndType(moduleCode, "MODULE_REQUIRES_DELOAD", today)
         }
     }
 }

@@ -77,6 +77,10 @@ fun BottomNavigationBar(
             labelResId = R.string.nav_metrics,
             selectedIcon = Icons.Filled.BarChart,
             unselectedIcon = Icons.Outlined.BarChart,
+            childRoutes = setOf(
+                NavigationRoutes.MUSCLE_VOLUME,
+                NavigationRoutes.PROGRESSION_TREND,
+            ),
         ),
         BottomNavItem(
             route = NavigationRoutes.SETTINGS,

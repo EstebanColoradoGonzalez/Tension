@@ -1,10 +1,12 @@
 package com.estebancoloradogonzalez.tension.di
 
 import com.estebancoloradogonzalez.tension.data.repository.ExerciseRepositoryImpl
+import com.estebancoloradogonzalez.tension.data.repository.MetricsRepositoryImpl
 import com.estebancoloradogonzalez.tension.data.repository.PlanRepositoryImpl
 import com.estebancoloradogonzalez.tension.data.repository.ProfileRepositoryImpl
 import com.estebancoloradogonzalez.tension.data.repository.SessionRepositoryImpl
 import com.estebancoloradogonzalez.tension.domain.repository.ExerciseRepository
+import com.estebancoloradogonzalez.tension.domain.repository.MetricsRepository
 import com.estebancoloradogonzalez.tension.domain.repository.PlanRepository
 import com.estebancoloradogonzalez.tension.domain.repository.ProfileRepository
 import com.estebancoloradogonzalez.tension.domain.repository.SessionRepository
@@ -41,4 +43,10 @@ abstract class RepositoryModule {
     abstract fun bindSessionRepository(
         impl: SessionRepositoryImpl,
     ): SessionRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindMetricsRepository(
+        impl: MetricsRepositoryImpl,
+    ): MetricsRepository
 }

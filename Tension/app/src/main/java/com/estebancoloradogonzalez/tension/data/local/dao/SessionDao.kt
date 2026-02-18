@@ -113,4 +113,37 @@ interface SessionDao {
         """,
     )
     suspend fun getSessionSummaryInfo(sessionId: Long): SessionSummaryInfo
+
+    @Query(
+        """
+        SELECT id, module_version_id, deload_id, date, status
+        FROM session
+        WHERE status IN ('COMPLETED', 'INCOMPLETE')
+        ORDER BY date ASC, id ASC
+        """,
+    )
+    suspend fun getClosedSessionsOrdered(): List<SessionEntity>
+
+    @Query(
+        """
+        SELECT COUNT(*) FROM session
+        WHERE status IN ('COMPLETED', 'INCOMPLETE')
+          AND date >= :weekStartDate
+          AND date <= :weekEndDate
+        """,
+    )
+    suspend fun countSessionsInWeek(weekStartDate: String, weekEndDate: String): Int
+
+    @Query(
+        """
+        SELECT s.id FROM session s
+        INNER JOIN module_version mv ON s.module_version_id = mv.id
+        WHERE mv.module_code = :moduleCode
+          AND s.status IN ('COMPLETED', 'INCOMPLETE')
+          AND s.deload_id IS NULL
+        ORDER BY s.date DESC, s.id DESC
+        LIMIT :limit
+        """,
+    )
+    suspend fun getSessionIdsByModuleInRange(moduleCode: String, limit: Int): List<Long>
 }

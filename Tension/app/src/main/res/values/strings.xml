@@ -216,4 +216,46 @@
 
     <!-- Active Session Deload Badge -->
     <string name="session_deload_badge">Descarga \u00B7 Sesión %1$s</string>
+
+    <!-- Metrics G1 -->
+    <string name="metrics_title">Métricas</string>
+    <string name="metrics_adherence_title">Adherencia semanal</string>
+    <string name="metrics_adherence_detail">%1$d de %2$d sesiones esta semana</string>
+    <string name="metrics_rir_title">RIR promedio por módulo</string>
+    <string name="metrics_rir_2_sessions">2 últimas sesiones</string>
+    <string name="metrics_rir_4_sessions">4 últimas sesiones</string>
+    <string name="metrics_rir_6_sessions">6 últimas sesiones</string>
+    <string name="metrics_rir_reference">2\u20133 = óptimo · &lt; 1.5 = riesgo · > 3.5 =
+        insuficiente</string>
+    <string name="metrics_rir_optimal">Óptimo</string>
+    <string name="metrics_rir_risk">Riesgo</string>
+    <string name="metrics_rir_insufficient">Insuficiente</string>
+    <string name="metrics_progression_title">Tasa de progresión</string>
+    <string name="metrics_period_4_weeks">4 semanas</string>
+    <string name="metrics_period_8_weeks">8 semanas</string>
+    <string name="metrics_period_12_weeks">12 semanas</string>
+    <string name="metrics_load_velocity_title">Velocidad de carga</string>
+    <string name="metrics_load_velocity_na">N/A</string>
+    <string name="metrics_no_data">Sin datos</string>
+    <string name="metrics_link_volume">Volumen por Grupo Muscular \u2192</string>
+    <string name="metrics_link_trend">Tendencia de Progresión \u2192</string>
+
+    <!-- Volume G2 -->
+    <string name="volume_title">Volumen por Grupo Muscular</string>
+    <string name="volume_microcycle_label">Microciclo %1$d</string>
+    <string name="volume_tonnage_format">%1$,.0f Kg</string>
+    <string name="volume_distribution_title">Distribución de volumen</string>
+    <string name="volume_module_header">Módulo %1$s</string>
+    <string name="volume_evolution_title">Evolución temporal</string>
+    <string name="volume_insufficient">Se necesitan al menos 2 microciclos para mostrar evolución
+        comparativa.</string>
+
+    <!-- Trend G3 -->
+    <string name="trend_title">Tendencia de Progresión</string>
+    <string name="trend_evaluation_period">Evaluación: últimos 4\u20136 microciclos</string>
+    <string name="trend_ascending">Ascendente</string>
+    <string name="trend_stable">Estable</string>
+    <string name="trend_declining">En declive</string>
+    <string name="trend_insufficient">Se necesitan al menos 4 microciclos completados. Faltan %1$d
+        microciclos.</string>
 </resources>

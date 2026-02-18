@@ -14,6 +14,8 @@ object NavigationRoutes {
     const val EXERCISE_HISTORY = "exercise-history/{exerciseId}"
     const val SESSION_HISTORY = "session-history"
     const val METRICS = "metrics"
+    const val MUSCLE_VOLUME = "muscle-volume"
+    const val PROGRESSION_TREND = "progression-trend"
     const val ACTIVE_SESSION = "active-session/{sessionId}"
     const val REGISTER_SET = "register-set/{sessionExerciseId}"
     const val SUBSTITUTE_EXERCISE = "substitute-exercise/{sessionExerciseId}"

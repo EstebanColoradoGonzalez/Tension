@@ -4,6 +4,9 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
 import com.estebancoloradogonzalez.tension.data.local.entity.SessionExerciseEntity
+import com.estebancoloradogonzalez.tension.domain.model.ClassificationCount
+import com.estebancoloradogonzalez.tension.domain.model.ClassificationCountByGroup
+import com.estebancoloradogonzalez.tension.domain.model.ExerciseSessionRange
 import kotlinx.coroutines.flow.Flow
 
 data class SessionExerciseWithDetails(
@@ -225,4 +228,65 @@ interface SessionExerciseDao {
         """,
     )
     suspend fun getExercisesForSummary(sessionId: Long): List<ExerciseSummaryDto>
+
+    @Query(
+        """
+        SELECT
+            se.exercise_id AS exerciseId,
+            e.name AS exerciseName,
+            e.is_bodyweight AS isBodyweight,
+            SUM(CASE WHEN se.progression_classification = 'POSITIVE_PROGRESSION' THEN 1 ELSE 0 END) AS positiveCount,
+            COUNT(se.progression_classification) AS totalCount
+        FROM session_exercise se
+        INNER JOIN session s ON se.session_id = s.id
+        INNER JOIN exercise e ON se.exercise_id = e.id
+        WHERE s.status IN ('COMPLETED', 'INCOMPLETE')
+          AND s.deload_id IS NULL
+          AND s.date >= :startDate
+          AND se.progression_classification IS NOT NULL
+        GROUP BY se.exercise_id
+        """,
+    )
+    suspend fun getClassificationCountsByPeriod(startDate: String): List<ClassificationCount>
+
+    @Query(
+        """
+        SELECT
+            se.exercise_id AS exerciseId,
+            e.name AS exerciseName,
+            e.is_bodyweight AS isBodyweight,
+            e.is_isometric AS isIsometric,
+            MIN(se.session_id) AS firstSessionId,
+            MAX(se.session_id) AS lastSessionId,
+            COUNT(DISTINCT se.session_id) AS sessionCount
+        FROM session_exercise se
+        INNER JOIN session s ON se.session_id = s.id
+        INNER JOIN exercise e ON se.exercise_id = e.id
+        WHERE s.status IN ('COMPLETED', 'INCOMPLETE')
+          AND s.deload_id IS NULL
+          AND s.date >= :startDate
+        GROUP BY se.exercise_id
+        """,
+    )
+    suspend fun getExerciseSessionRangeByPeriod(startDate: String): List<ExerciseSessionRange>
+
+    @Query(
+        """
+        SELECT
+            mz.muscle_group AS muscleGroup,
+            SUM(CASE WHEN se.progression_classification = 'POSITIVE_PROGRESSION' THEN 1 ELSE 0 END) AS positiveCount,
+            COUNT(se.progression_classification) AS totalCount
+        FROM session_exercise se
+        INNER JOIN session s ON se.session_id = s.id
+        INNER JOIN exercise_muscle_zone emz ON se.exercise_id = emz.exercise_id
+        INNER JOIN muscle_zone mz ON emz.muscle_zone_id = mz.id
+        WHERE se.session_id IN (:sessionIds)
+          AND s.deload_id IS NULL
+          AND se.progression_classification IS NOT NULL
+        GROUP BY mz.muscle_group
+        """,
+    )
+    suspend fun getClassificationCountsBySessionIds(
+        sessionIds: List<Long>,
+    ): List<ClassificationCountByGroup>
 }

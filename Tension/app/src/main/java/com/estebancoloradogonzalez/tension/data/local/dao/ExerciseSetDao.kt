@@ -4,6 +4,8 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
 import com.estebancoloradogonzalez.tension.data.local.entity.ExerciseSetEntity
+import com.estebancoloradogonzalez.tension.domain.model.SetDistributionData
+import com.estebancoloradogonzalez.tension.domain.model.SetTonnageData
 
 @Dao
 interface ExerciseSetDao {
@@ -80,6 +82,53 @@ interface ExerciseSetDao {
         """,
     )
     suspend fun getLastHistoricalSets(exerciseId: Long, currentSessionId: Long): List<ExerciseSetData>
+
+    @Query(
+        """
+        SELECT es.weight_kg AS weightKg, es.reps, mz.muscle_group AS muscleGroup
+        FROM exercise_set es
+        INNER JOIN session_exercise se ON es.session_exercise_id = se.id
+        INNER JOIN exercise_muscle_zone emz ON se.exercise_id = emz.exercise_id
+        INNER JOIN muscle_zone mz ON emz.muscle_zone_id = mz.id
+        WHERE se.session_id IN (:sessionIds)
+        """,
+    )
+    suspend fun getTonnageDataBySessionIds(sessionIds: List<Long>): List<SetTonnageData>
+
+    @Query(
+        """
+        SELECT es.rir FROM exercise_set es
+        INNER JOIN session_exercise se ON es.session_exercise_id = se.id
+        WHERE se.session_id IN (:sessionIds)
+        """,
+    )
+    suspend fun getRirValuesBySessionIds(sessionIds: List<Long>): List<Int>
+
+    @Query(
+        """
+        SELECT AVG(es.weight_kg)
+        FROM exercise_set es
+        INNER JOIN session_exercise se ON es.session_exercise_id = se.id
+        WHERE se.exercise_id = :exerciseId
+          AND se.session_id = :sessionId
+        """,
+    )
+    suspend fun getAvgWeightByExerciseInSession(exerciseId: Long, sessionId: Long): Double?
+
+    @Query(
+        """
+        SELECT mz.name AS muscleZoneName, mv.module_code AS moduleCode, COUNT(*) AS setCount
+        FROM exercise_set es
+        INNER JOIN session_exercise se ON es.session_exercise_id = se.id
+        INNER JOIN session s ON se.session_id = s.id
+        INNER JOIN module_version mv ON s.module_version_id = mv.id
+        INNER JOIN exercise_muscle_zone emz ON se.exercise_id = emz.exercise_id
+        INNER JOIN muscle_zone mz ON emz.muscle_zone_id = mz.id
+        WHERE se.session_id IN (:sessionIds)
+        GROUP BY mz.name, mv.module_code
+        """,
+    )
+    suspend fun getSetDistributionBySessionIds(sessionIds: List<Long>): List<SetDistributionData>
 }
 
 data class ExerciseSetData(

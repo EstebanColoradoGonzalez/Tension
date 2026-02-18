@@ -36,6 +36,9 @@ import com.estebancoloradogonzalez.tension.ui.components.BottomNavigationBar
 import com.estebancoloradogonzalez.tension.ui.deload.DeloadManagementScreen
 import com.estebancoloradogonzalez.tension.ui.history.ExerciseHistoryScreen
 import com.estebancoloradogonzalez.tension.ui.home.HomeScreen
+import com.estebancoloradogonzalez.tension.ui.metrics.MetricsScreen
+import com.estebancoloradogonzalez.tension.ui.metrics.TrendScreen
+import com.estebancoloradogonzalez.tension.ui.metrics.VolumeScreen
 import com.estebancoloradogonzalez.tension.ui.onboarding.RegisterProfileScreen
 import com.estebancoloradogonzalez.tension.ui.profile.ProfileScreen
 import com.estebancoloradogonzalez.tension.ui.profile.WeightHistoryScreen
@@ -242,7 +245,31 @@ fun TensionNavHost(
                     }
 
                     composable(NavigationRoutes.METRICS) {
-                        PlaceholderScreen(stringResource(R.string.nav_metrics))
+                        MetricsScreen(
+                            onNavigateToVolume = {
+                                navController.navigate(NavigationRoutes.MUSCLE_VOLUME)
+                            },
+                            onNavigateToTrend = {
+                                navController.navigate(NavigationRoutes.PROGRESSION_TREND)
+                            },
+                            onNavigateToExerciseHistory = { exerciseId ->
+                                navController.navigate(
+                                    NavigationRoutes.exerciseHistoryRoute(exerciseId),
+                                )
+                            },
+                        )
+                    }
+
+                    composable(NavigationRoutes.MUSCLE_VOLUME) {
+                        VolumeScreen(
+                            onNavigateBack = { navController.popBackStack() },
+                        )
+                    }
+
+                    composable(NavigationRoutes.PROGRESSION_TREND) {
+                        TrendScreen(
+                            onNavigateBack = { navController.popBackStack() },
+                        )
                     }
 
                     composable(

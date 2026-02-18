@@ -5,9 +5,9 @@ import com.estebancoloradogonzalez.tension.domain.model.RotationResolver
 import com.estebancoloradogonzalez.tension.domain.repository.SessionRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
 class GetNextSessionInfoUseCase @Inject constructor(
@@ -23,13 +23,25 @@ class GetNextSessionInfoUseCase @Inject constructor(
                 val moduleCode = RotationResolver.resolveModuleCode(
                     rotationState.microcyclePosition,
                 )
-                val versionNumber = RotationResolver.resolveVersionNumber(
-                    moduleCode,
-                    rotationState.currentVersionModuleA,
-                    rotationState.currentVersionModuleB,
-                    rotationState.currentVersionModuleC,
-                )
-                sessionRepository.getNextModuleVersionId().map { moduleVersionId ->
+                combine(
+                    sessionRepository.getNextModuleVersionId(),
+                    sessionRepository.getActiveDeload(),
+                ) { moduleVersionId, deload ->
+                    val versionNumber = if (deload != null) {
+                        RotationResolver.resolveVersionNumber(
+                            moduleCode,
+                            deload.frozenVersionModuleA,
+                            deload.frozenVersionModuleB,
+                            deload.frozenVersionModuleC,
+                        )
+                    } else {
+                        RotationResolver.resolveVersionNumber(
+                            moduleCode,
+                            rotationState.currentVersionModuleA,
+                            rotationState.currentVersionModuleB,
+                            rotationState.currentVersionModuleC,
+                        )
+                    }
                     NextSession(
                         moduleCode = moduleCode,
                         versionNumber = versionNumber,

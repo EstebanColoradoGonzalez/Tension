@@ -15,4 +15,7 @@ interface ModuleDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(modules: List<ModuleEntity>)
+
+    @Query("SELECT * FROM module WHERE code = :code")
+    suspend fun getByCode(code: String): ModuleEntity?
 }

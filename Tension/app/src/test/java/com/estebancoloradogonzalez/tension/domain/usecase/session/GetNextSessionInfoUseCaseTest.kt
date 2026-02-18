@@ -1,5 +1,6 @@
 package com.estebancoloradogonzalez.tension.domain.usecase.session
 
+import com.estebancoloradogonzalez.tension.domain.model.Deload
 import com.estebancoloradogonzalez.tension.domain.model.NextSession
 import com.estebancoloradogonzalez.tension.domain.model.RotationResolver
 import com.estebancoloradogonzalez.tension.domain.model.RotationState
@@ -29,6 +30,7 @@ class GetNextSessionInfoUseCaseTest {
         )
         every { repository.getRotationState() } returns flowOf(rotationState)
         every { repository.getNextModuleVersionId() } returns flowOf(1L)
+        every { repository.getActiveDeload() } returns flowOf(null)
 
         val result = useCase().first()
 
@@ -46,6 +48,7 @@ class GetNextSessionInfoUseCaseTest {
         )
         every { repository.getRotationState() } returns flowOf(rotationState)
         every { repository.getNextModuleVersionId() } returns flowOf(5L)
+        every { repository.getActiveDeload() } returns flowOf(null)
 
         val result = useCase().first()
 
@@ -63,6 +66,7 @@ class GetNextSessionInfoUseCaseTest {
         )
         every { repository.getRotationState() } returns flowOf(rotationState)
         every { repository.getNextModuleVersionId() } returns flowOf(9L)
+        every { repository.getActiveDeload() } returns flowOf(null)
 
         val result = useCase().first()
 
@@ -80,6 +84,7 @@ class GetNextSessionInfoUseCaseTest {
         )
         every { repository.getRotationState() } returns flowOf(rotationState)
         every { repository.getNextModuleVersionId() } returns flowOf(2L)
+        every { repository.getActiveDeload() } returns flowOf(null)
 
         val result = useCase().first()
 
@@ -97,6 +102,7 @@ class GetNextSessionInfoUseCaseTest {
         )
         every { repository.getRotationState() } returns flowOf(rotationState)
         every { repository.getNextModuleVersionId() } returns flowOf(6L)
+        every { repository.getActiveDeload() } returns flowOf(null)
 
         val result = useCase().first()
 
@@ -114,10 +120,39 @@ class GetNextSessionInfoUseCaseTest {
         )
         every { repository.getRotationState() } returns flowOf(rotationState)
         every { repository.getNextModuleVersionId() } returns flowOf(8L)
+        every { repository.getActiveDeload() } returns flowOf(null)
 
         val result = useCase().first()
 
         assertEquals(NextSession("C", 2, 8L), result)
+    }
+
+    @Test
+    fun `invoke with active deload uses frozen versions`() = runTest {
+        val rotationState = RotationState(
+            microcyclePosition = 1,
+            currentVersionModuleA = 3,
+            currentVersionModuleB = 3,
+            currentVersionModuleC = 3,
+            microcycleCount = 5,
+        )
+        val deload = Deload(
+            id = 1L,
+            status = "ACTIVE",
+            activationDate = "2026-02-01",
+            completionDate = null,
+            frozenVersionModuleA = 1,
+            frozenVersionModuleB = 2,
+            frozenVersionModuleC = 3,
+        )
+        every { repository.getRotationState() } returns flowOf(rotationState)
+        every { repository.getNextModuleVersionId() } returns flowOf(10L)
+        every { repository.getActiveDeload() } returns flowOf(deload)
+
+        val result = useCase().first()
+
+        // Module A, frozen version 1
+        assertEquals(NextSession("A", 1, 10L), result)
     }
 
     @Test

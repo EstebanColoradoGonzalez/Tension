@@ -2,8 +2,11 @@ package com.estebancoloradogonzalez.tension.data.repository
 
 import androidx.room.withTransaction
 import com.estebancoloradogonzalez.tension.data.local.dao.AlertDao
+import com.estebancoloradogonzalez.tension.data.local.dao.DeloadDao
+import com.estebancoloradogonzalez.tension.data.local.dao.ExerciseDao
 import com.estebancoloradogonzalez.tension.data.local.dao.ExerciseProgressionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.ExerciseSetDao
+import com.estebancoloradogonzalez.tension.data.local.dao.ModuleDao
 import com.estebancoloradogonzalez.tension.data.local.dao.ModuleVersionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.PlanAssignmentDao
 import com.estebancoloradogonzalez.tension.data.local.dao.RotationStateDao
@@ -12,11 +15,15 @@ import com.estebancoloradogonzalez.tension.data.local.dao.SessionExerciseDao
 import com.estebancoloradogonzalez.tension.data.local.database.TensionDatabase
 import com.estebancoloradogonzalez.tension.data.repository.model.SessionSummaryData
 import com.estebancoloradogonzalez.tension.data.local.entity.AlertEntity
+import com.estebancoloradogonzalez.tension.data.local.entity.DeloadEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.ExerciseProgressionEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.ExerciseSetEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.SessionEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.SessionExerciseEntity
 import com.estebancoloradogonzalez.tension.domain.model.ActiveSession
+import com.estebancoloradogonzalez.tension.domain.model.Deload
+import com.estebancoloradogonzalez.tension.domain.model.DeloadState
+import com.estebancoloradogonzalez.tension.domain.model.ExerciseResetLoad
 import com.estebancoloradogonzalez.tension.domain.model.ExerciseSessionData
 import com.estebancoloradogonzalez.tension.domain.model.ExerciseSessionStatus
 import com.estebancoloradogonzalez.tension.domain.model.ProgressionClassification
@@ -27,6 +34,7 @@ import com.estebancoloradogonzalez.tension.domain.model.SessionExerciseDetail
 import com.estebancoloradogonzalez.tension.domain.model.SetData
 import com.estebancoloradogonzalez.tension.domain.model.SubstituteExerciseInfo
 import com.estebancoloradogonzalez.tension.domain.repository.SessionRepository
+import com.estebancoloradogonzalez.tension.domain.rules.DeloadLoadRule
 import com.estebancoloradogonzalez.tension.domain.rules.DeloadNeedRule
 import com.estebancoloradogonzalez.tension.domain.rules.DoubleThresholdRule
 import com.estebancoloradogonzalez.tension.domain.rules.ModuleFatigueRule
@@ -50,6 +58,9 @@ class SessionRepositoryImpl @Inject constructor(
     private val exerciseProgressionDao: ExerciseProgressionDao,
     private val alertDao: AlertDao,
     private val database: TensionDatabase,
+    private val deloadDao: DeloadDao,
+    private val exerciseDao: ExerciseDao,
+    private val moduleDao: ModuleDao,
 ) : SessionRepository {
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -61,14 +72,25 @@ class SessionRepositoryImpl @Inject constructor(
                 val moduleCode = RotationResolver.resolveModuleCode(
                     rotationState.microcyclePosition,
                 )
-                val versionNumber = RotationResolver.resolveVersionNumber(
-                    moduleCode,
-                    rotationState.currentVersionModuleA,
-                    rotationState.currentVersionModuleB,
-                    rotationState.currentVersionModuleC,
-                )
-                moduleVersionDao.getByModuleCodeAndVersion(moduleCode, versionNumber)
-                    .map { it?.id ?: 0L }
+                deloadDao.getActiveDeload().flatMapLatest { deload ->
+                    val versionNumber = if (deload != null) {
+                        RotationResolver.resolveVersionNumber(
+                            moduleCode,
+                            deload.frozenVersionModuleA,
+                            deload.frozenVersionModuleB,
+                            deload.frozenVersionModuleC,
+                        )
+                    } else {
+                        RotationResolver.resolveVersionNumber(
+                            moduleCode,
+                            rotationState.currentVersionModuleA,
+                            rotationState.currentVersionModuleB,
+                            rotationState.currentVersionModuleC,
+                        )
+                    }
+                    moduleVersionDao.getByModuleCodeAndVersion(moduleCode, versionNumber)
+                        .map { it?.id ?: 0L }
+                }
             }
         }
     }
@@ -80,12 +102,14 @@ class SessionRepositoryImpl @Inject constructor(
                 throw IllegalStateException("A session is already in progress")
             }
 
+            val activeDeload = deloadDao.getActiveDeloadOnce()
+
             val sessionId = sessionDao.insert(
                 SessionEntity(
                     moduleVersionId = moduleVersionId,
                     date = LocalDate.now().toString(),
                     status = "IN_PROGRESS",
-                    deloadId = null,
+                    deloadId = activeDeload?.id,
                 ),
             )
 
@@ -148,6 +172,7 @@ class SessionRepositoryImpl @Inject constructor(
                     prescribedLoadKg = detail.prescribedLoadKg,
                     completedSets = detail.completedSets,
                     status = status,
+                    loadIncrementKg = detail.loadIncrementKg,
                 )
             }
         }
@@ -310,7 +335,8 @@ class SessionRepositoryImpl @Inject constructor(
                 currentVersionModuleC = rotationEntity.currentVersionModuleC,
                 microcycleCount = rotationEntity.microcycleCount,
             )
-            val newRotation = RotationResolver.advanceRotation(currentRotation)
+            val isDeloadSession = deloadId != null
+            val newRotation = RotationResolver.advanceRotation(currentRotation, isDeloadSession)
             rotationStateDao.update(
                 rotationEntity.copy(
                     microcyclePosition = newRotation.microcyclePosition,
@@ -320,6 +346,63 @@ class SessionRepositoryImpl @Inject constructor(
                     microcycleCount = newRotation.microcycleCount,
                 ),
             )
+
+            // Step 4: Deload finalization (HU-14)
+            if (isDeloadSession && deloadId != null) {
+                val deloadSessionCount = sessionDao.countDeloadSessions(deloadId)
+                if (deloadSessionCount == 6) {
+                    val today = LocalDate.now().toString()
+                    val deload = deloadDao.getById(deloadId)
+                        ?: throw IllegalStateException("Deload $deloadId not found")
+
+                    deloadDao.complete(deloadId, today)
+
+                    val allInDeload = exerciseProgressionDao.getAllInDeload()
+                    for (progression in allInDeload) {
+                        val exercise = exerciseDao.getByIdOnce(progression.exerciseId)
+                            ?: continue
+                        val isBodyweight = exercise.isBodyweight == 1
+                        val isIsometric = exercise.isIsometric == 1
+
+                        if (isBodyweight || isIsometric) {
+                            exerciseProgressionDao.update(
+                                progression.copy(
+                                    status = "IN_PROGRESSION",
+                                    sessionsWithoutProgression = 0,
+                                ),
+                            )
+                        } else {
+                            val preDeloadWeight = exerciseSetDao.getPreDeloadAvgWeight(
+                                progression.exerciseId,
+                                deload.activationDate,
+                            )
+                            val module = moduleDao.getByCode(exercise.moduleCode)
+                            val loadIncrementKg = module?.loadIncrementKg ?: 2.5
+
+                            val resetLoad = if (
+                                preDeloadWeight != null && preDeloadWeight > 0.0
+                            ) {
+                                DeloadLoadRule.calculateResetLoad(
+                                    preDeloadWeight,
+                                    loadIncrementKg,
+                                )
+                            } else {
+                                null
+                            }
+
+                            exerciseProgressionDao.update(
+                                progression.copy(
+                                    status = "IN_PROGRESSION",
+                                    prescribedLoadKg = resetLoad,
+                                    sessionsWithoutProgression = 0,
+                                ),
+                            )
+                        }
+                    }
+
+                    alertDao.resolveAllByType("MODULE_REQUIRES_DELOAD", today)
+                }
+            }
         }
     }
 
@@ -390,7 +473,10 @@ class SessionRepositoryImpl @Inject constructor(
                 )
 
             // Step 5b: Prescribe load (HU-11)
-            val prescribedLoadKg = if (isBodyweight || isIsometric) {
+            // HU-14: During deload, preserve existing prescribed_load_kg
+            val prescribedLoadKg = if (isDeloadSession) {
+                currentProgression.prescribedLoadKg
+            } else if (isBodyweight || isIsometric) {
                 null
             } else {
                 val meetsThreshold = DoubleThresholdRule.meetsDoubleThreshold(currentData)
@@ -410,22 +496,25 @@ class SessionRepositoryImpl @Inject constructor(
             }
 
             // Step 5d: Plateau alert management (HU-12)
-            val previousStatus = currentProgression.status
-            if (previousStatus != "IN_PLATEAU" && newStatus == "IN_PLATEAU") {
-                if (!alertDao.existsActiveByExercise(exercise.exerciseId, "PLATEAU")) {
-                    alertDao.insert(
-                        AlertEntity(
-                            type = "PLATEAU",
-                            level = "HIGH_ALERT",
-                            exerciseId = exercise.exerciseId,
-                            message = "3 sesiones sin progresión",
-                            isActive = 1,
-                            createdAt = today,
-                        ),
-                    )
+            // HU-14: Skip plateau alerting during deload sessions
+            if (!isDeloadSession) {
+                val previousStatus = currentProgression.status
+                if (previousStatus != "IN_PLATEAU" && newStatus == "IN_PLATEAU") {
+                    if (!alertDao.existsActiveByExercise(exercise.exerciseId, "PLATEAU")) {
+                        alertDao.insert(
+                            AlertEntity(
+                                type = "PLATEAU",
+                                level = "HIGH_ALERT",
+                                exerciseId = exercise.exerciseId,
+                                message = "3 sesiones sin progresión",
+                                isActive = 1,
+                                createdAt = today,
+                            ),
+                        )
+                    }
+                } else if (previousStatus == "IN_PLATEAU" && newStatus != "IN_PLATEAU") {
+                    alertDao.resolveByExerciseAndType(exercise.exerciseId, "PLATEAU", today)
                 }
-            } else if (previousStatus == "IN_PLATEAU" && newStatus != "IN_PLATEAU") {
-                alertDao.resolveByExerciseAndType(exercise.exerciseId, "PLATEAU", today)
             }
 
             exerciseProgressionDao.update(
@@ -488,5 +577,87 @@ class SessionRepositoryImpl @Inject constructor(
             "MODULE_REQUIRES_DELOAD",
         )
         return SessionSummaryData(info, exercises, moduleRequiresDeload)
+    }
+
+    override fun getActiveDeload(): Flow<Deload?> = deloadDao.getActiveDeload().map { entity ->
+        entity?.let {
+            Deload(
+                id = it.id,
+                status = it.status,
+                activationDate = it.activationDate,
+                completionDate = it.completionDate,
+                frozenVersionModuleA = it.frozenVersionModuleA,
+                frozenVersionModuleB = it.frozenVersionModuleB,
+                frozenVersionModuleC = it.frozenVersionModuleC,
+            )
+        }
+    }
+
+    override suspend fun activateDeload() {
+        database.withTransaction {
+            val existingDeload = deloadDao.getActiveDeloadOnce()
+            if (existingDeload != null) {
+                throw IllegalStateException("A deload cycle is already active")
+            }
+            val rotationEntity = rotationStateDao.getRotationState().first()
+                ?: throw IllegalStateException("Rotation state not found")
+            val today = LocalDate.now().toString()
+            deloadDao.insert(
+                DeloadEntity(
+                    activationDate = today,
+                    frozenVersionModuleA = rotationEntity.currentVersionModuleA,
+                    frozenVersionModuleB = rotationEntity.currentVersionModuleB,
+                    frozenVersionModuleC = rotationEntity.currentVersionModuleC,
+                ),
+            )
+            exerciseProgressionDao.transitionToDeload()
+        }
+    }
+
+    override suspend fun getDeloadState(): DeloadState {
+        val activeDeload = deloadDao.getActiveDeloadOnce()
+        if (activeDeload != null) {
+            val progress = sessionDao.countDeloadSessions(activeDeload.id)
+            return DeloadState.DeloadActive(
+                progress = progress,
+                totalSessions = 6,
+                frozenVersionA = activeDeload.frozenVersionModuleA,
+                frozenVersionB = activeDeload.frozenVersionModuleB,
+                frozenVersionC = activeDeload.frozenVersionModuleC,
+            )
+        }
+
+        val lastCompleted = deloadDao.getLastCompletedDeload()
+        if (lastCompleted != null) {
+            val hasPostDeloadSession = sessionDao.hasSessionAfterDeload(lastCompleted.id)
+            if (!hasPostDeloadSession) {
+                val resetLoads = getResetLoadsForCompletedDeload()
+                return DeloadState.DeloadCompleted(resetLoads)
+            }
+        }
+
+        val deloadAlerts = alertDao.getActiveAlertsByType("MODULE_REQUIRES_DELOAD")
+        if (deloadAlerts.isNotEmpty()) {
+            val modules = deloadAlerts.mapNotNull { it.moduleCode }.distinct()
+            return DeloadState.DeloadRequired(modules)
+        }
+
+        return DeloadState.NoDeloadNeeded
+    }
+
+    override suspend fun getDeloadIdBySessionId(sessionId: Long): Long? =
+        sessionDao.getDeloadIdBySessionId(sessionId)
+
+    override suspend fun countDeloadSessions(deloadId: Long): Int =
+        sessionDao.countDeloadSessions(deloadId)
+
+    private suspend fun getResetLoadsForCompletedDeload(): List<ExerciseResetLoad> {
+        val progressions = exerciseProgressionDao.getAllWithPrescribedLoad()
+        return progressions.mapNotNull { progression ->
+            val exercise = exerciseDao.getByIdOnce(progression.exerciseId) ?: return@mapNotNull null
+            if (exercise.isBodyweight == 1 || exercise.isIsometric == 1) return@mapNotNull null
+            val loadKg = progression.prescribedLoadKg ?: return@mapNotNull null
+            ExerciseResetLoad(exerciseName = exercise.name, resetLoadKg = loadKg)
+        }
     }
 }

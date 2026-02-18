@@ -2,10 +2,13 @@ package com.estebancoloradogonzalez.tension.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.estebancoloradogonzalez.tension.domain.model.DeloadHomeState
+import com.estebancoloradogonzalez.tension.domain.usecase.deload.GetDeloadStateUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.session.GetActiveSessionUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.session.GetMicrocycleCountUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.session.GetNextSessionInfoUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.session.StartSessionUseCase
+import com.estebancoloradogonzalez.tension.domain.model.DeloadState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,6 +27,7 @@ class HomeViewModel @Inject constructor(
     private val getActiveSessionUseCase: GetActiveSessionUseCase,
     private val startSessionUseCase: StartSessionUseCase,
     private val getMicrocycleCountUseCase: GetMicrocycleCountUseCase,
+    private val getDeloadStateUseCase: GetDeloadStateUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -48,6 +52,25 @@ class HomeViewModel @Inject constructor(
                 )
             }.collect { newState ->
                 _uiState.value = newState
+            }
+        }
+
+        viewModelScope.launch {
+            try {
+                val deloadState = getDeloadStateUseCase()
+                val homeState = when (deloadState) {
+                    is DeloadState.DeloadActive -> DeloadHomeState.Active(
+                        progress = deloadState.progress,
+                        moduleCode = "",
+                    )
+                    is DeloadState.DeloadRequired -> DeloadHomeState.Required(
+                        moduleCode = deloadState.modules.firstOrNull() ?: "",
+                    )
+                    else -> null
+                }
+                _uiState.update { it.copy(deloadState = homeState) }
+            } catch (_: Exception) {
+                // Deload state is non-critical — silently ignore errors
             }
         }
     }

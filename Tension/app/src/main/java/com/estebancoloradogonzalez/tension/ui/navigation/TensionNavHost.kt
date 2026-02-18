@@ -33,6 +33,7 @@ import com.estebancoloradogonzalez.tension.ui.catalog.ExerciseDictionaryScreen
 import com.estebancoloradogonzalez.tension.ui.catalog.PlanVersionDetailScreen
 import com.estebancoloradogonzalez.tension.ui.catalog.TrainingPlanScreen
 import com.estebancoloradogonzalez.tension.ui.components.BottomNavigationBar
+import com.estebancoloradogonzalez.tension.ui.deload.DeloadManagementScreen
 import com.estebancoloradogonzalez.tension.ui.history.ExerciseHistoryScreen
 import com.estebancoloradogonzalez.tension.ui.home.HomeScreen
 import com.estebancoloradogonzalez.tension.ui.onboarding.RegisterProfileScreen
@@ -116,7 +117,10 @@ fun TensionNavHost(
 
                     composable(NavigationRoutes.HOME) {
                         HomeScreen(
-                            onNavigateToAlerts = { /* TODO: HU-14+ */ },
+                            onNavigateToAlerts = { /* TODO: HU-17 */ },
+                            onNavigateToDeloadManagement = {
+                                navController.navigate(NavigationRoutes.DELOAD_MANAGEMENT)
+                            },
                             onNavigateToActiveSession = { sessionId ->
                                 navController.navigate(
                                     NavigationRoutes.activeSessionRoute(sessionId),
@@ -317,6 +321,12 @@ fun TensionNavHost(
                                     NavigationRoutes.exerciseHistoryRoute(exerciseId),
                                 )
                             },
+                        )
+                    }
+
+                    composable(NavigationRoutes.DELOAD_MANAGEMENT) {
+                        DeloadManagementScreen(
+                            onNavigateBack = { navController.popBackStack() },
                         )
                     }
                 }

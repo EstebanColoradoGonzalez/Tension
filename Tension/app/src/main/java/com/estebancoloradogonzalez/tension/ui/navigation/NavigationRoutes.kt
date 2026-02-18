@@ -18,6 +18,7 @@ object NavigationRoutes {
     const val REGISTER_SET = "register-set/{sessionExerciseId}"
     const val SUBSTITUTE_EXERCISE = "substitute-exercise/{sessionExerciseId}"
     const val SESSION_SUMMARY = "session-summary/{sessionId}"
+    const val DELOAD_MANAGEMENT = "deload"
 
     fun exerciseDetailRoute(exerciseId: Long) = "exercise-detail/$exerciseId"
     fun exerciseHistoryRoute(exerciseId: Long) = "exercise-history/$exerciseId"

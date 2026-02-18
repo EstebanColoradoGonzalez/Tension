@@ -9,6 +9,8 @@ data class ActiveSessionUiState(
     val exercises: List<ExerciseUiItem> = emptyList(),
     val showCloseDialog: Boolean = false,
     val isClosing: Boolean = false,
+    val isDeloadSession: Boolean = false,
+    val deloadProgress: String = "",
 ) {
     val completedCount: Int get() = exercises.count { it.status == ExerciseSessionStatus.COMPLETED }
     val totalCount: Int get() = exercises.size
@@ -33,4 +35,5 @@ data class ExerciseUiItem(
     val status: ExerciseSessionStatus,
     val loadDisplayText: String,
     val statusDisplayText: String,
+    val loadIncrementKg: Double = 2.5,
 )

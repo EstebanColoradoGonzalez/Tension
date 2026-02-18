@@ -4,6 +4,7 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.estebancoloradogonzalez.tension.data.local.dao.AlertDao
+import com.estebancoloradogonzalez.tension.data.local.dao.DeloadDao
 import com.estebancoloradogonzalez.tension.data.local.dao.EquipmentTypeDao
 import com.estebancoloradogonzalez.tension.data.local.dao.ExerciseDao
 import com.estebancoloradogonzalez.tension.data.local.dao.ExerciseProgressionDao
@@ -18,6 +19,7 @@ import com.estebancoloradogonzalez.tension.data.local.dao.SessionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.SessionExerciseDao
 import com.estebancoloradogonzalez.tension.data.local.dao.WeightRecordDao
 import com.estebancoloradogonzalez.tension.data.local.entity.AlertEntity
+import com.estebancoloradogonzalez.tension.data.local.entity.DeloadEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.EquipmentTypeEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.ExerciseEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.ExerciseMuscleZoneEntity
@@ -50,8 +52,9 @@ import com.estebancoloradogonzalez.tension.data.local.entity.WeightRecordEntity
         ExerciseProgressionEntity::class,
         ExerciseSetEntity::class,
         AlertEntity::class,
+        DeloadEntity::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = false,
 )
 @TypeConverters(Converters::class)
@@ -70,4 +73,5 @@ abstract class TensionDatabase : RoomDatabase() {
     abstract fun exerciseProgressionDao(): ExerciseProgressionDao
     abstract fun exerciseSetDao(): ExerciseSetDao
     abstract fun alertDao(): AlertDao
+    abstract fun deloadDao(): DeloadDao
 }

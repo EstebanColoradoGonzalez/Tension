@@ -19,6 +19,7 @@ data class SessionExerciseWithDetails(
     val isToTechnicalFailure: Int,
     val prescribedLoadKg: Double?,
     val completedSets: Int,
+    val loadIncrementKg: Double,
 )
 
 data class SetExerciseInfo(
@@ -87,11 +88,13 @@ interface SessionExerciseDao {
             e.is_isometric AS isIsometric,
             e.is_to_technical_failure AS isToTechnicalFailure,
             ep.prescribed_load_kg AS prescribedLoadKg,
-            (SELECT COUNT(*) FROM exercise_set es WHERE es.session_exercise_id = se.id) AS completedSets
+            (SELECT COUNT(*) FROM exercise_set es WHERE es.session_exercise_id = se.id) AS completedSets,
+            m.load_increment_kg AS loadIncrementKg
         FROM session_exercise se
         INNER JOIN exercise e ON se.exercise_id = e.id
         INNER JOIN equipment_type et ON e.equipment_type_id = et.id
         INNER JOIN session s ON se.session_id = s.id
+        INNER JOIN module m ON e.module_code = m.code
         LEFT JOIN plan_assignment pa ON pa.module_version_id = s.module_version_id
             AND pa.exercise_id = se.exercise_id
         LEFT JOIN exercise_muscle_zone emz ON e.id = emz.exercise_id

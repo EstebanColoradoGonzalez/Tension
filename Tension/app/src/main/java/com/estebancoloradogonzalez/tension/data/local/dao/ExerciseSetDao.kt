@@ -24,12 +24,33 @@ interface ExerciseSetDao {
         SELECT es.weight_kg
         FROM exercise_set es
         INNER JOIN session_exercise se ON es.session_exercise_id = se.id
+        INNER JOIN session s ON se.session_id = s.id
         WHERE se.exercise_id = :exerciseId
+          AND s.deload_id IS NULL
         ORDER BY es.id DESC
         LIMIT 1
         """,
     )
     suspend fun getLastWeightForExercise(exerciseId: Long): Double?
+
+    @Query(
+        """
+        SELECT AVG(es.weight_kg)
+        FROM exercise_set es
+        WHERE es.session_exercise_id = (
+            SELECT se.id
+            FROM session_exercise se
+            INNER JOIN session s ON se.session_id = s.id
+            WHERE se.exercise_id = :exerciseId
+              AND s.deload_id IS NULL
+              AND s.date < :activationDate
+              AND s.status IN ('COMPLETED', 'INCOMPLETE')
+            ORDER BY s.date DESC, s.id DESC
+            LIMIT 1
+        )
+        """,
+    )
+    suspend fun getPreDeloadAvgWeight(exerciseId: Long, activationDate: String): Double?
 
     @Query(
         """

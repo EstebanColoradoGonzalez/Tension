@@ -76,6 +76,9 @@ interface ExerciseDao {
     )
     fun getById(exerciseId: Long): Flow<ExerciseWithDetails?>
 
+    @Query("SELECT * FROM exercise WHERE id = :exerciseId")
+    suspend fun getByIdOnce(exerciseId: Long): ExerciseEntity?
+
     @Query(
         """
         SELECT 

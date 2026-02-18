@@ -68,6 +68,26 @@ interface SessionDao {
 
     @Query(
         """
+        SELECT COUNT(*) FROM session
+        WHERE deload_id = :deloadId AND status IN ('COMPLETED', 'INCOMPLETE')
+        """,
+    )
+    suspend fun countDeloadSessions(deloadId: Long): Int
+
+    @Query(
+        """
+        SELECT EXISTS(
+            SELECT 1 FROM session
+            WHERE deload_id IS NULL
+              AND status IN ('COMPLETED', 'INCOMPLETE')
+              AND id > (SELECT MAX(id) FROM session WHERE deload_id = :deloadId)
+        )
+        """,
+    )
+    suspend fun hasSessionAfterDeload(deloadId: Long): Boolean
+
+    @Query(
+        """
         SELECT
             s.status,
             mv.module_code AS moduleCode,

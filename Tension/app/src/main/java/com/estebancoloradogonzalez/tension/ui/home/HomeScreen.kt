@@ -26,6 +26,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -37,11 +38,14 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.estebancoloradogonzalez.tension.R
+import com.estebancoloradogonzalez.tension.domain.model.DeloadHomeState
+import com.estebancoloradogonzalez.tension.ui.theme.LocalTensionSemanticColors
 
 @Composable
 fun HomeScreen(
     onNavigateToAlerts: () -> Unit,
     onNavigateToActiveSession: (Long) -> Unit,
+    onNavigateToDeloadManagement: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -86,6 +90,16 @@ fun HomeScreen(
                         versionNumber = uiState.nextSession?.versionNumber ?: 0,
                         isLoading = uiState.isLoading,
                         onStartSession = { viewModel.startSession() },
+                    )
+                }
+            }
+
+            if (uiState.deloadState != null) {
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    DeloadStatusCard(
+                        deloadState = uiState.deloadState!!,
+                        onNavigateToDeload = onNavigateToDeloadManagement,
                     )
                 }
             }
@@ -274,5 +288,75 @@ private fun ProgressSection(microcycleCount: Int) {
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+    }
+}
+
+@Composable
+private fun DeloadStatusCard(
+    deloadState: DeloadHomeState,
+    onNavigateToDeload: () -> Unit,
+) {
+    val semanticColors = LocalTensionSemanticColors.current
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+        ),
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                when (deloadState) {
+                    is DeloadHomeState.Active -> {
+                        Text(
+                            text = "\uD83D\uDD04",
+                            modifier = Modifier.size(24.dp),
+                            color = semanticColors.deloadActive,
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = stringResource(R.string.home_deload_active),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        )
+                    }
+                    is DeloadHomeState.Required -> {
+                        Text(
+                            text = "⚠\uFE0F",
+                            modifier = Modifier.size(24.dp),
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = stringResource(
+                                R.string.home_deload_required,
+                                deloadState.moduleCode,
+                            ),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        )
+                    }
+                }
+            }
+
+            if (deloadState is DeloadHomeState.Active) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = stringResource(
+                        R.string.home_deload_progress,
+                        deloadState.progress,
+                    ),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+            TextButton(onClick = onNavigateToDeload) {
+                Text(
+                    text = stringResource(R.string.home_deload_manage),
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+        }
     }
 }

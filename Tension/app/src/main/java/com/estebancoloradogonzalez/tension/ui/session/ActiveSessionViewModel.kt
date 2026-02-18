@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.estebancoloradogonzalez.tension.domain.model.ExerciseSessionStatus
+import com.estebancoloradogonzalez.tension.domain.rules.DeloadLoadRule
 import com.estebancoloradogonzalez.tension.domain.usecase.session.CloseSessionUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.session.GetSessionExercisesUseCase
 import com.estebancoloradogonzalez.tension.domain.repository.SessionRepository
@@ -38,6 +39,15 @@ class ActiveSessionViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
+            val deloadId = sessionRepository.getDeloadIdBySessionId(sessionId)
+            val isDeload = deloadId != null
+            val deloadProgressText = if (deloadId != null) {
+                val count = sessionRepository.countDeloadSessions(deloadId)
+                "${count + 1}/6"
+            } else {
+                ""
+            }
+
             combine(
                 getSessionExercisesUseCase(sessionId),
                 sessionRepository.getSessionModuleVersion(sessionId),
@@ -47,16 +57,29 @@ class ActiveSessionViewModel @Inject constructor(
                 _uiState.update { current ->
                     current.copy(
                         isLoading = false,
+                        isDeloadSession = isDeload,
+                        deloadProgress = deloadProgressText,
                         moduleCode = moduleVersion?.first ?: "",
                         versionNumber = moduleVersion?.second ?: 0,
                         exercises = exercises.map { detail ->
                             val statusLabel = when (detail.status) {
                                 ExerciseSessionStatus.NOT_STARTED -> "No Iniciado"
-                                ExerciseSessionStatus.IN_PROGRESS -> "En Ejecuci\u00F3n"
+                                ExerciseSessionStatus.IN_PROGRESS -> "En Ejecución"
                                 ExerciseSessionStatus.COMPLETED -> "Completado"
                             }
                             val loadText = when {
-                                detail.isIsometric -> "Isom\u00E9trico (30\u201345s)"
+                                isDeload && detail.isIsometric ->
+                                    "Isométrico (30s)"
+                                isDeload && detail.isBodyweight ->
+                                    "Peso corporal (8 reps objetivo)"
+                                isDeload && detail.prescribedLoadKg != null -> {
+                                    val deloadLoad = DeloadLoadRule.calculateDeloadLoad(
+                                        detail.prescribedLoadKg,
+                                        detail.loadIncrementKg,
+                                    )
+                                    "\uD83D\uDD04 %.1f Kg".format(deloadLoad)
+                                }
+                                detail.isIsometric -> "Isométrico (30\u201345s)"
                                 detail.isBodyweight -> "Peso corporal"
                                 detail.prescribedLoadKg != null ->
                                     "%.1f Kg".format(detail.prescribedLoadKg)
@@ -77,7 +100,8 @@ class ActiveSessionViewModel @Inject constructor(
                                 completedSets = detail.completedSets,
                                 status = detail.status,
                                 loadDisplayText = loadText,
-                                statusDisplayText = "$statusLabel \u00B7 ${detail.completedSets}/${detail.sets} series",
+                                statusDisplayText = "$statusLabel · ${detail.completedSets}/${detail.sets} series",
+                                loadIncrementKg = detail.loadIncrementKg,
                             )
                         },
                     )

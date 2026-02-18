@@ -55,4 +55,22 @@ interface AlertDao {
 
     @Query("SELECT * FROM alert WHERE is_active = 1 ORDER BY level ASC, created_at DESC")
     fun getActiveAlerts(): Flow<List<AlertEntity>>
+
+    @Query(
+        """
+        SELECT * FROM alert
+        WHERE type = :type AND is_active = 1
+        ORDER BY created_at DESC
+        """,
+    )
+    suspend fun getActiveAlertsByType(type: String): List<AlertEntity>
+
+    @Query(
+        """
+        UPDATE alert
+        SET is_active = 0, resolved_at = :resolvedAt
+        WHERE type = :type AND is_active = 1
+        """,
+    )
+    suspend fun resolveAllByType(type: String, resolvedAt: String)
 }

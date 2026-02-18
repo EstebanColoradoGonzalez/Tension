@@ -22,4 +22,19 @@ interface ExerciseProgressionDao {
 
     @Update
     suspend fun update(progression: ExerciseProgressionEntity)
+
+    @Query(
+        """
+        UPDATE exercise_progression
+        SET status = 'IN_DELOAD'
+        WHERE status NOT IN ('NO_HISTORY', 'MASTERED')
+        """,
+    )
+    suspend fun transitionToDeload()
+
+    @Query("SELECT * FROM exercise_progression WHERE status = 'IN_DELOAD'")
+    suspend fun getAllInDeload(): List<ExerciseProgressionEntity>
+
+    @Query("SELECT * FROM exercise_progression WHERE prescribed_load_kg IS NOT NULL")
+    suspend fun getAllWithPrescribedLoad(): List<ExerciseProgressionEntity>
 }

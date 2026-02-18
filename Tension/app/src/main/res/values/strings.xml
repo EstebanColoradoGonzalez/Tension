@@ -174,4 +174,46 @@
     <string name="navigate_back">Volver</string>
     <string name="coming_soon">Próximamente</string>
     <string name="logo_content_description">Logo de Tension</string>
+
+    <!-- Deload B1 Card -->
+    <string name="home_deload_active">Descarga activa</string>
+    <string name="home_deload_required">Módulo %1$s requiere descarga</string>
+    <string name="home_deload_progress">Sesión %1$d de 6</string>
+    <string name="home_deload_manage">Ver gestión de descarga \u2192</string>
+
+    <!-- Deload Management I1 -->
+    <string name="deload_title">Gestión de Descarga</string>
+    <string name="deload_no_active">No hay descarga activa</string>
+    <string name="deload_required_title">Módulo %1$s requiere descarga</string>
+    <string name="deload_required_detail">\u2265 50%% de los ejercicios están en meseta o regresión</string>
+    <string name="deload_protocol_title">Al activar la descarga:</string>
+    <string name="deload_protocol_load">\u00B7 Carga al 60%%</string>
+    <string name="deload_protocol_sets">\u00B7 4 series</string>
+    <string name="deload_protocol_reps">\u00B7 8 repeticiones</string>
+    <string name="deload_protocol_rir">\u00B7 RIR 4\u20135</string>
+    <string name="deload_protocol_duration">\u00B7 Duración 1 microciclo (6 sesiones)</string>
+    <string name="deload_protocol_versions">\u00B7 Versiones congeladas</string>
+    <string name="deload_protocol_bodyweight">\u00B7 Peso corporal: 8 reps, RIR 4\u20135 (sin ajuste
+        de carga)</string>
+    <string name="deload_protocol_isometric">\u00B7 Isométricos: 30 seg, RIR 4\u20135</string>
+    <string name="deload_protocol_reset">\u00B7 Al finalizar: reinicio al 90%% de carga pre-descarga</string>
+    <string name="deload_activate">Activar Descarga</string>
+    <string name="deload_active_title">Descarga activa</string>
+    <string name="deload_progress_format">Progreso: %1$d/6 sesiones</string>
+    <string name="deload_remaining_format">Sesiones restantes: %1$d</string>
+    <string name="deload_params_load">Carga: 60%%</string>
+    <string name="deload_params_sets">Series: 4</string>
+    <string name="deload_params_reps">Reps: 8</string>
+    <string name="deload_params_rir">RIR objetivo: 4\u20135</string>
+    <string name="deload_frozen_versions">Versión congelada: A\u2011V%1$d, B\u2011V%2$d,
+        C\u2011V%3$d</string>
+    <string name="deload_completed_title">Descarga completada</string>
+    <string name="deload_reset_loads_title">Cargas de reinicio (90%% pre-descarga):</string>
+    <string name="deload_reset_exercise_format">%1$s: %2$.1f Kg</string>
+    <string name="deload_versions_resume">Las versiones retoman su avance normal.</string>
+    <string name="deload_not_needed">No hay descarga pendiente</string>
+    <string name="deload_go_back">Volver al inicio</string>
+
+    <!-- Active Session Deload Badge -->
+    <string name="session_deload_badge">Descarga \u00B7 Sesión %1$s</string>
 </resources>

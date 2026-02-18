@@ -103,4 +103,57 @@ class RotationResolverTest {
         assertEquals(1, result.microcyclePosition)
         assertEquals(11, result.microcycleCount)
     }
+
+    // --- isDeload = true ---
+
+    @Test
+    fun `advanceRotation isDeload true from position 3 increments to 4`() {
+        val current = RotationState(
+            microcyclePosition = 3,
+            currentVersionModuleA = 1,
+            currentVersionModuleB = 2,
+            currentVersionModuleC = 3,
+            microcycleCount = 2,
+        )
+        val result = RotationResolver.advanceRotation(current, isDeload = true)
+        assertEquals(4, result.microcyclePosition)
+        assertEquals(1, result.currentVersionModuleA)
+        assertEquals(2, result.currentVersionModuleB)
+        assertEquals(3, result.currentVersionModuleC)
+        assertEquals(2, result.microcycleCount)
+    }
+
+    @Test
+    fun `advanceRotation isDeload true from position 6 wraps to 1 versions frozen microcycleCount increments`() {
+        val current = RotationState(
+            microcyclePosition = 6,
+            currentVersionModuleA = 1,
+            currentVersionModuleB = 1,
+            currentVersionModuleC = 1,
+            microcycleCount = 3,
+        )
+        val result = RotationResolver.advanceRotation(current, isDeload = true)
+        assertEquals(1, result.microcyclePosition)
+        assertEquals(1, result.currentVersionModuleA)
+        assertEquals(1, result.currentVersionModuleB)
+        assertEquals(1, result.currentVersionModuleC)
+        assertEquals(4, result.microcycleCount)
+    }
+
+    @Test
+    fun `advanceRotation isDeload true from position 6 with mixed versions preserves all`() {
+        val current = RotationState(
+            microcyclePosition = 6,
+            currentVersionModuleA = 2,
+            currentVersionModuleB = 3,
+            currentVersionModuleC = 1,
+            microcycleCount = 5,
+        )
+        val result = RotationResolver.advanceRotation(current, isDeload = true)
+        assertEquals(1, result.microcyclePosition)
+        assertEquals(2, result.currentVersionModuleA)
+        assertEquals(3, result.currentVersionModuleB)
+        assertEquals(1, result.currentVersionModuleC)
+        assertEquals(6, result.microcycleCount)
+    }
 }

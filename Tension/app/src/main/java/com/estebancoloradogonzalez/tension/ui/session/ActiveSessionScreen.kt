@@ -53,6 +53,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.estebancoloradogonzalez.tension.R
 import com.estebancoloradogonzalez.tension.domain.model.ExerciseSessionStatus
+import com.estebancoloradogonzalez.tension.ui.theme.LocalTensionSemanticColors
 
 @Composable
 fun ActiveSessionScreen(
@@ -78,6 +79,8 @@ fun ActiveSessionScreen(
             SessionTopBar(
                 moduleCode = uiState.moduleCode,
                 versionNumber = uiState.versionNumber,
+                isDeloadSession = uiState.isDeloadSession,
+                deloadProgress = uiState.deloadProgress,
             )
 
             ProgressBar(
@@ -97,6 +100,7 @@ fun ActiveSessionScreen(
                 items(uiState.exercises, key = { it.sessionExerciseId }) { exercise ->
                     ExerciseRow(
                         exercise = exercise,
+                        isDeloadSession = uiState.isDeloadSession,
                         onRegister = { onNavigateToRegisterSet(exercise.sessionExerciseId) },
                         onSubstitute = { onNavigateToSubstitute(exercise.sessionExerciseId) },
                         onViewDetail = { onNavigateToExerciseDetail(exercise.exerciseId) },
@@ -139,6 +143,8 @@ fun ActiveSessionScreen(
 private fun SessionTopBar(
     moduleCode: String,
     versionNumber: Int,
+    isDeloadSession: Boolean,
+    deloadProgress: String,
 ) {
     Column(
         modifier = Modifier
@@ -155,6 +161,34 @@ private fun SessionTopBar(
             style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        if (isDeloadSession) {
+            Spacer(modifier = Modifier.height(4.dp))
+            val badgeContainerColor = if (isSystemInDarkTheme()) {
+                Color(0xFF1A2733)
+            } else {
+                Color(0xFFE3F2FD)
+            }
+            val semanticColors = LocalTensionSemanticColors.current
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = badgeContainerColor),
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = "\uD83D\uDD04",
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = stringResource(R.string.session_deload_badge, deloadProgress),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = semanticColors.deloadActive,
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -198,6 +232,7 @@ private fun ProgressBar(
 @Composable
 private fun ExerciseRow(
     exercise: ExerciseUiItem,
+    isDeloadSession: Boolean,
     onRegister: () -> Unit,
     onSubstitute: () -> Unit,
     onViewDetail: () -> Unit,
@@ -206,12 +241,14 @@ private fun ExerciseRow(
     when (exercise.status) {
         ExerciseSessionStatus.NOT_STARTED -> NotStartedExerciseRow(
             exercise = exercise,
+            isDeloadSession = isDeloadSession,
             onRegister = onRegister,
             onSubstitute = onSubstitute,
             onViewDetail = onViewDetail,
         )
         ExerciseSessionStatus.IN_PROGRESS -> InProgressExerciseRow(
             exercise = exercise,
+            isDeloadSession = isDeloadSession,
             isDark = isDark,
             onRegister = onRegister,
             onViewDetail = onViewDetail,
@@ -227,6 +264,7 @@ private fun ExerciseRow(
 @Composable
 private fun NotStartedExerciseRow(
     exercise: ExerciseUiItem,
+    isDeloadSession: Boolean,
     onRegister: () -> Unit,
     onSubstitute: () -> Unit,
     onViewDetail: () -> Unit,
@@ -257,7 +295,7 @@ private fun NotStartedExerciseRow(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                LoadText(exercise = exercise)
+                LoadText(exercise = exercise, isDeloadSession = isDeloadSession)
 
                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -304,6 +342,7 @@ private fun NotStartedExerciseRow(
 @Composable
 private fun InProgressExerciseRow(
     exercise: ExerciseUiItem,
+    isDeloadSession: Boolean,
     isDark: Boolean,
     onRegister: () -> Unit,
     onViewDetail: () -> Unit,
@@ -335,7 +374,7 @@ private fun InProgressExerciseRow(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                LoadText(exercise = exercise)
+                LoadText(exercise = exercise, isDeloadSession = isDeloadSession)
 
                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -432,20 +471,25 @@ private fun StatusIndicator(color: Color) {
 }
 
 @Composable
-private fun LoadText(exercise: ExerciseUiItem) {
+private fun LoadText(exercise: ExerciseUiItem, isDeloadSession: Boolean = false) {
     val isNoHistory = !exercise.isBodyweight && !exercise.isIsometric &&
         exercise.prescribedLoadKg == null
+    val semanticColors = LocalTensionSemanticColors.current
+
+    val textColor = if (isDeloadSession && !isNoHistory) {
+        semanticColors.deloadActive
+    } else if (isNoHistory || exercise.isBodyweight || exercise.isIsometric) {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    } else {
+        MaterialTheme.colorScheme.onSurface
+    }
 
     Text(
         text = exercise.loadDisplayText,
         style = MaterialTheme.typography.bodyMedium.copy(
             fontStyle = if (isNoHistory) FontStyle.Italic else FontStyle.Normal,
         ),
-        color = if (isNoHistory || exercise.isBodyweight || exercise.isIsometric) {
-            MaterialTheme.colorScheme.onSurfaceVariant
-        } else {
-            MaterialTheme.colorScheme.onSurface
-        },
+        color = textColor,
     )
 }
 

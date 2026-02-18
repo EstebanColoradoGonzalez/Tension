@@ -14,4 +14,5 @@ data class SessionExerciseDetail(
     val prescribedLoadKg: Double?,
     val completedSets: Int,
     val status: ExerciseSessionStatus,
+    val loadIncrementKg: Double = 2.5,
 )

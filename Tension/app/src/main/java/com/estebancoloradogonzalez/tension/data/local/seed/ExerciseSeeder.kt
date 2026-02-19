@@ -13,14 +13,7 @@ object ExerciseSeeder {
 
     @Suppress("LongMethod")
     private fun seedExercises(db: SupportSQLiteDatabase) {
-        // Module A (15 exercises, IDs 1-15)
-        ex(db, 1, "Press de banca", "A", 1, media = "press_de_banca_maquina")
-        ex(db, 2, "Press de mancuerna", "A", 2, media = "press_de_mancuerna_mancuernas")
-        ex(db, 3, "Press de banca inclinada", "A", 1, media = "press_de_banca_inclinada_maquina")
-        ex(db, 4, "Flexiones", "A", 4, bw = 1, fail = 1, media = "flexiones_cuerpo")
-        ex(db, 5, "Cruce en polea alta", "A", 1, media = "cruce_en_polea_alta_maquina")
-        ex(db, 6, "Apertura de pecho sentado", "A", 1, media = "apertura_de_pecho_sentado_maquina")
-        ex(db, 7, "Apertura de pecho inclinado", "A", 1, media = "apertura_de_pecho_inclinado_maquina")
+        // Module A — Pull + Abs (14 exercises, IDs 8-20, 26)
         ex(db, 8, "Remo con Inclinación", "A", 3, media = "remo_con_inclinacion_barra_de_pesas")
         ex(db, 9, "Remo con un solo brazo doblado", "A", 5, media = "remo_con_un_solo_brazo_doblado_mancuerna")
         ex(db, 10, "Tiro de dorsales (Agarre ancho)", "A", 1, media = "tiro_de_dorsales_agarre_ancho_maquina")
@@ -29,19 +22,26 @@ object ExerciseSeeder {
         ex(db, 13, "Giro Ruso", "A", 4, bw = 1, media = "giro_ruso_cuerpo")
         ex(db, 14, "Plancha", "A", 4, bw = 1, iso = 1, media = "plancha_cuerpo")
         ex(db, 15, "Plancha Lateral", "A", 4, bw = 1, iso = 1, media = "plancha_lateral_cuerpo")
+        ex(db, 16, "Curl de bíceps", "A", 5, media = "curl_de_biceps_mancuerna")
+        ex(db, 17, "Curl de bíceps", "A", 6, media = "curl_de_biceps_polea")
+        ex(db, 18, "Curl de martillo cruzado", "A", 5, media = "curl_de_martillo_cruzado_mancuerna")
+        ex(db, 19, "Curl de martillo", "A", 5, media = "curl_de_martillo_mancuerna")
+        ex(db, 20, "Curl de Contracción", "A", 5, media = "curl_de_contraccion_mancuerna")
+        ex(db, 26, "Elevación de hombros con mancuernas", "A", 5, media = "elevacion_de_hombros_con_mancuernas_mancuerna")
 
-        // Module B (14 exercises, IDs 16-29)
-        ex(db, 16, "Curl de bíceps", "B", 5, media = "curl_de_biceps_mancuerna")
-        ex(db, 17, "Curl de bíceps", "B", 6, media = "curl_de_biceps_polea")
-        ex(db, 18, "Curl de martillo cruzado", "B", 5, media = "curl_de_martillo_cruzado_mancuerna")
-        ex(db, 19, "Curl de martillo", "B", 5, media = "curl_de_martillo_mancuerna")
-        ex(db, 20, "Curl de Contracción", "B", 5, media = "curl_de_contraccion_mancuerna")
+        // Module B — Push (15 exercises, IDs 1-7, 21-25, 27-29)
+        ex(db, 1, "Press de banca", "B", 1, media = "press_de_banca_maquina")
+        ex(db, 2, "Press de mancuerna", "B", 2, media = "press_de_mancuerna_mancuernas")
+        ex(db, 3, "Press de banca inclinada", "B", 1, media = "press_de_banca_inclinada_maquina")
+        ex(db, 4, "Flexiones", "B", 4, bw = 1, fail = 1, media = "flexiones_cuerpo")
+        ex(db, 5, "Cruce en polea alta", "B", 1, media = "cruce_en_polea_alta_maquina")
+        ex(db, 6, "Apertura de pecho sentado", "B", 1, media = "apertura_de_pecho_sentado_maquina")
+        ex(db, 7, "Apertura de pecho inclinado", "B", 1, media = "apertura_de_pecho_inclinado_maquina")
         ex(db, 21, "Dominada de tríceps banco", "B", 7, media = "dominada_de_triceps_banco_pesa")
         ex(db, 22, "Extensión de tríceps por encima de la cabeza", "B", 5, media = "extension_de_triceps_por_encima_de_la_cabeza_mancuerna")
         ex(db, 23, "Flexión de tríceps con cuerda", "B", 1, media = "flexion_de_triceps_con_cuerda_maquina")
         ex(db, 24, "Elevación frontal", "B", 5, media = "elevacion_frontal_mancuerna")
         ex(db, 25, "Elevación lateral", "B", 5, media = "elevacion_lateral_mancuerna")
-        ex(db, 26, "Elevación de hombros con mancuernas", "B", 5, media = "elevacion_de_hombros_con_mancuernas_mancuerna")
         ex(db, 27, "Press de elevación sentado", "B", 5, media = "press_de_elevacion_sentado_mancuerna")
         ex(db, 28, "Remo vertical", "B", 3, media = "remo_vertical_barra_de_pesas")
         ex(db, 29, "Remo vertical con cable", "B", 1, media = "remo_vertical_con_cable_maquina")
@@ -90,14 +90,7 @@ object ExerciseSeeder {
 
     @Suppress("LongMethod")
     private fun seedExerciseMuscleZones(db: SupportSQLiteDatabase) {
-        // Module A — each exercise has 1 zone
-        emz(db, 1, 1)   // Press de banca → Pecho Medio
-        emz(db, 2, 1)   // Press de mancuerna → Pecho Medio
-        emz(db, 3, 2)   // Press de banca inclinada → Pecho Superior
-        emz(db, 4, 3)   // Flexiones → Pecho Inferior
-        emz(db, 5, 3)   // Cruce en polea alta → Pecho Inferior
-        emz(db, 6, 1)   // Apertura de pecho sentado → Pecho Medio
-        emz(db, 7, 2)   // Apertura de pecho inclinado → Pecho Superior
+        // Module A — Pull + Abs (each exercise has 1 zone)
         emz(db, 8, 4)   // Remo con Inclinación → Espalda Media
         emz(db, 9, 5)   // Remo con un solo brazo doblado → Dorsal Ancho
         emz(db, 10, 5)  // Tiro de dorsales → Dorsal Ancho
@@ -106,19 +99,26 @@ object ExerciseSeeder {
         emz(db, 13, 6)  // Giro Ruso → Abdomen
         emz(db, 14, 6)  // Plancha → Abdomen
         emz(db, 15, 6)  // Plancha Lateral → Abdomen
-
-        // Module B — each exercise has 1 zone
         emz(db, 16, 9)  // Curl de bíceps (Mancuerna) → Bíceps
         emz(db, 17, 9)  // Curl de bíceps (Polea) → Bíceps
         emz(db, 18, 9)  // Curl de martillo cruzado → Bíceps
         emz(db, 19, 9)  // Curl de martillo → Bíceps
         emz(db, 20, 9)  // Curl de Contracción → Bíceps
+        emz(db, 26, 4)  // Elevación de hombros con mancuernas → Espalda Media
+
+        // Module B — Push (each exercise has 1 zone)
+        emz(db, 1, 1)   // Press de banca → Pecho Medio
+        emz(db, 2, 1)   // Press de mancuerna → Pecho Medio
+        emz(db, 3, 2)   // Press de banca inclinada → Pecho Superior
+        emz(db, 4, 3)   // Flexiones → Pecho Inferior
+        emz(db, 5, 3)   // Cruce en polea alta → Pecho Inferior
+        emz(db, 6, 1)   // Apertura de pecho sentado → Pecho Medio
+        emz(db, 7, 2)   // Apertura de pecho inclinado → Pecho Superior
         emz(db, 21, 8)  // Dominada de tríceps banco → Tríceps
         emz(db, 22, 8)  // Extensión de tríceps → Tríceps
         emz(db, 23, 8)  // Flexión de tríceps con cuerda → Tríceps
         emz(db, 24, 7)  // Elevación frontal → Hombro
         emz(db, 25, 7)  // Elevación lateral → Hombro
-        emz(db, 26, 7)  // Elevación de hombros con mancuernas → Hombro
         emz(db, 27, 7)  // Press de elevación sentado → Hombro
         emz(db, 28, 7)  // Remo vertical → Hombro
         emz(db, 29, 7)  // Remo vertical con cable → Hombro

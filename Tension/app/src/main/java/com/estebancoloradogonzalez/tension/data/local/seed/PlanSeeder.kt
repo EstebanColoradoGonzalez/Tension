@@ -33,43 +33,43 @@ object PlanSeeder {
 
     @Suppress("LongMethod")
     private fun seedPlanAssignments(db: SupportSQLiteDatabase) {
-        // ===== Module A =====
+        // ===== Module A — Pull + Abs =====
         // A-V1 (moduleVersionId = 1) — 11 exercises
-        pa(db, 1, 1, R8_12);  pa(db, 1, 3, R8_12);  pa(db, 1, 6, R8_12)
-        pa(db, 1, 4, FAILURE); pa(db, 1, 10, R8_12); pa(db, 1, 8, R8_12)
-        pa(db, 1, 9, R8_12);  pa(db, 1, 11, R8_12); pa(db, 1, 12, R8_12)
+        pa(db, 1, 10, R8_12); pa(db, 1, 8, R8_12);  pa(db, 1, 9, R8_12)
+        pa(db, 1, 16, R8_12); pa(db, 1, 18, R8_12); pa(db, 1, 17, R8_12)
+        pa(db, 1, 19, R8_12); pa(db, 1, 11, R8_12); pa(db, 1, 12, R8_12)
         pa(db, 1, 13, R8_12); pa(db, 1, 14, R30_45)
 
         // A-V2 (moduleVersionId = 2) — 11 exercises
-        pa(db, 2, 1, R8_12);  pa(db, 2, 7, R8_12);  pa(db, 2, 6, R8_12)
-        pa(db, 2, 5, R8_12);  pa(db, 2, 10, R8_12); pa(db, 2, 8, R8_12)
-        pa(db, 2, 9, R8_12);  pa(db, 2, 11, R8_12); pa(db, 2, 12, R8_12)
+        pa(db, 2, 10, R8_12); pa(db, 2, 8, R8_12);  pa(db, 2, 9, R8_12)
+        pa(db, 2, 26, R8_12); pa(db, 2, 16, R8_12); pa(db, 2, 18, R8_12)
+        pa(db, 2, 17, R8_12); pa(db, 2, 20, R8_12); pa(db, 2, 11, R8_12)
         pa(db, 2, 14, R30_45); pa(db, 2, 15, R30_45)
 
         // A-V3 (moduleVersionId = 3) — 11 exercises
-        pa(db, 3, 1, R8_12);  pa(db, 3, 3, R8_12);  pa(db, 3, 6, R8_12)
-        pa(db, 3, 5, R8_12);  pa(db, 3, 10, R8_12); pa(db, 3, 8, R8_12)
-        pa(db, 3, 9, R8_12);  pa(db, 3, 11, R8_12); pa(db, 3, 13, R8_12)
-        pa(db, 3, 14, R30_45); pa(db, 3, 15, R30_45)
+        pa(db, 3, 10, R8_12); pa(db, 3, 8, R8_12);  pa(db, 3, 9, R8_12)
+        pa(db, 3, 26, R8_12); pa(db, 3, 16, R8_12); pa(db, 3, 19, R8_12)
+        pa(db, 3, 17, R8_12); pa(db, 3, 20, R8_12); pa(db, 3, 11, R8_12)
+        pa(db, 3, 13, R8_12); pa(db, 3, 14, R30_45)
 
-        // ===== Module B =====
+        // ===== Module B — Push =====
         // B-V1 (moduleVersionId = 4) — 11 exercises
-        pa(db, 4, 27, R8_12); pa(db, 4, 24, R8_12); pa(db, 4, 25, R8_12)
-        pa(db, 4, 28, R8_12); pa(db, 4, 21, R8_12); pa(db, 4, 22, R8_12)
-        pa(db, 4, 23, R8_12); pa(db, 4, 16, R8_12); pa(db, 4, 18, R8_12)
-        pa(db, 4, 17, R8_12); pa(db, 4, 19, R8_12)
+        pa(db, 4, 1, R8_12);  pa(db, 4, 3, R8_12);  pa(db, 4, 6, R8_12)
+        pa(db, 4, 4, FAILURE); pa(db, 4, 27, R8_12); pa(db, 4, 24, R8_12)
+        pa(db, 4, 25, R8_12); pa(db, 4, 28, R8_12); pa(db, 4, 21, R8_12)
+        pa(db, 4, 22, R8_12); pa(db, 4, 23, R8_12)
 
         // B-V2 (moduleVersionId = 5) — 11 exercises
-        pa(db, 5, 27, R8_12); pa(db, 5, 25, R8_12); pa(db, 5, 29, R8_12)
-        pa(db, 5, 26, R8_12); pa(db, 5, 21, R8_12); pa(db, 5, 22, R8_12)
-        pa(db, 5, 23, R8_12); pa(db, 5, 16, R8_12); pa(db, 5, 18, R8_12)
-        pa(db, 5, 17, R8_12); pa(db, 5, 20, R8_12)
+        pa(db, 5, 1, R8_12);  pa(db, 5, 7, R8_12);  pa(db, 5, 6, R8_12)
+        pa(db, 5, 5, R8_12);  pa(db, 5, 27, R8_12); pa(db, 5, 25, R8_12)
+        pa(db, 5, 29, R8_12); pa(db, 5, 2, R8_12);  pa(db, 5, 21, R8_12)
+        pa(db, 5, 22, R8_12); pa(db, 5, 23, R8_12)
 
         // B-V3 (moduleVersionId = 6) — 11 exercises
-        pa(db, 6, 27, R8_12); pa(db, 6, 24, R8_12); pa(db, 6, 28, R8_12)
-        pa(db, 6, 26, R8_12); pa(db, 6, 21, R8_12); pa(db, 6, 22, R8_12)
-        pa(db, 6, 23, R8_12); pa(db, 6, 16, R8_12); pa(db, 6, 19, R8_12)
-        pa(db, 6, 17, R8_12); pa(db, 6, 20, R8_12)
+        pa(db, 6, 1, R8_12);  pa(db, 6, 3, R8_12);  pa(db, 6, 6, R8_12)
+        pa(db, 6, 5, R8_12);  pa(db, 6, 27, R8_12); pa(db, 6, 24, R8_12)
+        pa(db, 6, 28, R8_12); pa(db, 6, 2, R8_12);  pa(db, 6, 21, R8_12)
+        pa(db, 6, 22, R8_12); pa(db, 6, 23, R8_12)
 
         // ===== Module C =====
         // C-V1 (moduleVersionId = 7) — 9 exercises

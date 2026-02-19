@@ -54,7 +54,7 @@ import com.estebancoloradogonzalez.tension.data.local.entity.WeightRecordEntity
         AlertEntity::class,
         DeloadEntity::class,
     ],
-    version = 6,
+    version = 7,
     exportSchema = false,
 )
 @TypeConverters(Converters::class)

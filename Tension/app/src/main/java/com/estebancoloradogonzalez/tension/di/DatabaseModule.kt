@@ -17,6 +17,7 @@ import com.estebancoloradogonzalez.tension.data.local.dao.RotationStateDao
 import com.estebancoloradogonzalez.tension.data.local.dao.SessionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.SessionExerciseDao
 import com.estebancoloradogonzalez.tension.data.local.dao.WeightRecordDao
+import com.estebancoloradogonzalez.tension.data.local.database.Migrations
 import com.estebancoloradogonzalez.tension.data.local.database.TensionDatabase
 import com.estebancoloradogonzalez.tension.data.local.seed.PrepopulateCallback
 import dagger.Module
@@ -41,6 +42,7 @@ object DatabaseModule {
             "tension_database",
         )
             .addCallback(PrepopulateCallback())
+            .addMigrations(Migrations.MIGRATION_6_7)
             .fallbackToDestructiveMigration()
             .build()
     }

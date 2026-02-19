@@ -13,8 +13,8 @@ object ModuleSeeder {
     }
 
     private fun seedModules(db: SupportSQLiteDatabase) {
-        insertModule(db, "A", "Módulo A \u2014 Superior", "Pecho, Espalda, Abdomen", 2.5)
-        insertModule(db, "B", "Módulo B \u2014 Superior", "Hombro, Tríceps, Bíceps", 2.5)
+        insertModule(db, "A", "Módulo A \u2014 Superior (Pull + Abs)", "Espalda, Bíceps, Abdomen", 2.5)
+        insertModule(db, "B", "Módulo B \u2014 Superior (Push)", "Pecho, Hombro, Tríceps", 2.5)
         insertModule(db, "C", "Módulo C \u2014 Inferior", "Cuádriceps, Isquiotibiales, Glúteos, Aductores, Abductores, Gemelos", 5.0)
     }
 

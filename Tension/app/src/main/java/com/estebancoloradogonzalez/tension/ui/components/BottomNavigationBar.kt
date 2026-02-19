@@ -62,7 +62,6 @@ fun BottomNavigationBar(
             ),
             childRoutePrefixes = setOf(
                 "exercise-detail",
-                "exercise-history",
                 "plan-version-detail",
             ),
         ),
@@ -71,6 +70,10 @@ fun BottomNavigationBar(
             labelResId = R.string.nav_history,
             selectedIcon = Icons.Filled.History,
             unselectedIcon = Icons.Outlined.History,
+            childRoutePrefixes = setOf(
+                "exercise-history",
+                "session-detail",
+            ),
         ),
         BottomNavItem(
             route = NavigationRoutes.METRICS,

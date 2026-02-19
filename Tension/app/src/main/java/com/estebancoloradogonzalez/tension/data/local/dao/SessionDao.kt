@@ -23,6 +23,15 @@ data class SessionSummaryInfo(
     val completedExercises: Int,
 )
 
+data class ClosedSessionDto(
+    val sessionId: Long,
+    val date: String,
+    val moduleCode: String,
+    val versionNumber: Int,
+    val status: String,
+    val totalTonnageKg: Double,
+)
+
 @Dao
 interface SessionDao {
 
@@ -146,4 +155,27 @@ interface SessionDao {
         """,
     )
     suspend fun getSessionIdsByModuleInRange(moduleCode: String, limit: Int): List<Long>
+
+    @Query(
+        """
+        SELECT
+            s.id AS sessionId,
+            s.date,
+            mv.module_code AS moduleCode,
+            mv.version_number AS versionNumber,
+            s.status,
+            COALESCE(
+                (SELECT SUM(es.weight_kg * es.reps)
+                 FROM exercise_set es
+                 INNER JOIN session_exercise se ON es.session_exercise_id = se.id
+                 WHERE se.session_id = s.id),
+                0.0
+            ) AS totalTonnageKg
+        FROM session s
+        INNER JOIN module_version mv ON s.module_version_id = mv.id
+        WHERE s.status IN ('COMPLETED', 'INCOMPLETE')
+        ORDER BY s.date DESC, s.id DESC
+        """,
+    )
+    suspend fun getClosedSessionsWithSummary(): List<ClosedSessionDto>
 }

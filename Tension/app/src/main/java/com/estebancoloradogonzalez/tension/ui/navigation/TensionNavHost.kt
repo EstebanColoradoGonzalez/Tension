@@ -35,6 +35,8 @@ import com.estebancoloradogonzalez.tension.ui.catalog.TrainingPlanScreen
 import com.estebancoloradogonzalez.tension.ui.components.BottomNavigationBar
 import com.estebancoloradogonzalez.tension.ui.deload.DeloadManagementScreen
 import com.estebancoloradogonzalez.tension.ui.history.ExerciseHistoryScreen
+import com.estebancoloradogonzalez.tension.ui.history.SessionDetailScreen
+import com.estebancoloradogonzalez.tension.ui.history.SessionHistoryScreen
 import com.estebancoloradogonzalez.tension.ui.home.HomeScreen
 import com.estebancoloradogonzalez.tension.ui.metrics.MetricsScreen
 import com.estebancoloradogonzalez.tension.ui.metrics.TrendScreen
@@ -90,7 +92,10 @@ fun TensionNavHost(
                 !currentRoute.startsWith("session-summary") &&
                 !(currentRoute.startsWith("exercise-detail") &&
                     navController.previousBackStackEntry?.destination?.route
-                        ?.startsWith("active-session") == true)
+                        ?.startsWith("active-session") == true) &&
+                !(currentRoute.startsWith("exercise-history") &&
+                    navController.previousBackStackEntry?.destination?.route
+                        ?.startsWith("session-summary") == true)
 
             Scaffold(
                 bottomBar = {
@@ -237,11 +242,38 @@ fun TensionNavHost(
                     ) {
                         ExerciseHistoryScreen(
                             onNavigateBack = { navController.popBackStack() },
+                            onNavigateToExerciseDetail = { exerciseId ->
+                                navController.navigate(
+                                    NavigationRoutes.exerciseDetailRoute(exerciseId),
+                                )
+                            },
                         )
                     }
 
                     composable(NavigationRoutes.SESSION_HISTORY) {
-                        PlaceholderScreen(stringResource(R.string.nav_history))
+                        SessionHistoryScreen(
+                            onNavigateToSessionDetail = { sessionId ->
+                                navController.navigate(
+                                    NavigationRoutes.sessionDetailRoute(sessionId),
+                                )
+                            },
+                        )
+                    }
+
+                    composable(
+                        route = NavigationRoutes.SESSION_DETAIL,
+                        arguments = listOf(
+                            navArgument("sessionId") { type = NavType.LongType },
+                        ),
+                    ) {
+                        SessionDetailScreen(
+                            onNavigateBack = { navController.popBackStack() },
+                            onNavigateToExerciseHistory = { exerciseId ->
+                                navController.navigate(
+                                    NavigationRoutes.exerciseHistoryRoute(exerciseId),
+                                )
+                            },
+                        )
                     }
 
                     composable(NavigationRoutes.METRICS) {

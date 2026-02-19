@@ -4,9 +4,12 @@ import com.estebancoloradogonzalez.tension.data.repository.model.SessionSummaryD
 import com.estebancoloradogonzalez.tension.domain.model.ActiveSession
 import com.estebancoloradogonzalez.tension.domain.model.Deload
 import com.estebancoloradogonzalez.tension.domain.model.DeloadState
+import com.estebancoloradogonzalez.tension.domain.model.ExerciseHistoryData
 import com.estebancoloradogonzalez.tension.domain.model.RegisterSetInfo
 import com.estebancoloradogonzalez.tension.domain.model.RotationState
+import com.estebancoloradogonzalez.tension.domain.model.SessionDetail
 import com.estebancoloradogonzalez.tension.domain.model.SessionExerciseDetail
+import com.estebancoloradogonzalez.tension.domain.model.SessionHistoryItem
 import com.estebancoloradogonzalez.tension.domain.model.SubstituteExerciseInfo
 import kotlinx.coroutines.flow.Flow
 
@@ -29,4 +32,7 @@ interface SessionRepository {
     suspend fun getDeloadState(): DeloadState
     suspend fun getDeloadIdBySessionId(sessionId: Long): Long?
     suspend fun countDeloadSessions(deloadId: Long): Int
+    suspend fun getSessionHistory(): List<SessionHistoryItem>
+    suspend fun getSessionDetail(sessionId: Long): SessionDetail
+    suspend fun getExerciseHistory(exerciseId: Long): ExerciseHistoryData
 }

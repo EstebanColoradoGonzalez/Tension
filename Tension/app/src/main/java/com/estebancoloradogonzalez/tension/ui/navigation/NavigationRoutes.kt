@@ -13,6 +13,7 @@ object NavigationRoutes {
     const val PLAN_VERSION_DETAIL = "plan-version-detail/{moduleVersionId}"
     const val EXERCISE_HISTORY = "exercise-history/{exerciseId}"
     const val SESSION_HISTORY = "session-history"
+    const val SESSION_DETAIL = "session-detail/{sessionId}"
     const val METRICS = "metrics"
     const val MUSCLE_VOLUME = "muscle-volume"
     const val PROGRESSION_TREND = "progression-trend"
@@ -29,4 +30,5 @@ object NavigationRoutes {
     fun registerSetRoute(sessionExerciseId: Long) = "register-set/$sessionExerciseId"
     fun substituteExerciseRoute(sessionExerciseId: Long) = "substitute-exercise/$sessionExerciseId"
     fun sessionSummaryRoute(sessionId: Long) = "session-summary/$sessionId"
+    fun sessionDetailRoute(sessionId: Long) = "session-detail/$sessionId"
 }

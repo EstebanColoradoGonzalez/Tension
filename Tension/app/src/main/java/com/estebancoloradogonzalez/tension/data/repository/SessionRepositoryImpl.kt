@@ -23,6 +23,8 @@ import com.estebancoloradogonzalez.tension.data.local.entity.SessionExerciseEnti
 import com.estebancoloradogonzalez.tension.domain.model.ActiveSession
 import com.estebancoloradogonzalez.tension.domain.model.Deload
 import com.estebancoloradogonzalez.tension.domain.model.DeloadState
+import com.estebancoloradogonzalez.tension.domain.model.ExerciseHistoryData
+import com.estebancoloradogonzalez.tension.domain.model.ExerciseHistoryEntry
 import com.estebancoloradogonzalez.tension.domain.model.ExerciseResetLoad
 import com.estebancoloradogonzalez.tension.domain.model.ExerciseSessionData
 import com.estebancoloradogonzalez.tension.domain.model.ExerciseSessionStatus
@@ -30,7 +32,10 @@ import com.estebancoloradogonzalez.tension.domain.model.ProgressionClassificatio
 import com.estebancoloradogonzalez.tension.domain.model.RegisterSetInfo
 import com.estebancoloradogonzalez.tension.domain.model.RotationResolver
 import com.estebancoloradogonzalez.tension.domain.model.RotationState
+import com.estebancoloradogonzalez.tension.domain.model.SessionDetail
+import com.estebancoloradogonzalez.tension.domain.model.SessionDetailExercise
 import com.estebancoloradogonzalez.tension.domain.model.SessionExerciseDetail
+import com.estebancoloradogonzalez.tension.domain.model.SessionHistoryItem
 import com.estebancoloradogonzalez.tension.domain.model.SetData
 import com.estebancoloradogonzalez.tension.domain.model.SubstituteExerciseInfo
 import com.estebancoloradogonzalez.tension.domain.repository.SessionRepository
@@ -658,6 +663,86 @@ class SessionRepositoryImpl @Inject constructor(
             if (exercise.isBodyweight == 1 || exercise.isIsometric == 1) return@mapNotNull null
             val loadKg = progression.prescribedLoadKg ?: return@mapNotNull null
             ExerciseResetLoad(exerciseName = exercise.name, resetLoadKg = loadKg)
+        }
+    }
+
+    override suspend fun getSessionHistory(): List<SessionHistoryItem> {
+        return sessionDao.getClosedSessionsWithSummary().map { dto ->
+            SessionHistoryItem(
+                sessionId = dto.sessionId,
+                date = dto.date,
+                moduleCode = dto.moduleCode,
+                versionNumber = dto.versionNumber,
+                status = dto.status,
+                totalTonnageKg = dto.totalTonnageKg,
+            )
+        }
+    }
+
+    override suspend fun getSessionDetail(sessionId: Long): SessionDetail {
+        val summaryInfo = sessionDao.getSessionSummaryInfo(sessionId)
+        val sessionEntity = sessionDao.getById(sessionId).first()
+            ?: throw IllegalArgumentException("Session not found: $sessionId")
+        val exerciseDtos = sessionExerciseDao.getExercisesForSessionDetail(sessionId)
+
+        val exercises = exerciseDtos.map { dto ->
+            val sets = exerciseSetDao.getSetsForSessionExercise(dto.sessionExerciseId).map { set ->
+                SetData(weightKg = set.weightKg, reps = set.reps, rir = set.rir)
+            }
+            SessionDetailExercise(
+                exerciseId = dto.exerciseId,
+                exerciseName = dto.exerciseName,
+                classification = dto.classification?.let { parseClassification(it) },
+                originalExerciseName = dto.originalExerciseName,
+                sets = sets,
+            )
+        }
+
+        return SessionDetail(
+            sessionId = sessionId,
+            date = sessionEntity.date,
+            moduleCode = summaryInfo.moduleCode,
+            versionNumber = summaryInfo.versionNumber,
+            status = summaryInfo.status,
+            totalTonnageKg = summaryInfo.totalTonnageKg,
+            totalExercises = summaryInfo.totalExercises,
+            completedExercises = summaryInfo.completedExercises,
+            exercises = exercises,
+        )
+    }
+
+    override suspend fun getExerciseHistory(exerciseId: Long): ExerciseHistoryData {
+        val exercise = exerciseDao.getByIdOnce(exerciseId)
+            ?: throw IllegalArgumentException("Exercise not found: $exerciseId")
+        val progression = exerciseProgressionDao.getByExerciseId(exerciseId).first()
+        val historyDtos = sessionExerciseDao.getExerciseHistoryEntries(exerciseId)
+
+        val entries = historyDtos.map { dto ->
+            ExerciseHistoryEntry(
+                date = dto.date,
+                moduleCode = dto.moduleCode,
+                versionNumber = dto.versionNumber,
+                avgWeightKg = dto.avgWeightKg,
+                totalReps = dto.totalReps,
+                avgRir = dto.avgRir,
+                classification = dto.classification?.let { parseClassification(it) },
+            )
+        }
+
+        return ExerciseHistoryData(
+            exerciseName = exercise.name,
+            progressionStatus = progression?.status ?: "NO_HISTORY",
+            isBodyweight = exercise.isBodyweight == 1,
+            isIsometric = exercise.isIsometric == 1,
+            entries = entries,
+        )
+    }
+
+    private fun parseClassification(value: String): ProgressionClassification? {
+        return try {
+            ProgressionClassification.valueOf(value)
+        } catch (_: IllegalArgumentException) {
+            null
         }
     }
 }

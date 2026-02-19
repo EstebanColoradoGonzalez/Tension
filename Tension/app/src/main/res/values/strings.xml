@@ -146,6 +146,32 @@
     <!-- Exercise History F3 Stub -->
     <string name="exercise_history_title">Historial de Ejercicio</string>
 
+    <!-- Session History F1 -->
+    <string name="session_history_title">Historial</string>
+    <string name="session_history_empty">No hay sesiones pasadas disponibles.</string>
+    <string name="session_history_tonnage_format">Tonelaje: %1$s Kg</string>
+    <string name="session_history_completed">Completada</string>
+    <string name="session_history_incomplete">Incompleta</string>
+
+    <!-- Session Detail F2 -->
+    <string name="session_detail_tonnage">Tonelaje: %1$s Kg</string>
+    <string name="session_detail_exercises">Ejercicios: %1$d/%2$d</string>
+    <string name="session_detail_set_format">Serie %1$d: %2$s Kg × %3$d · RIR %4$d</string>
+    <string name="session_detail_substituted">Sustituyó a: %1$s</string>
+
+    <!-- Exercise History F3 -->
+    <string name="exercise_history_subtitle">Historial completo</string>
+    <string name="exercise_history_empty">No hay registros disponibles para este ejercicio.</string>
+    <string name="exercise_history_weight_format">%1$s Kg · %2$d reps · RIR %3$s</string>
+    <string name="exercise_history_bodyweight_format">%1$d reps · RIR %2$s</string>
+    <string name="exercise_history_isometric_format">%1$d s · RIR %2$s</string>
+    <string name="exercise_history_session_format">%1$s · %2$s-V%3$d</string>
+    <string name="exercise_history_view_technique">Ver técnica de ejecución \u2192</string>
+    <string name="exercise_history_status_in_progression">En Progresión</string>
+    <string name="exercise_history_status_in_plateau">En Meseta</string>
+    <string name="exercise_history_status_in_deload">En Descarga</string>
+    <string name="exercise_history_status_no_history">Sin Historial</string>
+
     <!-- Training Plan D3 -->
     <string name="version_label_format">Versión %d</string>
     <string name="exercise_count_format_short">(%d ej.)</string>

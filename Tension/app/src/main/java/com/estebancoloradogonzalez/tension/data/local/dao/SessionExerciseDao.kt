@@ -68,6 +68,25 @@ data class ExerciseSummaryDto(
     val previousTotalReps: Int?,
 )
 
+data class SessionDetailExerciseDto(
+    val sessionExerciseId: Long,
+    val exerciseId: Long,
+    val exerciseName: String,
+    val classification: String?,
+    val originalExerciseName: String?,
+    val setCount: Int,
+)
+
+data class ExerciseHistoryEntryDto(
+    val date: String,
+    val moduleCode: String,
+    val versionNumber: Int,
+    val avgWeightKg: Double,
+    val totalReps: Int,
+    val avgRir: Double,
+    val classification: String?,
+)
+
 @Dao
 interface SessionExerciseDao {
 
@@ -289,4 +308,46 @@ interface SessionExerciseDao {
     suspend fun getClassificationCountsBySessionIds(
         sessionIds: List<Long>,
     ): List<ClassificationCountByGroup>
+
+    @Query(
+        """
+        SELECT
+            se.id AS sessionExerciseId,
+            se.exercise_id AS exerciseId,
+            e.name AS exerciseName,
+            se.progression_classification AS classification,
+            oe.name AS originalExerciseName,
+            (SELECT COUNT(*) FROM exercise_set es WHERE es.session_exercise_id = se.id) AS setCount
+        FROM session_exercise se
+        INNER JOIN exercise e ON se.exercise_id = e.id
+        LEFT JOIN exercise oe ON se.original_exercise_id = oe.id
+        WHERE se.session_id = :sessionId
+        GROUP BY se.id
+        HAVING setCount > 0
+        ORDER BY e.name ASC
+        """,
+    )
+    suspend fun getExercisesForSessionDetail(sessionId: Long): List<SessionDetailExerciseDto>
+
+    @Query(
+        """
+        SELECT
+            s.date,
+            mv.module_code AS moduleCode,
+            mv.version_number AS versionNumber,
+            COALESCE(AVG(es.weight_kg), 0.0) AS avgWeightKg,
+            COALESCE(SUM(es.reps), 0) AS totalReps,
+            COALESCE(AVG(es.rir), 0.0) AS avgRir,
+            se.progression_classification AS classification
+        FROM session_exercise se
+        INNER JOIN session s ON se.session_id = s.id
+        INNER JOIN module_version mv ON s.module_version_id = mv.id
+        INNER JOIN exercise_set es ON es.session_exercise_id = se.id
+        WHERE se.exercise_id = :exerciseId
+          AND s.status IN ('COMPLETED', 'INCOMPLETE')
+        GROUP BY se.id
+        ORDER BY s.date DESC, s.id DESC
+        """,
+    )
+    suspend fun getExerciseHistoryEntries(exerciseId: Long): List<ExerciseHistoryEntryDto>
 }

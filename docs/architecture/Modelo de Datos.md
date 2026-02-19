@@ -42,8 +42,8 @@ Sirve como prerequisito directo para implementar la capa Model:
 | Columna | Tipo | Restricciones | Descripción |
 | ------- | ---- | ------------- | ----------- |
 | code | TEXT | **PK** | Identificador del módulo: `"A"`, `"B"`, `"C"` |
-| name | TEXT | NOT NULL | Nombre descriptivo: `"Módulo A — Superior"`, `"Módulo B — Superior"`, `"Módulo C — Inferior"` |
-| group_description | TEXT | NOT NULL | Grupos musculares cubiertos: `"Pecho, Espalda, Abdomen"`, `"Hombro, Tríceps, Bíceps"`, `"Cuádriceps, Isquiotibiales, Glúteos, Aductores, Abductores, Gemelos"` |
+| name | TEXT | NOT NULL | Nombre descriptivo: `"Módulo A — Superior (Pull + Abs)"`, `"Módulo B — Superior (Push)"`, `"Módulo C — Inferior"` |
+| group_description | TEXT | NOT NULL | Grupos musculares cubiertos: `"Espalda, Bíceps, Abdomen"`, `"Pecho, Hombro, Tríceps"`, `"Cuádriceps, Isquiotibiales, Glúteos, Aductores, Abductores, Gemelos"` |
 | load_increment_kg | REAL | NOT NULL | Incremento mínimo de carga prescrito por la Regla de Doble Umbral (R1): `2.5` para A y B (tren superior), `5.0` para C (tren inferior) |
 
 **Restricciones adicionales:**
@@ -55,8 +55,8 @@ Sirve como prerequisito directo para implementar la capa Model:
 
 | code | name | group_description | load_increment_kg |
 | ---- | ---- | ----------------- | ----------------- |
-| A | Módulo A — Superior | Pecho, Espalda, Abdomen | 2.5 |
-| B | Módulo B — Superior | Hombro, Tríceps, Bíceps | 2.5 |
+| A | Módulo A — Superior (Pull + Abs) | Espalda, Bíceps, Abdomen | 2.5 |
+| B | Módulo B — Superior (Push) | Pecho, Hombro, Tríceps | 2.5 |
 | C | Módulo C — Inferior | Cuádriceps, Isquiotibiales, Glúteos, Aductores, Abductores, Gemelos | 5.0 |
 
 ---
@@ -65,7 +65,7 @@ Sirve como prerequisito directo para implementar la capa Model:
 
 **Propósito:** Catálogo de las 15 zonas musculares específicas que clasifican cada ejercicio. Cada zona pertenece a un grupo muscular más amplio (12 grupos) que se usa para la agregación de KPIs (tonelaje, distribución de volumen, tendencias).
 
-**Jerarquía zona → grupo:** Las zonas con subvariantes (Pecho Medio, Pecho Superior, Pecho Inferior) se agrupan bajo un grupo muscular padre (Pecho). Para los 10 grupos restantes (Abdomen, Hombro, Tríceps, Bíceps, etc.), la zona y el grupo comparten el mismo nombre (relación 1:1).
+**Jerarquía zona → grupo:** Las zonas con subvariantes (Pecho Medio, Pecho Superior, Pecho Inferior) se agrupan bajo un grupo muscular padre (Pecho). Las zonas de Espalda (Espalda Media, Dorsal Ancho) se agrupan bajo el grupo muscular padre (Espalda). Para los 10 grupos restantes (Abdomen, Hombro, Tríceps, Bíceps, etc.), la zona y el grupo comparten el mismo nombre (relación 1:1).
 
 | Columna | Tipo | Restricciones | Descripción |
 | ------- | ---- | ------------- | ----------- |
@@ -161,7 +161,26 @@ Sirve como prerequisito directo para implementar la capa Model:
 
 **Seed data (43 filas):**
 
-**Módulo A (15 ejercicios):**
+**Módulo A (14 ejercicios):**
+
+| name | equipment_type | is_bodyweight | is_isometric | is_to_technical_failure |
+| ------ | ----------- | :-: | :-: | :-: |
+| Remo con Inclinación | Barra de Pesas | 0 | 0 | 0 |
+| Remo con un solo brazo doblado | Mancuerna | 0 | 0 | 0 |
+| Tiro de dorsales (Agarre ancho) | Máquina | 0 | 0 | 0 |
+| Elevación de hombros con mancuernas | Mancuerna | 0 | 0 | 0 |
+| Curl de bíceps | Mancuerna | 0 | 0 | 0 |
+| Curl de bíceps | Polea | 0 | 0 | 0 |
+| Curl de martillo cruzado | Mancuerna | 0 | 0 | 0 |
+| Curl de martillo | Mancuerna | 0 | 0 | 0 |
+| Curl de Contracción | Mancuerna | 0 | 0 | 0 |
+| Abdominales | Cuerpo | 1 | 0 | 0 |
+| Escalador | Cuerpo | 1 | 0 | 0 |
+| Giro Ruso | Cuerpo | 1 | 0 | 0 |
+| Plancha | Cuerpo | 1 | 1 | 0 |
+| Plancha Lateral | Cuerpo | 1 | 1 | 0 |
+
+**Módulo B (15 ejercicios):**
 
 | name | equipment_type | is_bodyweight | is_isometric | is_to_technical_failure |
 | ------ | ----------- | :-: | :-: | :-: |
@@ -172,33 +191,14 @@ Sirve como prerequisito directo para implementar la capa Model:
 | Cruce en polea alta | Máquina | 0 | 0 | 0 |
 | Apertura de pecho sentado | Máquina | 0 | 0 | 0 |
 | Apertura de pecho inclinado | Máquina | 0 | 0 | 0 |
-| Remo con Inclinación | Barra de Pesas | 0 | 0 | 0 |
-| Remo con un solo brazo doblado | Mancuerna | 0 | 0 | 0 |
-| Tiro de dorsales (Agarre ancho) | Máquina | 0 | 0 | 0 |
-| Abdominales | Cuerpo | 1 | 0 | 0 |
-| Escalador | Cuerpo | 1 | 0 | 0 |
-| Giro Ruso | Cuerpo | 1 | 0 | 0 |
-| Plancha | Cuerpo | 1 | 1 | 0 |
-| Plancha Lateral | Cuerpo | 1 | 1 | 0 |
-
-**Módulo B (14 ejercicios):**
-
-| name | equipment_type | is_bodyweight | is_isometric | is_to_technical_failure |
-| ------ | ----------- | :-: | :-: | :-: |
-| Curl de bíceps | Mancuerna | 0 | 0 | 0 |
-| Curl de bíceps | Polea | 0 | 0 | 0 |
-| Curl de martillo cruzado | Mancuerna | 0 | 0 | 0 |
-| Curl de martillo | Mancuerna | 0 | 0 | 0 |
-| Curl de Contracción | Mancuerna | 0 | 0 | 0 |
-| Dominada de tríceps banco | Pesa | 0 | 0 | 0 |
-| Extensión de tríceps por encima de la cabeza | Mancuerna | 0 | 0 | 0 |
-| Flexión de tríceps con cuerda | Máquina | 0 | 0 | 0 |
 | Elevación frontal | Mancuerna | 0 | 0 | 0 |
 | Elevación lateral | Mancuerna | 0 | 0 | 0 |
-| Elevación de hombros con mancuernas | Mancuerna | 0 | 0 | 0 |
 | Press de elevación sentado | Mancuerna | 0 | 0 | 0 |
 | Remo vertical | Barra de Pesas | 0 | 0 | 0 |
 | Remo vertical con cable | Máquina | 0 | 0 | 0 |
+| Dominada de tríceps banco | Pesa | 0 | 0 | 0 |
+| Extensión de tríceps por encima de la cabeza | Mancuerna | 0 | 0 | 0 |
+| Flexión de tríceps con cuerda | Máquina | 0 | 0 | 0 |
 
 **Módulo C (14 ejercicios):**
 
@@ -323,13 +323,13 @@ Un ejercicio puede aparecer en múltiples versiones del mismo módulo (los ejerc
 
 | module_version_id | exercise (nombre referencial) | sets | reps |
 | ----------------- | ----------------------------- | ---- | ---- |
-| 1 (A-V1) | Press de banca | 4 | 8-12 |
-| 1 (A-V1) | Press de banca inclinada | 4 | 8-12 |
-| 1 (A-V1) | Apertura de pecho sentado | 4 | 8-12 |
-| 1 (A-V1) | Flexiones | 4 | TO_TECHNICAL_FAILURE |
 | 1 (A-V1) | Tiro de dorsales (Agarre ancho) | 4 | 8-12 |
 | 1 (A-V1) | Remo con Inclinación | 4 | 8-12 |
 | 1 (A-V1) | Remo con un solo brazo doblado | 4 | 8-12 |
+| 1 (A-V1) | Curl de bíceps | 4 | 8-12 |
+| 1 (A-V1) | Curl de martillo cruzado | 4 | 8-12 |
+| 1 (A-V1) | Curl de bíceps | 4 | 8-12 |
+| 1 (A-V1) | Curl de martillo | 4 | 8-12 |
 | 1 (A-V1) | Abdominales | 4 | 8-12 |
 | 1 (A-V1) | Escalador | 4 | 8-12 |
 | 1 (A-V1) | Giro Ruso | 4 | 8-12 |

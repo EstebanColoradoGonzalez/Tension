@@ -162,7 +162,7 @@ Un entrenador, fisioterapeuta o profesional de la salud que podría consultar lo
 > *Los objetos reales o abstractos que el sistema manipula. Se describen por su existencia y razón de ser, sin atributos técnicos.*
 
 1. **Ejecutante:** La persona que entrena y genera los datos del sistema. Posee atributos de perfil (peso corporal, altura, nivel de experiencia) que contextualizan sus métricas pero que pueden cambiar en el tiempo.
-2. **Módulo (A, B, C):** La unidad organizativa de la división de entrenamiento. Cada módulo agrupa los ejercicios que trabajan un conjunto específico de grupos musculares (ej: Módulo A = Pecho, Espalda, Abdomen).
+2. **Módulo (A, B, C):** La unidad organizativa de la división de entrenamiento. Cada módulo agrupa los ejercicios que trabajan un conjunto específico de grupos musculares siguiendo la división Pull/Push/Legs (ej: Módulo A = Espalda, Bíceps, Abdomen).
 3. **Versión (1, 2, 3):** Una variante específica de un Módulo que utiliza diferentes ejercicios del Diccionario para atacar los mismos grupos musculares, permitiendo variedad de estímulo y prevención de lesiones por sobreuso. Cada módulo tiene entre 2 y 3 versiones.
 4. **Ejercicio:** La unidad de movimiento específica (ej: Press de Banca). Cada ejercicio pertenece a un módulo, tiene un tipo de equipo asociado y una zona muscular objetivo. Es una entidad estática definida en el Diccionario de Ejercicios.
 5. **Serie (Set):** El conjunto ininterrumpido de repeticiones de un ejercicio. Es la unidad mínima de registro. Cada serie produce un log con los datos: Peso, Repeticiones y RIR.
@@ -501,7 +501,7 @@ $$
 
 **Interpretación:**
 
-- Permite detectar desbalances: si el Pecho Medio recibe el 60% del volumen del Módulo A pero el Pecho Superior solo el 15%, hay una asimetría que puede limitar el desarrollo estético del ejecutante.
+- Permite detectar desbalances: si el Dorsal Ancho recibe el 60% del volumen del Módulo A pero la Espalda Media solo el 15%, hay una asimetría que puede limitar el desarrollo estético del ejecutante.
 - El sistema no prescribe distribuciones ideales (varían por anatomía individual), pero sí visualiza la distribución real para que el Ejecutante tome decisiones informadas sobre qué versión priorizar.
 
 **Periodicidad de evaluación:** Cada microciclo completado.

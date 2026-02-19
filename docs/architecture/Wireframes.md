@@ -624,16 +624,16 @@ No se definen estilos, colores ni tipografías (eso corresponde a mockups de alt
 ├──────────────────────────────────────┤
 │              BODY (scrollable)       │
 │                                      │
-│  { Módulo A — Superior }             │
-│  (Pecho, Espalda, Abdomen)           │
+│  { Módulo A — Superior (Pull + Abs) }  │
+│  (Espalda, Bíceps, Abdomen)              │
 │  ┌────────────────────────────────┐  │
 │  │ [ Versión 1 ]  (11 ej.)      │  │
 │  │ [ Versión 2 ]  (11 ej.)      │  │
 │  │ [ Versión 3 ]  (11 ej.)      │  │
 │  └────────────────────────────────┘  │
 │                                      │
-│  { Módulo B — Superior }             │
-│  (Hombro, Tríceps, Bíceps)           │
+│  { Módulo B — Superior (Push) }         │
+│  (Pecho, Hombro, Tríceps)               │
 │  ┌────────────────────────────────┐  │
 │  │ [ Versión 1 ]  (11 ej.)      │  │
 │  │ [ Versión 2 ]  (11 ej.)      │  │
@@ -666,8 +666,8 @@ No se definen estilos, colores ni tipografías (eso corresponde a mockups de alt
 |---|----------|------|----------|----------------|
 | 1 | Título "Diccionario" | Texto estático | Top Bar | Mismo título que D1 (comparten sección) |
 | 2 | Tabs "Ejercicios" / "Plan" | Tab bar | Top Bar, bajo título | Dos tabs: "Ejercicios" (al tocar → D1) y "Plan" (activo = D3) |
-| 3 | Sección "Módulo A" | Agrupación visual | Body | Encabezado: "Módulo A — Superior" + subtítulo "(Pecho, Espalda, Abdomen)". Contiene 3 filas de versión |
-| 4 | Sección "Módulo B" | Agrupación visual | Body | Encabezado: "Módulo B — Superior" + subtítulo "(Hombro, Tríceps, Bíceps)". Contiene 3 filas de versión |
+| 3 | Sección "Módulo A" | Agrupación visual | Body | Encabezado: "Módulo A — Superior (Pull + Abs)" + subtítulo "(Espalda, Bíceps, Abdomen)". Contiene 3 filas de versión |
+| 4 | Sección "Módulo B" | Agrupación visual | Body | Encabezado: "Módulo B — Superior (Push)" + subtítulo "(Pecho, Hombro, Tríceps)". Contiene 3 filas de versión |
 | 5 | Sección "Módulo C" | Agrupación visual | Body | Encabezado: "Módulo C — Inferior" + subtítulo "(Pierna)". Contiene 3 filas de versión |
 | 6 | Fila de versión | Elemento interactivo | Dentro de cada sección | Muestra: "Versión N" + "(X ej.)" indicando la cantidad de ejercicios. Al tocar → navega a D4 con la combinación módulo-versión seleccionada |
 | 7 | Bottom Navigation | Barra fija | Bottom Bar | Diccionario marcado como activo |

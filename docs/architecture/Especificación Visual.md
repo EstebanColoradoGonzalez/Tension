@@ -642,9 +642,9 @@ Material 3 define una escala tipográfica con 15 estilos. Tension usa la fuente 
 | Zona | Elemento | Componente M3 | Estilo detallado |
 |------|----------|----------------|------------------|
 | Top Bar | "Diccionario" + Tabs | CenterAlignedTopAppBar + TabRow | Tab activo = "Plan": texto Primary, indicador Primary · Tab inactivo = "Ejercicios": texto On Surface Variant |
-| Body | Sección Módulo A | Column | Encabezado: Title Medium, On Surface ("Módulo A — Superior") · Subtítulo: Body Small, On Surface Variant ("Pecho, Espalda, Abdomen") · Margin bottom tras subtítulo: 8 dp |
+| Body | Sección Módulo A | Column | Encabezado: Title Medium, On Surface ("Módulo A — Superior (Pull + Abs)") · Subtítulo: Body Small, On Surface Variant ("Espalda, Bíceps, Abdomen") · Margin bottom tras subtítulo: 8 dp |
 | Body | Fila Versión N (dentro de módulo) | ListItem M3, 56 dp | headlineContent: Title Medium, On Surface ("Versión N") · trailingContent: Body Medium, On Surface Variant ("(11 ej.)") · clickable → D4 · Ripple default |
-| Body | Sección Módulo B | Column | Encabezado: Title Medium ("Módulo B — Superior") · Subtítulo: Body Small ("Hombro, Tríceps, Bíceps") · 3 versiones |
+| Body | Sección Módulo B | Column | Encabezado: Title Medium ("Módulo B — Superior (Push)") · Subtítulo: Body Small ("Pecho, Hombro, Tríceps") · 3 versiones |
 | Body | Sección Módulo C | Column | Encabezado: Title Medium ("Módulo C — Inferior") · Subtítulo: Body Small ("Pierna") · 3 versiones |
 | Body | Separación entre módulos | Spacer + Divider | Spacer: 12 dp · Divider: Outline Variant · Spacer: 12 dp |
 | Bottom | Bottom Navigation | NavigationBar M3 | Diccionario activo |

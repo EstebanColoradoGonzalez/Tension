@@ -306,4 +306,48 @@
     <string name="alert_type_tonnage_drop">Caída de tonelaje</string>
     <string name="alert_type_module_inactivity">Inactividad por módulo</string>
     <string name="alert_type_module_requires_deload">Módulo requiere descarga</string>
+
+    <!-- Settings J1 — Datos -->
+    <string name="settings_section_data">Datos</string>
+    <string name="settings_export_backup">Exportar respaldo</string>
+    <string name="settings_import_backup">Importar respaldo</string>
+
+    <!-- Export Backup J2 -->
+    <string name="export_backup_title">Exportar Respaldo</string>
+    <string name="export_backup_warning">El archivo de respaldo contiene todos tus datos de
+        entrenamiento y no está cifrado.</string>
+    <string name="export_backup_button">Exportar datos</string>
+    <string name="export_backup_exporting">Exportando datos…</string>
+    <string name="export_backup_success_title">Respaldo exportado</string>
+    <string name="export_backup_file_label">Archivo: %1$s</string>
+    <string name="export_backup_location_label">Ubicación: %1$s</string>
+    <string name="export_backup_share">Compartir</string>
+    <string name="export_backup_error">Error al exportar los datos</string>
+
+    <!-- Import Backup J3 -->
+    <string name="import_backup_title">Importar Respaldo</string>
+    <string name="import_backup_select_file">Seleccionar archivo</string>
+    <string name="import_backup_valid_title">Archivo válido</string>
+    <string name="import_backup_version">Versión: %1$s</string>
+    <string name="import_backup_date">Fecha del respaldo: %1$s</string>
+    <string name="import_backup_sessions">Sesiones incluidas: %1$d</string>
+    <string name="import_backup_invalid_title">Archivo no válido</string>
+    <string name="import_backup_warning_title">ATENCIÓN</string>
+    <string name="import_backup_warning_message">Todos los datos actuales serán reemplazados por los
+        datos del respaldo. Esta operación no es reversible.</string>
+    <string name="import_backup_restore_button">Restaurar datos</string>
+    <string name="import_backup_cancel">Cancelar</string>
+    <string name="import_backup_importing">Restaurando datos…</string>
+    <string name="import_backup_success">Datos restaurados exitosamente.</string>
+    <string name="import_backup_error">La importación falló. Tus datos originales han sido
+        preservados.</string>
+    <string name="import_backup_back_to_settings">Volver a Configuración</string>
+    <string name="import_backup_read_error">Error al leer el archivo</string>
+    <string name="import_backup_invalid_default">El archivo seleccionado no es un respaldo válido o
+        está corrupto.</string>
+    <string name="import_backup_invalid_json">El archivo no contiene JSON válido</string>
+    <string name="import_backup_invalid_format">Formato de respaldo no reconocido</string>
+    <string name="import_backup_incompatible_version">Versión de respaldo incompatible (esperada:
+        %1$d, encontrada: %2$d)</string>
+    <string name="import_backup_incomplete">Archivo de respaldo incompleto</string>
 </resources>

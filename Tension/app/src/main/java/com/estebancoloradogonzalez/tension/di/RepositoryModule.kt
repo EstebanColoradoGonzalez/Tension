@@ -1,12 +1,14 @@
 package com.estebancoloradogonzalez.tension.di
 
 import com.estebancoloradogonzalez.tension.data.repository.AlertRepositoryImpl
+import com.estebancoloradogonzalez.tension.data.repository.BackupRepositoryImpl
 import com.estebancoloradogonzalez.tension.data.repository.ExerciseRepositoryImpl
 import com.estebancoloradogonzalez.tension.data.repository.MetricsRepositoryImpl
 import com.estebancoloradogonzalez.tension.data.repository.PlanRepositoryImpl
 import com.estebancoloradogonzalez.tension.data.repository.ProfileRepositoryImpl
 import com.estebancoloradogonzalez.tension.data.repository.SessionRepositoryImpl
 import com.estebancoloradogonzalez.tension.domain.repository.AlertRepository
+import com.estebancoloradogonzalez.tension.domain.repository.BackupRepository
 import com.estebancoloradogonzalez.tension.domain.repository.ExerciseRepository
 import com.estebancoloradogonzalez.tension.domain.repository.MetricsRepository
 import com.estebancoloradogonzalez.tension.domain.repository.PlanRepository
@@ -57,4 +59,10 @@ abstract class RepositoryModule {
     abstract fun bindAlertRepository(
         impl: AlertRepositoryImpl,
     ): AlertRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindBackupRepository(
+        impl: BackupRepositoryImpl,
+    ): BackupRepository
 }

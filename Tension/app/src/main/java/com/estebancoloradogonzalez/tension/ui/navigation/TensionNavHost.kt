@@ -50,6 +50,8 @@ import com.estebancoloradogonzalez.tension.ui.session.ActiveSessionScreen
 import com.estebancoloradogonzalez.tension.ui.session.RegisterSetScreen
 import com.estebancoloradogonzalez.tension.ui.session.SessionSummaryScreen
 import com.estebancoloradogonzalez.tension.ui.session.SubstituteExerciseScreen
+import com.estebancoloradogonzalez.tension.ui.settings.ExportBackupScreen
+import com.estebancoloradogonzalez.tension.ui.settings.ImportBackupScreen
 import com.estebancoloradogonzalez.tension.ui.settings.SettingsScreen
 
 @Composable
@@ -160,6 +162,12 @@ fun TensionNavHost(
                         SettingsScreen(
                             onNavigateToProfile = {
                                 navController.navigate(NavigationRoutes.PROFILE)
+                            },
+                            onNavigateToExportBackup = {
+                                navController.navigate(NavigationRoutes.EXPORT_BACKUP)
+                            },
+                            onNavigateToImportBackup = {
+                                navController.navigate(NavigationRoutes.IMPORT_BACKUP)
                             },
                         )
                     }
@@ -419,6 +427,23 @@ fun TensionNavHost(
                             },
                             onNavigateToDeloadManagement = {
                                 navController.navigate(NavigationRoutes.DELOAD_MANAGEMENT)
+                            },
+                        )
+                    }
+
+                    composable(NavigationRoutes.EXPORT_BACKUP) {
+                        ExportBackupScreen(
+                            onNavigateBack = { navController.popBackStack() },
+                        )
+                    }
+
+                    composable(NavigationRoutes.IMPORT_BACKUP) {
+                        ImportBackupScreen(
+                            onNavigateBack = { navController.popBackStack() },
+                            onNavigateToHome = {
+                                navController.navigate(NavigationRoutes.HOME) {
+                                    popUpTo(navController.graph.id) { inclusive = true }
+                                }
                             },
                         )
                     }

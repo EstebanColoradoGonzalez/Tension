@@ -97,6 +97,8 @@ fun BottomNavigationBar(
             childRoutes = setOf(
                 NavigationRoutes.PROFILE,
                 NavigationRoutes.WEIGHT_HISTORY,
+                NavigationRoutes.EXPORT_BACKUP,
+                NavigationRoutes.IMPORT_BACKUP,
             ),
         ),
     )

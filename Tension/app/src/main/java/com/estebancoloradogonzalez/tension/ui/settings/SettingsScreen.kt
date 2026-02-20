@@ -9,17 +9,21 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import com.estebancoloradogonzalez.tension.R
 import com.estebancoloradogonzalez.tension.ui.components.TensionTopAppBar
 
 @Composable
 fun SettingsScreen(
     onNavigateToProfile: () -> Unit,
+    onNavigateToExportBackup: () -> Unit,
+    onNavigateToImportBackup: () -> Unit,
 ) {
     Scaffold(
         topBar = {
@@ -44,6 +48,33 @@ fun SettingsScreen(
                 modifier = Modifier.clickable { onNavigateToProfile() },
             )
             HorizontalDivider()
+
+            Text(
+                text = stringResource(R.string.settings_section_data),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp),
+            )
+            ListItem(
+                headlineContent = { Text(stringResource(R.string.settings_export_backup)) },
+                trailingContent = {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                        contentDescription = null,
+                    )
+                },
+                modifier = Modifier.clickable { onNavigateToExportBackup() },
+            )
+            ListItem(
+                headlineContent = { Text(stringResource(R.string.settings_import_backup)) },
+                trailingContent = {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                        contentDescription = null,
+                    )
+                },
+                modifier = Modifier.clickable { onNavigateToImportBackup() },
+            )
         }
     }
 }

@@ -3,6 +3,7 @@ package com.estebancoloradogonzalez.tension.ui.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.estebancoloradogonzalez.tension.domain.model.DeloadHomeState
+import com.estebancoloradogonzalez.tension.domain.usecase.alerts.GetActiveAlertCountUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.deload.GetDeloadStateUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.session.GetActiveSessionUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.session.GetMicrocycleCountUseCase
@@ -28,6 +29,7 @@ class HomeViewModel @Inject constructor(
     private val startSessionUseCase: StartSessionUseCase,
     private val getMicrocycleCountUseCase: GetMicrocycleCountUseCase,
     private val getDeloadStateUseCase: GetDeloadStateUseCase,
+    private val getActiveAlertCountUseCase: GetActiveAlertCountUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -42,13 +44,14 @@ class HomeViewModel @Inject constructor(
                 getNextSessionInfoUseCase(),
                 getActiveSessionUseCase(),
                 getMicrocycleCountUseCase(),
-            ) { nextSession, activeSession, microcycleCount ->
+                getActiveAlertCountUseCase(),
+            ) { nextSession, activeSession, microcycleCount, alertCount ->
                 HomeUiState(
                     isLoading = false,
                     nextSession = if (activeSession != null) null else nextSession,
                     activeSession = activeSession,
                     microcycleCount = microcycleCount,
-                    alertCount = 0,
+                    alertCount = alertCount,
                 )
             }.collect { newState ->
                 _uiState.value = newState

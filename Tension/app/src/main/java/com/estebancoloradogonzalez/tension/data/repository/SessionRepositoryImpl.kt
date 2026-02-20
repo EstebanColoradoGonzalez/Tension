@@ -9,6 +9,7 @@ import com.estebancoloradogonzalez.tension.data.local.dao.ExerciseSetDao
 import com.estebancoloradogonzalez.tension.data.local.dao.ModuleDao
 import com.estebancoloradogonzalez.tension.data.local.dao.ModuleVersionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.PlanAssignmentDao
+import com.estebancoloradogonzalez.tension.data.local.dao.ProfileDao
 import com.estebancoloradogonzalez.tension.data.local.dao.RotationStateDao
 import com.estebancoloradogonzalez.tension.data.local.dao.SessionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.SessionExerciseDao
@@ -37,6 +38,7 @@ import com.estebancoloradogonzalez.tension.domain.model.SessionDetailExercise
 import com.estebancoloradogonzalez.tension.domain.model.SessionExerciseDetail
 import com.estebancoloradogonzalez.tension.domain.model.SessionHistoryItem
 import com.estebancoloradogonzalez.tension.domain.model.SetData
+import com.estebancoloradogonzalez.tension.domain.model.SetForTonnage
 import com.estebancoloradogonzalez.tension.domain.model.SubstituteExerciseInfo
 import com.estebancoloradogonzalez.tension.domain.repository.SessionRepository
 import com.estebancoloradogonzalez.tension.domain.rules.DeloadLoadRule
@@ -44,13 +46,20 @@ import com.estebancoloradogonzalez.tension.domain.rules.DeloadNeedRule
 import com.estebancoloradogonzalez.tension.domain.rules.DoubleThresholdRule
 import com.estebancoloradogonzalez.tension.domain.rules.ModuleFatigueRule
 import com.estebancoloradogonzalez.tension.domain.rules.ProgressionClassificationRule
+import com.estebancoloradogonzalez.tension.domain.rules.AdherenceRule
+import com.estebancoloradogonzalez.tension.domain.rules.AlertThresholdRule
+import com.estebancoloradogonzalez.tension.domain.rules.AvgRirRule
+import com.estebancoloradogonzalez.tension.domain.rules.ProgressionRateRule
+import com.estebancoloradogonzalez.tension.domain.rules.TonnageRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import java.time.DayOfWeek
 import java.time.LocalDate
+import java.time.temporal.ChronoUnit
 import javax.inject.Inject
 
 class SessionRepositoryImpl @Inject constructor(
@@ -66,6 +75,7 @@ class SessionRepositoryImpl @Inject constructor(
     private val deloadDao: DeloadDao,
     private val exerciseDao: ExerciseDao,
     private val moduleDao: ModuleDao,
+    private val profileDao: ProfileDao,
 ) : SessionRepository {
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -532,10 +542,16 @@ class SessionRepositoryImpl @Inject constructor(
         }
 
         // Step 6: Module-level detection (HU-12, post-loop)
-        // DELOAD GUARD: Skip module-level detection during deload sessions
-        if (isDeloadSession) return
-
         val moduleCode = exercises.firstOrNull()?.moduleCode ?: return
+
+        // HU-17 Steps 9 & 11: Adherence + Inactivity (evaluate before deload guard)
+        // Adherence: deload sessions count as completed sessions (CA-17.12)
+        // Inactivity: deload sessions resolve inactivity for that module (CA-17.29)
+        try { evaluateLowAdherence(today) } catch (_: Exception) { }
+        try { evaluateModuleInactivity(today, moduleCode) } catch (_: Exception) { }
+
+        // DELOAD GUARD: Skip progression/RIR/tonnage evaluation during deload sessions
+        if (isDeloadSession) return
 
         // CA-12.04, CA-12.05: Module fatigue detection
         val fatigueDetected = ModuleFatigueRule.detectFatigue(
@@ -572,6 +588,15 @@ class SessionRepositoryImpl @Inject constructor(
         } else {
             alertDao.resolveByModuleAndType(moduleCode, "MODULE_REQUIRES_DELOAD", today)
         }
+
+        // HU-17 Steps 7, 8, 10: Progression Rate, RIR, Tonnage
+        // These are correctly guarded by deload because:
+        // - Progression: deload sessions use IN_DELOAD classification
+        // - RIR: deload targets RIR 4-5 intentionally
+        // - Tonnage: deload uses 60% load, drops are expected
+        try { evaluateLowProgressionRate(today) } catch (_: Exception) { }
+        try { evaluateRirOutOfRange(today) } catch (_: Exception) { }
+        try { evaluateTonnageDrop(today) } catch (_: Exception) { }
     }
 
     override suspend fun getSessionSummaryData(sessionId: Long): SessionSummaryData {
@@ -743,6 +768,244 @@ class SessionRepositoryImpl @Inject constructor(
             ProgressionClassification.valueOf(value)
         } catch (_: IllegalArgumentException) {
             null
+        }
+    }
+
+    // =========================================================================
+    // HU-17: Alert Pipeline Steps 7-11
+    // =========================================================================
+
+    private suspend fun evaluateLowProgressionRate(today: String) {
+        val startDate = LocalDate.now().minusWeeks(4).toString()
+        val counts = sessionExerciseDao.getClassificationCountsByPeriod(startDate)
+
+        for (exerciseCount in counts) {
+            val rate = ProgressionRateRule.calculate(
+                exerciseCount.positiveCount,
+                exerciseCount.totalCount,
+            )
+            val level = AlertThresholdRule.progressionLevel(rate)
+            val exerciseId = exerciseCount.exerciseId
+
+            if (level != null) {
+                alertDao.resolveByExerciseAndType(
+                    exerciseId,
+                    "LOW_PROGRESSION_RATE",
+                    today,
+                )
+                alertDao.insert(
+                    AlertEntity(
+                        type = "LOW_PROGRESSION_RATE",
+                        level = level,
+                        exerciseId = exerciseId,
+                        message = "Tasa: ${rate.toInt()}%",
+                        isActive = 1,
+                        createdAt = today,
+                    ),
+                )
+            } else {
+                alertDao.resolveByExerciseAndType(
+                    exerciseId,
+                    "LOW_PROGRESSION_RATE",
+                    today,
+                )
+            }
+        }
+    }
+
+    private suspend fun evaluateRirOutOfRange(today: String) {
+        for (moduleCode in listOf("A", "B", "C")) {
+            val sessionIds = sessionDao.getSessionIdsByModuleInRange(moduleCode, 2)
+            if (sessionIds.size < 2) continue
+
+            val firstRirValues = exerciseSetDao.getRirValuesBySessionIds(
+                listOf(sessionIds[0]),
+            )
+            val secondRirValues = exerciseSetDao.getRirValuesBySessionIds(
+                listOf(sessionIds[1]),
+            )
+            if (firstRirValues.isEmpty() || secondRirValues.isEmpty()) continue
+
+            val firstAvg = AvgRirRule.calculate(firstRirValues)
+            val secondAvg = AvgRirRule.calculate(secondRirValues)
+
+            val bothLow = AlertThresholdRule.isRirLow(firstAvg) &&
+                AlertThresholdRule.isRirLow(secondAvg)
+            val bothHigh = AlertThresholdRule.isRirHigh(firstAvg) &&
+                AlertThresholdRule.isRirHigh(secondAvg)
+
+            if (bothLow || bothHigh) {
+                // Resolve + re-insert pattern: ensures the message always
+                // reflects the current condition (low vs high) and supports
+                // transitions between bothLow ↔ bothHigh without stale data.
+                alertDao.resolveByModuleAndType(moduleCode, "RIR_OUT_OF_RANGE", today)
+                val isLow = bothLow
+                alertDao.insert(
+                    AlertEntity(
+                        type = "RIR_OUT_OF_RANGE",
+                        level = "MEDIUM_ALERT",
+                        moduleCode = moduleCode,
+                        message = if (isLow) "RIR <1.5 sostenido" else "RIR >3.5 sostenido",
+                        isActive = 1,
+                        createdAt = today,
+                    ),
+                )
+            } else {
+                val bothOptimal = !AlertThresholdRule.isRirOutOfRange(firstAvg) &&
+                    !AlertThresholdRule.isRirOutOfRange(secondAvg)
+                if (bothOptimal) {
+                    alertDao.resolveByModuleAndType(
+                        moduleCode,
+                        "RIR_OUT_OF_RANGE",
+                        today,
+                    )
+                }
+            }
+        }
+    }
+
+    private suspend fun evaluateLowAdherence(today: String) {
+        val profile = profileDao.getProfile().first() ?: return
+        val weeklyFrequency = profile.weeklyFrequency
+
+        // CA-17.12: Evaluate the PREVIOUS completed week ("al finalizar una semana natural")
+        // The current week is in progress — the user may still complete sessions.
+        // Only a fully elapsed week provides a definitive adherence measurement.
+        val todayDate = LocalDate.now()
+        val prevWeekStart = todayDate.minusWeeks(1).with(DayOfWeek.MONDAY).toString()
+        val prevWeekEnd = todayDate.minusWeeks(1).with(DayOfWeek.SUNDAY).toString()
+        val prevWeekSessions = sessionDao.countSessionsInWeek(prevWeekStart, prevWeekEnd)
+        val prevAdherence = AdherenceRule.calculate(prevWeekSessions, weeklyFrequency)
+
+        if (AlertThresholdRule.isAdherenceLow(prevAdherence)) {
+            // CA-17.13: Check 2 weeks ago for crisis (2+ consecutive weeks < 60%)
+            val twoWeeksAgoStart = todayDate.minusWeeks(2).with(DayOfWeek.MONDAY).toString()
+            val twoWeeksAgoEnd = todayDate.minusWeeks(2).with(DayOfWeek.SUNDAY).toString()
+            val twoWeeksAgoSessions = sessionDao.countSessionsInWeek(
+                twoWeeksAgoStart,
+                twoWeeksAgoEnd,
+            )
+            val twoWeeksAgoAdherence = AdherenceRule.calculate(
+                twoWeeksAgoSessions,
+                weeklyFrequency,
+            )
+
+            val level = if (AlertThresholdRule.isAdherenceLow(twoWeeksAgoAdherence)) {
+                "CRISIS"
+            } else {
+                "MEDIUM_ALERT"
+            }
+
+            alertDao.resolveAllByType("LOW_ADHERENCE", today)
+            alertDao.insert(
+                AlertEntity(
+                    type = "LOW_ADHERENCE",
+                    level = level,
+                    message = "Adherencia: ${prevAdherence.toInt()}%",
+                    isActive = 1,
+                    createdAt = today,
+                ),
+            )
+        } else {
+            // CA-17.16: Resolve when the previous completed week has >= 60%
+            alertDao.resolveAllByType("LOW_ADHERENCE", today)
+        }
+    }
+
+    private suspend fun evaluateTonnageDrop(today: String) {
+        val closedSessions = sessionDao.getClosedSessionsOrdered()
+        // Only compare complete microcycles (exactly 6 sessions each).
+        // An incomplete last chunk (e.g., 7 sessions → [6,1]) would produce
+        // false tonnage drops because 1 session has far less volume than 6.
+        val completeMicrocycles = closedSessions.chunked(6).filter { it.size == 6 }
+        if (completeMicrocycles.size < 2) return
+
+        val currentMicrocycle = completeMicrocycles.last()
+        val previousMicrocycle = completeMicrocycles[completeMicrocycles.size - 2]
+        val isDeloadMicrocycle = currentMicrocycle.any { it.deloadId != null }
+
+        val currentTonnageData = exerciseSetDao.getTonnageDataBySessionIds(
+            currentMicrocycle.map { it.id },
+        )
+        val currentTonnage = TonnageRule.calculateForMuscleGroup(
+            currentTonnageData.map {
+                SetForTonnage(it.weightKg, it.reps, it.muscleGroup)
+            },
+        )
+
+        val previousTonnageData = exerciseSetDao.getTonnageDataBySessionIds(
+            previousMicrocycle.map { it.id },
+        )
+        val previousTonnage = TonnageRule.calculateForMuscleGroup(
+            previousTonnageData.map {
+                SetForTonnage(it.weightKg, it.reps, it.muscleGroup)
+            },
+        )
+
+        val allMuscleGroups = (currentTonnage.keys + previousTonnage.keys).toSet()
+        for (muscleGroup in allMuscleGroups) {
+            val prev = previousTonnage[muscleGroup] ?: 0.0
+            val curr = currentTonnage[muscleGroup] ?: 0.0
+            if (prev <= 0.0) continue
+
+            val dropPercentage = ((prev - curr) / prev) * 100.0
+            val level = AlertThresholdRule.tonnageLevel(dropPercentage, isDeloadMicrocycle)
+
+            if (level != null) {
+                alertDao.resolveByMuscleGroupAndType(muscleGroup, "TONNAGE_DROP", today)
+                val message = if (isDeloadMicrocycle) {
+                    "Descarga planificada — caída esperada"
+                } else {
+                    "Caída de tonelaje −${dropPercentage.toInt()}%"
+                }
+                alertDao.insert(
+                    AlertEntity(
+                        type = "TONNAGE_DROP",
+                        level = level,
+                        muscleGroup = muscleGroup,
+                        message = message,
+                        isActive = 1,
+                        createdAt = today,
+                    ),
+                )
+            } else {
+                alertDao.resolveByMuscleGroupAndType(muscleGroup, "TONNAGE_DROP", today)
+            }
+        }
+    }
+
+    private suspend fun evaluateModuleInactivity(today: String, currentModuleCode: String) {
+        for (moduleCode in listOf("A", "B", "C")) {
+            if (moduleCode == currentModuleCode) {
+                alertDao.resolveByModuleAndType(moduleCode, "MODULE_INACTIVITY", today)
+                continue
+            }
+
+            val lastDate = sessionDao.getLastSessionDateByModule(moduleCode) ?: continue
+            val daysSince = ChronoUnit.DAYS.between(
+                LocalDate.parse(lastDate),
+                LocalDate.now(),
+            )
+            val level = AlertThresholdRule.inactivityLevel(daysSince)
+
+            if (level != null) {
+                val muscleGroups = AlertThresholdRule.MUSCLE_GROUPS_BY_MODULE[moduleCode]
+                    ?: emptyList()
+                alertDao.resolveByModuleAndType(moduleCode, "MODULE_INACTIVITY", today)
+                alertDao.insert(
+                    AlertEntity(
+                        type = "MODULE_INACTIVITY",
+                        level = level,
+                        moduleCode = moduleCode,
+                        muscleGroup = muscleGroups.joinToString(", "),
+                        message = "Módulo $moduleCode: $daysSince días sin sesión",
+                        isActive = 1,
+                        createdAt = today,
+                    ),
+                )
+            } else {
+                alertDao.resolveByModuleAndType(moduleCode, "MODULE_INACTIVITY", today)
+            }
         }
     }
 }

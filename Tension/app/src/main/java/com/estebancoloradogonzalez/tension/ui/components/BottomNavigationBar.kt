@@ -50,6 +50,10 @@ fun BottomNavigationBar(
             labelResId = R.string.nav_home,
             selectedIcon = Icons.Filled.Home,
             unselectedIcon = Icons.Outlined.Home,
+            childRoutePrefixes = setOf(
+                "alert-center",
+                "alert-detail",
+            ),
         ),
         BottomNavItem(
             route = NavigationRoutes.EXERCISE_DICTIONARY,

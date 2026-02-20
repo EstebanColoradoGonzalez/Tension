@@ -73,4 +73,30 @@ interface AlertDao {
         """,
     )
     suspend fun resolveAllByType(type: String, resolvedAt: String)
+
+    @Query("SELECT * FROM alert WHERE id = :alertId")
+    suspend fun getAlertById(alertId: Long): AlertEntity?
+
+    @Query(
+        """
+        SELECT EXISTS(
+            SELECT 1 FROM alert
+            WHERE muscle_group = :muscleGroup AND type = :type AND is_active = 1
+        )
+        """,
+    )
+    suspend fun existsActiveByMuscleGroup(muscleGroup: String, type: String): Boolean
+
+    @Query(
+        """
+        UPDATE alert
+        SET is_active = 0, resolved_at = :resolvedAt
+        WHERE muscle_group = :muscleGroup AND type = :type AND is_active = 1
+        """,
+    )
+    suspend fun resolveByMuscleGroupAndType(
+        muscleGroup: String,
+        type: String,
+        resolvedAt: String,
+    )
 }

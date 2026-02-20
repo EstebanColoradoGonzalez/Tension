@@ -22,6 +22,8 @@ object NavigationRoutes {
     const val SUBSTITUTE_EXERCISE = "substitute-exercise/{sessionExerciseId}"
     const val SESSION_SUMMARY = "session-summary/{sessionId}"
     const val DELOAD_MANAGEMENT = "deload"
+    const val ALERT_CENTER = "alert-center"
+    const val ALERT_DETAIL = "alert-detail/{alertId}"
 
     fun exerciseDetailRoute(exerciseId: Long) = "exercise-detail/$exerciseId"
     fun exerciseHistoryRoute(exerciseId: Long) = "exercise-history/$exerciseId"
@@ -31,4 +33,5 @@ object NavigationRoutes {
     fun substituteExerciseRoute(sessionExerciseId: Long) = "substitute-exercise/$sessionExerciseId"
     fun sessionSummaryRoute(sessionId: Long) = "session-summary/$sessionId"
     fun sessionDetailRoute(sessionId: Long) = "session-detail/$sessionId"
+    fun alertDetailRoute(alertId: Long) = "alert-detail/$alertId"
 }

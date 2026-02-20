@@ -33,6 +33,8 @@ import com.estebancoloradogonzalez.tension.ui.catalog.ExerciseDictionaryScreen
 import com.estebancoloradogonzalez.tension.ui.catalog.PlanVersionDetailScreen
 import com.estebancoloradogonzalez.tension.ui.catalog.TrainingPlanScreen
 import com.estebancoloradogonzalez.tension.ui.components.BottomNavigationBar
+import com.estebancoloradogonzalez.tension.ui.alerts.AlertCenterScreen
+import com.estebancoloradogonzalez.tension.ui.alerts.AlertDetailScreen
 import com.estebancoloradogonzalez.tension.ui.deload.DeloadManagementScreen
 import com.estebancoloradogonzalez.tension.ui.history.ExerciseHistoryScreen
 import com.estebancoloradogonzalez.tension.ui.history.SessionDetailScreen
@@ -125,7 +127,9 @@ fun TensionNavHost(
 
                     composable(NavigationRoutes.HOME) {
                         HomeScreen(
-                            onNavigateToAlerts = { /* TODO: HU-17 */ },
+                            onNavigateToAlerts = {
+                                navController.navigate(NavigationRoutes.ALERT_CENTER)
+                            },
                             onNavigateToDeloadManagement = {
                                 navController.navigate(NavigationRoutes.DELOAD_MANAGEMENT)
                             },
@@ -386,6 +390,36 @@ fun TensionNavHost(
                     composable(NavigationRoutes.DELOAD_MANAGEMENT) {
                         DeloadManagementScreen(
                             onNavigateBack = { navController.popBackStack() },
+                        )
+                    }
+
+                    composable(NavigationRoutes.ALERT_CENTER) {
+                        AlertCenterScreen(
+                            onNavigateBack = { navController.popBackStack() },
+                            onNavigateToAlertDetail = { alertId ->
+                                navController.navigate(
+                                    NavigationRoutes.alertDetailRoute(alertId),
+                                )
+                            },
+                        )
+                    }
+
+                    composable(
+                        route = NavigationRoutes.ALERT_DETAIL,
+                        arguments = listOf(
+                            navArgument("alertId") { type = NavType.LongType },
+                        ),
+                    ) {
+                        AlertDetailScreen(
+                            onNavigateBack = { navController.popBackStack() },
+                            onNavigateToExerciseHistory = { exerciseId ->
+                                navController.navigate(
+                                    NavigationRoutes.exerciseHistoryRoute(exerciseId),
+                                )
+                            },
+                            onNavigateToDeloadManagement = {
+                                navController.navigate(NavigationRoutes.DELOAD_MANAGEMENT)
+                            },
                         )
                     }
                 }

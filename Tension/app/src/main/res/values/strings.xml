@@ -284,4 +284,26 @@
     <string name="trend_declining">En declive</string>
     <string name="trend_insufficient">Se necesitan al menos 4 microciclos completados. Faltan %1$d
         microciclos.</string>
+
+    <!-- Alert Center H1 -->
+    <string name="alert_center_title">Alertas</string>
+    <string name="alert_center_subtitle">%1$d alertas activas</string>
+    <string name="alert_center_empty">No hay alertas activas. Todo en orden.</string>
+    <string name="alert_center_section_crisis">Crisis</string>
+    <string name="alert_center_section_alerts">Alertas</string>
+
+    <!-- Alert Detail H2 -->
+    <string name="alert_detail_title">Detalle de Alerta</string>
+    <string name="alert_detail_recommendations_title">Recomendaciones</string>
+    <string name="alert_detail_view_history">Ver historial del ejercicio \u2192</string>
+    <string name="alert_detail_manage_deload">Gestionar descarga \u2192</string>
+
+    <!-- Alert Types -->
+    <string name="alert_type_plateau">Meseta detectada</string>
+    <string name="alert_type_low_progression">Tasa de progresión baja</string>
+    <string name="alert_type_rir_out_of_range">RIR fuera de rango</string>
+    <string name="alert_type_low_adherence">Adherencia baja</string>
+    <string name="alert_type_tonnage_drop">Caída de tonelaje</string>
+    <string name="alert_type_module_inactivity">Inactividad por módulo</string>
+    <string name="alert_type_module_requires_deload">Módulo requiere descarga</string>
 </resources>

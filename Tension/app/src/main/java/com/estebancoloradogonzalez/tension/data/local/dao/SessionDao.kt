@@ -178,4 +178,15 @@ interface SessionDao {
         """,
     )
     suspend fun getClosedSessionsWithSummary(): List<ClosedSessionDto>
+
+    @Query(
+        """
+        SELECT MAX(s.date)
+        FROM session s
+        INNER JOIN module_version mv ON s.module_version_id = mv.id
+        WHERE mv.module_code = :moduleCode
+          AND s.status IN ('COMPLETED', 'INCOMPLETE')
+        """,
+    )
+    suspend fun getLastSessionDateByModule(moduleCode: String): String?
 }

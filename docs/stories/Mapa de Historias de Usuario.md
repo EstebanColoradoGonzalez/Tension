@@ -73,6 +73,12 @@ Los siguientes 23 RNFs son restricciones de calidad que aplican al sistema compl
 | HU-16 | Historial de Ejercicios y Sesiones | Historial completo de registros de un ejercicio: fecha, peso, repeticiones, RIR y clasificación de progresión por sesión, orden cronológico descendente, independiente del módulo-versión, con tendencia de carga (o repeticiones para bodyweight). Listado de sesiones pasadas con fecha, módulo, versión, estado y tonelaje. Detalle de sesión con ejercicios ejecutados, series, sustituciones reflejadas. Inmutabilidad de datos. Manejo de historial vacío y ejercicios sin registros. **Consolida HU-23 y HU-24 originales.** | RF50, RF51, RF60 | — |
 | HU-17 | Sistema de Alertas | Sistema de alertas proactivas con dos niveles de severidad (alerta y crisis): tasa de progresión baja (< 40% alerta, < 20% crisis, evaluación periódica). RIR por módulo fuera de rango (< 1.5 o > 3.5 sostenido 2+ sesiones, retiro automático). Adherencia semanal baja (< 60% una semana alerta, 2+ semanas crisis). Caída de tonelaje por grupo muscular (> 10% alerta, > 20% crisis, verificación de descarga planificada). Inactividad por módulo (> 10 días alerta, > 14 días crisis, con referencia a grupos musculares afectados). Todas informativas y no bloqueantes, con diferenciación visual por colores e iconografía. **Consolida HU-26, HU-27, HU-28, HU-29 y HU-30 originales.** | RF53, RF54, RF55, RF56, RF57, RF58 | RNF05 |
 | HU-18 | Backup y Restauración | Exportar respaldo completo autodescriptivo (JSON o SQLite) con metadatos de versión. Almacenable en almacenamiento externo o compartible vía apps del sistema. Importar respaldo con validación de formato, confirmación de reemplazo, migración de versiones de esquema y rollback ante error. Proceso < 10 segundos para historial de hasta 2 años. Sin cifrado pero con advertencia. Solo permisos de almacenamiento. **Consolida HU-31 y HU-32 originales.** | — | RNF15, RNF16, RNF17, RNF18, RNF26, RNF27 |
+| | | | | |
+| | **— Fase de Estabilización y Mejoras —** | | | |
+| | | | | |
+| HU-19 | Corrección de sustitución de ejercicios en sesión activa | Corregir dos defectos en la funcionalidad de sustitución puntual durante sesión activa: (1) El filtro de ejercicios disponibles para sustitución debe reflejar el estado dinámico de la sesión — excluir ejercicios actualmente asignados a la sesión (incluyendo sustitutos previamente seleccionados) e incluir ejercicios descartados por sustituciones anteriores en la misma sesión. (2) La lista de candidatos para sustitución debe mostrar todos los ejercicios del módulo activo (de cualquier versión del módulo) que no estén actualmente asignados a la sesión en curso, sin omisiones. | RF16 (corrección) | — |
+| HU-20 | Reestructuración del plan de entrenamiento y orden sugerido de ejecución | Actualizar documentación de negocio (Plan de Entrenamiento, Manifiesto de Dominio Sistémico) y seed data del código para: (1) Módulo A: clasificar ejercicios de abdomen como ejecutables fuera del gym (tipo Cuerpo, sin requisito de equipamiento), agregar Elevación de hombros con mancuernas a V1 garantizando mínimo 4 ejercicios de espalda en todas las versiones. (2) Módulo B: reducir a 3 ejercicios de pecho, 3 de hombro y 2 de tríceps (8 ejercicios por versión). (3) Módulo C: limitar a máximo 8 ejercicios por versión. (4) Incorporar en el Manifiesto y en la UX un orden sugerido (no obligatorio) de ejecución por módulo basado en priorización biomecánica: A (Espalda → Bíceps; Abdomen fuera del gym al inicio o en gym al final), B (Pecho → Hombro → Tríceps), C (Cuádriceps compuestos → Isquiotibiales → Glúteos → Aductores/Abductores → Gemelos). | RF04, RF05, RF06 (modificación) | RNF31 |
+| HU-21 | Preview de sesión sin iniciar y cronómetro para ejercicios por tiempo | Dos mejoras de experiencia de usuario: (1) Permitir al ejecutante visualizar el detalle completo de la próxima sesión prescrita (módulo, versión, ejercicios, cargas objetivo) desde la pantalla de inicio sin necesidad de iniciarla formalmente; la sesión solo se inicia mediante acción explícita del ejecutante. (2) Para ejercicios cuyo rango de repeticiones está definido en segundos (isométricos y ejercicios por tiempo), reemplazar el input manual de segundos por un cronómetro integrado con tiempo máximo definido en el plan, habilitación de detención a partir del tiempo mínimo prescrito, y captura automática del dato al detener — eliminando la fricción de cronometraje externo y registro manual. | RF12, RF32 (extensión) | RNF02 |
 
 ---
 
@@ -175,11 +181,13 @@ Los 23 RNFs listados en la §3 de este documento son restricciones de calidad de
 
 | Métrica | Valor |
 |---------|-------|
-| Historias de Usuario | 19 |
+| Historias de Usuario | 22 |
 | Historias implementadas (HU-01 a HU-15) | 15 |
-| Historias pendientes (HU-15.5 a HU-18) | 4 |
-| CAs en historias pendientes | 159 |
-| RFs por historia (promedio) | 3.6 |
+| Historias pendientes — backlog original (HU-15.5 a HU-18) | 4 |
+| Historias pendientes — estabilización (HU-19 a HU-21) | 3 |
+| CAs en historias pendientes (HU-15.5 a HU-18) | 159 |
+| CAs en historias de estabilización (HU-19 a HU-21) | Pendiente de refinamiento |
+| RFs por historia (promedio) | 3.3 |
 | RFs por historia (máximo) | 8 (HU-15) |
 | Historias sin RF (solo RNFs) | 1 (HU-18) |
-| Historias sin RNF específicos | 11 (cubiertas por RNFs transversales) |
+| Historias sin RNF específicos | 13 (cubiertas por RNFs transversales) |

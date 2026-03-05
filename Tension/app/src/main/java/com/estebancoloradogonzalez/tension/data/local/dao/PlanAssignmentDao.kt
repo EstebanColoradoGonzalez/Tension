@@ -48,7 +48,7 @@ interface PlanAssignmentDao {
         LEFT JOIN muscle_zone mz ON emz.muscle_zone_id = mz.id
         WHERE pa.module_version_id = :moduleVersionId
         GROUP BY e.id
-        ORDER BY e.name ASC
+        ORDER BY pa.sort_order ASC
         """,
     )
     fun getDetailsByModuleVersionId(moduleVersionId: Long): Flow<List<PlanAssignmentWithExerciseDetails>>
@@ -61,6 +61,9 @@ interface PlanAssignmentDao {
 
     @Query("DELETE FROM plan_assignment WHERE module_version_id = :moduleVersionId AND exercise_id = :exerciseId")
     suspend fun delete(moduleVersionId: Long, exerciseId: Long)
+
+    @Query("SELECT MAX(sort_order) FROM plan_assignment WHERE module_version_id = :moduleVersionId")
+    suspend fun getMaxSortOrder(moduleVersionId: Long): Int?
 
     @Query("SELECT COUNT(*) FROM plan_assignment WHERE module_version_id = :moduleVersionId")
     suspend fun countExercisesForModuleVersion(moduleVersionId: Long): Int

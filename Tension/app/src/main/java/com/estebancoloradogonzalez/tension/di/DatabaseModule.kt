@@ -42,7 +42,7 @@ object DatabaseModule {
             "tension_database",
         )
             .addCallback(PrepopulateCallback())
-            .addMigrations(Migrations.MIGRATION_6_7)
+            .addMigrations(Migrations.MIGRATION_6_7, Migrations.MIGRATION_7_8)
             .fallbackToDestructiveMigration()
             .build()
     }

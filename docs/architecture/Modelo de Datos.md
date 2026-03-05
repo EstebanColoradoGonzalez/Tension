@@ -296,7 +296,7 @@ Esta relación es crítica para:
 
 ### 3.7. plan_assignment
 
-**Propósito:** Define qué ejercicios componen cada combinación módulo-versión, junto con la prescripción de series y repeticiones. Es la tabla del "Plan de Entrenamiento" en forma relacional — la receta que el sistema consulta al iniciar una sesión. Contiene 93 filas de seed data (plan precargado) y puede crecer con asignaciones del ejecutante (RF63).
+**Propósito:** Define qué ejercicios componen cada combinación módulo-versión, junto con la prescripción de series, repeticiones y orden sugerido de ejecución. Es la tabla del "Plan de Entrenamiento" en forma relacional — la receta que el sistema consulta al iniciar una sesión. Contiene 82 filas de seed data (plan precargado) y puede crecer con asignaciones del ejecutante (RF63).
 
 Un ejercicio puede aparecer en múltiples versiones del mismo módulo (los ejercicios "fijos" se repiten en todas las versiones). La prescripción de series (siempre 4) y repeticiones (varía según tipo de ejercicio) se almacena como atributos de la asignación para que el Plan sea autocontenido y consultable sin derivar valores de las propiedades del ejercicio.
 
@@ -306,6 +306,7 @@ Un ejercicio puede aparecer en múltiples versiones del mismo módulo (los ejerc
 | exercise_id | INTEGER | NOT NULL, **FK** → `exercise(id)`, **PK** (compuesta) | Ejercicio asignado |
 | sets | INTEGER | NOT NULL | Número de series prescritas. Siempre `4` en el MVP |
 | reps | TEXT | NOT NULL | Rango de repeticiones prescrito: `"8-12"`, `"TO_TECHNICAL_FAILURE"` o `"30-45_SEC"`. La UI mapea estos valores a texto en español para el ejecutante |
+| sort_order | INTEGER | NOT NULL, DEFAULT 0 | Orden sugerido de ejecución dentro de la versión. 1-based secuencial en seed data. Para asignaciones manuales se computa como `MAX(sort_order) + 1` |
 
 **Restricciones adicionales:**
 
@@ -317,25 +318,26 @@ Un ejercicio puede aparecer en múltiples versiones del mismo módulo (los ejerc
 
 **Validación de integridad cruzada:** El `exercise_id` referenciado debe pertenecer al mismo módulo que el `module_version_id`. Esta restricción no es expresable como CHECK en SQLite y se valida a nivel de la aplicación o del seed data.
 
-**Seed data (93 filas):** A: 3 versiones × 11 ejercicios = 33; B: 3 versiones × 11 ejercicios = 33; C: 3 versiones × 9 ejercicios = 27.
+**Seed data (82 filas):** A: V1=12 + V2=11 + V3=11 = 34; B: 3 versiones × 8 ejercicios = 24; C: 3 versiones × 8 ejercicios = 24.
 
-**Ejemplo — Módulo A, Versión 1 (11 filas):**
+**Ejemplo — Módulo A, Versión 1 (12 filas):**
 
-| module_version_id | exercise (nombre referencial) | sets | reps |
-| ----------------- | ----------------------------- | ---- | ---- |
-| 1 (A-V1) | Tiro de dorsales (Agarre ancho) | 4 | 8-12 |
-| 1 (A-V1) | Remo con Inclinación | 4 | 8-12 |
-| 1 (A-V1) | Remo con un solo brazo doblado | 4 | 8-12 |
-| 1 (A-V1) | Curl de bíceps | 4 | 8-12 |
-| 1 (A-V1) | Curl de martillo cruzado | 4 | 8-12 |
-| 1 (A-V1) | Curl de bíceps | 4 | 8-12 |
-| 1 (A-V1) | Curl de martillo | 4 | 8-12 |
-| 1 (A-V1) | Abdominales | 4 | 8-12 |
-| 1 (A-V1) | Escalador | 4 | 8-12 |
-| 1 (A-V1) | Giro Ruso | 4 | 8-12 |
-| 1 (A-V1) | Plancha | 4 | 30-45_SEC |
+| module_version_id | exercise (nombre referencial) | sets | reps | sort_order |
+| ----------------- | ----------------------------- | ---- | ---- | ---------- |
+| 1 (A-V1) | Tiro de dorsales (Agarre ancho) | 4 | 8-12 | 1 |
+| 1 (A-V1) | Remo con Inclinación | 4 | 8-12 | 2 |
+| 1 (A-V1) | Remo con un solo brazo doblado | 4 | 8-12 | 3 |
+| 1 (A-V1) | Elevación de hombros con mancuernas | 4 | 8-12 | 4 |
+| 1 (A-V1) | Curl de bíceps | 4 | 8-12 | 5 |
+| 1 (A-V1) | Curl de martillo cruzado | 4 | 8-12 | 6 |
+| 1 (A-V1) | Curl de martillo | 4 | 8-12 | 7 |
+| 1 (A-V1) | Curl de bíceps con cuerda | 4 | 8-12 | 8 |
+| 1 (A-V1) | Abdominales | 4 | 8-12 | 9 |
+| 1 (A-V1) | Escalador | 4 | 8-12 | 10 |
+| 1 (A-V1) | Giro Ruso | 4 | 8-12 | 11 |
+| 1 (A-V1) | Plancha | 4 | 30-45_SEC | 12 |
 
-> Las 93 filas completas del seed data están determinadas por el documento "Plan de Entrenamiento" y se implementan en el `RoomDatabase.Callback`.
+> Las 82 filas completas del seed data están determinadas por el documento "Plan de Entrenamiento" y se implementan en el `RoomDatabase.Callback` y en `MIGRATION_7_8`.
 
 ---
 
@@ -648,10 +650,10 @@ Los datos que dispararon la alerta (mostrados en H2) y las recomendaciones escal
 | module → module_version | 1 : N | Un módulo tiene 2 o 3 versiones; cada versión pertenece a exactamente 1 módulo |
 | equipment_type → exercise | 1 : N | Un tipo de equipo es usado por varios ejercicios; cada ejercicio usa exactamente 1 tipo |
 | exercise ↔ muscle_zone | N : M | Un ejercicio trabaja 1+ zonas musculares; una zona es trabajada por múltiples ejercicios. Resuelta por `exercise_muscle_zone` |
-| module_version → plan_assignment | 1 : N | Una versión prescribe 9-11 ejercicios |
+| module_version → plan_assignment | 1 : N | Una versión prescribe 8-12 ejercicios |
 | exercise → plan_assignment | 1 : N | Un ejercicio puede estar asignado en múltiples versiones (del mismo módulo) |
 | module_version → session | 1 : N | Una combinación módulo-versión puede tener muchas sesiones a lo largo del tiempo; cada sesión pertenece a exactamente 1 módulo-versión |
-| session → session_exercise | 1 : N | Una sesión contiene 9-11 ejercicios; cada ejercicio-en-sesión pertenece a exactamente 1 sesión |
+| session → session_exercise | 1 : N | Una sesión contiene 8-12 ejercicios; cada ejercicio-en-sesión pertenece a exactamente 1 sesión |
 | exercise → session_exercise | 1 : N | Un ejercicio puede aparecer en múltiples sesiones; `exercise_id` referencia el ejercicio efectivamente ejecutado |
 | exercise → session_exercise (original) | 1 : N | Un ejercicio puede haber sido reemplazado en múltiples sesiones; `original_exercise_id` referencia el ejercicio del plan que fue sustituido (nullable) |
 | session_exercise → exercise_set | 1 : N | Un ejercicio-en-sesión tiene 0 a 4 series; cada serie pertenece a exactamente 1 ejercicio-en-sesión |
@@ -712,6 +714,7 @@ erDiagram
         INTEGER exercise_id PK_FK
         INTEGER sets
         TEXT reps
+        INTEGER sort_order
     }
 
     profile {

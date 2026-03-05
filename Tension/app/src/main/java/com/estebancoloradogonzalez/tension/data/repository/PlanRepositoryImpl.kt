@@ -95,12 +95,14 @@ class PlanRepositoryImpl @Inject constructor(
         sets: Int,
         reps: String,
     ) {
+        val nextSortOrder = (planAssignmentDao.getMaxSortOrder(moduleVersionId) ?: 0) + 1
         planAssignmentDao.insert(
             PlanAssignmentEntity(
                 moduleVersionId = moduleVersionId,
                 exerciseId = exerciseId,
                 sets = sets,
                 reps = reps,
+                sortOrder = nextSortOrder,
             ),
         )
     }

@@ -38,4 +38,7 @@ data class PlanAssignmentEntity(
 
     @ColumnInfo(name = "reps")
     val reps: String,
+
+    @ColumnInfo(name = "sort_order")
+    val sortOrder: Int = 0,
 )

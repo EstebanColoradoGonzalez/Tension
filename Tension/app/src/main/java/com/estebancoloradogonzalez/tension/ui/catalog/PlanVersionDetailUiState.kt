@@ -19,6 +19,7 @@ data class PlanExerciseItem(
     val repsDisplay: String,
     val isSpecialCondition: Boolean,
     val isCustom: Boolean,
+    val isBodyweight: Boolean = false,
 )
 
 data class AssignExerciseSheetState(

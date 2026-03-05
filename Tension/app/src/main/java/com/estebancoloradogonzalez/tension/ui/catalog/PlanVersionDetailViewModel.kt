@@ -51,6 +51,7 @@ class PlanVersionDetailViewModel @Inject constructor(
                             repsDisplay = repsDisplay,
                             isSpecialCondition = isSpecial,
                             isCustom = pe.isCustom,
+                            isBodyweight = pe.isBodyweight,
                         )
                     },
                 )

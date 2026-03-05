@@ -124,7 +124,12 @@ interface SessionExerciseDao {
         LEFT JOIN exercise_progression ep ON e.id = ep.exercise_id
         WHERE se.session_id = :sessionId
         GROUP BY se.id
-        ORDER BY e.name ASC
+        ORDER BY COALESCE(
+          (SELECT pa2.sort_order FROM plan_assignment pa2
+           WHERE pa2.module_version_id = s.module_version_id
+           AND pa2.exercise_id = COALESCE(se.original_exercise_id, se.exercise_id)),
+          9999
+        ) ASC
         """,
     )
     fun getBySessionIdWithDetails(sessionId: Long): Flow<List<SessionExerciseWithDetails>>
@@ -236,11 +241,17 @@ interface SessionExerciseDao {
             ) AS previousTotalReps
         FROM session_exercise se
         INNER JOIN exercise e ON se.exercise_id = e.id
+        INNER JOIN session s ON se.session_id = s.id
         LEFT JOIN exercise_progression ep ON e.id = ep.exercise_id
         WHERE se.session_id = :sessionId
         GROUP BY se.id
         HAVING setCount > 0
-        ORDER BY e.name ASC
+        ORDER BY COALESCE(
+          (SELECT pa2.sort_order FROM plan_assignment pa2
+           WHERE pa2.module_version_id = s.module_version_id
+           AND pa2.exercise_id = COALESCE(se.original_exercise_id, se.exercise_id)),
+          9999
+        ) ASC
         """,
     )
     suspend fun getExercisesForSummary(sessionId: Long): List<ExerciseSummaryDto>
@@ -317,11 +328,17 @@ interface SessionExerciseDao {
             (SELECT COUNT(*) FROM exercise_set es WHERE es.session_exercise_id = se.id) AS setCount
         FROM session_exercise se
         INNER JOIN exercise e ON se.exercise_id = e.id
+        INNER JOIN session s ON se.session_id = s.id
         LEFT JOIN exercise oe ON se.original_exercise_id = oe.id
         WHERE se.session_id = :sessionId
         GROUP BY se.id
         HAVING setCount > 0
-        ORDER BY e.name ASC
+        ORDER BY COALESCE(
+          (SELECT pa2.sort_order FROM plan_assignment pa2
+           WHERE pa2.module_version_id = s.module_version_id
+           AND pa2.exercise_id = COALESCE(se.original_exercise_id, se.exercise_id)),
+          9999
+        ) ASC
         """,
     )
     suspend fun getExercisesForSessionDetail(sessionId: Long): List<SessionDetailExerciseDto>

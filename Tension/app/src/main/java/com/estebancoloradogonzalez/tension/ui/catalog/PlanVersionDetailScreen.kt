@@ -154,6 +154,7 @@ fun PlanVersionDetailScreen(
                         }
                     } else {
                         PlanExerciseList(
+                            moduleCode = uiState.moduleCode,
                             exercises = uiState.exercises,
                             onExerciseClick = onNavigateToExerciseDetail,
                             onDeleteClick = viewModel::onDeleteExercise,
@@ -210,6 +211,7 @@ fun PlanVersionDetailScreen(
 
 @Composable
 private fun PlanExerciseList(
+    moduleCode: String,
     exercises: List<PlanExerciseItem>,
     onExerciseClick: (Long) -> Unit,
     onDeleteClick: (PlanExerciseItem) -> Unit,
@@ -237,6 +239,23 @@ private fun PlanExerciseList(
                                     text = stringResource(R.string.badge_custom),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onTertiaryContainer,
+                                    modifier = Modifier.padding(
+                                        horizontal = 6.dp,
+                                        vertical = 2.dp,
+                                    ),
+                                )
+                            }
+                        }
+                        if (moduleCode == "A" && exercise.isBodyweight) {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Surface(
+                                shape = RoundedCornerShape(4.dp),
+                                color = MaterialTheme.colorScheme.secondaryContainer,
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.exercise_outside_gym),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer,
                                     modifier = Modifier.padding(
                                         horizontal = 6.dp,
                                         vertical = 2.dp,

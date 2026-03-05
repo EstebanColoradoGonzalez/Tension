@@ -35,6 +35,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -100,6 +101,7 @@ fun ActiveSessionScreen(
                 items(uiState.exercises, key = { it.sessionExerciseId }) { exercise ->
                     ExerciseRow(
                         exercise = exercise,
+                        moduleCode = uiState.moduleCode,
                         isDeloadSession = uiState.isDeloadSession,
                         onRegister = { onNavigateToRegisterSet(exercise.sessionExerciseId) },
                         onSubstitute = { onNavigateToSubstitute(exercise.sessionExerciseId) },
@@ -232,6 +234,7 @@ private fun ProgressBar(
 @Composable
 private fun ExerciseRow(
     exercise: ExerciseUiItem,
+    moduleCode: String,
     isDeloadSession: Boolean,
     onRegister: () -> Unit,
     onSubstitute: () -> Unit,
@@ -241,6 +244,7 @@ private fun ExerciseRow(
     when (exercise.status) {
         ExerciseSessionStatus.NOT_STARTED -> NotStartedExerciseRow(
             exercise = exercise,
+            moduleCode = moduleCode,
             isDeloadSession = isDeloadSession,
             onRegister = onRegister,
             onSubstitute = onSubstitute,
@@ -248,6 +252,7 @@ private fun ExerciseRow(
         )
         ExerciseSessionStatus.IN_PROGRESS -> InProgressExerciseRow(
             exercise = exercise,
+            moduleCode = moduleCode,
             isDeloadSession = isDeloadSession,
             isDark = isDark,
             onRegister = onRegister,
@@ -255,6 +260,7 @@ private fun ExerciseRow(
         )
         ExerciseSessionStatus.COMPLETED -> CompletedExerciseRow(
             exercise = exercise,
+            moduleCode = moduleCode,
             isDark = isDark,
             onViewDetail = onViewDetail,
         )
@@ -264,6 +270,7 @@ private fun ExerciseRow(
 @Composable
 private fun NotStartedExerciseRow(
     exercise: ExerciseUiItem,
+    moduleCode: String,
     isDeloadSession: Boolean,
     onRegister: () -> Unit,
     onSubstitute: () -> Unit,
@@ -290,6 +297,23 @@ private fun NotStartedExerciseRow(
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
+                if (moduleCode == "A" && exercise.isBodyweight) {
+                    Surface(
+                        shape = RoundedCornerShape(4.dp),
+                        color = MaterialTheme.colorScheme.secondaryContainer,
+                        modifier = Modifier.padding(top = 2.dp),
+                    ) {
+                        Text(
+                            text = stringResource(R.string.exercise_outside_gym),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            modifier = Modifier.padding(
+                                horizontal = 6.dp,
+                                vertical = 2.dp,
+                            ),
+                        )
+                    }
+                }
                 Text(
                     text = exercise.statusDisplayText,
                     style = MaterialTheme.typography.bodyMedium,
@@ -342,6 +366,7 @@ private fun NotStartedExerciseRow(
 @Composable
 private fun InProgressExerciseRow(
     exercise: ExerciseUiItem,
+    moduleCode: String,
     isDeloadSession: Boolean,
     isDark: Boolean,
     onRegister: () -> Unit,
@@ -369,6 +394,23 @@ private fun InProgressExerciseRow(
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
+                if (moduleCode == "A" && exercise.isBodyweight) {
+                    Surface(
+                        shape = RoundedCornerShape(4.dp),
+                        color = MaterialTheme.colorScheme.secondaryContainer,
+                        modifier = Modifier.padding(top = 2.dp),
+                    ) {
+                        Text(
+                            text = stringResource(R.string.exercise_outside_gym),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            modifier = Modifier.padding(
+                                horizontal = 6.dp,
+                                vertical = 2.dp,
+                            ),
+                        )
+                    }
+                }
                 Text(
                     text = exercise.statusDisplayText,
                     style = MaterialTheme.typography.bodyMedium,
@@ -412,6 +454,7 @@ private fun InProgressExerciseRow(
 @Composable
 private fun CompletedExerciseRow(
     exercise: ExerciseUiItem,
+    moduleCode: String,
     isDark: Boolean,
     onViewDetail: () -> Unit,
 ) {
@@ -439,6 +482,23 @@ private fun CompletedExerciseRow(
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
+                if (moduleCode == "A" && exercise.isBodyweight) {
+                    Surface(
+                        shape = RoundedCornerShape(4.dp),
+                        color = MaterialTheme.colorScheme.secondaryContainer,
+                        modifier = Modifier.padding(top = 2.dp),
+                    ) {
+                        Text(
+                            text = stringResource(R.string.exercise_outside_gym),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            modifier = Modifier.padding(
+                                horizontal = 6.dp,
+                                vertical = 2.dp,
+                            ),
+                        )
+                    }
+                }
                 Text(
                     text = exercise.statusDisplayText,
                     style = MaterialTheme.typography.bodyMedium,

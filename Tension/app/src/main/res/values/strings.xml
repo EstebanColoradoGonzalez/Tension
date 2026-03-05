@@ -41,6 +41,7 @@
     <string name="session_load_no_history">Sin historial \u2014 establecer carga</string>
     <string name="session_load_bodyweight">Peso corporal</string>
     <string name="session_load_isometric">Isométrico (30\u201345s)</string>
+    <string name="exercise_outside_gym">Fuera del gym</string>
     <string name="session_register_set">Registrar</string>
     <string name="session_substitute">Sustituir</string>
     <string name="session_close">Cerrar Sesión</string>

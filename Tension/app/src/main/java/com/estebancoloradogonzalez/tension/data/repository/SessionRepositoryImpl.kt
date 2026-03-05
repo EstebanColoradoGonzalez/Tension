@@ -290,10 +290,6 @@ class SessionRepositoryImpl @Inject constructor(
         )
     }
 
-    override suspend fun getExerciseIdsForSession(sessionId: Long): List<Long> {
-        return sessionExerciseDao.getExerciseIdsForSession(sessionId)
-    }
-
     override suspend fun substituteExercise(
         sessionExerciseId: Long,
         newExerciseId: Long,

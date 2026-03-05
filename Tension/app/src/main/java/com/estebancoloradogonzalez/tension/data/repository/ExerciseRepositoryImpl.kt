@@ -102,9 +102,9 @@ class ExerciseRepositoryImpl @Inject constructor(
 
     override fun getEligibleSubstitutes(
         moduleCode: String,
-        excludedExerciseIds: List<Long>,
+        sessionId: Long,
     ): Flow<List<Exercise>> =
-        exerciseDao.getByModuleCodeNotInIds(moduleCode, excludedExerciseIds).map { list ->
+        exerciseDao.getEligibleSubstitutesForSession(moduleCode, sessionId).map { list ->
             list.map { it.toDomainModel() }
         }
 

@@ -131,14 +131,16 @@ interface ExerciseDao {
         LEFT JOIN exercise_muscle_zone emz ON e.id = emz.exercise_id
         LEFT JOIN muscle_zone mz ON emz.muscle_zone_id = mz.id
         WHERE e.module_code = :moduleCode
-          AND e.id NOT IN (:excludedExerciseIds)
+          AND e.id NOT IN (
+              SELECT se.exercise_id FROM session_exercise se WHERE se.session_id = :sessionId
+          )
         GROUP BY e.id
         ORDER BY e.name ASC
         """,
     )
-    fun getByModuleCodeNotInIds(
+    fun getEligibleSubstitutesForSession(
         moduleCode: String,
-        excludedExerciseIds: List<Long>,
+        sessionId: Long,
     ): Flow<List<ExerciseWithDetails>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)

@@ -165,9 +165,6 @@ interface SessionExerciseDao {
     )
     suspend fun getSessionExerciseForSubstitution(sessionExerciseId: Long): SessionExerciseForSubstitution?
 
-    @Query("SELECT exercise_id FROM session_exercise WHERE session_id = :sessionId")
-    suspend fun getExerciseIdsForSession(sessionId: Long): List<Long>
-
     @Query(
         """
         SELECT 

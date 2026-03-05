@@ -58,9 +58,7 @@ class SubstituteExerciseViewModel @Inject constructor(
                 return@launch
             }
 
-            val excludedIds = sessionRepository.getExerciseIdsForSession(info.sessionId)
-
-            exerciseRepository.getEligibleSubstitutes(info.moduleCode, excludedIds)
+            exerciseRepository.getEligibleSubstitutes(info.moduleCode, info.sessionId)
                 .collect { exercises ->
                     _uiState.update {
                         it.copy(

@@ -23,7 +23,6 @@ interface SessionRepository {
     suspend fun getRegisterSetInfo(sessionExerciseId: Long): RegisterSetInfo?
     suspend fun registerSet(sessionExerciseId: Long, weightKg: Double, reps: Int, rir: Int)
     suspend fun getSubstituteExerciseInfo(sessionExerciseId: Long): SubstituteExerciseInfo?
-    suspend fun getExerciseIdsForSession(sessionId: Long): List<Long>
     suspend fun substituteExercise(sessionExerciseId: Long, newExerciseId: Long)
     suspend fun closeSession(sessionId: Long)
     suspend fun getSessionSummaryData(sessionId: Long): SessionSummaryData

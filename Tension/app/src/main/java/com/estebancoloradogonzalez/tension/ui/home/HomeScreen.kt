@@ -1,5 +1,6 @@
 package com.estebancoloradogonzalez.tension.ui.home
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -46,6 +47,7 @@ fun HomeScreen(
     onNavigateToAlerts: () -> Unit,
     onNavigateToActiveSession: (Long) -> Unit,
     onNavigateToDeloadManagement: () -> Unit,
+    onNavigateToPreview: (Long, String, Int) -> Unit,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -90,6 +92,15 @@ fun HomeScreen(
                         versionNumber = uiState.nextSession?.versionNumber ?: 0,
                         isLoading = uiState.isLoading,
                         onStartSession = { viewModel.startSession() },
+                        onCardClick = {
+                            uiState.nextSession?.let {
+                                onNavigateToPreview(
+                                    it.moduleVersionId,
+                                    it.moduleCode,
+                                    it.versionNumber,
+                                )
+                            }
+                        },
                     )
                 }
             }
@@ -232,9 +243,12 @@ private fun NextSessionCard(
     versionNumber: Int,
     isLoading: Boolean,
     onStartSession: () -> Unit,
+    onCardClick: () -> Unit,
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onCardClick),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color(0xFFF5DDDD),

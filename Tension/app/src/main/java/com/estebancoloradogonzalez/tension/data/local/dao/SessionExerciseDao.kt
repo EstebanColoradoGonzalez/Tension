@@ -32,6 +32,7 @@ data class SetExerciseInfo(
     val isIsometric: Int,
     val isToTechnicalFailure: Int,
     val totalSets: Int,
+    val reps: String,
 )
 
 data class SessionExerciseForSubstitution(
@@ -142,7 +143,8 @@ interface SessionExerciseDao {
             e.is_bodyweight AS isBodyweight,
             e.is_isometric AS isIsometric,
             e.is_to_technical_failure AS isToTechnicalFailure,
-            COALESCE(pa.sets, 4) AS totalSets
+            COALESCE(pa.sets, 4) AS totalSets,
+            COALESCE(pa.reps, '8-12') AS reps
         FROM session_exercise se
         INNER JOIN exercise e ON se.exercise_id = e.id
         INNER JOIN session s ON se.session_id = s.id

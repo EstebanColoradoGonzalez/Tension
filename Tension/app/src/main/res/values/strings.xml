@@ -351,4 +351,21 @@
     <string name="import_backup_incompatible_version">Versión de respaldo incompatible (esperada:
         %1$d, encontrada: %2$d)</string>
     <string name="import_backup_incomplete">Archivo de respaldo incompleto</string>
+
+    <!-- Session Preview -->
+    <string name="preview_title_format">Módulo %1$s — V%2$d</string>
+    <string name="preview_start_session">Iniciar Sesión</string>
+    <string name="preview_deload_banner">Modo Descarga — %1$d sesiones restantes</string>
+
+    <!-- Isometric Chronometer -->
+    <string name="chronometer_start">Iniciar</string>
+    <string name="chronometer_stop">Detener</string>
+    <string name="chronometer_reset">Reiniciar</string>
+    <string name="chronometer_below_min">Bajo el mínimo</string>
+    <string name="chronometer_in_range">En rango</string>
+    <string name="chronometer_below_range_warning">Tiempo por debajo del rango prescrito</string>
+    <string name="chronometer_range_label">Rango: %1$d–%2$d seg</string>
+    <string name="chronometer_accessibility_idle">Cronómetro listo para iniciar</string>
+    <string name="chronometer_accessibility_running">Cronómetro en %1$d segundos</string>
+    <string name="chronometer_accessibility_stopped">Cronómetro detenido en %1$d segundos</string>
 </resources>

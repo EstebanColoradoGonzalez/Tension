@@ -4,8 +4,8 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.estebancoloradogonzalez.tension.domain.model.ExerciseSessionStatus
-import com.estebancoloradogonzalez.tension.domain.rules.DeloadLoadRule
 import com.estebancoloradogonzalez.tension.domain.usecase.session.CloseSessionUseCase
+import com.estebancoloradogonzalez.tension.domain.util.LoadDisplayMapper
 import com.estebancoloradogonzalez.tension.domain.usecase.session.GetSessionExercisesUseCase
 import com.estebancoloradogonzalez.tension.domain.repository.SessionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -67,24 +67,13 @@ class ActiveSessionViewModel @Inject constructor(
                                 ExerciseSessionStatus.IN_PROGRESS -> "En Ejecución"
                                 ExerciseSessionStatus.COMPLETED -> "Completado"
                             }
-                            val loadText = when {
-                                isDeload && detail.isIsometric ->
-                                    "Isométrico (30s)"
-                                isDeload && detail.isBodyweight ->
-                                    "Peso corporal (8 reps objetivo)"
-                                isDeload && detail.prescribedLoadKg != null -> {
-                                    val deloadLoad = DeloadLoadRule.calculateDeloadLoad(
-                                        detail.prescribedLoadKg,
-                                        detail.loadIncrementKg,
-                                    )
-                                    "\uD83D\uDD04 %.1f Kg".format(deloadLoad)
-                                }
-                                detail.isIsometric -> "Isométrico (30\u201345s)"
-                                detail.isBodyweight -> "Peso corporal"
-                                detail.prescribedLoadKg != null ->
-                                    "%.1f Kg".format(detail.prescribedLoadKg)
-                                else -> "Sin historial \u2014 establecer carga"
-                            }
+                            val loadText = LoadDisplayMapper.mapLoadDisplay(
+                                isDeload = isDeload,
+                                isIsometric = detail.isIsometric,
+                                isBodyweight = detail.isBodyweight,
+                                prescribedLoadKg = detail.prescribedLoadKg,
+                                loadIncrementKg = detail.loadIncrementKg,
+                            )
                             ExerciseUiItem(
                                 sessionExerciseId = detail.sessionExerciseId,
                                 exerciseId = detail.exerciseId,

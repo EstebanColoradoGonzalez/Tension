@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.estebancoloradogonzalez.tension.R
+import com.estebancoloradogonzalez.tension.ui.session.components.IsometricChronometer
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -115,7 +116,19 @@ fun RegisterSetScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            RepsField(uiState = uiState, onValueChange = viewModel::onRepsChanged)
+            if (uiState.showChronometer) {
+                IsometricChronometer(
+                    timerState = uiState.timerState,
+                    timerSeconds = uiState.timerSeconds,
+                    minSeconds = uiState.minSeconds,
+                    maxSeconds = uiState.maxSeconds,
+                    onStartTimer = viewModel::onStartTimer,
+                    onStopTimer = viewModel::onStopTimer,
+                    onResetTimer = viewModel::onResetTimer,
+                )
+            } else {
+                RepsField(uiState = uiState, onValueChange = viewModel::onRepsChanged)
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
 

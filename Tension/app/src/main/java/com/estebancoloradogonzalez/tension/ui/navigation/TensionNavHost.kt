@@ -44,6 +44,7 @@ import com.estebancoloradogonzalez.tension.ui.metrics.MetricsScreen
 import com.estebancoloradogonzalez.tension.ui.metrics.TrendScreen
 import com.estebancoloradogonzalez.tension.ui.metrics.VolumeScreen
 import com.estebancoloradogonzalez.tension.ui.onboarding.RegisterProfileScreen
+import com.estebancoloradogonzalez.tension.ui.preview.SessionPreviewScreen
 import com.estebancoloradogonzalez.tension.ui.profile.ProfileScreen
 import com.estebancoloradogonzalez.tension.ui.profile.WeightHistoryScreen
 import com.estebancoloradogonzalez.tension.ui.session.ActiveSessionScreen
@@ -138,6 +139,15 @@ fun TensionNavHost(
                             onNavigateToActiveSession = { sessionId ->
                                 navController.navigate(
                                     NavigationRoutes.activeSessionRoute(sessionId),
+                                )
+                            },
+                            onNavigateToPreview = { moduleVersionId, moduleCode, versionNumber ->
+                                navController.navigate(
+                                    NavigationRoutes.sessionPreviewRoute(
+                                        moduleVersionId,
+                                        moduleCode,
+                                        versionNumber,
+                                    ),
                                 )
                             },
                         )
@@ -443,6 +453,26 @@ fun TensionNavHost(
                             onNavigateToHome = {
                                 navController.navigate(NavigationRoutes.HOME) {
                                     popUpTo(navController.graph.id) { inclusive = true }
+                                }
+                            },
+                        )
+                    }
+
+                    composable(
+                        route = NavigationRoutes.SESSION_PREVIEW,
+                        arguments = listOf(
+                            navArgument("moduleVersionId") { type = NavType.LongType },
+                            navArgument("moduleCode") { type = NavType.StringType },
+                            navArgument("versionNumber") { type = NavType.IntType },
+                        ),
+                    ) {
+                        SessionPreviewScreen(
+                            onNavigateBack = { navController.popBackStack() },
+                            onNavigateToActiveSession = { sessionId ->
+                                navController.navigate(
+                                    NavigationRoutes.activeSessionRoute(sessionId),
+                                ) {
+                                    popUpTo(NavigationRoutes.HOME) { inclusive = false }
                                 }
                             },
                         )

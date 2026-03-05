@@ -1,5 +1,11 @@
 package com.estebancoloradogonzalez.tension.ui.session
 
+enum class TimerState {
+    IDLE,
+    RUNNING,
+    STOPPED,
+}
+
 data class RegisterSetUiState(
     val isLoading: Boolean = true,
     val exerciseName: String = "",
@@ -14,13 +20,22 @@ data class RegisterSetUiState(
     val weightError: String? = null,
     val repsError: String? = null,
     val isSaving: Boolean = false,
+    val showChronometer: Boolean = false,
+    val timerState: TimerState = TimerState.IDLE,
+    val timerSeconds: Int = 0,
+    val minSeconds: Int? = null,
+    val maxSeconds: Int? = null,
 ) {
     val isConfirmEnabled: Boolean
         get() = !isLoading &&
             selectedRir != null &&
             weightKg.isNotBlank() &&
-            reps.isNotBlank() &&
             weightError == null &&
             repsError == null &&
-            !isSaving
+            !isSaving &&
+            if (showChronometer) {
+                timerState == TimerState.STOPPED && timerSeconds > 0
+            } else {
+                reps.isNotBlank()
+            }
 }

@@ -21,6 +21,21 @@ data class PlanAssignmentWithExerciseDetails(
     val isCustom: Int,
 )
 
+data class SessionPreviewExerciseDto(
+    val exerciseId: Long,
+    val exerciseName: String,
+    val moduleCode: String,
+    val equipmentTypeName: String,
+    val muscleZones: String?,
+    val sets: Int,
+    val reps: String,
+    val isBodyweight: Int,
+    val isIsometric: Int,
+    val isToTechnicalFailure: Int,
+    val prescribedLoadKg: Double?,
+    val loadIncrementKg: Double,
+)
+
 @Dao
 interface PlanAssignmentDao {
 
@@ -52,6 +67,35 @@ interface PlanAssignmentDao {
         """,
     )
     fun getDetailsByModuleVersionId(moduleVersionId: Long): Flow<List<PlanAssignmentWithExerciseDetails>>
+
+    @Query(
+        """
+        SELECT 
+            e.id AS exerciseId,
+            e.name AS exerciseName,
+            e.module_code AS moduleCode,
+            et.name AS equipmentTypeName,
+            GROUP_CONCAT(mz.name, ', ') AS muscleZones,
+            pa.sets,
+            pa.reps,
+            e.is_bodyweight AS isBodyweight,
+            e.is_isometric AS isIsometric,
+            e.is_to_technical_failure AS isToTechnicalFailure,
+            ep.prescribed_load_kg AS prescribedLoadKg,
+            m.load_increment_kg AS loadIncrementKg
+        FROM plan_assignment pa
+        INNER JOIN exercise e ON pa.exercise_id = e.id
+        INNER JOIN equipment_type et ON e.equipment_type_id = et.id
+        INNER JOIN module m ON e.module_code = m.code
+        LEFT JOIN exercise_muscle_zone emz ON e.id = emz.exercise_id
+        LEFT JOIN muscle_zone mz ON emz.muscle_zone_id = mz.id
+        LEFT JOIN exercise_progression ep ON e.id = ep.exercise_id
+        WHERE pa.module_version_id = :moduleVersionId
+        GROUP BY e.id
+        ORDER BY pa.sort_order ASC
+        """,
+    )
+    fun getPreviewByModuleVersionId(moduleVersionId: Long): Flow<List<SessionPreviewExerciseDto>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(assignments: List<PlanAssignmentEntity>)

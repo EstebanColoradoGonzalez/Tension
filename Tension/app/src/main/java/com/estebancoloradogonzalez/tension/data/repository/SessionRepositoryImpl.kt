@@ -37,6 +37,7 @@ import com.estebancoloradogonzalez.tension.domain.model.SessionDetail
 import com.estebancoloradogonzalez.tension.domain.model.SessionDetailExercise
 import com.estebancoloradogonzalez.tension.domain.model.SessionExerciseDetail
 import com.estebancoloradogonzalez.tension.domain.model.SessionHistoryItem
+import com.estebancoloradogonzalez.tension.domain.model.SessionPreviewExercise
 import com.estebancoloradogonzalez.tension.domain.model.SetData
 import com.estebancoloradogonzalez.tension.domain.model.SetForTonnage
 import com.estebancoloradogonzalez.tension.domain.model.SubstituteExerciseInfo
@@ -241,6 +242,7 @@ class SessionRepositoryImpl @Inject constructor(
             isBodyweight = info.isBodyweight == 1,
             isIsometric = info.isIsometric == 1,
             isToTechnicalFailure = info.isToTechnicalFailure == 1,
+            prescribedReps = info.reps,
         )
     }
 
@@ -1001,6 +1003,29 @@ class SessionRepositoryImpl @Inject constructor(
                 )
             } else {
                 alertDao.resolveByModuleAndType(moduleCode, "MODULE_INACTIVITY", today)
+            }
+        }
+    }
+
+    override fun getSessionPreviewExercises(
+        moduleVersionId: Long,
+    ): Flow<List<SessionPreviewExercise>> {
+        return planAssignmentDao.getPreviewByModuleVersionId(moduleVersionId).map { dtos ->
+            dtos.map { dto ->
+                SessionPreviewExercise(
+                    exerciseId = dto.exerciseId,
+                    exerciseName = dto.exerciseName,
+                    moduleCode = dto.moduleCode,
+                    equipmentTypeName = dto.equipmentTypeName,
+                    muscleZones = dto.muscleZones ?: "",
+                    sets = dto.sets,
+                    reps = dto.reps,
+                    isBodyweight = dto.isBodyweight == 1,
+                    isIsometric = dto.isIsometric == 1,
+                    isToTechnicalFailure = dto.isToTechnicalFailure == 1,
+                    prescribedLoadKg = dto.prescribedLoadKg,
+                    loadIncrementKg = dto.loadIncrementKg,
+                )
             }
         }
     }

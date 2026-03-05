@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.estebancoloradogonzalez.tension.domain.repository.PlanRepository
 import com.estebancoloradogonzalez.tension.domain.usecase.plan.AssignExerciseToVersionUseCase
+import com.estebancoloradogonzalez.tension.domain.util.RepsDisplayMapper
 import com.estebancoloradogonzalez.tension.domain.usecase.plan.GetPlanVersionDetailUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.plan.UnassignExerciseFromVersionUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -41,7 +42,7 @@ class PlanVersionDetailViewModel @Inject constructor(
                     moduleName = detail.moduleName,
                     versionNumber = detail.versionNumber,
                     exercises = detail.exercises.map { pe ->
-                        val (repsDisplay, isSpecial) = mapRepsToDisplay(pe.reps)
+                        val (repsDisplay, isSpecial) = RepsDisplayMapper.mapRepsToDisplay(pe.reps)
                         PlanExerciseItem(
                             exerciseId = pe.exerciseId,
                             name = pe.name,
@@ -141,11 +142,4 @@ class PlanVersionDetailViewModel @Inject constructor(
         _sheetState.value = AssignExerciseSheetState()
     }
 
-    companion object {
-        fun mapRepsToDisplay(reps: String): Pair<String, Boolean> = when (reps) {
-            "TO_TECHNICAL_FAILURE" -> "Al fallo técnico" to true
-            "30-45_SEC" -> "30\u201345 seg" to true
-            else -> "$reps reps" to false
-        }
-    }
 }

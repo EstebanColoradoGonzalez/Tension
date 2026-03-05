@@ -10,6 +10,7 @@ import com.estebancoloradogonzalez.tension.domain.model.RotationState
 import com.estebancoloradogonzalez.tension.domain.model.SessionDetail
 import com.estebancoloradogonzalez.tension.domain.model.SessionExerciseDetail
 import com.estebancoloradogonzalez.tension.domain.model.SessionHistoryItem
+import com.estebancoloradogonzalez.tension.domain.model.SessionPreviewExercise
 import com.estebancoloradogonzalez.tension.domain.model.SubstituteExerciseInfo
 import kotlinx.coroutines.flow.Flow
 
@@ -34,4 +35,5 @@ interface SessionRepository {
     suspend fun getSessionHistory(): List<SessionHistoryItem>
     suspend fun getSessionDetail(sessionId: Long): SessionDetail
     suspend fun getExerciseHistory(exerciseId: Long): ExerciseHistoryData
+    fun getSessionPreviewExercises(moduleVersionId: Long): Flow<List<SessionPreviewExercise>>
 }

@@ -26,6 +26,7 @@ object NavigationRoutes {
     const val ALERT_DETAIL = "alert-detail/{alertId}"
     const val EXPORT_BACKUP = "export-backup"
     const val IMPORT_BACKUP = "import-backup"
+    const val SESSION_PREVIEW = "session-preview/{moduleVersionId}/{moduleCode}/{versionNumber}"
 
     fun exerciseDetailRoute(exerciseId: Long) = "exercise-detail/$exerciseId"
     fun exerciseHistoryRoute(exerciseId: Long) = "exercise-history/$exerciseId"
@@ -36,4 +37,6 @@ object NavigationRoutes {
     fun sessionSummaryRoute(sessionId: Long) = "session-summary/$sessionId"
     fun sessionDetailRoute(sessionId: Long) = "session-detail/$sessionId"
     fun alertDetailRoute(alertId: Long) = "alert-detail/$alertId"
+    fun sessionPreviewRoute(moduleVersionId: Long, moduleCode: String, versionNumber: Int) =
+        "session-preview/$moduleVersionId/$moduleCode/$versionNumber"
 }

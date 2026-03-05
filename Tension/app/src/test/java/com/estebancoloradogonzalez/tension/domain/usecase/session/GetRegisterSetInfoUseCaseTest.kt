@@ -27,6 +27,7 @@ class GetRegisterSetInfoUseCaseTest {
             isBodyweight = false,
             isIsometric = false,
             isToTechnicalFailure = false,
+            prescribedReps = "8-12",
         )
         coEvery { repository.getRegisterSetInfo(1L) } returns expected
 

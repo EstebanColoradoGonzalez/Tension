@@ -1,14 +1,18 @@
 package com.estebancoloradogonzalez.tension.ui.session
 
 import android.content.Context
+import android.os.SystemClock
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.estebancoloradogonzalez.tension.R
 import com.estebancoloradogonzalez.tension.domain.usecase.session.GetRegisterSetInfoUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.session.RegisterSetUseCase
+import com.estebancoloradogonzalez.tension.domain.util.RepsRangeParser
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -35,6 +39,9 @@ class RegisterSetViewModel @Inject constructor(
     private val _navigateBack = MutableSharedFlow<Boolean>(replay = 0)
     val navigateBack: SharedFlow<Boolean> = _navigateBack.asSharedFlow()
 
+    private var timerJob: Job? = null
+    private var timerStartRealtime: Long = 0L
+
     init {
         viewModelScope.launch {
             val info = getRegisterSetInfoUseCase(sessionExerciseId) ?: return@launch
@@ -43,6 +50,25 @@ class RegisterSetViewModel @Inject constructor(
                 info.isBodyweight || info.isIsometric -> "0"
                 info.lastWeightKg != null -> String.format(java.util.Locale.US, "%.1f", info.lastWeightKg)
                 else -> ""
+            }
+
+            val range = RepsRangeParser.parse(info.prescribedReps)
+            val showChronometer: Boolean
+            val minSeconds: Int?
+            val maxSeconds: Int?
+
+            if (range.isSeconds) {
+                showChronometer = true
+                minSeconds = range.min
+                maxSeconds = range.max
+            } else if (info.isIsometric) {
+                showChronometer = true
+                minSeconds = 30
+                maxSeconds = 60
+            } else {
+                showChronometer = false
+                minSeconds = null
+                maxSeconds = null
             }
 
             _uiState.update {
@@ -55,8 +81,55 @@ class RegisterSetViewModel @Inject constructor(
                     isWeightEditable = !info.isBodyweight && !info.isIsometric,
                     isIsometric = info.isIsometric,
                     isBodyweight = info.isBodyweight,
+                    showChronometer = showChronometer,
+                    minSeconds = minSeconds,
+                    maxSeconds = maxSeconds,
                 )
             }
+        }
+    }
+
+    fun onStartTimer() {
+        timerStartRealtime = SystemClock.elapsedRealtime()
+        _uiState.update { it.copy(timerState = TimerState.RUNNING, timerSeconds = 0) }
+        timerJob = viewModelScope.launch {
+            while (true) {
+                delay(100)
+                val elapsed = ((SystemClock.elapsedRealtime() - timerStartRealtime) / 1000).toInt()
+                val max = _uiState.value.maxSeconds
+                if (max != null && elapsed >= max) {
+                    _uiState.update { it.copy(timerSeconds = max) }
+                    stopTimerInternal()
+                    break
+                }
+                _uiState.update { it.copy(timerSeconds = elapsed) }
+            }
+        }
+    }
+
+    fun onStopTimer() {
+        stopTimerInternal()
+    }
+
+    fun onResetTimer() {
+        _uiState.update {
+            it.copy(
+                timerState = TimerState.IDLE,
+                timerSeconds = 0,
+                reps = "",
+            )
+        }
+    }
+
+    private fun stopTimerInternal() {
+        timerJob?.cancel()
+        timerJob = null
+        val seconds = _uiState.value.timerSeconds
+        _uiState.update {
+            it.copy(
+                timerState = TimerState.STOPPED,
+                reps = seconds.toString(),
+            )
         }
     }
 

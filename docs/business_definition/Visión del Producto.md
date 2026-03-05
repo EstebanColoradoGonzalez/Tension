@@ -119,7 +119,7 @@ Peso corporal: progresión por repeticiones totales, sin Doble Umbral. Isométri
 
 ### Antes de la sesión
 
-El ejecutante abre Tension y ve exactamente qué le toca: Módulo B, Versión 2. Once ejercicios listados, cada uno con su carga objetivo derivada de su último registro. Si el Press de Elevación Sentado estuvo en 16 Kg la última vez y cumplió el Doble Umbral, hoy aparece con 18.5 Kg como objetivo. Sin preguntas, sin cálculos mentales.
+El ejecutante abre Tension y ve exactamente qué le toca: Módulo B, Versión 2. Ocho ejercicios listados, cada uno con su carga objetivo derivada de su último registro. Si el Press de Elevación Sentado estuvo en 16 Kg la última vez y cumplió el Doble Umbral, hoy aparece con 18.5 Kg como objetivo. Sin preguntas, sin cálculos mentales.
 
 ### Durante la sesión
 

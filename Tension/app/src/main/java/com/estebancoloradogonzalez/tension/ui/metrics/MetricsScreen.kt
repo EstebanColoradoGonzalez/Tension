@@ -49,7 +49,7 @@ import com.estebancoloradogonzalez.tension.R
 import com.estebancoloradogonzalez.tension.domain.model.AdherenceData
 import com.estebancoloradogonzalez.tension.domain.model.ExerciseLoadVelocity
 import com.estebancoloradogonzalez.tension.domain.model.ExerciseProgressionRate
-import com.estebancoloradogonzalez.tension.domain.model.RirByModule
+import com.estebancoloradogonzalez.tension.domain.model.RirByRoutine
 import com.estebancoloradogonzalez.tension.domain.model.RirInterpretation
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -139,8 +139,8 @@ private fun MetricsContent(
 
         // Section 2 — RIR by Module
         item {
-            RirByModuleCard(
-                rirByModule = state.rirByModule,
+            RirByRoutineCard(
+                rirByRoutine = state.rirByRoutine,
                 onChangeRirPeriod = onChangeRirPeriod,
             )
         }
@@ -251,8 +251,8 @@ private fun AdherenceCard(adherence: AdherenceData) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun RirByModuleCard(
-    rirByModule: List<RirByModule>,
+private fun RirByRoutineCard(
+    rirByRoutine: List<RirByRoutine>,
     onChangeRirPeriod: (Int) -> Unit,
 ) {
     val options = listOf(
@@ -309,8 +309,8 @@ private fun RirByModuleCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            rirByModule.forEach { module ->
-                RirModuleRow(module = module)
+            rirByRoutine.forEach { routine ->
+                RirRoutineRow(routine = routine)
                 Spacer(modifier = Modifier.height(8.dp))
             }
 
@@ -324,24 +324,24 @@ private fun RirByModuleCard(
 }
 
 @Composable
-private fun RirModuleRow(module: RirByModule) {
+private fun RirRoutineRow(routine: RirByRoutine) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = "Módulo ${module.moduleCode}",
+            text = routine.routineName,
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.weight(1f),
         )
-        if (module.averageRir == null || module.interpretation == null) {
+        if (routine.averageRir == null || routine.interpretation == null) {
             Text(
                 text = stringResource(R.string.metrics_no_data),
                 style = MaterialTheme.typography.bodyMedium.copy(fontStyle = FontStyle.Italic),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         } else {
-            val (badgeColor, badgeLabelColor, badgeText) = when (module.interpretation) {
+            val (badgeColor, badgeLabelColor, badgeText) = when (routine.interpretation) {
                 RirInterpretation.OPTIMAL -> Triple(
                     Color(0xFFE8F5E9),
                     Color(0xFF1B5E20),
@@ -359,7 +359,7 @@ private fun RirModuleRow(module: RirByModule) {
                 )
             }
             Text(
-                text = "${"%.1f".format(module.averageRir)}",
+                text = "${"%.1f".format(routine.averageRir)}",
                 style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
             )
             Spacer(modifier = Modifier.width(8.dp))

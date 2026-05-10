@@ -1,7 +1,7 @@
 package com.estebancoloradogonzalez.tension.domain.model
 
 data class VersionSummary(
-    val moduleVersionId: Long,
+    val routineVersionId: Long,
     val versionNumber: Int,
     val exerciseCount: Int,
 )

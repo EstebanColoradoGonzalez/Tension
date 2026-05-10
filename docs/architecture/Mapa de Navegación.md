@@ -34,7 +34,7 @@ Cada vista está vinculada a las historias de usuario (HU) que respaldan su exis
 
 | ID | Vista | Propósito | HU Directas | HU Indirectas |
 |----|-------|-----------|-------------|---------------|
-| B1 | Pantalla Principal (Home) | Punto de entrada recurrente del ejecutante tras el onboarding. Muestra: qué módulo y versión toca a continuación según la rotación cíclica, conteo de microciclos completados, badge o indicador con el número de alertas activas, y acceso rápido a iniciar sesión. Si existe una sesión activa no cerrada (por cierre inesperado de la app), muestra prominentemente la opción de reanudarla. Ofrece navegación a las secciones principales del sistema. | HU-05, HU-18 | HU-14, HU-16, HU-17, HU-26, HU-27, HU-28, HU-29, HU-30 |
+| B1 | Pantalla Principal (Home) | Punto de entrada recurrente del ejecutante tras el onboarding. Muestra: qué rutina y versión toca a continuación según la rotación cíclica definida por el usuario, conteo de microciclos completados, badge o indicador con el número de alertas activas, y acceso rápido a iniciar sesión. Si existe una sesión activa no cerrada (por cierre inesperado de la app), muestra prominentemente la opción de reanudarla. Ofrece navegación a las secciones principales del sistema. | HU-05, HU-18 | HU-14, HU-16, HU-17, HU-22, HU-26, HU-27, HU-28, HU-29, HU-30 |
 
 ### Flujo C — Perfil del Ejecutante
 
@@ -47,55 +47,56 @@ Cada vista está vinculada a las historias de usuario (HU) que respaldan su exis
 
 | ID | Vista | Propósito | HU Directas | HU Indirectas |
 |----|-------|-----------|-------------|---------------|
-| D1 | Diccionario de Ejercicios | Listado de ejercicios (43 precargados + creados por el ejecutante). Filtros por módulo (A, B, C), tipo de equipo y zona muscular, con posibilidad de combinar filtros. Cada ejercicio muestra nombre, módulo, tipo de equipo y zona muscular en el listado. Permite acceder al detalle de cada ejercicio y crear nuevos ejercicios (FAB → D5). Comparte sección de navegación con D3 (Plan de Entrenamiento) mediante tabs o sub-secciones. | HU-03 | — |
-| D2 | Detalle de Ejercicio | Ficha completa de un ejercicio específico: nombre, módulo, tipo de equipo, zona muscular y la imagen (PNG 3D minimalista) que ilustra la ejecución correcta del movimiento. La imagen es clickable para cambiarla o agregarla desde la galería del dispositivo (aplica a todos los ejercicios). En futuras iteraciones, la imagen podrá ser reemplazada por video/GIF. Accesible desde: Diccionario (D1), Sesión Activa (E1), Historial de Ejercicio (F3) y Detalle de Versión del Plan (D4). Permite navegar al historial del ejercicio (F3). | HU-03 | — |
-| D3 | Plan de Entrenamiento | Navegación por los 3 módulos (A, B, C) y sus 9 combinaciones módulo-versión. Muestra cada módulo con su descripción de grupo muscular y las versiones disponibles. Al seleccionar una versión → navega a D4 (Detalle de Versión del Plan). Comparte sección de navegación con D1 mediante tabs. | HU-04 | — |
-| D4 | Detalle de Versión del Plan | Lista de ejercicios asignados a una combinación módulo-versión específica con su prescripción (series, reps). Nota explícita: sin orden obligatorio de ejecución. Permite ver detalle de cada ejercicio (D2), desasignar ejercicios (CA-04.08) y asignar nuevos ejercicios del mismo módulo (FAB → bottomsheet CA-04.07). | HU-04 | — |
-| D5 | Crear Ejercicio | Formulario de creación de ejercicio personalizado. Campos: imagen (opcional, desde galería), nombre (obligatorio), módulo (A/B/C, obligatorio), tipo de equipo (obligatorio), zona(s) muscular(es) (≥1, obligatoria), condiciones especiales (peso corporal, isométrico, fallo técnico — opcionales). Valida unicidad (nombre, equipo). Persiste con `is_custom = 1`. Al completar, navega de vuelta a D1. | HU-03 | — |
+| D1 | Diccionario de Ejercicios | Listado de ejercicios (43 precargados + creados por el ejecutante). Filtros por tipo de equipo y zona muscular, con posibilidad de combinar filtros. Cada ejercicio muestra nombre, tipo de equipo y zona muscular en el listado. Permite acceder al detalle de cada ejercicio y crear nuevos ejercicios (FAB → D5). Comparte sección de navegación con D3 (Plan de Entrenamiento) mediante tabs o sub-secciones. | HU-03 | — |
+| D2 | Detalle de Ejercicio | Ficha completa de un ejercicio específico: nombre, tipo de equipo, zona muscular y la imagen (PNG 3D minimalista) que ilustra la ejecución correcta del movimiento. La imagen es clickable para cambiarla o agregarla desde la galería del dispositivo (aplica a todos los ejercicios). En futuras iteraciones, la imagen podrá ser reemplazada por video/GIF. Accesible desde: Diccionario (D1), Sesión Activa (E1), Historial de Ejercicio (F3) y Detalle de Versión del Plan (D4). Permite navegar al historial del ejercicio (F3). | HU-03 | — |
+| D3 | Plan de Entrenamiento | Navegación por las rutinas creadas por el usuario y sus versiones. Muestra cada rutina con su nombre y las versiones disponibles. Al seleccionar una versión → navega a D4 (Detalle de Versión del Plan). Permite crear nuevas rutinas (FAB → D6) y reordenar rutinas. Comparte sección de navegación con D1 mediante tabs. | HU-04, HU-22 | — |
+| D4 | Detalle de Versión del Plan | Lista de ejercicios asignados a una combinación rutina-versión específica con su prescripción (series, reps). Nota explícita: sin orden obligatorio de ejecución. Cada fila representa un puesto (slot) del plan; si el puesto tiene alternativas, el encabezado muestra los nombres concatenados con "ó" (e.g., "Hip Thrust ó Sentadilla Búlgara"). Permite ver detalle de cada ejercicio (D2), desasignar ejercicios (elimina todo el slot con sus alternativas), asignar nuevos ejercicios (FAB → bottomsheet) y agregar alternativas a un puesto existente (botón "+"). | HU-04, HU-22, HU-25 | — |
+| D5 | Crear Ejercicio | Formulario de creación de ejercicio personalizado. Campos: imagen (opcional, desde galería), nombre (obligatorio), tipo de equipo (obligatorio), zona(s) muscular(es) (≥1, obligatoria), condiciones especiales (peso corporal, isométrico, fallo técnico — opcionales). Valida unicidad (nombre, equipo). Persiste con `is_custom = 1`. Al completar, navega de vuelta a D1. | HU-03 | — |
+| D6 | Crear/Editar Rutina | Formulario para crear una nueva rutina o editar una existente. Campos: nombre de la rutina (texto libre, máximo 50 caracteres, obligatorio). Permite gestionar versiones de la rutina: crear nuevas versiones y eliminar versiones existentes (siempre que no sea la única). Permite eliminar la rutina completa (con confirmación, siempre que no sea la única del plan y no tenga sesión activa). | HU-22 | — |
 
 ### Flujo E — Sesión Activa
 | ID | Vista | Propósito | HU Directas | HU Indirectas |
 |----|-------|-----------|-------------|---------------|
-| E1 | Sesión Activa | Vista principal de entrenamiento. Muestra: módulo y versión de la sesión, lista de ejercicios prescritos con estado visual por ejercicio (No Iniciado / En Ejecución / Completado), carga objetivo derivada del historial para cada ejercicio. Permite acceder a: registro de serie de un ejercicio, sustitución de un ejercicio, detalle de ejercicio (media visual) y cierre de sesión. Si hay un modo de Descarga activo, lo indica visualmente con las cargas ajustadas y las sesiones restantes del microciclo de descarga. | HU-05, HU-06, HU-07, HU-08 | HU-11, HU-17 |
-| E2 | Registro de Serie | Formulario para capturar los datos de una serie: Peso en Kg (precargado con el último peso utilizado), Repeticiones logradas (o Segundos sostenidos para isométricos) y RIR (0-5). Muestra el número de serie actual (1, 2, 3 o 4). Teclado numérico optimizado. Máximo 3 toques para completar el registro. Valida rangos antes de persistir (peso ≥ 0, repeticiones ≥ 1, RIR 0-5). Para ejercicios de peso corporal: peso fijado en 0. Para isométricos: el campo de repeticiones se convierte en segundos con referencia visual del rango 30-45s. | HU-06, HU-08 | — |
-| E3 | Selección de Ejercicio Sustituto | Lista de ejercicios elegibles como sustituto: todos los ejercicios del mismo módulo disponibles en cualquier versión, excluyendo los ya prescritos en la sesión activa. Solo accesible para ejercicios en estado "No Iniciado" (0 series registradas). La sustitución es puntual y no modifica el Plan original. | HU-07 | — |
-| E4 | Confirmación de Cierre de Sesión | Diálogo de confirmación previo al cierre. Si todos los ejercicios tienen 4 series registradas: confirma cierre como "Completada". Si hay ejercicios sin completar: advierte cuántos ejercicios faltan, solicita confirmación del ejecutante y cierra como "Incompleta" conservando todos los datos parciales. | HU-09 | — |
+| E1 | Sesión Activa | Vista principal de entrenamiento. Muestra: rutina y versión de la sesión, lista de ejercicios prescritos con estado visual por ejercicio (No Iniciado / En Ejecución / Completado), carga objetivo derivada del historial para cada ejercicio. Ejercicios con alternativas en su puesto muestran un botón de intercambio (SwapHoriz) cuando están en estado No Iniciado y sin series completadas, permitiendo elegir otra alternativa del mismo puesto mediante un bottom sheet. Permite acceder a: registro de serie de un ejercicio, sustitución de un ejercicio, detalle de ejercicio (media visual) y cierre de sesión. Si hay un modo de Descarga activo, lo indica visualmente con las cargas ajustadas y las sesiones restantes del microciclo de descarga. | HU-05, HU-06, HU-07, HU-08, HU-25 | HU-11, HU-17 |
+| E2 | Registro de Serie | Formulario para capturar los datos de una serie: Peso en Kg (precargado con el último peso utilizado), Repeticiones logradas (o Segundos sostenidos para isométricos) y RIR (0-2). Muestra el número de serie actual. Teclado numérico optimizado. Máximo 3 toques para completar el registro. Valida rangos antes de persistir (peso ≥ 0, repeticiones ≥ 1, RIR 0-2). Para ejercicios de peso corporal: peso fijado en 0. Para isométricos: el campo de repeticiones se convierte en segundos con referencia visual del rango 30-45s. | HU-06, HU-08 | — |
+| E3 | Selección de Ejercicio Sustituto | Lista de ejercicios elegibles como sustituto: todos los ejercicios del Diccionario de la misma zona muscular, excluyendo los ya prescritos en la sesión activa. Solo accesible para ejercicios en estado "No Iniciado" (0 series registradas). La sustitución es puntual y no modifica el Plan original. | HU-07 | — |
+| E4 | Confirmación de Cierre de Sesión | Diálogo de confirmación previo al cierre. Si todos los ejercicios están finalizados: confirma cierre como "Completada". Si hay ejercicios sin finalizar: advierte cuántos ejercicios faltan, solicita confirmación del ejecutante y cierra como "Incompleta" conservando todos los datos parciales. | HU-09 | — |
 | E5 | Resumen Post-Sesión | Vista presentada automáticamente al cerrar sesión. Muestra: estado de la sesión (Completada/Incompleta), tonelaje total (Σ Peso × Reps), cantidad de ejercicios completados vs. total, clasificación de progresión por ejercicio con señales visuales diferenciadas (↑ Progresión en verde, = Mantenimiento en amarillo, ↓ Regresión en rojo) mediante colores e iconografía (no solo texto), señales de acción para la próxima sesión por ejercicio (subir carga, mantener, considerar descarga), y marcado de isométricos "dominados" si aplica. | HU-13 | HU-08, HU-10, HU-11, HU-12 |
 
 ### Flujo F — Historial
 
 | ID | Vista | Propósito | HU Directas | HU Indirectas |
 |----|-------|-----------|-------------|---------------|
-| F1 | Historial de Sesiones | Listado cronológico de todas las sesiones cerradas, de la más reciente a la más antigua. Cada entrada muestra: fecha, módulo (A/B/C), versión (V1/V2/V3), estado (Completada/Incompleta) y tonelaje total. Permite acceder al detalle de cada sesión. | HU-24 | — |
+| F1 | Historial de Sesiones | Listado cronológico de todas las sesiones cerradas, de la más reciente a la más antigua. Cada entrada muestra: fecha, rutina, versión, estado (Completada/Incompleta) y tonelaje total. Permite acceder al detalle de cada sesión. | HU-24 | — |
 | F2 | Detalle de Sesión Pasada | Vista de solo lectura de una sesión cerrada. Muestra por cada ejercicio ejecutado: nombre, series registradas con peso, repeticiones, RIR por serie, y clasificación de progresión de ese ejercicio en la sesión. Refleja sustituciones reales (muestra el ejercicio que se ejecutó, no el prescrito originalmente). No permite edición. | HU-24 | HU-10 |
-| F3 | Historial de Ejercicio | Historial completo de un ejercicio específico a lo largo de todas las sesiones donde fue registrado, independientemente del módulo-versión. Para cada sesión muestra: fecha, peso, repeticiones, RIR y clasificación de progresión. Incluye la visualización de la tendencia de carga (o tendencia de repeticiones para ejercicios de peso corporal). Permite acceder al detalle del ejercicio (media visual). Muestra el estado de progresión actual del ejercicio (Sin Historial, En Progresión, En Meseta, En Descarga). | HU-23 | HU-10 |
+| F3 | Historial de Ejercicio | Historial completo de un ejercicio específico a lo largo de todas las sesiones donde fue registrado, independientemente de la rutina-versión. Para cada sesión muestra: fecha, peso, repeticiones, RIR y clasificación de progresión. Incluye la visualización de la tendencia de carga (o tendencia de repeticiones para ejercicios de peso corporal). Permite acceder al detalle del ejercicio (media visual). Muestra el estado de progresión actual del ejercicio (Sin Historial, En Progresión, En Meseta, En Descarga). | HU-23 | HU-10 |
 
 ### Flujo G — Métricas y KPIs
 
 | ID | Vista | Propósito | HU Directas | HU Indirectas |
 |----|-------|-----------|-------------|---------------|
-| G1 | Panel de Métricas | Vista central de KPIs del sistema con secciones para: Tasa de Progresión por Ejercicio (% sesiones con progresión positiva, período configurable con defecto de 4 semanas), Velocidad de Progresión de Carga por ejercicio (Kg/sesión), RIR Promedio por Módulo (con referencia de interpretación: 2-3 = óptimo, < 1.5 = riesgo, > 3.5 = insuficiente), Índice de Adherencia Semanal (% sesiones completadas vs. planificadas). Punto de acceso a las vistas de volumen y tendencia. | HU-19, HU-21 | — |
-| G2 | Volumen por Grupo Muscular | Tonelaje Acumulado por Grupo Muscular por microciclo (Σ Peso × Reps de todos los ejercicios del grupo). Distribución de Volumen por Zona Muscular como porcentaje de series por zona vs. total del módulo. Evolución del tonelaje a lo largo de los microciclos, con identificación de tendencias (ascendente, estable, en caída). | HU-20, HU-25 | — |
+| G1 | Panel de Métricas | Vista central de KPIs del sistema con secciones para: Tasa de Progresión por Ejercicio (% sesiones con progresión positiva, período configurable con defecto de 4 semanas), Velocidad de Progresión de Carga por ejercicio (Kg/sesión), RIR Promedio por Rutina (con referencia de interpretación: 1 = óptimo, < 0.5 = riesgo, > 1.8 = insuficiente), Índice de Adherencia Semanal (% sesiones completadas vs. planificadas). Punto de acceso a las vistas de volumen y tendencia. | HU-19, HU-21 | — |
+| G2 | Volumen por Grupo Muscular | Tonelaje Acumulado por Grupo Muscular por microciclo (Σ Peso × Reps de todos los ejercicios del grupo). Distribución de Volumen por Zona Muscular como porcentaje de series por zona vs. total de la rutina. Evolución del tonelaje a lo largo de los microciclos, con identificación de tendencias (ascendente, estable, en caída). | HU-20 | — |
 | G3 | Tendencia de Progresión por Grupo Muscular | Evaluación de la trayectoria del tonelaje acumulado y la tasa de progresión de los ejercicios asociados a cada grupo muscular a lo largo de los últimos 4 a 6 microciclos completados. Clasificación de tendencia: ascendente, estable o en declive. Indicación de datos insuficientes si hay menos de 4 microciclos. | HU-22 | — |
 
 ### Flujo H — Alertas
 
 | ID | Vista | Propósito | HU Directas | HU Indirectas |
 |----|-------|-----------|-------------|---------------|
-| H1 | Centro de Alertas | Listado de todas las alertas activas del sistema, organizadas por nivel de urgencia (crisis primero, alertas después). Tipos de alerta: meseta en ejercicio (3 sesiones sin progresión), tasa de progresión baja (< 40% alerta, < 20% crisis), RIR por módulo fuera de rango (< 1.5 o > 3.5 sostenido 2+ sesiones), adherencia baja (< 60% semanal), caída de tonelaje por grupo muscular (> 10% alerta, > 20% crisis), inactividad por módulo (> 10 días alerta, > 14 días crisis), módulo requiere descarga (≥ 50% ejercicios en meseta/regresión). Diferenciación visual por nivel (alerta / crisis) con colores e iconografía. Las alertas son informativas, no bloqueantes. | HU-14, HU-16, HU-26, HU-27, HU-28, HU-29, HU-30 | HU-12, HU-15 |
-| H2 | Detalle de Alerta | Información completa de una alerta específica. Incluye: tipo de alerta, ejercicio o módulo o grupo muscular afectado, datos que dispararon la alerta, período evaluado. Para alertas de meseta: análisis causal (RIR bajo = límite de carga, RIR alto = carga conservadora, estancamiento grupal = fatiga sistémica) y recomendaciones de acción correctiva escalonadas (sesión 4: microincremento o extensión de reps; sesión 6: rotar versión). Para alertas de descarga: enlace a la gestión de descarga (I1). Para alertas de tonelaje: verificación de si es descarga planificada o regresión. | HU-14, HU-15, HU-16, HU-26, HU-27, HU-28, HU-29, HU-30 | HU-12 |
+| H1 | Centro de Alertas | Listado de todas las alertas activas del sistema, organizadas por nivel de urgencia (crisis primero, alertas después). Tipos de alerta: meseta en ejercicio (3 sesiones sin progresión), tasa de progresión baja (< 40% alerta, < 20% crisis), RIR por rutina fuera de rango (< 0.5 o > 1.8 sostenido 2+ sesiones), adherencia baja (< 60% semanal), caída de tonelaje por grupo muscular (> 10% alerta, > 20% crisis), inactividad por rutina (> 10 días alerta, > 14 días crisis), rutina requiere descarga (≥ 50% ejercicios en meseta/regresión). Diferenciación visual por nivel (alerta / crisis) con colores e iconografía. Las alertas son informativas, no bloqueantes. | HU-14, HU-16, HU-26, HU-27, HU-28, HU-29, HU-30 | HU-12, HU-15 |
+| H2 | Detalle de Alerta | Información completa de una alerta específica. Incluye: tipo de alerta, ejercicio o rutina o grupo muscular afectado, datos que dispararon la alerta, período evaluado. Para alertas de meseta: análisis causal (RIR bajo = límite de carga, RIR alto = carga conservadora, estancamiento grupal = fatiga sistémica) y recomendaciones de acción correctiva escalonadas (sesión 4: microincremento o extensión de reps; sesión 6: rotar versión). Para alertas de descarga: enlace a la gestión de descarga (I1). Para alertas de tonelaje: verificación de si es descarga planificada o regresión. | HU-14, HU-15, HU-16, HU-26, HU-27, HU-28, HU-29, HU-30 | HU-12 |
 
 ### Flujo I — Gestión de Descarga
 
 | ID | Vista | Propósito | HU Directas | HU Indirectas |
 |----|-------|-----------|-------------|---------------|
-| I1 | Gestión de Descarga | Muestra el estado actual de descarga del sistema. Si no hay descarga activa: muestra si hay módulos que requieren descarga (señalados por el motor de reglas) y permite activar el modo Descarga. Si hay descarga activa: muestra los parámetros vigentes (carga al 60%, 4 series, 8 reps, RIR 4-5), la versión congelada por módulo, el progreso del microciclo de descarga (sesiones completadas/6) y las sesiones restantes. Al finalizar la descarga: muestra las cargas de reinicio post-descarga (90% de la carga pre-descarga) por ejercicio. | HU-16, HU-17 | HU-12 |
+| I1 | Gestión de Descarga | Muestra el estado actual de descarga del sistema. Si no hay descarga activa: muestra si hay rutinas que requieren descarga (señalados por el motor de reglas) y permite activar el modo Descarga. Si hay descarga activa: muestra los parámetros vigentes (carga al 60%, series prescritas, 8 reps, RIR 2), la versión congelada por rutina, el progreso del microciclo de descarga (sesiones completadas / total de rutinas del plan) y las sesiones restantes. Al finalizar la descarga: muestra las cargas de reinicio post-descarga (90% de la carga pre-descarga) por ejercicio. | HU-16, HU-17 | HU-12 |
 
-### Flujo J — Configuración y Respaldo
+### Flujo J — Ajustes y Respaldo
 
 | ID | Vista | Propósito | HU Directas | HU Indirectas |
 |----|-------|-----------|-------------|---------------|
-| J1 | Configuración | Menú de opciones del sistema con acceso a: editar perfil del ejecutante (→ C1), definir objetivo de frecuencia semanal (4-6 sesiones, usado para el cálculo de adherencia), exportar respaldo (→ J2), importar respaldo (→ J3). | HU-21, HU-31, HU-32 | — |
+| J1 | Ajustes | Menú de opciones del sistema con acceso a: editar perfil del ejecutante (→ C1), definir objetivo de frecuencia semanal (4-6 sesiones, usado para el cálculo de adherencia), exportar respaldo (→ J2), importar respaldo (→ J3). | HU-21, HU-31, HU-32 | — |
 | J2 | Exportar Respaldo | Pantalla para ejecutar la exportación del backup. Muestra advertencia sobre contenido no cifrado del archivo antes de iniciar. Al ejecutar: indicación de progreso, y al completar: confirmación con la ubicación o destino del archivo. Permite compartir vía apps del sistema (Drive, correo, mensajería). El proceso se ejecuta en menos de 10 segundos para historial de hasta 2 años. | HU-31 | — |
 | J3 | Importar Respaldo | Pantalla para la restauración de datos. Permite seleccionar archivo de backup. Tras selección: valida formato y metadatos de versión. Si es válido: muestra advertencia explícita de que todos los datos actuales serán reemplazados y solicita confirmación. Al ejecutar: indicación de progreso, y al completar: confirmación de restauración exitosa. Si falla: rollback automático con datos originales preservados. Proceso menor a 10 segundos. | HU-32 | — |
 
@@ -128,7 +129,7 @@ Cada vista está vinculada a las historias de usuario (HU) que respaldan su exis
 | HU-22 | G3 | Directa |
 | HU-23 | F3 | Directa |
 | HU-24 | F1, F2 | Directa |
-| HU-25 | G2 | Directa |
+| HU-25 | D4, E1 | Directa |
 | HU-26 | H1, H2 | Directa |
 | HU-27 | H1, H2 | Directa |
 | HU-28 | H1, H2 | Directa |
@@ -145,7 +146,7 @@ Las siguientes 3 historias de usuario son procesos computacionales del motor de 
 |----|-------------------------|-----------------------------------|
 | HU-10 | Evaluar y clasificar progresión post-sesión (comparar vs. historial, clasificar como Progresión/Mantenimiento/Regresión, calcular RIR promedio, actualizar estado de progresión del ejercicio) | E5 (clasificación y señales), F2 (clasificación en sesión pasada), F3 (clasificación en historial, estado de progresión) |
 | HU-11 | Prescribir carga objetivo según Regla de Doble Umbral (evaluar condiciones, calcular incremento diferenciado, o mantener carga) | E1 (carga objetivo al iniciar sesión), E5 (señal "Subir carga" en resumen) |
-| HU-12 | Detectar regresión y fatiga acumulada (regresión por ejercicio, fatiga acumulada por módulo cuando ≥ 50% regresan) | E5 (señal "Regresión"), H1/H2 (alerta de fatiga acumulada → necesidad de descarga), I1 (módulo requiere descarga) |
+| HU-12 | Detectar regresión y fatiga acumulada (regresión por ejercicio, fatiga acumulada por rutina cuando ≥ 50% regresan) | E5 (señal "Regresión"), H1/H2 (alerta de fatiga acumulada → necesidad de descarga), I1 (rutina requiere descarga) |
 | HU-17 | Gestionar ciclo de descarga — indicación del modo activo durante sesiones | E1 (indicación visual de descarga activa, cargas ajustadas al 60%, sesiones restantes del microciclo) |
 
 **Justificación:** HU-10, HU-11 y HU-12 representan la lógica interna del motor de reglas de progresión — cálculos que se disparan automáticamente al cerrar una sesión. HU-17 tiene su pantalla directa en I1, pero su output visual (indicador de descarga activa con cargas ajustadas) también se refleja indirectamente en E1 durante toda la duración del microciclo de descarga. Ninguna de estas relaciones indirectas requiere una pantalla adicional; sus outputs se integran en pantallas existentes como datos derivados.
@@ -172,14 +173,14 @@ Las siguientes 3 historias de usuario son procesos computacionales del motor de 
 | A — Onboarding | 1 | A1 |
 | B — Inicio | 1 | B1 |
 | C — Perfil | 2 | C1, C2 |
-| D — Catálogo | 5 | D1, D2, D3, D4, D5 |
+| D — Catálogo | 6 | D1, D2, D3, D4, D5, D6 |
 | E — Sesión Activa | 5 | E1, E2, E3, E4, E5 |
 | F — Historial | 3 | F1, F2, F3 |
 | G — Métricas | 3 | G1, G2, G3 |
 | H — Alertas | 2 | H1, H2 |
 | I — Descarga | 1 | I1 |
-| J — Configuración | 3 | J1, J2, J3 |
-| **Total** | **26** | |
+| J — Ajustes | 3 | J1, J2, J3 |
+| **Total** | **27** | |
 
 ---
 
@@ -191,7 +192,7 @@ Las siguientes 3 historias de usuario son procesos computacionales del motor de 
 
 ### 6.1 Objetivo de frecuencia semanal (4-6 sesiones) — RESUELTO ✅
 
-HU-21 (CA-21.04, CA-21.05) requiere un "objetivo de frecuencia definido por el ejecutante" (entre 4 y 6 sesiones semanales) para calcular el Índice de Adherencia. Este parámetro se configura en J1 (Configuración).
+HU-21 (CA-21.04, CA-21.05) requiere un "objetivo de frecuencia definido por el ejecutante" (entre 4 y 6 sesiones semanales) para calcular el Índice de Adherencia. Este parámetro se configura en J1 (Ajustes).
 
 **Decisión adoptada: opción (b)** — Se establece un valor por defecto de **4 sesiones/semana** como objetivo inicial. El ejecutante puede modificarlo en cualquier momento desde J1 (rango: 4–6). El Índice de Adherencia funciona desde la primera semana sin requerir configuración explícita previa.
 
@@ -233,7 +234,7 @@ La aplicación ofrece navegación global persistente entre las secciones princip
 | D1 — Diccionario de Ejercicios | Diccionario |
 | F1 — Historial de Sesiones | Historial |
 | G1 — Panel de Métricas | Métricas |
-| J1 — Configuración | Configuración |
+| J1 — Ajustes | Ajustes |
 
 **Restricción durante sesión activa:** Cuando hay una sesión activa (E1-E5), la navegación global se desactiva para evitar abandono accidental. El ejecutante permanece contenido dentro del flujo de sesión y solo puede salir cerrando la sesión mediante E4. No existe navegación E1→B1 directa; la única forma de terminar es el cierre formal (Completada o Incompleta). Si la app se cierra inesperadamente, la sesión persiste y B1 ofrece reanudarla.
 
@@ -266,7 +267,7 @@ La aplicación ofrece navegación global persistente entre las secciones princip
 | → | C2 | El ejecutante toca "Ver historial de peso" o enlace equivalente. |
 | ← | J1 | Botón de retorno. |
 
-**Accesible desde:** J1 (Configuración → "Editar perfil").
+**Accesible desde:** J1 (Ajustes → "Editar perfil").
 
 #### C2 — Historial de Peso Corporal
 
@@ -301,7 +302,7 @@ La aplicación ofrece navegación global persistente entre las secciones princip
 
 | Dirección | Destino | Acción / Evento |
 |-----------|---------|-----------------|
-| → | D4 | El ejecutante selecciona una combinación módulo-versión para ver sus ejercicios. |
+| → | D4 | El ejecutante selecciona una combinación rutina-versión para ver sus ejercicios. |
 | ↔ | D1 | El ejecutante cambia a la tab/sub-sección "Ejercicios" dentro de la sección Diccionario. |
 
 **Accesible desde:** Navegación global (sección "Diccionario", tab "Plan").
@@ -313,7 +314,7 @@ La aplicación ofrece navegación global persistente entre las secciones princip
 | → | D2 | El ejecutante toca un ejercicio del plan para ver su detalle y media visual. |
 | ← | D3 | Botón de retorno. |
 
-**Accesible desde:** D3 (selección de módulo-versión).
+**Accesible desde:** D3 (selección de rutina-versión).
 
 #### D5 — Crear Ejercicio
 
@@ -344,7 +345,7 @@ La aplicación ofrece navegación global persistente entre las secciones princip
 | ← | E1 | El ejecutante cancela el registro (retorno sin persistir). |
 
 **Accesible desde:** E1 (toque en un ejercicio para registrar serie).
-**Nota:** Si al confirmar la serie el ejercicio alcanza 4 series registradas, su estado cambia a "Completado" al retornar a E1.
+**Nota:** Si al confirmar la serie el ejercicio alcanza las series prescritas, el sistema ofrece la opción de agregar series extra o finalizar el ejercicio al retornar a E1.
 
 #### E3 — Selección de Ejercicio Sustituto
 
@@ -399,7 +400,7 @@ La aplicación ofrece navegación global persistente entre las secciones princip
 | → | D2 | El ejecutante toca el ícono de media visual para ver la técnica de ejecución del ejercicio. |
 | ← | F2 | Botón de retorno (si se accedió desde el detalle de sesión pasada). |
 | ← | E5 | Botón de retorno (si se accedió desde el resumen post-sesión). |
-| ← | G1 | Botón de retorno (si se accedió desde el panel de métricas). |
+| ← | G1 | Botón de retorno (si se accedió desde el panel de Métricas). |
 | ← | H2 | Botón de retorno (si se accedió desde el detalle de una alerta). |
 | ← | D2 | Botón de retorno (si se accedió desde el detalle de ejercicio). |
 
@@ -457,7 +458,7 @@ La aplicación ofrece navegación global persistente entre las secciones princip
 **Accesible desde:** B1 (indicador de descarga), H2 (enlace "Gestionar descarga" en alerta de fatiga/descarga).
 **Nota:** La activación de la descarga en I1 no navega a otra pantalla — permanece en I1 mostrando el nuevo estado de descarga activa.
 
-#### J1 — Configuración
+#### J1 — Ajustes
 
 | Dirección | Destino | Acción / Evento |
 |-----------|---------|-----------------|
@@ -465,7 +466,7 @@ La aplicación ofrece navegación global persistente entre las secciones princip
 | → | J2 | El ejecutante toca "Exportar respaldo". |
 | → | J3 | El ejecutante toca "Importar respaldo". |
 
-**Accesible desde:** Navegación global (sección "Configuración").
+**Accesible desde:** Navegación global (sección "Ajustes").
 
 #### J2 — Exportar Respaldo
 
@@ -506,7 +507,7 @@ La aplicación ofrece navegación global persistente entre las secciones princip
 | D2 | E1 | Retorno | Botón de retorno (origen: Sesión Activa) |
 | D2 | F3 | Avance | Toque "Ver historial" del ejercicio |
 | D2 | F3 | Retorno | Botón de retorno (origen: Historial de Ejercicio) |
-| D3 | D4 | Avance | Selección de módulo-versión |
+| D3 | D4 | Avance | Selección de rutina-versión |
 | D3 | D1 | Tab lateral | Cambio a tab "Ejercicios" dentro de sección Diccionario |
 | D4 | D2 | Avance | Toque en un ejercicio del plan |
 | D4 | D3 | Retorno | Botón de retorno |
@@ -610,7 +611,7 @@ flowchart TD
 
     I1["I1 — Gestión de Descarga"]:::descarga
 
-    J1["J1 — Configuración"]:::config
+    J1["J1 — Ajustes"]:::config
     J2["J2 — Exportar Respaldo"]:::config
     J3["J3 — Importar Respaldo"]:::config
 
@@ -642,7 +643,7 @@ flowchart TD
     D1 -->|"Toque ejercicio"| D2
     D1 -->|"FAB crear"| D5
     D2 -.->|"Retorno"| D1
-    D3 -->|"Selección módulo-versión"| D4
+    D3 -->|"Selección rutina-versión"| D4
     D4 -->|"Toque ejercicio"| D2
     D4 -.->|"Retorno"| D3
     D2 -.->|"Retorno"| D4
@@ -703,7 +704,7 @@ flowchart TD
     I1 -.->|"Retorno"| H2
 
     %% ============================================================
-    %% FLUJO J: CONFIGURACIÓN Y RESPALDO
+    %% FLUJO J: AJUSTES Y RESPALDO
     %% ============================================================
     J1 -->|"Exportar"| J2
     J1 -->|"Importar"| J3
@@ -725,7 +726,7 @@ flowchart LR
     D1["📖 Diccionario — D1"]:::nav
     F1["📋 Historial — F1"]:::nav
     G1["📊 Métricas — G1"]:::nav
-    J1["⚙️ Configuración — J1"]:::nav
+    J1["⚙️ Ajustes — J1"]:::nav
 
     B1 <--> D1
     D1 <--> F1

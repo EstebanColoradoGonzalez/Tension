@@ -6,7 +6,7 @@ import javax.inject.Inject
 class StartSessionUseCase @Inject constructor(
     private val sessionRepository: SessionRepository,
 ) {
-    suspend operator fun invoke(moduleVersionId: Long): Long {
-        return sessionRepository.startSession(moduleVersionId)
+    suspend operator fun invoke(routineVersionId: Long): Long {
+        return sessionRepository.startSession(routineVersionId)
     }
 }

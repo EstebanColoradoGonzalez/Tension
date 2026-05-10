@@ -82,8 +82,8 @@ fun SessionDetailScreen(
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text(
                                     text = stringResource(
-                                        R.string.session_module_version_format,
-                                        detail.moduleCode,
+                                        R.string.session_routine_version_format,
+                                        detail.routineName,
                                         detail.versionNumber,
                                     ),
                                     style = MaterialTheme.typography.titleLarge,
@@ -250,13 +250,21 @@ private fun ExerciseDetailCard(
         Spacer(modifier = Modifier.height(4.dp))
 
         Row(verticalAlignment = Alignment.CenterVertically) {
-            ProgressionIndicator(classification = exercise.classification)
-            Spacer(modifier = Modifier.width(4.dp))
-            Text(
-                text = classificationLabel(exercise.classification),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            if (exercise.isDeload) {
+                Text(
+                    text = "Descarga",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            } else {
+                ProgressionIndicator(classification = exercise.classification)
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = classificationLabel(exercise.classification),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
 
         if (exercise.originalExerciseName != null) {

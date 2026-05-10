@@ -34,6 +34,10 @@ class GetSessionExercisesUseCaseTest {
                 prescribedLoadKg = 60.0,
                 completedSets = 0,
                 status = ExerciseSessionStatus.NOT_STARTED,
+                muscleGroup = "Pecho",
+                isFinalized = false,
+                pendingSelection = false,
+                slot = 0,
             ),
         )
         every { repository.getSessionExercises(1L) } returns flowOf(exercises)

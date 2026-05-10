@@ -9,4 +9,7 @@ data class ExerciseSummaryItem(
     val isBodyweight: Boolean,
     val isIsometric: Boolean,
     val isMastered: Boolean,
+    val isDeload: Boolean,
+    val completedSets: Int,
+    val prescribedSets: Int,
 )

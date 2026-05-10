@@ -27,7 +27,7 @@ interface ExerciseSetDao {
         FROM exercise_set es
         INNER JOIN session_exercise se ON es.session_exercise_id = se.id
         INNER JOIN session s ON se.session_id = s.id
-        WHERE se.exercise_id = :exerciseId
+        WHERE COALESCE(se.original_exercise_id, se.exercise_id) = :exerciseId
           AND s.deload_id IS NULL
         ORDER BY es.id DESC
         LIMIT 1
@@ -43,9 +43,9 @@ interface ExerciseSetDao {
             SELECT se.id
             FROM session_exercise se
             INNER JOIN session s ON se.session_id = s.id
-            WHERE se.exercise_id = :exerciseId
+            WHERE COALESCE(se.original_exercise_id, se.exercise_id) = :exerciseId
               AND s.deload_id IS NULL
-              AND s.date < :activationDate
+              AND s.date <= :activationDate
               AND s.status IN ('COMPLETED', 'INCOMPLETE')
             ORDER BY s.date DESC, s.id DESC
             LIMIT 1
@@ -72,9 +72,10 @@ interface ExerciseSetDao {
             SELECT se2.id
             FROM session_exercise se2
             INNER JOIN session s2 ON se2.session_id = s2.id
-            WHERE se2.exercise_id = :exerciseId
+            WHERE COALESCE(se2.original_exercise_id, se2.exercise_id) = :exerciseId
               AND s2.id != :currentSessionId
               AND s2.status IN ('COMPLETED', 'INCOMPLETE')
+              AND s2.deload_id IS NULL
             ORDER BY s2.date DESC, s2.id DESC
             LIMIT 1
         )
@@ -88,7 +89,7 @@ interface ExerciseSetDao {
         SELECT es.weight_kg AS weightKg, es.reps, mz.muscle_group AS muscleGroup
         FROM exercise_set es
         INNER JOIN session_exercise se ON es.session_exercise_id = se.id
-        INNER JOIN exercise_muscle_zone emz ON se.exercise_id = emz.exercise_id
+        INNER JOIN exercise_muscle_zone emz ON COALESCE(se.original_exercise_id, se.exercise_id) = emz.exercise_id
         INNER JOIN muscle_zone mz ON emz.muscle_zone_id = mz.id
         WHERE se.session_id IN (:sessionIds)
         """,
@@ -109,7 +110,7 @@ interface ExerciseSetDao {
         SELECT AVG(es.weight_kg)
         FROM exercise_set es
         INNER JOIN session_exercise se ON es.session_exercise_id = se.id
-        WHERE se.exercise_id = :exerciseId
+        WHERE COALESCE(se.original_exercise_id, se.exercise_id) = :exerciseId
           AND se.session_id = :sessionId
         """,
     )
@@ -117,15 +118,13 @@ interface ExerciseSetDao {
 
     @Query(
         """
-        SELECT mz.name AS muscleZoneName, mv.module_code AS moduleCode, COUNT(*) AS setCount
+        SELECT mz.name AS muscleZoneName, mz.muscle_group AS muscleGroup, COUNT(*) AS setCount
         FROM exercise_set es
         INNER JOIN session_exercise se ON es.session_exercise_id = se.id
-        INNER JOIN session s ON se.session_id = s.id
-        INNER JOIN module_version mv ON s.module_version_id = mv.id
-        INNER JOIN exercise_muscle_zone emz ON se.exercise_id = emz.exercise_id
+        INNER JOIN exercise_muscle_zone emz ON COALESCE(se.original_exercise_id, se.exercise_id) = emz.exercise_id
         INNER JOIN muscle_zone mz ON emz.muscle_zone_id = mz.id
         WHERE se.session_id IN (:sessionIds)
-        GROUP BY mz.name, mv.module_code
+        GROUP BY mz.name, mz.muscle_group
         """,
     )
     suspend fun getSetDistributionBySessionIds(sessionIds: List<Long>): List<SetDistributionData>

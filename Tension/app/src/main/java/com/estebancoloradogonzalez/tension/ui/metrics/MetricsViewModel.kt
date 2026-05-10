@@ -3,7 +3,7 @@ package com.estebancoloradogonzalez.tension.ui.metrics
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.estebancoloradogonzalez.tension.domain.usecase.metrics.GetAdherenceUseCase
-import com.estebancoloradogonzalez.tension.domain.usecase.metrics.GetAvgRirByModuleUseCase
+import com.estebancoloradogonzalez.tension.domain.usecase.metrics.GetAvgRirByRoutineUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.metrics.GetLoadVelocityUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.metrics.GetProgressionRateUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -16,7 +16,7 @@ import javax.inject.Inject
 @HiltViewModel
 class MetricsViewModel @Inject constructor(
     private val getAdherenceUseCase: GetAdherenceUseCase,
-    private val getAvgRirByModuleUseCase: GetAvgRirByModuleUseCase,
+    private val getAvgRirByRoutineUseCase: GetAvgRirByRoutineUseCase,
     private val getProgressionRateUseCase: GetProgressionRateUseCase,
     private val getLoadVelocityUseCase: GetLoadVelocityUseCase,
 ) : ViewModel() {
@@ -35,7 +35,7 @@ class MetricsViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val adherence = getAdherenceUseCase()
-                val rir = getAvgRirByModuleUseCase(rirSessionLimit)
+                val rir = getAvgRirByRoutineUseCase(rirSessionLimit)
                 val rates = getProgressionRateUseCase(progressionWeeks)
                 val velocities = getLoadVelocityUseCase(progressionWeeks)
                 _uiState.value = MetricsUiState.Content(adherence, rir, rates, velocities)

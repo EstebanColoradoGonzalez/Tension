@@ -26,11 +26,16 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -51,6 +56,14 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(uiState.errorMessage) {
+        uiState.errorMessage?.let { message ->
+            snackbarHostState.showSnackbar(message)
+            viewModel.dismissError()
+        }
+    }
 
     LaunchedEffect(Unit) {
         viewModel.navigationEvent.collect { sessionId ->
@@ -58,7 +71,10 @@ fun HomeScreen(
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+    ) { paddingValues ->
+    Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
         HomeTopBar(
             alertCount = uiState.alertCount,
             onAlertClick = onNavigateToAlerts,
@@ -73,7 +89,7 @@ fun HomeScreen(
                 item {
                     Spacer(modifier = Modifier.height(16.dp))
                     ResumeSessionCard(
-                        moduleCode = uiState.activeSession?.moduleCode ?: "",
+                        routineName = uiState.activeSession?.routineName ?: "",
                         versionNumber = uiState.activeSession?.versionNumber ?: 0,
                         completedExercises = uiState.activeSession?.completedExercises ?: 0,
                         totalExercises = uiState.activeSession?.totalExercises ?: 0,
@@ -88,15 +104,15 @@ fun HomeScreen(
                 item {
                     Spacer(modifier = Modifier.height(16.dp))
                     NextSessionCard(
-                        moduleCode = uiState.nextSession?.moduleCode ?: "",
+                        routineName = uiState.nextSession?.routineName ?: "",
                         versionNumber = uiState.nextSession?.versionNumber ?: 0,
                         isLoading = uiState.isLoading,
                         onStartSession = { viewModel.startSession() },
                         onCardClick = {
                             uiState.nextSession?.let {
                                 onNavigateToPreview(
-                                    it.moduleVersionId,
-                                    it.moduleCode,
+                                    it.routineVersionId,
+                                    it.routineName,
                                     it.versionNumber,
                                 )
                             }
@@ -123,6 +139,7 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(16.dp))
             }
         }
+    }
     }
 }
 
@@ -174,7 +191,7 @@ private fun HomeTopBar(
 
 @Composable
 private fun ResumeSessionCard(
-    moduleCode: String,
+    routineName: String,
     versionNumber: Int,
     completedExercises: Int,
     totalExercises: Int,
@@ -207,7 +224,7 @@ private fun ResumeSessionCard(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = stringResource(R.string.home_next_session_format, moduleCode, versionNumber),
+                text = stringResource(R.string.home_next_session_format, routineName, versionNumber),
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color(0xFF410002),
             )
@@ -239,7 +256,7 @@ private fun ResumeSessionCard(
 
 @Composable
 private fun NextSessionCard(
-    moduleCode: String,
+    routineName: String,
     versionNumber: Int,
     isLoading: Boolean,
     onStartSession: () -> Unit,
@@ -256,7 +273,7 @@ private fun NextSessionCard(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = stringResource(R.string.home_next_session_format, moduleCode, versionNumber),
+                text = stringResource(R.string.home_next_session_format, routineName, versionNumber),
                 style = MaterialTheme.typography.titleMedium,
                 color = Color(0xFF5C0E0E),
             )
@@ -343,7 +360,7 @@ private fun DeloadStatusCard(
                         Text(
                             text = stringResource(
                                 R.string.home_deload_required,
-                                deloadState.moduleCode,
+                                deloadState.routineName,
                             ),
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onSecondaryContainer,
@@ -358,6 +375,7 @@ private fun DeloadStatusCard(
                     text = stringResource(
                         R.string.home_deload_progress,
                         deloadState.progress,
+                        deloadState.totalSessions,
                     ),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSecondaryContainer,

@@ -6,6 +6,7 @@ import com.estebancoloradogonzalez.tension.data.repository.ExerciseRepositoryImp
 import com.estebancoloradogonzalez.tension.data.repository.MetricsRepositoryImpl
 import com.estebancoloradogonzalez.tension.data.repository.PlanRepositoryImpl
 import com.estebancoloradogonzalez.tension.data.repository.ProfileRepositoryImpl
+import com.estebancoloradogonzalez.tension.data.repository.RoutineRepositoryImpl
 import com.estebancoloradogonzalez.tension.data.repository.SessionRepositoryImpl
 import com.estebancoloradogonzalez.tension.domain.repository.AlertRepository
 import com.estebancoloradogonzalez.tension.domain.repository.BackupRepository
@@ -13,6 +14,7 @@ import com.estebancoloradogonzalez.tension.domain.repository.ExerciseRepository
 import com.estebancoloradogonzalez.tension.domain.repository.MetricsRepository
 import com.estebancoloradogonzalez.tension.domain.repository.PlanRepository
 import com.estebancoloradogonzalez.tension.domain.repository.ProfileRepository
+import com.estebancoloradogonzalez.tension.domain.repository.RoutineRepository
 import com.estebancoloradogonzalez.tension.domain.repository.SessionRepository
 import dagger.Binds
 import dagger.Module
@@ -65,4 +67,10 @@ abstract class RepositoryModule {
     abstract fun bindBackupRepository(
         impl: BackupRepositoryImpl,
     ): BackupRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindRoutineRepository(
+        impl: RoutineRepositoryImpl,
+    ): RoutineRepository
 }

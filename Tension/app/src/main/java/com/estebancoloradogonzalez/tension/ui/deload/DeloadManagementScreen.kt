@@ -122,7 +122,7 @@ private fun DeloadContent(
     ) {
         when (deloadState) {
             is DeloadState.DeloadRequired -> DeloadRequiredContent(
-                modules = deloadState.modules,
+                routineNames = deloadState.routineNames,
                 onActivate = onActivateDeload,
             )
 
@@ -139,7 +139,7 @@ private fun DeloadContent(
 
 @Composable
 private fun DeloadRequiredContent(
-    modules: List<String>,
+    routineNames: List<String>,
     onActivate: () -> Unit,
 ) {
     OutlinedCard(
@@ -155,12 +155,12 @@ private fun DeloadRequiredContent(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            for (moduleCode in modules) {
+            for (routineName in routineNames) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(text = "⚠\uFE0F", modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = stringResource(R.string.deload_required_title, moduleCode),
+                        text = stringResource(R.string.deload_required_title, routineName),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.error,
                     )
@@ -275,6 +275,7 @@ private fun DeloadActiveContent(deloadState: DeloadState.DeloadActive) {
                 text = stringResource(
                     R.string.deload_progress_format,
                     deloadState.progress,
+                    deloadState.totalSessions,
                 ),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSecondaryContainer,
@@ -283,7 +284,13 @@ private fun DeloadActiveContent(deloadState: DeloadState.DeloadActive) {
             Spacer(modifier = Modifier.height(8.dp))
 
             LinearProgressIndicator(
-                progress = { deloadState.progress / deloadState.totalSessions.toFloat() },
+                progress = {
+                    if (deloadState.totalSessions > 0) {
+                        deloadState.progress / deloadState.totalSessions.toFloat()
+                    } else {
+                        0f
+                    }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(8.dp),
@@ -331,16 +338,17 @@ private fun DeloadActiveContent(deloadState: DeloadState.DeloadActive) {
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            Text(
-                text = stringResource(
-                    R.string.deload_frozen_versions,
-                    deloadState.frozenVersionA,
-                    deloadState.frozenVersionB,
-                    deloadState.frozenVersionC,
-                ),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            deloadState.frozenVersions.forEach { (routineName, version) ->
+                Text(
+                    text = stringResource(
+                        R.string.deload_frozen_version_item,
+                        routineName,
+                        version,
+                    ),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
 }

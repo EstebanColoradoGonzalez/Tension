@@ -1,5 +1,7 @@
 package com.estebancoloradogonzalez.tension.ui.navigation
 
+import java.net.URLEncoder
+
 object NavigationRoutes {
     const val REGISTER = "register"
     const val HOME = "home"
@@ -10,7 +12,9 @@ object NavigationRoutes {
     const val EXERCISE_DETAIL = "exercise-detail/{exerciseId}"
     const val CREATE_EXERCISE = "create-exercise"
     const val TRAINING_PLAN = "training-plan"
-    const val PLAN_VERSION_DETAIL = "plan-version-detail/{moduleVersionId}"
+    const val ROUTINE_LIST = "routine-list"
+    const val ROUTINE_VERSIONS = "routine-versions/{routineId}"
+    const val PLAN_VERSION_DETAIL = "plan-version-detail/{routineVersionId}"
     const val EXERCISE_HISTORY = "exercise-history/{exerciseId}"
     const val SESSION_HISTORY = "session-history"
     const val SESSION_DETAIL = "session-detail/{sessionId}"
@@ -26,17 +30,18 @@ object NavigationRoutes {
     const val ALERT_DETAIL = "alert-detail/{alertId}"
     const val EXPORT_BACKUP = "export-backup"
     const val IMPORT_BACKUP = "import-backup"
-    const val SESSION_PREVIEW = "session-preview/{moduleVersionId}/{moduleCode}/{versionNumber}"
+    const val SESSION_PREVIEW = "session-preview/{routineVersionId}/{routineName}/{versionNumber}"
 
     fun exerciseDetailRoute(exerciseId: Long) = "exercise-detail/$exerciseId"
     fun exerciseHistoryRoute(exerciseId: Long) = "exercise-history/$exerciseId"
-    fun planVersionDetailRoute(moduleVersionId: Long) = "plan-version-detail/$moduleVersionId"
+    fun planVersionDetailRoute(routineVersionId: Long) = "plan-version-detail/$routineVersionId"
     fun activeSessionRoute(sessionId: Long) = "active-session/$sessionId"
     fun registerSetRoute(sessionExerciseId: Long) = "register-set/$sessionExerciseId"
     fun substituteExerciseRoute(sessionExerciseId: Long) = "substitute-exercise/$sessionExerciseId"
     fun sessionSummaryRoute(sessionId: Long) = "session-summary/$sessionId"
     fun sessionDetailRoute(sessionId: Long) = "session-detail/$sessionId"
     fun alertDetailRoute(alertId: Long) = "alert-detail/$alertId"
-    fun sessionPreviewRoute(moduleVersionId: Long, moduleCode: String, versionNumber: Int) =
-        "session-preview/$moduleVersionId/$moduleCode/$versionNumber"
+    fun sessionPreviewRoute(routineVersionId: Long, routineName: String, versionNumber: Int) =
+        "session-preview/$routineVersionId/${URLEncoder.encode(routineName, "UTF-8")}/$versionNumber"
+    fun routineVersionsRoute(routineId: Long) = "routine-versions/$routineId"
 }

@@ -2,12 +2,13 @@ package com.estebancoloradogonzalez.tension.ui.preview
 
 data class SessionPreviewUiState(
     val isLoading: Boolean = true,
-    val moduleCode: String = "",
+    val routineName: String = "",
     val versionNumber: Int = 0,
-    val moduleVersionId: Long = 0L,
+    val routineVersionId: Long = 0L,
     val exercises: List<PreviewExerciseItem> = emptyList(),
     val isDeloadActive: Boolean = false,
     val deloadSessionsRemaining: Int = 0,
+    val errorMessage: String? = null,
 )
 
 data class PreviewExerciseItem(

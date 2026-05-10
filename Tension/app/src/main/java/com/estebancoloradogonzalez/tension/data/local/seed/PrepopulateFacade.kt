@@ -7,7 +7,7 @@ object PrepopulateFacade {
     fun populate(db: SupportSQLiteDatabase) {
         db.beginTransaction()
         try {
-            ModuleSeeder.seed(db)
+            BaseDataSeeder.seed(db)
             ExerciseSeeder.seed(db)
             PlanSeeder.seed(db)
             db.setTransactionSuccessful()

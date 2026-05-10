@@ -11,6 +11,7 @@ data class HomeUiState(
     val microcycleCount: Int = 0,
     val alertCount: Int = 0,
     val deloadState: DeloadHomeState? = null,
+    val errorMessage: String? = null,
 ) {
     val showNextSessionCard: Boolean get() = activeSession == null && nextSession != null
     val showResumeCard: Boolean get() = activeSession != null

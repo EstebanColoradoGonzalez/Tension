@@ -7,13 +7,13 @@ import androidx.room.Index
 
 @Entity(
     tableName = "plan_assignment",
-    primaryKeys = ["module_version_id", "exercise_id"],
+    primaryKeys = ["routine_version_id", "exercise_id"],
     foreignKeys = [
         ForeignKey(
-            entity = ModuleVersionEntity::class,
+            entity = RoutineVersionEntity::class,
             parentColumns = ["id"],
-            childColumns = ["module_version_id"],
-            onDelete = ForeignKey.RESTRICT,
+            childColumns = ["routine_version_id"],
+            onDelete = ForeignKey.CASCADE,
         ),
         ForeignKey(
             entity = ExerciseEntity::class,
@@ -27,8 +27,8 @@ import androidx.room.Index
     ],
 )
 data class PlanAssignmentEntity(
-    @ColumnInfo(name = "module_version_id")
-    val moduleVersionId: Long,
+    @ColumnInfo(name = "routine_version_id")
+    val routineVersionId: Long,
 
     @ColumnInfo(name = "exercise_id")
     val exerciseId: Long,
@@ -41,4 +41,7 @@ data class PlanAssignmentEntity(
 
     @ColumnInfo(name = "sort_order")
     val sortOrder: Int = 0,
+
+    @ColumnInfo(name = "slot", defaultValue = "0")
+    val slot: Int = 0,
 )

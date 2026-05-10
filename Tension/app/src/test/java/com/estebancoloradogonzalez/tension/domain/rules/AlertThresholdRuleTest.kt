@@ -33,34 +33,34 @@ class AlertThresholdRuleTest {
     // RIR
 
     @Test
-    fun `isRirLow returns true for avgRir below 1_5`() {
-        assertTrue(AlertThresholdRule.isRirLow(1.4))
+    fun `isRirLow returns true for avgRir below 0_5`() {
+        assertTrue(AlertThresholdRule.isRirLow(0.4))
     }
 
     @Test
-    fun `isRirLow returns false for avgRir at 1_5`() {
-        assertFalse(AlertThresholdRule.isRirLow(1.5))
+    fun `isRirLow returns false for avgRir at 0_5`() {
+        assertFalse(AlertThresholdRule.isRirLow(0.5))
     }
 
     @Test
-    fun `isRirHigh returns true for avgRir above 3_5`() {
-        assertTrue(AlertThresholdRule.isRirHigh(3.6))
+    fun `isRirHigh returns true for avgRir above 1_8`() {
+        assertTrue(AlertThresholdRule.isRirHigh(1.9))
     }
 
     @Test
-    fun `isRirHigh returns false for avgRir at 3_5`() {
-        assertFalse(AlertThresholdRule.isRirHigh(3.5))
+    fun `isRirHigh returns false for avgRir at 1_8`() {
+        assertFalse(AlertThresholdRule.isRirHigh(1.8))
     }
 
     @Test
     fun `isRirOutOfRange returns true when low or high`() {
-        assertTrue(AlertThresholdRule.isRirOutOfRange(1.0))
-        assertTrue(AlertThresholdRule.isRirOutOfRange(4.0))
+        assertTrue(AlertThresholdRule.isRirOutOfRange(0.3))
+        assertTrue(AlertThresholdRule.isRirOutOfRange(2.0))
     }
 
     @Test
     fun `isRirOutOfRange returns false when in optimal range`() {
-        assertFalse(AlertThresholdRule.isRirOutOfRange(2.5))
+        assertFalse(AlertThresholdRule.isRirOutOfRange(1.0))
     }
 
     // Adherence
@@ -173,23 +173,5 @@ class AlertThresholdRuleTest {
     fun `inactivityLevel returns null for days at 10 or below`() {
         assertNull(AlertThresholdRule.inactivityLevel(10))
         assertNull(AlertThresholdRule.inactivityLevel(5))
-    }
-
-    // Muscle Groups
-
-    @Test
-    fun `MUSCLE_GROUPS_BY_MODULE contains correct groups for A B C`() {
-        assertEquals(
-            listOf("Espalda", "Bíceps", "Abdomen"),
-            AlertThresholdRule.MUSCLE_GROUPS_BY_MODULE["A"],
-        )
-        assertEquals(
-            listOf("Pecho", "Hombro", "Tríceps"),
-            AlertThresholdRule.MUSCLE_GROUPS_BY_MODULE["B"],
-        )
-        assertEquals(
-            listOf("Cuádriceps", "Isquiotibiales", "Glúteos", "Aductores", "Abductores", "Gemelos"),
-            AlertThresholdRule.MUSCLE_GROUPS_BY_MODULE["C"],
-        )
     }
 }

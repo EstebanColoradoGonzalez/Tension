@@ -48,7 +48,7 @@ class SessionHistoryViewModelTest {
             SessionHistoryItem(
                 sessionId = 1L,
                 date = "2026-02-15",
-                moduleCode = "A",
+                routineName = "Pull+Abs",
                 versionNumber = 1,
                 status = "COMPLETED",
                 totalTonnageKg = 5000.0,

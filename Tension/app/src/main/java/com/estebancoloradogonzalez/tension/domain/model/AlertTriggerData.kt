@@ -19,7 +19,8 @@ sealed interface AlertTriggerData {
 
     data class RirTrigger(
         val avgRir: Double,
-        val moduleCode: String,
+        val routineId: Long,
+        val routineName: String,
         val isLow: Boolean,
     ) : AlertTriggerData
 
@@ -39,8 +40,15 @@ sealed interface AlertTriggerData {
     ) : AlertTriggerData
 
     data class InactivityTrigger(
-        val moduleCode: String,
+        val routineId: Long,
+        val routineName: String,
         val daysSinceLastSession: Long,
+        val muscleGroups: List<String>,
+    ) : AlertTriggerData
+
+    data class DeloadTrigger(
+        val routineId: Long,
+        val routineName: String,
         val muscleGroups: List<String>,
     ) : AlertTriggerData
 }

@@ -22,7 +22,6 @@ class ExerciseDictionaryViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(ExerciseDictionaryUiState())
     val uiState: StateFlow<ExerciseDictionaryUiState> = _uiState.asStateFlow()
 
-    private val _selectedModule = MutableStateFlow<String?>(null)
     private val _selectedEquipment = MutableStateFlow<String?>(null)
     private val _selectedMuscleZone = MutableStateFlow<String?>(null)
 
@@ -35,25 +34,21 @@ class ExerciseDictionaryViewModel @Inject constructor(
             combine(
                 getExercisesUseCase(),
                 getFilterOptionsUseCase(),
-                _selectedModule,
                 _selectedEquipment,
                 _selectedMuscleZone,
-            ) { exercises, filterOptions, selectedModule, selectedEquipment, selectedMuscleZone ->
+            ) { exercises, filterOptions, selectedEquipment, selectedMuscleZone ->
                 val filtered = exercises.filter { exercise ->
-                    val matchesModule = selectedModule == null || exercise.moduleCode == selectedModule
                     val matchesEquipment = selectedEquipment == null || exercise.equipmentTypeName == selectedEquipment
                     val matchesMuscleZone = selectedMuscleZone == null || exercise.muscleZones.any { it == selectedMuscleZone }
-                    matchesModule && matchesEquipment && matchesMuscleZone
+                    matchesEquipment && matchesMuscleZone
                 }
 
                 ExerciseDictionaryUiState(
                     isLoading = false,
                     exercises = filtered.map { it.toExerciseItem() },
                     totalCount = exercises.size,
-                    moduleOptions = filterOptions.modules.map { it.code },
                     equipmentOptions = filterOptions.equipmentTypes.map { it.name },
                     muscleZoneOptions = filterOptions.muscleZones.map { it.name },
-                    selectedModule = selectedModule,
                     selectedEquipment = selectedEquipment,
                     selectedMuscleZone = selectedMuscleZone,
                 )
@@ -61,10 +56,6 @@ class ExerciseDictionaryViewModel @Inject constructor(
                 _uiState.value = state
             }
         }
-    }
-
-    fun onModuleFilterSelected(code: String?) {
-        _selectedModule.value = code
     }
 
     fun onEquipmentFilterSelected(name: String?) {
@@ -78,7 +69,6 @@ class ExerciseDictionaryViewModel @Inject constructor(
     private fun Exercise.toExerciseItem() = ExerciseItem(
         id = id,
         name = name,
-        moduleCode = moduleCode,
         equipmentTypeName = equipmentTypeName,
         muscleZonesSummary = muscleZones.joinToString(", "),
         isCustom = isCustom,

@@ -18,4 +18,7 @@ interface RotationStateDao {
 
     @Query("SELECT * FROM rotation_state WHERE id = 1")
     fun getRotationState(): Flow<RotationStateEntity?>
+
+    @Query("SELECT * FROM rotation_state WHERE id = 1")
+    suspend fun getRotationStateOnce(): RotationStateEntity?
 }

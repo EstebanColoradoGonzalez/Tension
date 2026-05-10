@@ -43,9 +43,9 @@ Sistema prescribe → Ejecutante entrena con dirección → ...
 
 ### Tres capacidades fundamentales
 
-**Prescribir.** Antes de cada sesión, Tension determina automáticamente qué módulo y versión corresponde según la rotación cíclica, presenta los ejercicios prescritos y calcula la carga objetivo derivada del historial del ejecutante. No hay improvisación: cada variable está derivada de datos reales.
+**Prescribir.** Antes de cada sesión, Tension determina automáticamente qué rutina y versión corresponde según la rotación cíclica definida por el usuario, presenta los ejercicios prescritos y calcula la carga objetivo derivada del historial del ejecutante. No hay improvisación: cada variable está derivada de datos reales y de la estructura personalizada creada por el usuario.
 
-**Detectar.** Al cerrar cada sesión, Tension evalúa la progresión de cada ejercicio contra su historial, clasifica el resultado (progresión, mantenimiento o regresión), detecta mesetas, identifica fatiga acumulada y emite alertas cuando los indicadores están fuera de la zona óptima. El ejecutante nunca se estanca sin saberlo.
+**Detectar.** Al cerrar cada sesión, Tension evalúa la progresión de cada ejercicio contra su historial, clasifica el resultado (progresión, mantenimiento o regresión), detecta mesetas, identifica fatiga acumulada de la rutina y emite alertas cuando los indicadores están fuera de la zona óptima. El ejecutante nunca se estanca sin saberlo.
 
 **Evidenciar.** Tension construye un historial analítico completo: tonelaje por grupo muscular, tasa de progresión por ejercicio, tendencias de carga, adherencia, distribución de volumen. Cualquier punto en el tiempo se puede comparar contra cualquier otro. La progresión no es una sensación; es un hecho medible.
 
@@ -69,7 +69,7 @@ Toda la lógica del sistema está al servicio de un único objetivo fisiológico
 
 ### 4.4 — El sistema es agnóstico al calendario
 
-A Tension no le importa si hoy es lunes o domingo, si el ejecutante se ausentó una semana o tres meses. La rotación cíclica (A→B→C) responde exclusivamente a la pregunta "¿Qué toca ahora?" basándose en la última sesión completada. Esto respeta la vida real del ejecutante sin castigar las interrupciones ni premiar la rigidez artificial.
+A Tension no le importa si hoy es lunes o domingo, si el ejecutante se ausentó una semana o tres meses. La rotación cíclica responde exclusivamente a la pregunta "¿Qué rutina y versión toca ahora?" basándose en la última sesión completada y en la estructura personalizada definida por el usuario. Esto respeta la vida real del ejecutante sin castigar las interrupciones ni premiar la rigidez artificial.
 
 ### 4.5 — La sesión pertenece al ejecutante, no al sistema
 
@@ -95,11 +95,11 @@ Lo que distingue a Tension de cualquier rastreador de ejercicios es su **motor d
 
 ### Regla de Doble Umbral
 
-El ejercicio sube de carga solo cuando se cumplen **ambas** condiciones simultáneamente: ≥ 12 repeticiones en al menos 3 de 4 series **y** RIR promedio ≥ 2. Esto protege al ejecutante de incrementos prematuros (cuando empuja al fallo) y de incrementos tardíos (cuando tiene reserva de sobra). El incremento es diferenciado: +2.5 Kg para tren superior, +5 Kg para tren inferior.
+El ejercicio sube de carga solo cuando se cumplen **ambas** condiciones simultáneamente: ≥ 12 repeticiones en al menos 3 de las series prescritas **y** RIR promedio ≥ 2. Esto protege al ejecutante de incrementos prematuros (cuando empuja al fallo) y de incrementos tardíos (cuando tiene reserva de sobra). El incremento es diferenciado: +2.5 Kg para tren superior, +5 Kg para tren inferior.
 
 ### Detección de Regresión y Fatiga
 
-El sistema identifica regresión cuando el rendimiento cae con la misma carga, y fatiga acumulada del módulo cuando ≥ 50% de los ejercicios regresan simultáneamente. No se trata de una mala sesión; se trata de una señal fisiológica que requiere gestión.
+El sistema identifica regresión cuando el rendimiento cae con la misma carga, y fatiga acumulada de la rutina cuando ≥ 50% de los ejercicios regresan simultáneamente. No se trata de una mala sesión; se trata de una señal fisiológica que requiere gestión.
 
 ### Detección de Mesetas
 
@@ -107,11 +107,11 @@ Tres sesiones consecutivas sin progresión en un ejercicio disparan el estado de
 
 ### Protocolo de Descarga
 
-Cuando la fatiga se acumula, el sistema prescribe un microciclo de descarga: carga al 60%, RIR 4-5, repeticiones mínimas. Al finalizar, reinicia al 90% para capturar la supercompensación. La descarga no es rendirse; es invertir en las ganancias futuras.
+Cuando la fatiga se acumula, el sistema prescribe un microciclo de descarga: carga al 60%, RIR 2, repeticiones mínimas. Al finalizar, reinicia al 90% para capturar la supercompensación. La descarga no es rendirse; es invertir en las ganancias futuras.
 
 ### Ejercicios Especiales
 
-Peso corporal: progresión por repeticiones totales, sin Doble Umbral. Isométricos: progresión por segundos sostenidos, con marcado de "dominado" al alcanzar 45 segundos en las 4 series.
+Peso corporal: progresión por repeticiones totales, sin Doble Umbral. Isométricos: progresión por segundos sostenidos, con marcado de "dominado" al alcanzar 45 segundos en todas las series prescritas.
 
 ---
 
@@ -119,11 +119,11 @@ Peso corporal: progresión por repeticiones totales, sin Doble Umbral. Isométri
 
 ### Antes de la sesión
 
-El ejecutante abre Tension y ve exactamente qué le toca: Módulo B, Versión 2. Ocho ejercicios listados, cada uno con su carga objetivo derivada de su último registro. Si el Press de Elevación Sentado estuvo en 16 Kg la última vez y cumplió el Doble Umbral, hoy aparece con 18.5 Kg como objetivo. Sin preguntas, sin cálculos mentales.
+El ejecutante abre Tension y ve exactamente qué le toca: la siguiente rutina y versión según su propia rotación. Los ejercicios de esa rutina/version aparecen listados, cada uno con su carga objetivo derivada de su último registro. Si el Press de Elevación Sentado estuvo en 16 Kg la última vez y cumplió el Doble Umbral, hoy aparece con 18.5 Kg como objetivo. Sin preguntas, sin cálculos mentales.
 
 ### Durante la sesión
 
-El ejecutante ejecuta los ejercicios en el orden que el gimnasio le permita. Termina una serie, toca el ejercicio, el peso ya está precargado, ingresa repeticiones, ingresa RIR, confirma. Tres toques. Si una estación está ocupada, sustituye el ejercicio por otro del mismo módulo desde el diccionario. El plan original no se toca.
+El ejecutante ejecuta los ejercicios en el orden que el gimnasio le permita. Termina una serie, toca el ejercicio, el peso ya está precargado, ingresa repeticiones, ingresa RIR, confirma. Tres toques. Si una estación está ocupada, sustituye el ejercicio por otro de la misma zona muscular desde el diccionario. El plan original no se toca.
 
 ### Al cerrar la sesión
 
@@ -137,12 +137,12 @@ Si el ejecutante quiere revisar su historial, ve tendencias de carga ascendentes
 
 ## 7. Lo Que Tension No Es
 
-- **No es un entrenador virtual.** No inventa rutinas, no sugiere ejercicios nuevos automáticamente, no adapta el plan dinámicamente por su cuenta. Ejecuta un plan definido y optimiza la progresión dentro de él. El ejecutante puede agregar ejercicios al Diccionario y asignarlos a versiones del plan manualmente.
+- **No es un entrenador virtual.** No inventa rutinas, no sugiere ejercicios nuevos automáticamente, no adapta el plan dinámicamente por su cuenta. Ejecuta un plan definido y optimiza la progresión dentro de él. El ejecutante puede agregar ejercicios al Diccionario y asignarlos a cualquier rutina o versión manualmente.
 - **No es una red social.** No tiene perfiles públicos, no comparte datos, no tiene leaderboards. Es una herramienta personal.
 - **No es una app de nutrición.** No rastrea calorías, macros ni agua. Los factores de recuperación están fuera de su frontera.
-- **No es una app de calendario.** No programa sesiones en días específicos. La rotación cíclica responde a "¿Qué toca?" no a "¿Qué día es?".
+- **No es una app de calendario.** No programa sesiones en días específicos. La rotación cíclica responde a "¿Qué rutina/version toca?" no a "¿Qué día es?".
 - **No requiere internet.** No tiene backend, no sincroniza en la nube, no depende de servicios externos. Es 100% local.
-- **No es para principiantes sin plan.** Tension opera sobre un plan estructurado preexistente. Sin la disciplina del registro y la estructura del plan, el sistema no puede generar valor.
+- **No es para principiantes sin plan.** Tension opera sobre un plan estructurado creado por el usuario. Sin la disciplina del registro y la estructura del plan, el sistema no puede generar valor.
 
 ---
 
@@ -152,7 +152,7 @@ Tension cumple su propósito cuando:
 
 | Indicador | Evidencia de éxito |
 |-----------|-------------------|
-| Cero improvisación | Cada sesión tiene módulo, versión, ejercicios y cargas prescritas antes de empezar |
+| Cero improvisación | Cada sesión tiene rutina, versión, ejercicios y cargas prescritas antes de empezar |
 | Cero estancamiento invisible | Toda meseta es detectada máximo en la 3ª sesión sin progresión y tiene diagnóstico causal |
 | Trazabilidad completa | Cualquier ejercicio muestra su historial completo con clasificación de progresión por sesión |
 | Decisiones basadas en evidencia | Toda prescripción de carga se deriva de la Regla de Doble Umbral, no de sensaciones |
@@ -168,13 +168,13 @@ Tension cumple su propósito cuando:
 
 - Registro y actualización del perfil del ejecutante (32 historias de usuario)
 - Diccionario de 43 ejercicios precargados con media visual de ejecución correcta, extensible por el ejecutante
-- Plan de entrenamiento precargado: 3 módulos × 9 versiones, rotación cíclica agnóstica al calendario
+- Plan de entrenamiento 100% configurable: el usuario puede crear cualquier número de rutinas y versiones, asignar ejercicios libremente y definir su propia lógica de rotación
 - Registro de sesiones completo: series, peso, repeticiones, RIR, sustituciones puntuales, ejercicios especiales (peso corporal, isométricos)
 - Motor de reglas de progresión: Doble Umbral, detección de regresión/fatiga, mesetas con diagnóstico causal, acciones correctivas escalonadas
 - Protocolo de descarga completo: activación, gestión del microciclo, reinicio post-descarga
-- 6 KPIs: tasa de progresión, tonelaje por grupo muscular, distribución de volumen, RIR por módulo, adherencia semanal, velocidad de progresión de carga
+- 6 KPIs: tasa de progresión, tonelaje por grupo muscular, distribución de volumen, RIR por rutina, adherencia semanal, velocidad de progresión de carga
 - Historial analítico: por ejercicio, por sesión, tendencias de carga, evolución de tonelaje por grupo muscular
-- Sistema de alertas: progresión baja, RIR fuera de zona, adherencia, caída de tonelaje, inactividad por módulo
+- Sistema de alertas: progresión baja, RIR fuera de zona, adherencia, caída de tonelaje, inactividad por zona muscular
 - Backup y restore: exportar/importar datos con formato versionado
 
 ### Excluido
@@ -198,7 +198,7 @@ Tension cumple su propósito cuando:
 | UI | Jetpack Compose |
 | Persistencia | Room (SQLite local) |
 | Arquitectura | MVVM (View–ViewModel–Model) |
-| Motor de reglas | Módulo independiente, testeable sin dependencias de Android |
+| Motor de reglas | Rutina independiente, testeable sin dependencias de Android |
 | Conectividad | 100% offline |
 | Distribución | APK firmado, sin Google Play Store requerido |
 | Compatibilidad | Android 8.0+ (API 26), pantallas 5"-7", 720p-1440p |

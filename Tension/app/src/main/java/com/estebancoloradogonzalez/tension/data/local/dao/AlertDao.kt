@@ -26,11 +26,11 @@ interface AlertDao {
         """
         SELECT EXISTS(
             SELECT 1 FROM alert
-            WHERE module_code = :moduleCode AND type = :type AND is_active = 1
+            WHERE routine_id = :routineId AND type = :type AND is_active = 1
         )
         """,
     )
-    suspend fun existsActiveByModule(moduleCode: String, type: String): Boolean
+    suspend fun existsActiveByRoutine(routineId: Long, type: String): Boolean
 
     @Query(
         """
@@ -45,10 +45,10 @@ interface AlertDao {
         """
         UPDATE alert
         SET is_active = 0, resolved_at = :resolvedAt
-        WHERE module_code = :moduleCode AND type = :type AND is_active = 1
+        WHERE routine_id = :routineId AND type = :type AND is_active = 1
         """,
     )
-    suspend fun resolveByModuleAndType(moduleCode: String, type: String, resolvedAt: String)
+    suspend fun resolveByRoutineAndType(routineId: Long, type: String, resolvedAt: String)
 
     @Query("SELECT COUNT(*) FROM alert WHERE is_active = 1")
     fun countActive(): Flow<Int>
@@ -76,16 +76,6 @@ interface AlertDao {
 
     @Query("SELECT * FROM alert WHERE id = :alertId")
     suspend fun getAlertById(alertId: Long): AlertEntity?
-
-    @Query(
-        """
-        SELECT EXISTS(
-            SELECT 1 FROM alert
-            WHERE muscle_group = :muscleGroup AND type = :type AND is_active = 1
-        )
-        """,
-    )
-    suspend fun existsActiveByMuscleGroup(muscleGroup: String, type: String): Boolean
 
     @Query(
         """

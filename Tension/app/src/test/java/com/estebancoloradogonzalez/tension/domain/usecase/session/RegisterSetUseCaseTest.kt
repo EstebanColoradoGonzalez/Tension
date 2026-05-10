@@ -62,8 +62,8 @@ class RegisterSetUseCaseTest {
     }
 
     @Test(expected = IllegalArgumentException::class)
-    fun `invoke with rir above five throws IllegalArgumentException`() = runTest {
-        useCase(1L, 60.0, 8, 6)
+    fun `invoke with rir above two throws IllegalArgumentException`() = runTest {
+        useCase(1L, 60.0, 8, 3)
     }
 
     @Test
@@ -76,12 +76,12 @@ class RegisterSetUseCaseTest {
     }
 
     @Test
-    fun `invoke with rir five succeeds`() = runTest {
-        coEvery { repository.registerSet(1L, 60.0, 8, 5) } just runs
+    fun `invoke with rir two succeeds`() = runTest {
+        coEvery { repository.registerSet(1L, 60.0, 8, 2) } just runs
 
-        useCase(1L, 60.0, 8, 5)
+        useCase(1L, 60.0, 8, 2)
 
-        coVerify { repository.registerSet(1L, 60.0, 8, 5) }
+        coVerify { repository.registerSet(1L, 60.0, 8, 2) }
     }
 
     @Test(expected = IllegalStateException::class)

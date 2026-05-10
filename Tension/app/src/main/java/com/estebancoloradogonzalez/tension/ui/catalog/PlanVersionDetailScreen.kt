@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -20,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -35,13 +37,17 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -63,16 +69,29 @@ fun PlanVersionDetailScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val sheetState by viewModel.sheetState.collectAsStateWithLifecycle()
     val exerciseToDelete by viewModel.deleteDialogState.collectAsStateWithLifecycle()
+    val editState by viewModel.editState.collectAsStateWithLifecycle()
+    val addAlternativeState by viewModel.addAlternativeState.collectAsStateWithLifecycle()
+    val userMessage by viewModel.userMessage.collectAsStateWithLifecycle()
+
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(userMessage) {
+        userMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.onUserMessageShown()
+        }
+    }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        text = if (uiState.moduleCode.isNotBlank()) {
+                        text = if (uiState.routineName.isNotBlank()) {
                             stringResource(
                                 R.string.plan_version_title_format,
-                                uiState.moduleCode,
+                                uiState.routineName,
                                 uiState.versionNumber,
                             )
                         } else {
@@ -154,10 +173,11 @@ fun PlanVersionDetailScreen(
                         }
                     } else {
                         PlanExerciseList(
-                            moduleCode = uiState.moduleCode,
                             exercises = uiState.exercises,
                             onExerciseClick = onNavigateToExerciseDetail,
                             onDeleteClick = viewModel::onDeleteExercise,
+                            onEditClick = viewModel::onEditExercise,
+                            onAddAlternativeClick = viewModel::onAddAlternativeClick,
                         )
                     }
                 }
@@ -167,6 +187,11 @@ fun PlanVersionDetailScreen(
 
     // Delete confirmation dialog
     exerciseToDelete?.let { exercise ->
+        val displayName = if (exercise.alternativeNames.isEmpty()) {
+            exercise.name
+        } else {
+            (listOf(exercise.name) + exercise.alternativeNames).joinToString(" ó ")
+        }
         AlertDialog(
             onDismissRequest = viewModel::onDismissDeleteDialog,
             title = { Text(stringResource(R.string.unassign_dialog_title)) },
@@ -174,7 +199,7 @@ fun PlanVersionDetailScreen(
                 Text(
                     stringResource(
                         R.string.unassign_dialog_message,
-                        exercise.name,
+                        displayName,
                     ),
                 )
             },
@@ -207,26 +232,51 @@ fun PlanVersionDetailScreen(
             onConfirmAssign = viewModel::onConfirmAssign,
         )
     }
+
+    // Edit plan assignment dialog
+    if (editState.isVisible) {
+        EditPlanAssignmentDialog(
+            state = editState,
+            onSetsChanged = viewModel::onEditSetsChanged,
+            onRepsSelected = viewModel::onEditRepsSelected,
+            onConfirm = viewModel::onConfirmEdit,
+            onDismiss = viewModel::onDismissEdit,
+        )
+    }
+
+    // Add alternative to slot bottom sheet
+    if (addAlternativeState.isVisible) {
+        AddAlternativeSheet(
+            state = addAlternativeState,
+            onDismiss = viewModel::onDismissAddAlternative,
+            onExerciseSelected = viewModel::onAlternativeExerciseSelected,
+            onConfirm = viewModel::onConfirmAddAlternative,
+        )
+    }
 }
 
 @Composable
 private fun PlanExerciseList(
-    moduleCode: String,
     exercises: List<PlanExerciseItem>,
     onExerciseClick: (Long) -> Unit,
     onDeleteClick: (PlanExerciseItem) -> Unit,
+    onEditClick: (PlanExerciseItem) -> Unit,
+    onAddAlternativeClick: (PlanExerciseItem) -> Unit,
 ) {
     LazyColumn {
         itemsIndexed(exercises) { index, exercise ->
+            val headline = if (exercise.alternativeNames.isEmpty()) {
+                exercise.name
+            } else {
+                (listOf(exercise.name) + exercise.alternativeNames).joinToString(" ó ")
+            }
             ListItem(
                 headlineContent = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = exercise.name,
+                            text = headline,
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onSurface,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f, fill = false),
                         )
                         if (exercise.isCustom) {
@@ -239,14 +289,11 @@ private fun PlanExerciseList(
                                     text = stringResource(R.string.badge_custom),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onTertiaryContainer,
-                                    modifier = Modifier.padding(
-                                        horizontal = 6.dp,
-                                        vertical = 2.dp,
-                                    ),
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                                 )
                             }
                         }
-                        if (moduleCode == "A" && exercise.isBodyweight) {
+                        if (exercise.isBodyweight) {
                             Spacer(modifier = Modifier.width(8.dp))
                             Surface(
                                 shape = RoundedCornerShape(4.dp),
@@ -256,10 +303,7 @@ private fun PlanExerciseList(
                                     text = stringResource(R.string.exercise_outside_gym),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                    modifier = Modifier.padding(
-                                        horizontal = 6.dp,
-                                        vertical = 2.dp,
-                                    ),
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                                 )
                             }
                         }
@@ -281,36 +325,41 @@ private fun PlanExerciseList(
                                 exercise.repsDisplay,
                             ),
                             style = MaterialTheme.typography.bodyMedium.copy(
-                                fontStyle = if (exercise.isSpecialCondition) {
-                                    FontStyle.Italic
-                                } else {
-                                    FontStyle.Normal
-                                },
+                                fontStyle = if (exercise.isSpecialCondition) FontStyle.Italic else FontStyle.Normal,
                             ),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 },
                 trailingContent = {
-                    IconButton(
-                        onClick = { onDeleteClick(exercise) },
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Delete,
-                            contentDescription = stringResource(R.string.unassign_dialog_title),
-                            tint = MaterialTheme.colorScheme.error,
-                        )
+                    Row {
+                        IconButton(onClick = { onAddAlternativeClick(exercise) }) {
+                            Icon(
+                                imageVector = Icons.Filled.Add,
+                                contentDescription = stringResource(R.string.add_alternative_description),
+                                tint = MaterialTheme.colorScheme.secondary,
+                            )
+                        }
+                        IconButton(onClick = { onEditClick(exercise) }) {
+                            Icon(
+                                imageVector = Icons.Filled.Edit,
+                                contentDescription = "Editar",
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                        IconButton(onClick = { onDeleteClick(exercise) }) {
+                            Icon(
+                                imageVector = Icons.Filled.Delete,
+                                contentDescription = stringResource(R.string.unassign_dialog_title),
+                                tint = MaterialTheme.colorScheme.error,
+                            )
+                        }
                     }
                 },
-                modifier = Modifier
-                    .clickable { onExerciseClick(exercise.exerciseId) }
-                    .height(80.dp),
+                modifier = Modifier.clickable { onExerciseClick(exercise.exerciseId) },
             )
             if (index < exercises.lastIndex) {
-                HorizontalDivider(
-                    thickness = 1.dp,
-                    color = MaterialTheme.colorScheme.outlineVariant,
-                )
+                HorizontalDivider(thickness = 1.dp, color = MaterialTheme.colorScheme.outlineVariant)
             }
         }
     }
@@ -459,6 +508,109 @@ private fun AssignExerciseSheet(
 }
 
 @Composable
+private fun EditPlanAssignmentDialog(
+    state: EditPlanAssignmentState,
+    onSetsChanged: (Int) -> Unit,
+    onRepsSelected: (String) -> Unit,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.edit_assignment_title)) },
+        text = {
+            Column {
+                Text(
+                    text = state.exerciseName,
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(bottom = 16.dp),
+                )
+
+                Text(
+                    text = stringResource(R.string.sets_label),
+                    style = MaterialTheme.typography.labelLarge,
+                    modifier = Modifier.padding(bottom = 8.dp),
+                )
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    for (s in 1..10) {
+                        val isSelected = s == state.sets
+                        Surface(
+                            onClick = { onSetsChanged(s) },
+                            shape = RoundedCornerShape(8.dp),
+                            color = if (isSelected) {
+                                MaterialTheme.colorScheme.primaryContainer
+                            } else {
+                                MaterialTheme.colorScheme.surfaceContainerHigh
+                            },
+                            modifier = Modifier.size(36.dp),
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(
+                                    text = "$s",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = if (isSelected) {
+                                        MaterialTheme.colorScheme.onPrimaryContainer
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurface
+                                    },
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = stringResource(R.string.reps_label),
+                    style = MaterialTheme.typography.labelLarge,
+                    modifier = Modifier.padding(bottom = 8.dp),
+                )
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    RepsOption(
+                        text = "8-12 reps",
+                        selected = state.reps == "8-12",
+                        onClick = { onRepsSelected("8-12") },
+                        modifier = Modifier.weight(1f),
+                    )
+                    RepsOption(
+                        text = "Al fallo",
+                        selected = state.reps == "TO_TECHNICAL_FAILURE",
+                        onClick = { onRepsSelected("TO_TECHNICAL_FAILURE") },
+                        modifier = Modifier.weight(1f),
+                    )
+                    RepsOption(
+                        text = "30\u201345 seg",
+                        selected = state.reps == "30-45_SEC",
+                        onClick = { onRepsSelected("30-45_SEC") },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onConfirm,
+                enabled = !state.isSaving,
+            ) {
+                Text(stringResource(R.string.save_button))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel))
+            }
+        },
+    )
+}
+
+@Composable
 private fun RepsOption(
     text: String,
     selected: Boolean,
@@ -488,6 +640,72 @@ private fun RepsOption(
                     MaterialTheme.colorScheme.onSurface
                 },
             )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AddAlternativeSheet(
+    state: AddAlternativeSheetState,
+    onDismiss: () -> Unit,
+    onExerciseSelected: (Long) -> Unit,
+    onConfirm: () -> Unit,
+) {
+    val bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = bottomSheetState,
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+            Text(
+                text = stringResource(R.string.add_alternative_title, state.slotName),
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(bottom = 8.dp),
+            )
+            Text(
+                text = stringResource(R.string.add_alternative_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 16.dp),
+            )
+            if (state.availableExercises.isEmpty()) {
+                Text(
+                    text = stringResource(R.string.assign_exercise_empty),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = 24.dp),
+                )
+            } else {
+                LazyColumn(modifier = Modifier.weight(1f, fill = false)) {
+                    items(state.availableExercises) { exercise ->
+                        ListItem(
+                            headlineContent = { Text(exercise.name) },
+                            supportingContent = {
+                                Text("${exercise.muscleZonesSummary} · ${exercise.equipmentTypeName}")
+                            },
+                            modifier = Modifier.clickable { onExerciseSelected(exercise.id) },
+                            colors = androidx.compose.material3.ListItemDefaults.colors(
+                                containerColor = if (state.selectedExerciseId == exercise.id) {
+                                    MaterialTheme.colorScheme.primaryContainer
+                                } else {
+                                    MaterialTheme.colorScheme.surface
+                                },
+                            ),
+                        )
+                    }
+                }
+            }
+            FilledTonalButton(
+                onClick = onConfirm,
+                enabled = state.selectedExerciseId != null && !state.isAssigning,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 16.dp),
+            ) {
+                Text(stringResource(R.string.add_alternative_button))
+            }
         }
     }
 }

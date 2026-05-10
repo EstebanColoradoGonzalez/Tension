@@ -39,7 +39,7 @@ class ExerciseHistoryViewModelTest {
     private fun createEntries(count: Int) = (1..count).map { i ->
         ExerciseHistoryEntry(
             date = "2026-02-${15 - i + 1}",
-            moduleCode = "B",
+            routineName = "Push",
             versionNumber = 1,
             avgWeightKg = 50.0 + i * 2.5,
             totalReps = 36 + i,
@@ -133,17 +133,17 @@ class ExerciseHistoryViewModelTest {
         // Entries are DESC: index 0 is most recent, index 2 is oldest
         val entries = listOf(
             ExerciseHistoryEntry(
-                date = "2026-02-15", moduleCode = "B", versionNumber = 1,
+                date = "2026-02-15", routineName = "Push", versionNumber = 1,
                 avgWeightKg = 65.0, totalReps = 40, avgRir = 2.0,
                 classification = ProgressionClassification.POSITIVE_PROGRESSION,
             ),
             ExerciseHistoryEntry(
-                date = "2026-02-10", moduleCode = "B", versionNumber = 1,
+                date = "2026-02-10", routineName = "Push", versionNumber = 1,
                 avgWeightKg = 60.0, totalReps = 38, avgRir = 2.5,
                 classification = ProgressionClassification.MAINTENANCE,
             ),
             ExerciseHistoryEntry(
-                date = "2026-02-05", moduleCode = "B", versionNumber = 1,
+                date = "2026-02-05", routineName = "Push", versionNumber = 1,
                 avgWeightKg = 55.0, totalReps = 36, avgRir = 3.0,
                 classification = null,
             ),

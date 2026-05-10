@@ -20,7 +20,7 @@ class GetActiveSessionUseCaseTest {
     fun `invoke returns active session when one exists`() = runTest {
         val activeSession = ActiveSession(
             sessionId = 1L,
-            moduleCode = "A",
+            routineName = "Pull+Abs",
             versionNumber = 1,
             totalExercises = 10,
             completedExercises = 3,

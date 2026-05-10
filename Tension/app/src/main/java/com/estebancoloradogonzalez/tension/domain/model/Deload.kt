@@ -5,7 +5,5 @@ data class Deload(
     val status: String,
     val activationDate: String,
     val completionDate: String?,
-    val frozenVersionModuleA: Int,
-    val frozenVersionModuleB: Int,
-    val frozenVersionModuleC: Int,
+    val frozenVersions: Map<Long, Int>,
 )

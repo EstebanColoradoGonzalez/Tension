@@ -9,4 +9,5 @@ sealed interface ActionSignal {
     data class IsometricSignal(val setCount: Int, val avgSeconds: Int) : ActionSignal
     data object IsometricMastered : ActionSignal
     data object FirstSession : ActionSignal
+    data object DeloadSession : ActionSignal
 }

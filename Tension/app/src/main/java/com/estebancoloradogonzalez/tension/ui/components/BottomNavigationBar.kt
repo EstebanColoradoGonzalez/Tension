@@ -62,11 +62,13 @@ fun BottomNavigationBar(
             unselectedIcon = Icons.Outlined.MenuBook,
             childRoutes = setOf(
                 NavigationRoutes.TRAINING_PLAN,
+                NavigationRoutes.ROUTINE_LIST,
                 NavigationRoutes.CREATE_EXERCISE,
             ),
             childRoutePrefixes = setOf(
                 "exercise-detail",
                 "plan-version-detail",
+                "routine-versions",
             ),
         ),
         BottomNavItem(

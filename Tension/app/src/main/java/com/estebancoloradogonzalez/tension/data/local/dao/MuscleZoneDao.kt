@@ -13,6 +13,15 @@ interface MuscleZoneDao {
     @Query("SELECT * FROM muscle_zone ORDER BY name ASC")
     fun getAll(): Flow<List<MuscleZoneEntity>>
 
+    @Query(
+        """
+        SELECT DISTINCT mz.* FROM muscle_zone mz
+        INNER JOIN exercise_muscle_zone emz ON mz.id = emz.muscle_zone_id
+        ORDER BY mz.name ASC
+        """,
+    )
+    fun getWithExercises(): Flow<List<MuscleZoneEntity>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(zones: List<MuscleZoneEntity>)
 }

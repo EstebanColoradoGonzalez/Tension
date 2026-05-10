@@ -10,12 +10,14 @@ object DeloadLoadRule {
     fun calculateDeloadLoad(lastWeightKg: Double, loadIncrementKg: Double): Double {
         if (loadIncrementKg <= 0.0) return 0.0
         if (lastWeightKg <= 0.0) return 0.0
-        return floor(lastWeightKg * DELOAD_PERCENTAGE / loadIncrementKg) * loadIncrementKg
+        val result = floor(lastWeightKg * DELOAD_PERCENTAGE / loadIncrementKg) * loadIncrementKg
+        return if (result > 0.0) result else loadIncrementKg
     }
 
     fun calculateResetLoad(preDeloadWeightKg: Double, loadIncrementKg: Double): Double {
         if (loadIncrementKg <= 0.0) return 0.0
         if (preDeloadWeightKg <= 0.0) return 0.0
-        return floor(preDeloadWeightKg * RESET_PERCENTAGE / loadIncrementKg) * loadIncrementKg
+        val result = floor(preDeloadWeightKg * RESET_PERCENTAGE / loadIncrementKg) * loadIncrementKg
+        return if (result > 0.0) result else loadIncrementKg
     }
 }

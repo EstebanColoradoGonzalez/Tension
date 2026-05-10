@@ -556,7 +556,7 @@ class ProgressionClassificationRuleTest {
     }
 
     @Test
-    fun `state — NO_HISTORY + MAINTENANCE → IN_PROGRESSION, counter 1`() {
+    fun `state — NO_HISTORY + MAINTENANCE → NO_HISTORY, counter 1`() {
         val (status, counter) = ProgressionClassificationRule.resolveNewProgressionState(
             currentStatus = "NO_HISTORY",
             currentCounter = 0,
@@ -564,7 +564,7 @@ class ProgressionClassificationRuleTest {
             isIsometric = false,
             isMastered = false,
         )
-        assertEquals("IN_PROGRESSION", status)
+        assertEquals("NO_HISTORY", status)
         assertEquals(1, counter)
     }
 

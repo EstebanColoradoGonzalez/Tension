@@ -44,11 +44,20 @@ data class SessionExerciseEntity(
     val sessionId: Long,
 
     @ColumnInfo(name = "exercise_id")
-    val exerciseId: Long,
+    val exerciseId: Long?,
 
     @ColumnInfo(name = "original_exercise_id")
     val originalExerciseId: Long? = null,
 
     @ColumnInfo(name = "progression_classification")
     val progressionClassification: String? = null,
+
+    @ColumnInfo(name = "is_finalized", defaultValue = "0")
+    val isFinalized: Int = 0,
+
+    @ColumnInfo(name = "pending_selection", defaultValue = "0")
+    val pendingSelection: Int = 0,
+
+    @ColumnInfo(name = "slot", defaultValue = "0")
+    val slot: Int = 0,
 )

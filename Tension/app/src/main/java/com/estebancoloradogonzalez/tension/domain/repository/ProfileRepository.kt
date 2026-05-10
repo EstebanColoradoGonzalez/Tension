@@ -21,8 +21,6 @@ interface ProfileRepository {
 
     suspend fun updateWeight(weightKg: Double)
 
-    fun getLatestWeight(): Flow<Double?>
-
     fun getAllWeightRecords(): Flow<List<WeightRecord>>
 
     fun profileExists(): Flow<Boolean>

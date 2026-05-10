@@ -29,10 +29,9 @@ class GetExerciseDetailUseCaseTest {
         val exercise = Exercise(
             id = 1,
             name = "Press de banca",
-            moduleCode = "A",
-            moduleName = "Módulo A — Superior",
             equipmentTypeName = "Máquina",
             muscleZones = listOf("Pecho Medio"),
+            muscleGroup = null,
             isBodyweight = false,
             isIsometric = false,
             isToTechnicalFailure = false,

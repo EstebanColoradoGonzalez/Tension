@@ -5,7 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.estebancoloradogonzalez.tension.data.local.storage.ImageStorageHelper
 import com.estebancoloradogonzalez.tension.domain.usecase.catalog.CreateExerciseUseCase
-import com.estebancoloradogonzalez.tension.domain.usecase.catalog.GetFilterOptionsUseCase
+import com.estebancoloradogonzalez.tension.domain.usecase.catalog.GetAllFilterOptionsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,7 +17,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class CreateExerciseViewModel @Inject constructor(
-    private val getFilterOptionsUseCase: GetFilterOptionsUseCase,
+    private val getAllFilterOptionsUseCase: GetAllFilterOptionsUseCase,
     private val createExerciseUseCase: CreateExerciseUseCase,
     private val imageStorageHelper: ImageStorageHelper,
 ) : ViewModel() {
@@ -31,11 +31,10 @@ class CreateExerciseViewModel @Inject constructor(
 
     private fun loadOptions() {
         viewModelScope.launch {
-            val options = getFilterOptionsUseCase().first()
+            val options = getAllFilterOptionsUseCase().first()
             _uiState.update {
                 it.copy(
                     isLoading = false,
-                    modules = options.modules,
                     equipmentTypes = options.equipmentTypes,
                     muscleZones = options.muscleZones,
                 )
@@ -45,10 +44,6 @@ class CreateExerciseViewModel @Inject constructor(
 
     fun onNameChanged(name: String) {
         _uiState.update { it.copy(name = name, nameError = null) }
-    }
-
-    fun onModuleSelected(code: String) {
-        _uiState.update { it.copy(selectedModuleCode = code, moduleError = null) }
     }
 
     fun onEquipmentTypeSelected(id: Long) {
@@ -95,10 +90,6 @@ class CreateExerciseViewModel @Inject constructor(
             _uiState.update { it.copy(nameError = "El nombre es obligatorio") }
             hasError = true
         }
-        if (state.selectedModuleCode == null) {
-            _uiState.update { it.copy(moduleError = "Selecciona un módulo") }
-            hasError = true
-        }
         if (state.selectedEquipmentTypeId == null) {
             _uiState.update { it.copy(equipmentError = "Selecciona un tipo de equipo") }
             hasError = true
@@ -114,7 +105,6 @@ class CreateExerciseViewModel @Inject constructor(
             try {
                 createExerciseUseCase(
                     name = state.name,
-                    moduleCode = state.selectedModuleCode!!,
                     equipmentTypeId = state.selectedEquipmentTypeId!!,
                     muscleZoneIds = state.selectedMuscleZoneIds.toList(),
                     isBodyweight = state.isBodyweight,

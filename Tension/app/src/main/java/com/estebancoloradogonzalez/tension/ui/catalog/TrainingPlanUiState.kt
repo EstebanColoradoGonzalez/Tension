@@ -2,18 +2,17 @@ package com.estebancoloradogonzalez.tension.ui.catalog
 
 data class TrainingPlanUiState(
     val isLoading: Boolean = true,
-    val modules: List<ModuleSectionItem> = emptyList(),
+    val routines: List<RoutineSectionItem> = emptyList(),
 )
 
-data class ModuleSectionItem(
-    val moduleCode: String,
-    val moduleName: String,
-    val groupDescription: String,
+data class RoutineSectionItem(
+    val routineId: Long,
+    val routineName: String,
     val versions: List<VersionItem>,
 )
 
 data class VersionItem(
-    val moduleVersionId: Long,
+    val routineVersionId: Long,
     val versionNumber: Int,
     val exerciseCount: Int,
 )

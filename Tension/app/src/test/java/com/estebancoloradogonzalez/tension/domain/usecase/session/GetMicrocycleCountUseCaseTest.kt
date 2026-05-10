@@ -19,9 +19,6 @@ class GetMicrocycleCountUseCaseTest {
     fun `invoke returns microcycle count from rotation state`() = runTest {
         val rotationState = RotationState(
             microcyclePosition = 3,
-            currentVersionModuleA = 1,
-            currentVersionModuleB = 1,
-            currentVersionModuleC = 1,
             microcycleCount = 5,
         )
         every { repository.getRotationState() } returns flowOf(rotationState)

@@ -86,7 +86,7 @@ private fun alertTypeDisplayName(type: String): String = when (type) {
     "RIR_OUT_OF_RANGE" -> "RIR fuera de rango"
     "LOW_ADHERENCE" -> "Adherencia baja"
     "TONNAGE_DROP" -> "Caída de tonelaje"
-    "MODULE_INACTIVITY" -> "Inactividad por módulo"
-    "MODULE_REQUIRES_DELOAD" -> "Módulo requiere descarga"
+    "ROUTINE_INACTIVITY" -> "Inactividad por rutina"
+    "ROUTINE_REQUIRES_DELOAD" -> "Rutina requiere descarga"
     else -> type
 }

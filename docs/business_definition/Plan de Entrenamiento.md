@@ -2,154 +2,85 @@
 
 ## Estructura General
 
-- **Rotación cíclica**: A → B → C → A → B → C (6 días). Si se asiste menos días, se garantiza cobertura completa del cuerpo.
-- **Series por ejercicio**: 4
-- **Rango de repeticiones**: 8-12 (salvo ejercicios marcados como "Al fallo técnico" o isométricos medidos en segundos).
-- **Versiones**: Cada módulo tiene variantes que rotan los ejercicios para diversificar el estímulo y prevenir el sobreuso. Se ejecutan en orden secuencial (V1 → V2 → V3 → V1...) entre microciclos.
+El plan de entrenamiento es completamente flexible y personalizable por el usuario. Cada persona puede crear cualquier número de rutinas (por ejemplo: "Rutina Superior", "Rutina Inferior", "Full Body", etc.) y, dentro de cada rutina, definir una o más versiones para rotar ejercicios y estimular la variedad. No existen módulos fijos ni versiones predefinidas: la estructura, el número de rutinas y versiones, y la asignación de ejercicios son 100% configurables.
+
+### Principios y recomendaciones generales
+
+- **Rotación cíclica:** El usuario puede alternar entre sus rutinas y versiones en el orden que prefiera. Un microciclo se define como una pasada completa por todas las rutinas creadas por el usuario (independientemente de cuántas sean). Al finalizar un microciclo, se puede rotar la versión de cada rutina para diversificar el estímulo y prevenir el sobreuso.
+- **Series por ejercicio:** Se recomienda un rango de 3-5 series por ejercicio, ajustable según el nivel y objetivo del usuario.
+- **Rango de repeticiones:** Sugerido entre 8-12 repeticiones para la mayoría de ejercicios, salvo aquellos marcados como "al fallo técnico" o isométricos (medidos en segundos).
+- **Cobertura muscular:** Se recomienda que el usuario diseñe sus rutinas para cubrir todos los grupos musculares relevantes a lo largo del microciclo, adaptando la frecuencia y volumen a su disponibilidad semanal.
+- **Ejercicios alternativos:** Dentro de una misma posición de la rutina, el usuario puede definir ejercicios alternativos (marcados con "o") e intercambiarlos entre sesiones según disponibilidad de equipamiento o preferencia.
+
+### Plan de referencia del ejecutante
+
+El siguiente es el plan de entrenamiento actual configurado por el ejecutante. Sirve como referencia para validar la lógica de rotación, prescripción y progresión del sistema.
 
 ---
 
-## Módulo A: Superior — Pull + Abs (Espalda, Bíceps, Abdomen)
+#### Rutina 1: Pierna (Leg)
 
-> **Nota**: La diferenciación se distribuye entre Espalda (4 ejercicios fijos transversales a las 3 versiones: Tiro de dorsales, Remo con Inclinación, Remo con un solo brazo doblado, Elevación de hombros con mancuernas), Bíceps (2 fijos + 3 rotativos de los cuales se seleccionan 2 por versión) y Abdomen (2 fijos + 3 rotativos de los cuales se seleccionan 2 por versión en V1, y 1 por versión en V2/V3), generando 3 versiones genuinamente distintas (V1 = 12 ejercicios, V2 = 11 ejercicios, V3 = 11 ejercicios).
->
-> **Abdomen ejecutable fuera del gimnasio:** Todos los ejercicios de abdomen (Abdominales, Escalador, Giro Ruso, Plancha, Plancha Lateral) son de tipo "Cuerpo" y no requieren equipamiento de gimnasio. El ejecutante puede realizarlos en su hogar, parque u otro espacio como parte de la misma sesión, sin dividirla en sub-sesiones. Lo ideal es ejecutarlos al inicio (antes de ir al gym) como activación del core, o al final en el gym según preferencia.
+**Versión 1**
 
-### Versión 1
+| # | Ejercicio |
+|---|-----------|
+| 1 | Aductores |
+| 2 | Curl de Isquiotibiales Sentado |
+| 3 | Prensa Inclinada |
+| 4 | Sentadilla Hack |
+| 5 | Extensión de Cuádriceps |
+| 6 | Elevación de Pantorrilla en Máquina de Pie |
 
-| # | Zona Muscular | Ejercicio | Tipo | Series | Repeticiones |
-| --- | --- | --- | --- | --- | --- |
-| 1 | Dorsal Ancho | Tiro de dorsales (Agarre ancho) | Maquina | 4 | 8-12 |
-| 2 | Espalda Media | Remo con Inclinación | Barra de Pesas | 4 | 8-12 |
-| 3 | Dorsal Ancho | Remo con un solo brazo doblado | Mancuerna | 4 | 8-12 |
-| 4 | Espalda Media | Elevación de hombros con mancuernas | Mancuerna | 4 | 8-12 |
-| 5 | Biceps | Curl de biceps | Mancuerna | 4 | 8-12 |
-| 6 | Biceps | Curl de martillo cruzado | Mancuerna | 4 | 8-12 |
-| 7 | Biceps | Curl de biceps | Polea | 4 | 8-12 |
-| 8 | Biceps | Curl de martillo | Mancuerna | 4 | 8-12 |
-| 9 | Abdomen | Abdominales | Cuerpo | 4 | 8-12 |
-| 10 | Abdomen | Escalador | Cuerpo | 4 | 8-12 |
-| 11 | Abdomen | Giro Ruso | Cuerpo | 4 | 8-12 |
-| 12 | Abdomen | Plancha | Cuerpo | 4 | 30-45 seg |
+**Versión 2**
 
-### Versión 2
-
-| # | Zona Muscular | Ejercicio | Tipo | Series | Repeticiones |
-| --- | --- | --- | --- | --- | --- |
-| 1 | Dorsal Ancho | Tiro de dorsales (Agarre ancho) | Maquina | 4 | 8-12 |
-| 2 | Espalda Media | Remo con Inclinación | Barra de Pesas | 4 | 8-12 |
-| 3 | Dorsal Ancho | Remo con un solo brazo doblado | Mancuerna | 4 | 8-12 |
-| 4 | Espalda Media | Elevación de hombros con mancuernas | Mancuerna | 4 | 8-12 |
-| 5 | Biceps | Curl de biceps | Mancuerna | 4 | 8-12 |
-| 6 | Biceps | Curl de martillo cruzado | Mancuerna | 4 | 8-12 |
-| 7 | Biceps | Curl de biceps | Polea | 4 | 8-12 |
-| 8 | Biceps | Curl de Contracción | Mancuerna | 4 | 8-12 |
-| 9 | Abdomen | Abdominales | Cuerpo | 4 | 8-12 |
-| 10 | Abdomen | Plancha | Cuerpo | 4 | 30-45 seg |
-| 11 | Abdomen | Plancha Lateral | Cuerpo | 4 | 30-45 seg |
-
-### Versión 3
-
-| # | Zona Muscular | Ejercicio | Tipo | Series | Repeticiones |
-| --- | --- | --- | --- | --- | --- |
-| 1 | Dorsal Ancho | Tiro de dorsales (Agarre ancho) | Maquina | 4 | 8-12 |
-| 2 | Espalda Media | Remo con Inclinación | Barra de Pesas | 4 | 8-12 |
-| 3 | Dorsal Ancho | Remo con un solo brazo doblado | Mancuerna | 4 | 8-12 |
-| 4 | Espalda Media | Elevación de hombros con mancuernas | Mancuerna | 4 | 8-12 |
-| 5 | Biceps | Curl de biceps | Mancuerna | 4 | 8-12 |
-| 6 | Biceps | Curl de martillo | Mancuerna | 4 | 8-12 |
-| 7 | Biceps | Curl de biceps | Polea | 4 | 8-12 |
-| 8 | Biceps | Curl de Contracción | Mancuerna | 4 | 8-12 |
-| 9 | Abdomen | Abdominales | Cuerpo | 4 | 8-12 |
-| 10 | Abdomen | Giro Ruso | Cuerpo | 4 | 8-12 |
-| 11 | Abdomen | Plancha | Cuerpo | 4 | 30-45 seg |
+| # | Ejercicio |
+|---|----------|
+| 1 | Aductores |
+| 2 | Curl de Isquiotibiales Sentado |
+| 3 | Peso Muerto Rumano |
+| 4 | Hip Thrust **o** Sentadilla Búlgara **o** Sentadilla de Zumo |
+| 5 | Extensión de Cuádriceps |
+| 6 | Elevación de Pantorrilla en Máquina de Pie |
 
 ---
 
-## Módulo B: Superior — Push (Pecho, Hombro, Tríceps)
+#### Rutina 2: Pecho, Hombro, Tríceps (Push)
 
-> **Nota**: La diferenciación se distribuye entre Pecho (1 fijo: Press de banca + 6 rotativos de los cuales se seleccionan 2 por versión = 3 por versión), Hombro (1 fijo: Press de elevación sentado + 4 rotativos de los cuales se seleccionan 2 por versión = 3 por versión) y Tríceps (3 ejercicios rotativos de los cuales se seleccionan 2 por versión), generando 3 versiones genuinamente distintas con **8 ejercicios cada una (3P + 3H + 2T)**. La reducción de tríceps a 2 ejercicios directos se justifica porque el tríceps ya recibe estímulo indirecto significativo como sinergista en todos los presses de pecho y hombro.
-
-### Versión 1
-
-| # | Zona Muscular | Ejercicio | Tipo | Series | Repeticiones |
-| --- | --- | --- | --- | --- | --- |
-| 1 | Pecho Medio | Press de banca | Maquina | 4 | 8-12 |
-| 2 | Pecho Superior | Press de banca inclinada | Maquina | 4 | 8-12 |
-| 3 | Pecho Medio | Apertura de pecho sentado | Maquina | 4 | 8-12 |
-| 4 | Hombro | Press de elevación sentado | Mancuerna | 4 | 8-12 |
-| 5 | Hombro | Elevación lateral | Mancuerna | 4 | 8-12 |
-| 6 | Hombro | Elevacion frontal | Mancuerna | 4 | 8-12 |
-| 7 | Triceps | Extensión de triceps por encima de la cabeza | Mancuerna | 4 | 8-12 |
-| 8 | Triceps | Flexión de triceps con cuerda | Maquina | 4 | 8-12 |
-
-### Versión 2
-
-| # | Zona Muscular | Ejercicio | Tipo | Series | Repeticiones |
-| --- | --- | --- | --- | --- | --- |
-| 1 | Pecho Medio | Press de banca | Maquina | 4 | 8-12 |
-| 2 | Pecho Superior | Apertura de pecho inclinado | Maquina | 4 | 8-12 |
-| 3 | Pecho Inferior | Cruce en polea alta | Maquina | 4 | 8-12 |
-| 4 | Hombro | Press de elevación sentado | Mancuerna | 4 | 8-12 |
-| 5 | Hombro | Elevación lateral | Mancuerna | 4 | 8-12 |
-| 6 | Hombro | Remo vertical con cable | Maquina | 4 | 8-12 |
-| 7 | Triceps | Dominada de triceps banco | Pesa | 4 | 8-12 |
-| 8 | Triceps | Flexión de triceps con cuerda | Maquina | 4 | 8-12 |
-
-### Versión 3
-
-| # | Zona Muscular | Ejercicio | Tipo | Series | Repeticiones |
-| --- | --- | --- | --- | --- | --- |
-| 1 | Pecho Medio | Press de banca | Maquina | 4 | 8-12 |
-| 2 | Pecho Medio | Press de mancuerna | Mancuernas | 4 | 8-12 |
-| 3 | Pecho Inferior | Flexiones | Cuerpo | 4 | Al fallo técnico |
-| 4 | Hombro | Press de elevación sentado | Mancuerna | 4 | 8-12 |
-| 5 | Hombro | Elevacion frontal | Mancuerna | 4 | 8-12 |
-| 6 | Hombro | Remo vertical | Barra de Pesas | 4 | 8-12 |
-| 7 | Triceps | Dominada de triceps banco | Pesa | 4 | 8-12 |
-| 8 | Triceps | Extensión de triceps por encima de la cabeza | Mancuerna | 4 | 8-12 |
+| # | Ejercicio |
+|---|-----------|
+| 1 | Elevación Lateral (Mancuernas **o** Polea) |
+| 2 | Press de Banca Inclinado (Mancuerna **o** Polea **o** Barra) |
+| 3 | Press de Banca Plano (Barra **o** Mancuernas) |
+| 4 | Vuelos Posteriores (Mancuernas) |
+| 5 | Extensión de Tríceps por encima de la Cabeza (Mancuernas **o** Polea) |
+| 6 | Cruce de Polea Alta |
+| 7 | Extensión de Tríceps en Polea (Pushdown) (Polea con Cuerda **o** Polea con Barra en V) |
 
 ---
 
-## Módulo C: Inferior (Pierna)
+#### Rutina 3: Espalda, Bíceps y Abdomen (Pull)
 
-> **Nota**: 4 ejercicios son fijos transversales a las 3 versiones por cobertura de zona (Extensión de Cuadriceps, Curl Femoral Tumbado, Abductor de Cadera, Elevación de Gemelos Sentado). Las versiones se diferencian en los 4 ejercicios variables que cubren Cuádriceps compuestos, Glúteos y Aductores, generando 3 versiones con **8 ejercicios cada una**. Avanzada de Zancadas se retira de las versiones del plan (redundante con otros compuestos de cuádriceps/glúteos) pero permanece en el Diccionario de Ejercicios y sigue disponible para sustitución puntual en sesiones activas.
+| # | Ejercicio |
+|---|-----------|
+| 1 | Curl de Concentración **o** Curl de Predicador (Mancuerna) |
+| 2 | Tirón de Dorsales (Polea) |
+| 3 | Remo T Inclinado (Maquina) |
+| 4 | Face Pull (Polea con Cuerda) |
+| 5 | Curl Bayesian en Banco Inclinado (Mancuernas) |
+| 6 | Curl de Martillo Cruzado (Mancuernas) |
+| 7 | Crunch Abdominal (Polea) |
+| 8 | Press Pallof (Polea) |
 
-### Versión 1
+---
 
-| # | Zona Muscular | Ejercicio | Tipo | Series | Repeticiones |
-| --- | --- | --- | --- | --- | --- |
-| 1 | Cuádriceps | Sentadilla | Maquina Multiestación | 4 | 8-12 |
-| 2 | Cuádriceps | Press de Pierna | Maquina | 4 | 8-12 |
-| 3 | Cuádriceps | Extensión de Cuadriceps | Maquina | 4 | 8-12 |
-| 4 | Isquiotibiales | Curl Femoral Tumbado | Maquina | 4 | 8-12 |
-| 5 | Glúteos | Empuje de Cadera | Maquina | 4 | 8-12 |
-| 6 | Aductores | Aductor de Cadera | Maquina | 4 | 8-12 |
-| 7 | Abductores | Abductor de Cadera | Maquina | 4 | 8-12 |
-| 8 | Gemelos (Sóleo) | Elevación de Gemelos Sentado | Maquina | 4 | 8-12 |
+### Rotación de ejemplo
 
-### Versión 2
+1. El usuario realiza Pierna (V1) → Push → Pull → termina el microciclo.
+2. En el siguiente microciclo, rota a Pierna (V2) → Push → Pull.
+3. Al completar ambas versiones de Pierna, vuelve a V1 y el ciclo se repite.
 
-| # | Zona Muscular | Ejercicio | Tipo | Series | Repeticiones |
-| --- | --- | --- | --- | --- | --- |
-| 1 | Cuádriceps, Aductores | Sentadilla de Sumo | Mancuerna o Pesa Rusa | 4 | 8-12 |
-| 2 | Cuádriceps, Glúteos | Sentadilla Bulgara Dividida | Mancuernas | 4 | 8-12 |
-| 3 | Cuádriceps | Press de Pierna | Maquina | 4 | 8-12 |
-| 4 | Cuádriceps | Extensión de Cuadriceps | Maquina | 4 | 8-12 |
-| 5 | Isquiotibiales | Curl Femoral Tumbado | Maquina | 4 | 8-12 |
-| 6 | Glúteos, Cuádriceps | Zancada hacia atras | Mancuernas | 4 | 8-12 |
-| 7 | Abductores | Abductor de Cadera | Maquina | 4 | 8-12 |
-| 8 | Gemelos (Sóleo) | Elevación de Gemelos Sentado | Maquina | 4 | 8-12 |
+**Nota:** Solo la rutina Pierna tiene versiones en este plan. Push y Pull mantienen una única versión cada una. La lógica de rotación y microciclo se adapta automáticamente a la estructura definida por el usuario.
 
-### Versión 3
+---
 
-| # | Zona Muscular | Ejercicio | Tipo | Series | Repeticiones |
-| --- | --- | --- | --- | --- | --- |
-| 1 | Cuádriceps, Glúteos | Sentadilla Bulgara Dividida | Mancuernas | 4 | 8-12 |
-| 2 | Cuádriceps, Glúteos | Subir Escalones | Maquina | 4 | 8-12 |
-| 3 | Cuádriceps | Sentadilla | Cuerpo | 4 | 8-12 |
-| 4 | Cuádriceps | Extensión de Cuadriceps | Maquina | 4 | 8-12 |
-| 5 | Isquiotibiales | Curl Femoral Tumbado | Maquina | 4 | 8-12 |
-| 6 | Aductores | Aductor de Cadera | Maquina | 4 | 8-12 |
-| 7 | Abductores | Abductor de Cadera | Maquina | 4 | 8-12 |
-| 8 | Gemelos (Sóleo) | Elevación de Gemelos Sentado | Maquina | 4 | 8-12 |
+La app Tension te brinda total libertad para diseñar, modificar y rotar tu plan de entrenamiento, asegurando máxima personalización y adaptabilidad a tus necesidades.

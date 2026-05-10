@@ -299,7 +299,7 @@ private fun ExerciseHistoryEntryRow(
                 text = stringResource(
                     R.string.exercise_history_session_format,
                     formattedDate,
-                    entry.moduleCode,
+                    entry.routineName,
                     entry.versionNumber,
                 ),
                 style = MaterialTheme.typography.bodyMedium,
@@ -317,13 +317,21 @@ private fun ExerciseHistoryEntryRow(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Start,
             ) {
-                ProgressionIndicator(classification = entry.classification)
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = classificationLabel(entry.classification),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                if (entry.isDeload) {
+                    Text(
+                        text = "Descarga",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                } else {
+                    ProgressionIndicator(classification = entry.classification)
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = classificationLabel(entry.classification),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         },
     )

@@ -24,13 +24,4 @@ data class DeloadEntity(
 
     @ColumnInfo(name = "completion_date")
     val completionDate: String? = null,
-
-    @ColumnInfo(name = "frozen_version_module_a")
-    val frozenVersionModuleA: Int,
-
-    @ColumnInfo(name = "frozen_version_module_b")
-    val frozenVersionModuleB: Int,
-
-    @ColumnInfo(name = "frozen_version_module_c")
-    val frozenVersionModuleC: Int,
 )

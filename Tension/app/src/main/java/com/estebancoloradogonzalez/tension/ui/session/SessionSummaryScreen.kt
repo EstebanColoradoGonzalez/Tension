@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -69,8 +70,8 @@ fun SessionSummaryScreen(
                             val summary = (uiState as SessionSummaryUiState.Success).summary
                             Text(
                                 text = stringResource(
-                                    R.string.session_module_version_format,
-                                    summary.moduleCode,
+                                    R.string.session_routine_version_format,
+                                    summary.routineName,
                                     summary.versionNumber,
                                 ),
                                 style = MaterialTheme.typography.titleSmall,
@@ -235,7 +236,16 @@ private fun ExerciseSummaryRow(
             .height(80.dp)
             .clickable(onClick = onClick),
         leadingContent = {
-            ProgressionIndicator(classification = item.classification)
+            if (item.isDeload) {
+                Box(
+                    modifier = Modifier.size(24.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(text = "\u2935", fontSize = 18.sp)
+                }
+            } else {
+                ProgressionIndicator(classification = item.classification)
+            }
         },
         headlineContent = {
             Row(
@@ -268,27 +278,45 @@ private fun ExerciseSummaryRow(
         supportingContent = {
             Column {
                 // Line 1: Classification + context
-                val classificationText = formatClassificationLine(item)
-                if (classificationText != null) {
+                if (item.isDeload) {
                     Text(
-                        text = classificationText,
+                        text = "Descarga",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = when (item.classification) {
-                            ProgressionClassification.POSITIVE_PROGRESSION ->
-                                semanticColors.progressionPositive
-                            ProgressionClassification.MAINTENANCE ->
-                                semanticColors.maintenance
-                            ProgressionClassification.REGRESSION ->
-                                semanticColors.regression
-                            null -> MaterialTheme.colorScheme.onSurfaceVariant
-                        },
+                        color = MaterialTheme.colorScheme.primary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
+                } else {
+                    val classificationText = formatClassificationLine(item)
+                    if (classificationText != null) {
+                        Text(
+                            text = classificationText,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = when (item.classification) {
+                                ProgressionClassification.POSITIVE_PROGRESSION ->
+                                    semanticColors.progressionPositive
+                                ProgressionClassification.MAINTENANCE ->
+                                    semanticColors.maintenance
+                                ProgressionClassification.REGRESSION ->
+                                    semanticColors.regression
+                                null -> MaterialTheme.colorScheme.onSurfaceVariant
+                            },
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
                 }
                 // Line 2: Action signal
                 Text(
                     text = formatActionSignal(item.signal, item.classification),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                // Line 3: Series count
+                Text(
+                    text = "${item.completedSets}/${item.prescribedSets} series",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -349,5 +377,7 @@ private fun formatActionSignal(
             "4×45s — \uD83C\uDFC6 Dominado"
         is ActionSignal.FirstSession ->
             "Primera sesión — sin referencia"
+        is ActionSignal.DeloadSession ->
+            "Sesión de descarga"
     }
 }

@@ -42,7 +42,7 @@ class VolumeViewModel @Inject constructor(
                 val evolution = getTonnageEvolutionUseCase(microcycleMap)
                 _uiState.value = VolumeUiState.Content(
                     tonnageByGroup = tonnage,
-                    distributionByModule = distribution,
+                    distributionByMuscleGroup = distribution,
                     evolution = evolution,
                     selectedMicrocycle = selectedMicrocycle,
                     totalMicrocycles = totalMicrocycles,
@@ -64,7 +64,7 @@ class VolumeViewModel @Inject constructor(
             val current = (_uiState.value as? VolumeUiState.Content) ?: return@launch
             _uiState.value = current.copy(
                 tonnageByGroup = tonnage,
-                distributionByModule = distribution,
+                distributionByMuscleGroup = distribution,
                 selectedMicrocycle = microcycleNumber,
             )
         }

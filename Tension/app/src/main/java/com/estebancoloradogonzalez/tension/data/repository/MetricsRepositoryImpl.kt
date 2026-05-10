@@ -2,6 +2,7 @@ package com.estebancoloradogonzalez.tension.data.repository
 
 import com.estebancoloradogonzalez.tension.data.local.dao.ExerciseSetDao
 import com.estebancoloradogonzalez.tension.data.local.dao.ProfileDao
+import com.estebancoloradogonzalez.tension.data.local.dao.RoutineDao
 import com.estebancoloradogonzalez.tension.data.local.dao.SessionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.SessionExerciseDao
 import com.estebancoloradogonzalez.tension.domain.model.ClassificationCount
@@ -18,6 +19,7 @@ class MetricsRepositoryImpl @Inject constructor(
     private val exerciseSetDao: ExerciseSetDao,
     private val sessionExerciseDao: SessionExerciseDao,
     private val profileDao: ProfileDao,
+    private val routineDao: RoutineDao,
 ) : MetricsRepository {
 
     override suspend fun getSessionsCompletedInWeek(
@@ -30,11 +32,11 @@ class MetricsRepositoryImpl @Inject constructor(
         return profile?.weeklyFrequency ?: 6
     }
 
-    override suspend fun getRirValuesByModule(
-        moduleCode: String,
+    override suspend fun getRirValuesByRoutine(
+        routineId: Long,
         sessionLimit: Int,
     ): List<Int> {
-        val sessionIds = sessionDao.getSessionIdsByModuleInRange(moduleCode, sessionLimit)
+        val sessionIds = sessionDao.getSessionIdsByRoutineInRange(routineId, sessionLimit)
         if (sessionIds.isEmpty()) return emptyList()
         return exerciseSetDao.getRirValuesBySessionIds(sessionIds)
     }
@@ -63,7 +65,10 @@ class MetricsRepositoryImpl @Inject constructor(
 
     override suspend fun getSessionIdsGroupedByMicrocycle(): Map<Int, List<Long>> {
         val sessions = sessionDao.getClosedSessionsOrdered()
-        return sessions.chunked(6).mapIndexed { index, chunk ->
+            .filter { it.deloadId == null }
+        val routineCount = routineDao.countRoutines()
+        val cycleSize = if (routineCount > 0) routineCount else 1
+        return sessions.chunked(cycleSize).mapIndexed { index, chunk ->
             (index + 1) to chunk.map { it.id }
         }.toMap()
     }

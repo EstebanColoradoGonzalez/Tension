@@ -28,9 +28,10 @@ interface ExerciseProgressionDao {
         UPDATE exercise_progression
         SET status = 'IN_DELOAD'
         WHERE status NOT IN ('NO_HISTORY', 'MASTERED')
+        AND exercise_id IN (:exerciseIds)
         """,
     )
-    suspend fun transitionToDeload()
+    suspend fun transitionToDeload(exerciseIds: List<Long>)
 
     @Query("SELECT * FROM exercise_progression WHERE status = 'IN_DELOAD'")
     suspend fun getAllInDeload(): List<ExerciseProgressionEntity>

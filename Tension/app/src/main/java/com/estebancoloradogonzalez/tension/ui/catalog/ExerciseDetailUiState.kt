@@ -9,8 +9,6 @@ sealed interface ExerciseDetailUiState {
 data class ExerciseDetailItem(
     val id: Long,
     val name: String,
-    val moduleCode: String,
-    val moduleName: String,
     val equipmentTypeName: String,
     val muscleZones: String,
     val isCustom: Boolean,

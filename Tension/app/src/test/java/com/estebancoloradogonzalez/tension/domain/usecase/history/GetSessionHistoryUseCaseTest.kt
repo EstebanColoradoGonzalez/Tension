@@ -20,7 +20,7 @@ class GetSessionHistoryUseCaseTest {
             SessionHistoryItem(
                 sessionId = 1L,
                 date = "2026-02-15",
-                moduleCode = "A",
+                routineName = "Pull+Abs",
                 versionNumber = 1,
                 status = "COMPLETED",
                 totalTonnageKg = 5000.0,
@@ -28,7 +28,7 @@ class GetSessionHistoryUseCaseTest {
             SessionHistoryItem(
                 sessionId = 2L,
                 date = "2026-02-14",
-                moduleCode = "B",
+                routineName = "Push",
                 versionNumber = 2,
                 status = "INCOMPLETE",
                 totalTonnageKg = 3200.0,
@@ -39,7 +39,7 @@ class GetSessionHistoryUseCaseTest {
         val result = useCase()
 
         assertEquals(2, result.size)
-        assertEquals("A", result[0].moduleCode)
+        assertEquals("Pull+Abs", result[0].routineName)
         assertEquals("INCOMPLETE", result[1].status)
     }
 

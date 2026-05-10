@@ -31,6 +31,8 @@ import com.estebancoloradogonzalez.tension.ui.catalog.CreateExerciseScreen
 import com.estebancoloradogonzalez.tension.ui.catalog.ExerciseDetailScreen
 import com.estebancoloradogonzalez.tension.ui.catalog.ExerciseDictionaryScreen
 import com.estebancoloradogonzalez.tension.ui.catalog.PlanVersionDetailScreen
+import com.estebancoloradogonzalez.tension.ui.catalog.RoutineListScreen
+import com.estebancoloradogonzalez.tension.ui.catalog.RoutineVersionListScreen
 import com.estebancoloradogonzalez.tension.ui.catalog.TrainingPlanScreen
 import com.estebancoloradogonzalez.tension.ui.components.BottomNavigationBar
 import com.estebancoloradogonzalez.tension.ui.alerts.AlertCenterScreen
@@ -141,11 +143,11 @@ fun TensionNavHost(
                                     NavigationRoutes.activeSessionRoute(sessionId),
                                 )
                             },
-                            onNavigateToPreview = { moduleVersionId, moduleCode, versionNumber ->
+                            onNavigateToPreview = { routineVersionId, routineName, versionNumber ->
                                 navController.navigate(
                                     NavigationRoutes.sessionPreviewRoute(
-                                        moduleVersionId,
-                                        moduleCode,
+                                        routineVersionId,
+                                        routineName,
                                         versionNumber,
                                     ),
                                 )
@@ -191,7 +193,7 @@ fun TensionNavHost(
                                 )
                             },
                             onNavigateToTrainingPlan = {
-                                navController.navigate(NavigationRoutes.TRAINING_PLAN) {
+                                navController.navigate(NavigationRoutes.ROUTINE_LIST) {
                                     launchSingleTop = true
                                     restoreState = true
                                 }
@@ -232,9 +234,46 @@ fun TensionNavHost(
                                     restoreState = true
                                 }
                             },
-                            onNavigateToPlanVersionDetail = { moduleVersionId ->
+                            onNavigateToPlanVersionDetail = { routineVersionId ->
                                 navController.navigate(
-                                    NavigationRoutes.planVersionDetailRoute(moduleVersionId),
+                                    NavigationRoutes.planVersionDetailRoute(routineVersionId),
+                                )
+                            },
+                        )
+                    }
+
+                    composable(NavigationRoutes.ROUTINE_LIST) {
+                        RoutineListScreen(
+                            onNavigateToExerciseDictionary = {
+                                navController.navigate(NavigationRoutes.EXERCISE_DICTIONARY) {
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            },
+                            onNavigateToRoutineVersions = { routineId ->
+                                navController.navigate(
+                                    NavigationRoutes.routineVersionsRoute(routineId),
+                                )
+                            },
+                            onNavigateToPlanVersionDetail = { routineVersionId ->
+                                navController.navigate(
+                                    NavigationRoutes.planVersionDetailRoute(routineVersionId),
+                                )
+                            },
+                        )
+                    }
+
+                    composable(
+                        route = NavigationRoutes.ROUTINE_VERSIONS,
+                        arguments = listOf(
+                            navArgument("routineId") { type = NavType.LongType },
+                        ),
+                    ) {
+                        RoutineVersionListScreen(
+                            onNavigateBack = { navController.popBackStack() },
+                            onNavigateToPlanVersionDetail = { routineVersionId ->
+                                navController.navigate(
+                                    NavigationRoutes.planVersionDetailRoute(routineVersionId),
                                 )
                             },
                         )
@@ -243,7 +282,7 @@ fun TensionNavHost(
                     composable(
                         route = NavigationRoutes.PLAN_VERSION_DETAIL,
                         arguments = listOf(
-                            navArgument("moduleVersionId") { type = NavType.LongType },
+                            navArgument("routineVersionId") { type = NavType.LongType },
                         ),
                     ) {
                         PlanVersionDetailScreen(
@@ -461,8 +500,8 @@ fun TensionNavHost(
                     composable(
                         route = NavigationRoutes.SESSION_PREVIEW,
                         arguments = listOf(
-                            navArgument("moduleVersionId") { type = NavType.LongType },
-                            navArgument("moduleCode") { type = NavType.StringType },
+                            navArgument("routineVersionId") { type = NavType.LongType },
+                            navArgument("routineName") { type = NavType.StringType },
                             navArgument("versionNumber") { type = NavType.IntType },
                         ),
                     ) {

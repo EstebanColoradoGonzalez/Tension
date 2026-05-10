@@ -81,11 +81,18 @@ fun RegisterSetScreen(
                             style = MaterialTheme.typography.titleLarge,
                         )
                         Text(
-                            text = stringResource(
-                                R.string.register_set_title_format,
-                                uiState.currentSetNumber,
-                                uiState.totalSets,
-                            ),
+                            text = if (uiState.currentSetNumber > uiState.totalSets) {
+                                stringResource(
+                                    R.string.register_set_extra_title_format,
+                                    uiState.currentSetNumber - uiState.totalSets,
+                                )
+                            } else {
+                                stringResource(
+                                    R.string.register_set_title_format,
+                                    uiState.currentSetNumber,
+                                    uiState.totalSets,
+                                )
+                            },
                             style = MaterialTheme.typography.titleSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -279,7 +286,7 @@ private fun RirSelector(
         Spacer(modifier = Modifier.height(8.dp))
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            for (rir in 0..5) {
+            for (rir in 0..2) {
                 val isSelected = rir == selectedRir
                 val rirDescription = "RIR $rir"
 

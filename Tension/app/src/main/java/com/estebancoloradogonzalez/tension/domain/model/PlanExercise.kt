@@ -11,4 +11,5 @@ data class PlanExercise(
     val isIsometric: Boolean,
     val isToTechnicalFailure: Boolean,
     val isCustom: Boolean,
+    val slot: Int = 0,
 )

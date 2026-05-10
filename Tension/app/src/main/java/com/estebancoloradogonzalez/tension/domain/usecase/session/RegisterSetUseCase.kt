@@ -14,7 +14,7 @@ class RegisterSetUseCase @Inject constructor(
     ) {
         require(weightKg >= 0) { "Weight must be >= 0" }
         require(reps >= 1) { "Reps must be >= 1" }
-        require(rir in 0..5) { "RIR must be between 0 and 5" }
+        require(rir in 0..2) { "RIR must be between 0 and 2" }
         sessionRepository.registerSet(sessionExerciseId, weightKg, reps, rir)
     }
 }

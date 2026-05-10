@@ -1,7 +1,7 @@
 .DS_Store
 .vscode/
-.ceiba-metodo/
 .github/
+.venv/
 
 Tension/local.properties
 
@@ -42,3 +42,6 @@ Tension/.idea/compiler.xml
 
 # Método Ceiba - Auto-injected agent skills
 .github/skills/
+
+# Método Ceiba - Auto-managed kanban prompts
+.github/prompts/ceiba-kanban-*.prompt.md

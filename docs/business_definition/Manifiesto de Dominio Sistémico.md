@@ -12,8 +12,8 @@ El problema fundamental que este sistema resuelve es el siguiente: un ejecutante
 
 El sistema ha alcanzado el éxito cuando el ejecutante:
 
-1. **Nunca improvisa** una sesión. Cada ejercicio, carga y rango de repeticiones está prescrito por el plan o derivado de su historial.
-2. **Nunca se estanca sin saberlo.** El sistema detecta mesetas de rendimiento y señala cuándo una variable debe cambiar (carga, volumen, versión del módulo o necesidad de descarga).
+1. **Nunca improvisa** una sesión. Cada ejercicio, carga y rango de repeticiones está definido en el plan que el propio Ejecutante diseñó, y las cargas objetivo se derivan de su historial.
+2. **Nunca se estanca sin saberlo.** El sistema detecta mesetas de rendimiento y señala cuándo una variable debe cambiar (carga, volumen, versión de la rutina o necesidad de descarga).
 3. **Tiene trazabilidad total** de su progresión. Cualquier punto en el tiempo puede compararse contra cualquier otro para evaluar tendencia, velocidad de progreso y calidad del estímulo.
 4. **Toma decisiones basadas en evidencia propia**, no en sensaciones ni en consejos genéricos. El sistema le dice *qué* hacer y *por qué*, sustentado en sus propios registros históricos.
 
@@ -21,10 +21,10 @@ El sistema ha alcanzado el éxito cuando el ejecutante:
 
 Lo que el ejecutante recibe del sistema es un **ciclo cerrado de retroalimentación** entre su esfuerzo físico y su progresión medible:
 
-- **Claridad operativa:** Saber exactamente qué hacer en cada sesión (módulo, versión, ejercicios, cargas objetivo).
+- **Claridad operativa:** Saber exactamente qué hacer en cada sesión (rutina, versión, ejercicios, cargas objetivo).
 - **Detección de señales:** Identificar automáticamente cuándo un ejercicio se ha estancado, cuándo se está acumulando fatiga excesiva, o cuándo es momento de progresar en carga.
 - **Disciplina estructural:** Un marco que convierte la constancia en resultados tangibles al eliminar la variabilidad no intencional del entrenamiento.
-- **Autonomía informada:** El ejecutante no depende de un entrenador externo para interpretar su progreso; el sistema le provee las herramientas analíticas para autodirigirse con rigor.
+- **Autonomía informada:** El ejecutante no depende de un entrenador externo para interpretar su progreso ni para diseñar su programa; el sistema le provee las herramientas para construir su propio plan y autodirigirse con rigor analítico.
 
 ## 2. El Ecosistema y Fronteras (El Entorno)
 
@@ -34,7 +34,7 @@ El sistema opera dentro de un entorno gobernado por leyes fisiológicas y factor
 
 - **Fisiología humana:** Las adaptaciones musculares (hipertrofia, fuerza) siguen principios biológicos con tasas de respuesta individuales. La genética, la edad, el nivel hormonal natural y la historia de entrenamiento del ejecutante condicionan la velocidad y el techo de progresión.
 - **Recuperación:** El sueño, el estrés psicológico, la calidad nutricional y la hidratación son variables externas que afectan directamente la capacidad de adaptación entre sesiones. El sistema no las controla, pero sus efectos se manifiestan en los datos registrados (caída de rendimiento, RIR inconsistente, estancamiento).
-- **Disponibilidad de equipamiento:** El inventario de ejercicios ejecutables depende de la infraestructura del gimnasio al que asiste el ejecutante. El sistema provee un catálogo base de ejercicios (Diccionario de Ejercicios) que el ejecutante puede ampliar con ejercicios propios. Para mitigar la falta de equipo específico, el sistema permite la **sustitución puntual** de un ejercicio por otro del mismo módulo (de otra versión), sin modificar el plan original.
+- **Disponibilidad de equipamiento:** El inventario de ejercicios ejecutables depende de la infraestructura del gimnasio al que asiste el ejecutante. El sistema provee un catálogo de ejercicios (Diccionario de Ejercicios) que el ejecutante puede ampliar con ejercicios propios. Para mitigar la falta de equipo específico, el sistema permite la **sustitución puntual** de un ejercicio por otro de la misma zona muscular disponible en el Diccionario, sin modificar el plan original.
 - **Disponibilidad de estaciones:** El gimnasio es un entorno compartido y caótico. Una estación puede estar ocupada, en mantenimiento o fuera de servicio. El sistema no controla esto, pero lo gestiona al no imponer un orden de ejecución fijo dentro de la sesión: el Ejecutante decide el orden según la disponibilidad real.
 - **Adherencia del ejecutante:** La disciplina para asistir al gimnasio, registrar datos con honestidad y seguir las prescripciones del plan es un factor humano fuera del alcance del sistema. El sistema puede detectar baja adherencia, pero no puede forzarla.
 
@@ -42,12 +42,12 @@ El sistema opera dentro de un entorno gobernado por leyes fisiológicas y factor
 
 | **Dentro del sistema (controlable)** | **Fuera del sistema (no controlable)** |
 | --- | --- |
-| Estructura del plan de entrenamiento (módulos, versiones, ejercicios) | Genética, edad y respuesta hormonal del ejecutante |
+| Herramientas para que el Ejecutante diseñe su plan de entrenamiento (rutinas, versiones, asignación de ejercicios) | Genética, edad y respuesta hormonal del ejecutante |
 | Prescripción de series, repeticiones y rangos de carga | Calidad del sueño, nutrición e hidratación |
-| Registro de datos por serie (Fecha, Módulo, Versión, Ejercicio, Serie, Peso, Reps, RIR) | Disponibilidad real de equipo en el gimnasio |
+| Registro de datos por serie (Fecha, Rutina, Versión, Ejercicio, Serie, Peso, Reps, RIR) | Disponibilidad real de equipo en el gimnasio |
 | Cálculos de progresión (tonelaje, tendencias, detección de mesetas) | Motivación, estado anímico y estrés externo |
 | Reglas de decisión (cuándo subir carga, cuándo descargar, cuándo rotar versión) | Lesiones imprevistas o condiciones médicas |
-| Rotación cíclica de módulos y secuenciación de versiones | Frecuencia real de asistencia al gimnasio |
+| Rotación cíclica de rutinas y secuenciación de versiones | Frecuencia real de asistencia al gimnasio |
 | Persistencia de la posición en la rotación (inmune a ausencias) | Días de la semana o calendario |
 | Sustitución puntual de ejercicios dentro de la sesión | Orden en que el Ejecutante accede a las estaciones |
 | Orden libre de ejecución de ejercicios dentro de la sesión | Dolor articular imprevisto durante un ejercicio |
@@ -56,16 +56,16 @@ El sistema opera dentro de un entorno gobernado por leyes fisiológicas y factor
 
 El sistema recibe del exterior los siguientes recursos e información:
 
-1. **Datos de sesión:** El registro crudo que el ejecutante captura después de cada serie — Fecha, Módulo, Versión, Ejercicio, Número de Serie, Peso (Kg), Repeticiones logradas y RIR percibido. Esta es la **entrada primaria** sin la cual el sistema no puede operar.
-2. **Plan de Entrenamiento:** La estructura prescriptiva que define qué ejercicios corresponden a cada módulo y versión, junto con las series y rangos de repeticiones objetivo.
-3. **Diccionario de Ejercicios:** El catálogo de movimientos disponibles, clasificados por módulo, tipo de equipo y zona muscular. Incluye ejercicios precargados y ejercicios creados por el ejecutante.
+1. **Datos de sesión:** El registro crudo que el ejecutante captura después de cada serie — Fecha, Rutina, Versión, Ejercicio, Número de Serie, Peso (Kg), Repeticiones logradas y RIR percibido. Esta es la **entrada primaria** sin la cual el sistema no puede operar.
+2. **Plan de Entrenamiento:** La estructura diseñada por el Ejecutante que define sus rutinas, las versiones opcionales de cada rutina, y qué ejercicios componen cada combinación rutina-versión, junto con las series y rangos de repeticiones objetivo. El Ejecutante crea, modifica y gestiona su plan en cualquier momento.
+3. **Diccionario de Ejercicios:** El catálogo de movimientos disponibles en el sistema, clasificados por tipo de equipo y zona muscular. Incluye ejercicios precargados y ejercicios creados por el ejecutante. Los ejercicios no tienen asociación fija a ninguna rutina — el Ejecutante los asigna libremente a las rutinas de su plan.
 4. **Perfil del Ejecutante:** Datos estáticos o de baja frecuencia de cambio (peso corporal, altura, nivel de experiencia) que contextualizan las métricas de rendimiento.
 
 ### Salidas (Outputs)
 
 El sistema entrega al ejecutante:
 
-1. **Prescripción de sesión:** Qué módulo y versión le corresponde ejecutar, con los ejercicios y cargas objetivo derivadas de su historial.
+1. **Prescripción de sesión:** Qué rutina y versión le corresponde ejecutar, con los ejercicios y cargas objetivo derivadas de su historial.
 2. **Señales de progresión:** Indicadores que informan si debe aumentar carga, mantenerla, reducir volumen o ejecutar una semana de descarga.
 3. **Historial analítico:** Visualización de tendencias de rendimiento por ejercicio, grupo muscular y período de tiempo — el ejecutante puede ver su evolución y validar que el sistema funciona.
 4. **Alertas de estancamiento:** Notificaciones cuando un ejercicio o grupo muscular no muestra progresión en un período definido, sugiriendo acciones correctivas.
@@ -82,9 +82,10 @@ Es la persona que realiza el entrenamiento físico y genera los datos del sistem
 
 **Responsabilidades:**
 
-- Asistir al gimnasio según la rotación cíclica prescrita (A → B → C).
+- Diseñar su propio plan de entrenamiento: crear rutinas, nombrarlas, asignarles ejercicios del Diccionario, y opcionalmente crear versiones para diversificar el estímulo.
+- Asistir al gimnasio según la rotación cíclica de sus rutinas.
 - Ejecutar los ejercicios de la versión correspondiente con técnica correcta y dentro de los rangos prescritos, **en el orden que decida** según la disponibilidad de equipo.
-- Realizar sustituciones puntuales de ejercicios cuando sea necesario (equipo no disponible, dolor articular), seleccionando un sustituto del mismo módulo.
+- Realizar sustituciones puntuales de ejercicios cuando sea necesario (equipo no disponible, dolor articular), seleccionando un sustituto de la misma zona muscular del Diccionario.
 - Registrar con honestidad y precisión los datos de cada serie al finalizar: Peso, Repeticiones logradas y RIR percibido — registrando siempre el ejercicio que *realmente* ejecutó, incluyendo sustituciones.
 - Consultar las señales del sistema antes de cada sesión para conocer las cargas objetivo y ajustes recomendados.
 - Reportar condiciones anómalas que afecten el rendimiento (lesión, enfermedad, fatiga acumulada inusual).
@@ -95,7 +96,7 @@ Es el conjunto de reglas, cálculos y estructuras que procesan los datos del Eje
 
 **Responsabilidades:**
 
-- Determinar qué módulo y versión corresponde en cada sesión según la secuencia cíclica y el historial.
+- Determinar qué rutina y versión corresponde en cada sesión según la secuencia cíclica y el historial.
 - Calcular métricas derivadas a partir de los registros crudos (tonelaje, promedios de RIR, tendencias de carga).
 - Aplicar las Reglas de Negocio (§6) para emitir señales de progresión: subir carga, mantener, descargar o rotar versión.
 - Detectar mesetas de rendimiento y emitir alertas de estancamiento.
@@ -141,7 +142,7 @@ Un entrenador, fisioterapeuta o profesional de la salud que podría consultar lo
 
 - **Hipertrofia Muscular:** El aumento del tamaño de las fibras musculares mediante el estímulo de síntesis de proteínas, impulsado principalmente por la **Tensión Mecánica**.
 - **Sobrecarga Progresiva:** El requerimiento fundamental de aumentar gradualmente el estrés impuesto al cuerpo (vía carga, repeticiones o calidad técnica) para forzar adaptaciones continuas. Es el principio rector de todo el sistema.
-- **RIR (Reps In Reserve):** Medida subjetiva de intensidad. Es el número de repeticiones que el ejecutante estima que podría haber realizado antes de llegar al **Fallo Técnico**. Se registra en una escala de 0 a 5, donde 0 significa fallo técnico alcanzado y 5 indica esfuerzo submáximo.
+- **RIR (Reps In Reserve):** Medida subjetiva de intensidad. Es el número de repeticiones que el ejecutante estima que podría haber realizado antes de llegar al **Fallo Técnico**. Se registra en una escala de 0 a 2, donde 0 significa fallo técnico alcanzado y 2 indica esfuerzo con reserva moderada.
 - **Fallo Técnico:** El punto exacto donde el ejecutante no puede completar otra repetición con la técnica perfecta prescrita. *Nota: En este sistema, el fallo técnico es el límite máximo; nunca se entrena con técnica degradada.*
 - **Repetición:** Una ejecución completa del rango de movimiento de un ejercicio, compuesta por una fase concéntrica (acortamiento muscular) y una fase excéntrica (alargamiento muscular).
 - **Peso (Carga):** La resistencia externa medida en kilogramos (Kg) que el ejecutante mueve durante un ejercicio. Para ejercicios de peso corporal, se registra 0 Kg y la progresión se mide por repeticiones logradas.
@@ -150,29 +151,29 @@ Un entrenador, fisioterapeuta o profesional de la salud que podría consultar lo
 - **Volumen Semanal:** La cantidad total de series efectivas realizadas por grupo muscular en un período de 7 días (o un microciclo completo). Es el principal regulador de hipertrofia a nivel de programación.
 - **Mesociclo:** Un bloque de entrenamiento (típicamente de 4 a 8 semanas) con un objetivo específico (acumulación de volumen o intensificación). Culmina con una semana de Descarga.
 - **Descarga (Deload):** Una reducción planificada y temporal del volumen o la intensidad de entrenamiento (típicamente 1 semana), diseñada para permitir la recuperación del Sistema Nervioso Central (SNC) y de los tejidos conectivos, previniendo el sobreentrenamiento.
-- **Rotación Cíclica:** El patrón secuencial en que se ejecutan los módulos de entrenamiento (A → B → C → A → B → C). Es **agnóstica al calendario**: al sistema no le importa si hoy es martes o domingo, solo le importa "¿Qué toca entrenar ahora?". La posición en la rotación se persiste indefinidamente; si el Ejecutante se ausenta días, semanas o meses, al volver retoma exactamente donde lo dejó. Garantiza cobertura completa del cuerpo independientemente de la frecuencia o regularidad de asistencia.
+- **Rotación Cíclica:** El patrón secuencial en que se ejecutan las rutinas de entrenamiento del Ejecutante. Si el Ejecutante ha definido N rutinas (por ejemplo R1, R2, R3), la rotación sigue la secuencia R1 → R2 → R3 → R1 → R2 → R3... Es **agnóstica al calendario**: al sistema no le importa si hoy es martes o domingo, solo le importa "¿Qué toca entrenar ahora?". La posición en la rotación se persiste indefinidamente; si el Ejecutante se ausenta días, semanas o meses, al volver retoma exactamente donde lo dejó. Garantiza cobertura completa del plan del Ejecutante independientemente de la frecuencia o regularidad de asistencia.
 - **Zona Muscular:** La subdivisión anatómica específica dentro de un grupo muscular (ej: Pecho Superior, Pecho Medio, Pecho Inferior son zonas musculares dentro del grupo muscular "Pecho").
-- **Grupo Muscular:** La agrupación anatómica principal que un módulo trabaja (ej: Pecho, Espalda, Cuádriceps, Glúteos). Un módulo cubre uno o más grupos musculares.
-- **Sesión:** La unidad temporal de entrenamiento. Es la ejecución de un módulo en una versión específica en una fecha determinada. El plan prescribe *qué* ejercicios componen la sesión, pero **no impone el orden** en que deben ejecutarse; el Ejecutante decide la secuencia según la disponibilidad de equipo y las circunstancias del gimnasio. Una sesión puede incluir sustituciones puntuales de ejercicios (ver Sustitución de Ejercicio).
-- **Sustitución de Ejercicio:** El reemplazo puntual de un ejercicio prescrito por la versión actual por otro ejercicio del mismo módulo (tomado de otra versión), debido a indisponibilidad de equipo, dolor articular u otra circunstancia. La sustitución es **temporal y no modifica el Plan de Entrenamiento original**. El registro de la sesión refleja el ejercicio que realmente se ejecutó, y el sistema lo trata como un dato válido vinculado al ejercicio sustituto, no al ejercicio original. Esto garantiza que la toma de datos sea coherente con lo que efectivamente se hizo.
+- **Grupo Muscular:** La agrupación anatómica principal que una rutina trabaja (ej: Pecho, Espalda, Cuádriceps, Glúteos). Una rutina cubre uno o más grupos musculares, según cómo el Ejecutante haya diseñado su plan.
+- **Sesión:** La unidad temporal de entrenamiento. Es la ejecución de una rutina en una versión específica en una fecha determinada. El plan define *qué* ejercicios componen la sesión, pero **no impone el orden** en que deben ejecutarse; el Ejecutante decide la secuencia según la disponibilidad de equipo y las circunstancias del gimnasio. Una sesión puede incluir sustituciones puntuales de ejercicios (ver Sustitución de Ejercicio).
+- **Sustitución de Ejercicio:** El reemplazo puntual de un ejercicio prescrito por la versión actual por otro ejercicio de la misma zona muscular disponible en el Diccionario, debido a indisponibilidad de equipo, dolor articular u otra circunstancia. La sustitución es **temporal y no modifica el Plan de Entrenamiento original**. El registro de la sesión refleja el ejercicio que realmente se ejecutó, y el sistema lo trata como un dato válido vinculado al ejercicio sustituto, no al ejercicio original. Esto garantiza que la toma de datos sea coherente con lo que efectivamente se hizo.
 - **Meseta (Plateau):** Un estado donde un ejercicio o grupo muscular no muestra progresión medible (aumento de carga o repeticiones) durante un período definido, a pesar de mantener adherencia y esfuerzo consistentes.
-- **Orden Sugerido de Ejecución:** Secuencia recomendada de grupos musculares dentro de una sesión, basada en priorización biomecánica: ejecutar primero los grupos que requieren mayor demanda neural y permiten mayor carga, cuando la capacidad del sistema nervioso central está intacta. El orden sugerido es una **guía informativa** que maximiza la calidad del estímulo, pero **no constituye una restricción obligatoria** — el Ejecutante conserva total libertad para alterar la secuencia según las circunstancias del gimnasio (Restricción de Integridad §6.B.11).
-- **Ejercicio sin Requisito de Equipamiento:** Ejercicio de tipo "Cuerpo" ejecutable sin equipamiento de gimnasio (sin máquinas, barras, mancuernas ni poleas), que puede realizarse en cualquier ubicación (hogar, parque, gym) como parte de la misma sesión sin dividirla en sub-sesiones. En el plan actual, los ejercicios de abdomen del Módulo A (Abdominales, Escalador, Giro Ruso, Plancha, Plancha Lateral) caen en esta categoría.
+- **Orden Sugerido de Ejecución:** Secuencia recomendada de ejercicios dentro de una sesión, basada en priorización biomecánica: ejecutar primero los grupos musculares que requieren mayor demanda neural y permiten mayor carga, cuando la capacidad del sistema nervioso central está intacta. El Ejecutante puede organizar sus ejercicios dentro de cada rutina siguiendo este principio si lo desea, pero **no constituye una restricción obligatoria** — el Ejecutante conserva total libertad para alterar la secuencia según las circunstancias del gimnasio (Restricción de Integridad §6.B.11).
+- **Ejercicio sin Requisito de Equipamiento:** Ejercicio de tipo "Cuerpo" ejecutable sin equipamiento de gimnasio (sin máquinas, barras, mancuernas ni poleas), que puede realizarse en cualquier ubicación (hogar, parque, gym) como parte de la misma sesión sin dividirla en sub-sesiones. Ejemplos: Abdominales, Escalador, Giro Ruso, Plancha, Plancha Lateral, Flexiones, Sentadilla a cuerpo libre.
 
 ### B. Entidades del Dominio (Los Objetos)
 
 > *Los objetos reales o abstractos que el sistema manipula. Se describen por su existencia y razón de ser, sin atributos técnicos.*
 
 1. **Ejecutante:** La persona que entrena y genera los datos del sistema. Posee atributos de perfil (peso corporal, altura, nivel de experiencia) que contextualizan sus métricas pero que pueden cambiar en el tiempo.
-2. **Módulo (A, B, C):** La unidad organizativa de la división de entrenamiento. Cada módulo agrupa los ejercicios que trabajan un conjunto específico de grupos musculares siguiendo la división Pull/Push/Legs (ej: Módulo A = Espalda, Bíceps, Abdomen).
-3. **Versión (1, 2, 3):** Una variante específica de un Módulo que utiliza diferentes ejercicios del Diccionario para atacar los mismos grupos musculares, permitiendo variedad de estímulo y prevención de lesiones por sobreuso. Cada módulo tiene entre 2 y 3 versiones.
-4. **Ejercicio:** La unidad de movimiento específica (ej: Press de Banca). Cada ejercicio pertenece a un módulo, tiene un tipo de equipo asociado y una zona muscular objetivo. Es una entidad estática definida en el Diccionario de Ejercicios.
+2. **Rutina:** La unidad organizativa del plan de entrenamiento, creada y nombrada por el Ejecutante. Cada rutina agrupa los ejercicios que el Ejecutante decide trabajar juntos en una sesión. El nombre, la cantidad y la composición de las rutinas son libres: el Ejecutante puede organizar su plan por patrón de movimiento (Pull, Push, Legs), por grupo muscular (Pecho y Espalda, Hombro y Brazos), por día de la semana (Lunes, Miércoles, Viernes), por letra (A, B, C, D), o cualquier otro criterio que se adapte a sus necesidades y preferencias. El sistema no impone ni sugiere una estructura específica.
+3. **Versión:** Una variante opcional de una Rutina que utiliza diferentes ejercicios del Diccionario para atacar los mismos objetivos, permitiendo variedad de estímulo y prevención de lesiones por sobreuso. Las versiones son opcionales: una rutina puede tener una única versión (siempre ejecuta los mismos ejercicios) o múltiples versiones que rotan entre sí. La cantidad de versiones por rutina es libre.
+4. **Ejercicio:** La unidad de movimiento específica (ej: Press de Banca). Cada ejercicio tiene un tipo de equipo asociado y una o más zonas musculares objetivo. Es una entidad del Diccionario de Ejercicios, **agnóstica de rutina**: no pertenece inherentemente a ninguna rutina. El Ejecutante asigna ejercicios del Diccionario a las rutinas de su plan según su criterio.
 5. **Serie (Set):** El conjunto ininterrumpido de repeticiones de un ejercicio. Es la unidad mínima de registro. Cada serie produce un log con los datos: Peso, Repeticiones y RIR.
-6. **Sesión:** La ejecución de un módulo en una versión específica en una fecha determinada. Contiene las series de los ejercicios realizados — que pueden incluir sustituciones puntuales respecto al plan original. El orden de ejecución de los ejercicios dentro de la sesión es libre y decidido por el Ejecutante según las circunstancias del gimnasio. Es el contenedor principal de datos del sistema.
-7. **Log (Registro):** La captura de datos históricos de una serie específica. Cada log contiene: Fecha, Módulo, Versión, Ejercicio, Número de Serie, Peso (Kg), Repeticiones logradas y RIR. Es la unidad atómica de información del sistema.
-8. **Microciclo:** La secuencia completa de ejecución de todos los módulos (A-B-C-A-B-C). En este sistema, un microciclo no dura necesariamente 7 días naturales; su duración depende de la frecuencia real de asistencia del Ejecutante.
-9. **Plan de Entrenamiento:** La estructura prescriptiva que define, para cada módulo y versión, qué ejercicios componen la sesión, con cuántas series y en qué rango de repeticiones. **No prescribe el orden de ejecución** — es un listado, no una secuencia. El Ejecutante decide el orden según la disponibilidad de equipo y las circunstancias del gimnasio. Es la "receta" que el Ejecutante sigue en cada sesión, con la flexibilidad de realizar sustituciones puntuales cuando sea necesario.
-10. **Diccionario de Ejercicios:** El catálogo de todos los ejercicios disponibles en el sistema, clasificados por módulo, tipo de equipo y zona muscular. Contiene un conjunto base de ejercicios precargados (seed data) y puede ser ampliado por el ejecutante con ejercicios nuevos. Todo ejercicio registrado en una sesión debe existir en el diccionario.
+6. **Sesión:** La ejecución de una rutina en una versión específica en una fecha determinada. Contiene las series de los ejercicios realizados — que pueden incluir sustituciones puntuales respecto al plan original. El orden de ejecución de los ejercicios dentro de la sesión es libre y decidido por el Ejecutante según las circunstancias del gimnasio. Es el contenedor principal de datos del sistema.
+7. **Log (Registro):** La captura de datos históricos de una serie específica. Cada log contiene: Fecha, Rutina, Versión, Ejercicio, Número de Serie, Peso (Kg), Repeticiones logradas y RIR. Es la unidad atómica de información del sistema.
+8. **Microciclo:** La secuencia completa de ejecución de todas las rutinas del Ejecutante (una pasada completa). Si el Ejecutante tiene N rutinas, un microciclo consta de N sesiones. Su duración en días naturales depende de la frecuencia real de asistencia del Ejecutante. Dentro del microciclo, cada vez que una rutina se ejecuta, el sistema avanza automáticamente a la siguiente versión de esa rutina (si tiene más de una). La rotación de versiones es un mecanismo independiente de la rotación de rutinas: el reloj de rutinas determina *qué* rutina toca, y el reloj de versiones de cada rutina determina *con qué variante* se ejecuta.
+9. **Plan de Entrenamiento:** La estructura diseñada por el Ejecutante que define sus rutinas, las versiones opcionales de cada rutina, y qué ejercicios del Diccionario componen cada combinación rutina-versión, con cuántas series y en qué rango de repeticiones. **No prescribe el orden de ejecución** — es un listado, no una secuencia. El Ejecutante crea, modifica y gestiona su plan en cualquier momento según sus objetivos, preferencias y circunstancias.
+10. **Diccionario de Ejercicios:** El catálogo de todos los ejercicios disponibles en el sistema, clasificados por tipo de equipo y zona muscular. Contiene un conjunto de ejercicios precargados (seed data) y puede ser ampliado por el ejecutante con ejercicios nuevos. Los ejercicios son **agnósticos de rutina**: no pertenecen inherentemente a ninguna rutina. El Ejecutante los asigna libremente a las rutinas de su plan. Todo ejercicio registrado en una sesión debe existir en el diccionario.
 
 ### C. Taxonomía (Clasificación)
 
@@ -199,11 +200,11 @@ Para que el sistema tome decisiones, clasifica los ejercicios según su función
 
 Este es el flujo principal y más frecuente del sistema. Ocurre cada vez que el Ejecutante asiste al gimnasio.
 
-1. **Determinación del módulo y versión.** El sistema indica qué módulo corresponde según la posición actual en la rotación cíclica (A → B → C → A → B → C) y qué versión toca según la secuencia de versiones del módulo (V1 → V2 → V3 → V1...). Esta posición es **persistente e inmune al calendario**: si el Ejecutante se ausenta días, semanas o meses, al volver retoma exactamente donde lo dejó. Al sistema no le importa qué día de la semana es; solo responde a "¿Qué toca entrenar ahora?".
-2. **Consulta de la prescripción.** El Ejecutante revisa los ejercicios del Plan de Entrenamiento correspondientes al módulo-versión asignado, junto con las cargas objetivo derivadas de su último registro para cada ejercicio.
-3. **Ejecución del entrenamiento.** El Ejecutante realiza los ejercicios prescritos **en el orden que decida** según la disponibilidad de equipo y las circunstancias del gimnasio, respetando las 4 series y el rango de 8-12 repeticiones (o la condición especial: fallo técnico, isométrico en segundos). El Plan de Entrenamiento lista los ejercicios en un **orden sugerido** basado en priorización biomecánica (mayor demanda neural primero), pero este orden es orientativo y no restringe la libertad del Ejecutante. Para el Módulo A, los ejercicios de abdomen son *Ejercicios sin Requisito de Equipamiento* y pueden ejecutarse fuera del gimnasio (hogar, parque u otro espacio) como parte de la misma sesión — idealmente al inicio como activación del core antes de la porción de gym, o al final según preferencia del Ejecutante.
-4. **Sustitución puntual (si aplica).** Si un ejercicio prescrito no puede ejecutarse (equipo ocupado, en mantenimiento, o genera dolor articular), el Ejecutante puede sustituirlo por otro ejercicio del mismo módulo tomado de otra versión. La sustitución no modifica el Plan original; el sistema registra el ejercicio que realmente se ejecutó.
-5. **Registro de datos por serie.** Al finalizar cada serie, el Ejecutante registra: Peso utilizado (Kg), Repeticiones logradas y RIR percibido. El sistema asocia automáticamente estos datos con la Fecha, el Módulo, la Versión, el Ejercicio (ejecutado, incluyendo sustituciones) y el Número de Serie.
+1. **Determinación de la rutina y versión.** El sistema indica qué rutina corresponde según la posición actual en la rotación cíclica de las rutinas del Ejecutante y qué versión toca según la secuencia de versiones de esa rutina (si tiene más de una). Esta posición es **persistente e inmune al calendario**: si el Ejecutante se ausenta días, semanas o meses, al volver retoma exactamente donde lo dejó. Al sistema no le importa qué día de la semana es; solo responde a "¿Qué toca entrenar ahora?".
+2. **Consulta de la prescripción.** El Ejecutante revisa los ejercicios del Plan de Entrenamiento correspondientes a la rutina-versión asignada, junto con las cargas objetivo derivadas de su último registro para cada ejercicio.
+3. **Ejecución del entrenamiento.** El Ejecutante realiza los ejercicios prescritos **en el orden que decida** según la disponibilidad de equipo y las circunstancias del gimnasio, respetando las series y el rango de repeticiones definidos en su plan (o la condición especial: fallo técnico, isométrico en segundos). Si el Ejecutante ha dispuesto un orden sugerido en su plan, este es orientativo y no restringe su libertad. Los ejercicios de tipo "Cuerpo" (sin requisito de equipamiento) pueden ejecutarse fuera del gimnasio como parte de la misma sesión.
+4. **Sustitución puntual (si aplica).** Si un ejercicio prescrito no puede ejecutarse (equipo ocupado, en mantenimiento, o genera dolor articular), el Ejecutante puede sustituirlo por otro ejercicio de la misma zona muscular disponible en el Diccionario (CA-22). La sustitución no modifica el Plan original; el sistema registra el ejercicio que realmente se ejecutó.
+5. **Registro de datos por serie.** Al finalizar cada serie, el Ejecutante registra: Peso utilizado (Kg), Repeticiones logradas y RIR percibido. El sistema asocia automáticamente estos datos con la Fecha, la Rutina, la Versión, el Ejercicio (ejecutado, incluyendo sustituciones) y el Número de Serie.
 6. **Cierre de sesión.** Una vez completados todos los ejercicios, la sesión queda registrada como una unidad completa. El sistema puede ahora calcular métricas derivadas (tonelaje de sesión, promedios de RIR, etc.).
 
 #### Flujo 2: Análisis y Cálculo de Progresión
@@ -211,7 +212,7 @@ Este es el flujo principal y más frecuente del sistema. Ocurre cada vez que el 
 Este flujo se ejecuta después de cada sesión registrada o bajo demanda del Ejecutante. Transforma los datos crudos en información accionable.
 
 1. **Agregación de datos.** El sistema agrupa los logs por ejercicio y calcula: promedio de peso por serie, promedio de repeticiones, promedio de RIR, y tonelaje total del ejercicio en la sesión.
-2. **Comparación histórica.** Para cada ejercicio, el sistema compara los datos de la sesión actual contra la sesión anterior del mismo ejercicio (mismo módulo y misma versión). Evalúa: ¿subió el peso? ¿Subieron las repeticiones? ¿Bajó el RIR (más esfuerzo)?
+2. **Comparación histórica.** Para cada ejercicio, el sistema compara los datos de la sesión actual contra la sesión anterior del mismo ejercicio (independientemente de la rutina y versión en que se ejecutó). Evalúa: ¿subió el peso? ¿Subieron las repeticiones? ¿Bajó el RIR (más esfuerzo)?
 3. **Clasificación del resultado.** Cada ejercicio en la sesión recibe una clasificación de progresión:
    - **Progresión positiva:** Aumentó carga y/o repeticiones manteniendo RIR estable o mejorando.
    - **Mantenimiento:** Misma carga y repeticiones, RIR estable. No hay retroceso pero tampoco avance.
@@ -223,7 +224,7 @@ Este flujo se ejecuta después de cada sesión registrada o bajo demanda del Eje
 Este flujo opera a una escala temporal mayor (semanas). Supervisa la tendencia acumulada y decide cuándo intervenir a nivel macro.
 
 1. **Monitoreo de tendencia.** El sistema evalúa la trayectoria de progresión de cada grupo muscular a lo largo de las últimas 4-6 semanas (o el equivalente en microciclos completados).
-2. **Detección de señales de fatiga acumulada.** Si múltiples ejercicios de un mismo módulo muestran regresión o estancamiento simultáneo, y el RIR promedio del módulo ha subido (menos reserva) sin que la carga haya aumentado, el sistema interpreta esto como fatiga del SNC.
+2. **Detección de señales de fatiga acumulada.** Si múltiples ejercicios de una misma rutina muestran regresión o estancamiento simultáneo, y el RIR promedio de la rutina ha subido (menos reserva) sin que la carga haya aumentado, el sistema interpreta esto como fatiga del SNC.
 3. **Prescripción de descarga.** El sistema recomienda una semana de descarga: reducción del volumen (menos series) o de la intensidad (menos carga) manteniendo la frecuencia y los ejercicios.
 4. **Reinicio post-descarga.** Tras la semana de descarga, el sistema establece las cargas de reinicio basadas en el último registro pre-descarga y la tasa de recuperación esperada. Se inicia un nuevo mesociclo.
 
@@ -231,15 +232,15 @@ Este flujo opera a una escala temporal mayor (semanas). Supervisa la tendencia a
 
 Este flujo se activa cuando un ejercicio específico no muestra progresión durante un período prolongado.
 
-1. **Identificación de meseta.** El sistema marca un ejercicio como "en meseta" cuando no ha habido progresión positiva en las últimas 3 sesiones consecutivas del mismo ejercicio (mismo módulo, misma versión).
+1. **Identificación de meseta.** El sistema marca un ejercicio como "en meseta" cuando no ha habido progresión positiva en las últimas 3 sesiones consecutivas del mismo ejercicio (independientemente de la rutina y versión en que se ejecutó).
 2. **Análisis causal.** El sistema evalúa posibles causas a partir de los datos:
-   - ¿El RIR está consistentemente bajo (0-1)? → El ejecutante ya está cerca del límite con esa carga.
-   - ¿El RIR es alto (3+) pero no sube carga? → Posible problema de registro o autoconfianza, no de capacidad.
+   - ¿El RIR está consistentemente bajo (0)? → El ejecutante ya está cerca del límite con esa carga.
+   - ¿El RIR es alto (>1.8) pero no sube carga? → Posible problema de registro o autoconfianza, no de capacidad.
    - ¿Otros ejercicios del mismo grupo muscular también están estancados? → Posible fatiga sistémica del grupo.
 3. **Recomendación de acción correctiva.** Según el análisis:
    - Microincremento de carga (subir el mínimo posible).
-   - Extensión del rango de repeticiones (buscar llegar a 12 antes de subir carga).
-   - Rotar a otra versión del módulo para cambiar el estímulo.
+   - Extensión del rango de repeticiones (buscar llegar al límite superior antes de subir carga).
+   - Rotar a otra versión de la rutina para cambiar el estímulo.
    - Considerar descarga si la meseta es generalizada.
 
 ### B. Eventos de Negocio
@@ -249,13 +250,13 @@ Los siguientes sucesos disparan una acción dentro del sistema:
 | **Evento** | **Disparador** | **Acción del Sistema** |
 | --- | --- | --- |
 | Sesión completada | El Ejecutante registra la última serie del último ejercicio de la sesión | Calcular métricas derivadas, ejecutar análisis de progresión, actualizar posición en rotación cíclica |
-| Ejercicio sustituido | Un ejercicio prescrito no puede ejecutarse y el Ejecutante selecciona un sustituto del mismo módulo | Registrar la sustitución como puntual, vincular los datos al ejercicio sustituto, no alterar el Plan original |
+| Ejercicio sustituido | Un ejercicio prescrito no puede ejecutarse y el Ejecutante selecciona un sustituto de la misma zona muscular del Diccionario | Registrar la sustitución como puntual, vincular los datos al ejercicio sustituto, no alterar el Plan original |
 | Progresión detectada | Un ejercicio muestra aumento de carga o reps con RIR estable vs. sesión anterior | Registrar progresión positiva, actualizar carga objetivo para próxima sesión |
 | Meseta detectada | 3 sesiones consecutivas sin progresión en un mismo ejercicio | Emitir alerta de estancamiento con análisis causal y recomendación |
-| Fatiga acumulada detectada | Regresión o estancamiento simultáneo en ≥50% de ejercicios de un módulo | Recomendar semana de descarga |
+| Fatiga acumulada detectada | Regresión o estancamiento simultáneo en ≥50% de ejercicios de una rutina | Recomendar semana de descarga |
 | Descarga completada | El Ejecutante completa una semana con volumen/intensidad reducidos | Calcular cargas de reinicio, iniciar nuevo mesociclo |
-| Microciclo completado | Se ejecutan los 6 módulos de la rotación (A-B-C-A-B-C) | Actualizar conteo de microciclos, recalcular volumen semanal por grupo muscular |
-| Versión agotada | Todas las versiones de un módulo se han ejecutado en el microciclo | Reiniciar la secuencia de versiones (V1 → V2 → V3 → V1...) |
+| Microciclo completado | Se ejecutan todas las rutinas del Ejecutante (una pasada completa) | Actualizar conteo de microciclos, recalcular volumen semanal por grupo muscular |
+| Versión agotada | Todas las versiones de una rutina se han ejecutado en el microciclo | Reiniciar la secuencia de versiones |
 
 ### C. Estados de las Entidades
 
@@ -267,7 +268,7 @@ Los siguientes sucesos disparan una acción dentro del sistema:
               [Incompleta]
 ```
 
-- **Pendiente:** El sistema ha determinado qué módulo y versión corresponde, pero el Ejecutante aún no ha iniciado.
+- **Pendiente:** El sistema ha determinado qué rutina y versión corresponde, pero el Ejecutante aún no ha iniciado.
 - **En Progreso:** El Ejecutante ha comenzado a registrar series pero no ha completado todos los ejercicios.
 - **Completada:** Todas las series de todos los ejercicios de la sesión han sido registradas (incluyendo ejercicios que fueron sustituidos puntualmente).
 - **Incompleta:** El Ejecutante registró algunos ejercicios pero no completó la sesión (interrupción, lesión, falta de tiempo). El sistema conserva los datos parciales.
@@ -279,8 +280,8 @@ Los siguientes sucesos disparan una acción dentro del sistema:
 ```
 
 - **No Iniciado:** El ejercicio está prescrito pero aún no se ha registrado ninguna serie.
-- **En Ejecución:** Al menos una serie registrada pero faltan series.
-- **Completado:** Las 4 series han sido registradas.
+- **En Ejecución:** Al menos una serie registrada pero el ejercicio no ha sido finalizado.
+- **Completado:** El ejercicio fue finalizado (explícitamente por el ejecutante o automáticamente al cerrar la sesión). Se pueden registrar series extra antes de finalizar.
 
 #### Ciclo de vida de la Progresión de un Ejercicio (a lo largo del tiempo)
 
@@ -303,18 +304,18 @@ Los siguientes sucesos disparan una acción dentro del sistema:
 
 Un ejercicio está listo para incrementar carga cuando se cumplen **ambas** condiciones simultáneamente en la sesión más reciente:
 
-1. El Ejecutante alcanzó el **límite superior del rango de repeticiones** (12 reps) en al menos 3 de las 4 series.
-2. El RIR promedio de las 4 series fue **≥ 2** (es decir, aún tenía reserva; no estaba al fallo).
+1. El Ejecutante alcanzó el **límite superior del rango de repeticiones** (12 reps) en al menos 3 de las series prescritas.
+2. El RIR promedio de las series registradas fue **≥ 2** (es decir, aún tenía reserva; no estaba al fallo).
 
-**Acción:** El sistema prescribe un incremento mínimo de carga para la próxima sesión (típicamente 2.5 Kg en ejercicios de tren superior, 5 Kg en tren inferior) y reestablece el objetivo de repeticiones al límite inferior del rango (8 reps).
+**Acción:** El sistema prescribe un incremento mínimo de carga para la próxima sesión, derivado de la zona muscular del ejercicio: +2.5 Kg para ejercicios de tren superior, +5 Kg para ejercicios de tren inferior, y reestablece el objetivo de repeticiones al límite inferior del rango.
 
 **Fórmula:**
 
 $$
-\text{Si } (Reps_{serie} \geq 12 \text{ en } \geq 3 \text{ de 4 series}) \land (\overline{RIR} \geq 2) \Rightarrow Peso_{siguiente} = Peso_{actual} + \Delta_{min}
+\text{Si } (Reps_{serie} \geq 12 \text{ en } \geq 3 \text{ de las series prescritas}) \land (\overline{RIR} \geq 2) \Rightarrow Peso_{siguiente} = Peso_{actual} + \Delta_{min}
 $$
 
-Donde $\Delta_{min}$ = 2.5 Kg (Módulos A y B) o 5 Kg (Módulo C).
+Donde $\Delta_{min}$ = 2.5 Kg (ejercicios de tren superior) o 5 Kg (ejercicios de tren inferior), derivado automáticamente de la zona muscular del ejercicio.
 
 #### Regla 2: Mantenimiento de Carga
 
@@ -324,13 +325,13 @@ Si el Ejecutante **no** cumple las condiciones de la Regla 1, la carga se mantie
 
 #### Regla 3: Detección de Meseta
 
-Un ejercicio entra en estado de **Meseta** cuando no se ha producido progresión positiva (ni en carga ni en repeticiones) durante **3 sesiones consecutivas** del mismo ejercicio en la misma versión del módulo.
+Un ejercicio entra en estado de **Meseta** cuando no se ha producido progresión positiva (ni en carga ni en repeticiones) durante **3 sesiones consecutivas** del mismo ejercicio en la misma versión de la rutina.
 
 **Acción escalonada:**
 
 1. **Primera intervención (sesión 4):** El sistema recomienda verificar la técnica de ejecución y aplicar un microincremento de carga (1.25 Kg si está disponible, o añadir 1 rep por serie).
-2. **Segunda intervención (sesión 6 sin progreso):** El sistema recomienda rotar a otra versión del módulo para cambiar el patrón de estímulo.
-3. **Tercera intervención (meseta generalizada en ≥50% del módulo):** El sistema recomienda una semana de descarga (ver Regla 5).
+2. **Segunda intervención (sesión 6 sin progreso):** El sistema recomienda rotar a otra versión de la rutina para cambiar el patrón de estímulo.
+3. **Tercera intervención (meseta generalizada en ≥50% de la rutina):** El sistema recomienda una semana de descarga (ver Regla 5).
 
 #### Regla 4: Detección de Regresión y Fatiga Acumulada
 
@@ -339,12 +340,12 @@ Se identifica **regresión** cuando en una sesión, comparada con la anterior de
 - El peso utilizado es igual pero las repeticiones caen en **≥ 2 series**, o
 - El RIR promedio sube en **≥ 1.5 puntos** con la misma carga y repeticiones similares.
 
-Se identifica **fatiga acumulada del módulo** cuando se detecta regresión simultánea en **≥ 50% de los ejercicios** de una sesión.
+Se identifica **fatiga acumulada de la rutina** cuando se detecta regresión simultánea en **≥ 50% de los ejercicios** de una sesión.
 
 **Acción:**
 
 - Regresión aislada (1-2 ejercicios): El sistema registra la señal pero no interviene. Puede deberse a factores externos (mal sueño, estrés).
-- Fatiga acumulada del módulo: El sistema recomienda una semana de descarga.
+- Fatiga acumulada de la rutina: El sistema recomienda una semana de descarga.
 
 #### Regla 5: Protocolo de Descarga (Deload)
 
@@ -353,10 +354,10 @@ Cuando el sistema prescribe una descarga, los parámetros son:
 | **Variable** | **Ajuste durante descarga** |
 | --- | --- |
 | Carga (Peso) | Reducir al **60%** de la carga de trabajo habitual |
-| Series | Mantener 4 series (no reducir) |
+| Series | Mantener series prescritas (no reducir) |
 | Repeticiones | Trabajar en el límite inferior del rango (8 reps) sin forzar |
-| RIR objetivo | **4-5** (esfuerzo muy submáximo) |
-| Duración | 1 microciclo completo (A-B-C-A-B-C) |
+| RIR objetivo | **2** (esfuerzo con reserva moderada) |
+| Duración | 1 microciclo completo (una pasada por todas las rutinas del Ejecutante) |
 | Ejercicios | Mantener los mismos del plan. No cambiar versión durante la descarga |
 
 **Post-descarga:** La carga de reinicio es el **90%** de la última carga de trabajo pre-descarga. Se espera que el Ejecutante recupere y supere esa carga en 1-2 sesiones gracias a la supercompensación.
@@ -365,7 +366,7 @@ Cuando el sistema prescribe una descarga, los parámetros son:
 
 Para ejercicios donde la carga es el propio peso del Ejecutante (Flexiones, Sentadilla a cuerpo libre, Abdominales, Escalador, Giro Ruso, Plancha, Plancha Lateral), la sobrecarga progresiva se mide exclusivamente por **repeticiones logradas** (o tiempo sostenido en isométricos).
 
-**Condición de progresión:** Se registra progresión positiva cuando el Ejecutante supera su marca anterior en repeticiones totales (suma de las 4 series) o tiempo total sostenido.
+**Condición de progresión:** Se registra progresión positiva cuando el Ejecutante supera su marca anterior en repeticiones totales (suma de las series registradas) o tiempo total sostenido.
 
 **No aplica la Regla 1** (doble umbral de carga) ya que $\Delta_{min} = 0$. En su lugar, el sistema monitorea la tendencia de repeticiones totales a lo largo del tiempo.
 
@@ -374,25 +375,26 @@ Para ejercicios donde la carga es el propio peso del Ejecutante (Flexiones, Sent
 Para ejercicios medidos en tiempo (Plancha, Plancha Lateral), la progresión se mide en **segundos sostenidos** con técnica correcta.
 
 - **Rango prescrito:** 30-45 segundos.
-- **Condición de progresión:** 4 de 4 series alcanzaron ≥ 45 segundos → el ejercicio se considera dominado en la versión actual.
+- **Condición de progresión:** Todas las series prescritas alcanzaron ≥ 45 segundos → el ejercicio se considera dominado en la versión actual.
 - **Acción post-dominio:** El sistema registra que el ejercicio ya no ofrece estímulo progresivo suficiente. Se recomienda al Ejecutante considerar una variante con carga (ej: plancha con peso en la espalda) como futura adición al Diccionario de Ejercicios.
 
 ### B. Restricciones de Integridad
 
 Estas restricciones son **inviolables**. Si se violan, los datos pierden validez y las decisiones del sistema se corrompen.
 
-1. **Todo registro debe pertenecer a una sesión válida.** No puede existir un log sin Fecha, Módulo, Versión y Ejercicio asociados.
-2. **El ejercicio registrado debe existir en el Diccionario de Ejercicios** (ya sea precargado o creado por el ejecutante) y pertenecer al módulo de la sesión. No se puede registrar un ejercicio del Módulo A en una sesión del Módulo B.
-3. **El ejercicio registrado debe pertenecer al módulo de la sesión**, ya sea porque está prescrito en la versión asignada o porque fue seleccionado como **sustitución puntual** desde otra versión del mismo módulo. La sustitución no modifica el Plan de Entrenamiento original; solo afecta la sesión en curso.
+1. **Todo registro debe pertenecer a una sesión válida.** No puede existir un log sin Fecha, Rutina, Versión y Ejercicio asociados.
+2. **El ejercicio registrado debe existir en el Diccionario de Ejercicios** (ya sea precargado o creado por el ejecutante) y estar asignado a la rutina de la sesión en el plan del Ejecutante. No se puede registrar un ejercicio en una sesión de una rutina a la que no ha sido asignado.
+3. **El ejercicio registrado debe pertenecer a la rutina de la sesión o ser un sustituto válido**, ya sea porque está prescrito en la versión asignada o porque fue seleccionado como **sustitución puntual** filtrado por zona muscular del ejercicio sustituido (CA-22). La sustitución no modifica el Plan de Entrenamiento original; solo afecta la sesión en curso.
 4. **Cada serie se registra exactamente una vez.** No se permiten duplicados (mismo ejercicio, misma serie, misma sesión) ni registros retroactivos que alteren sesiones pasadas.
-5. **El número de serie es secuencial (1, 2, 3, 4)** y no puede exceder el máximo prescrito (4 series).
+5. **El número de serie es secuencial** y el ejercicio se finaliza explícitamente por el ejecutante o automáticamente al cerrar la sesión. Se permite registrar series extra antes de finalizar.
 6. **El peso debe ser ≥ 0 Kg.** El valor 0 es válido exclusivamente para ejercicios de peso corporal.
 7. **Las repeticiones deben ser ≥ 1** (o ≥ 1 segundo para isométricos). Un registro con 0 repeticiones no es válido; si el Ejecutante no pudo completar ninguna repetición, la serie no se registra.
-8. **El RIR debe estar en el rango [0, 5].** Valores fuera de este rango no son válidos.
-9. **La secuencia de rotación cíclica debe respetarse y es persistente.** El módulo de la sesión N+1 debe ser el sucesor del módulo de la sesión N en la rotación (A→B, B→C, C→A). La única excepción es la primera sesión del sistema, que puede iniciar en cualquier módulo. La posición en la rotación se almacena indefinidamente y **no se reinicia por ausencia**: si el Ejecutante se va de vacaciones 2 semanas, al volver retoma exactamente en el módulo que seguía. El sistema es **agnóstico al calendario** — no le importa si hoy es lunes o sábado, solo responde a la pregunta "¿Qué módulo toca ahora?".
-10. **La secuencia de versiones dentro de un módulo debe respetarse.** Si el módulo A se ejecutó en V1, la siguiente ejecución del módulo A debe ser V2 (o V1 si solo tiene una versión). La rotación es circular: V1→V2→V3→V1. Al igual que la rotación de módulos, esta posición es persistente e inmune a ausencias.
-11. **El orden de ejecución de ejercicios dentro de una sesión es libre.** El Plan de Entrenamiento lista los ejercicios de cada versión en un *Orden Sugerido de Ejecución* basado en priorización biomecánica, pero **no prescribe una secuencia obligatoria**. El Ejecutante decide en qué orden ejecutarlos según la disponibilidad de estaciones en el gimnasio y sus circunstancias. El orden sugerido es informativo y coexiste plenamente con esta restricción: seguir la sugerencia maximiza la calidad del estímulo, pero alterarla no invalida datos ni corrompe cálculos. Esta flexibilidad no afecta la validez de los datos ni las decisiones del sistema.
-12. **Las sustituciones puntuales no alteran el Plan de Entrenamiento.** Cuando el Ejecutante sustituye un ejercicio por indisponibilidad de equipo o dolor articular, el plan original permanece intacto para futuras sesiones. La sustitución solo se refleja en el registro de la sesión donde ocurrió. El ejercicio sustituto debe pertenecer al mismo módulo (puede ser de cualquier versión).
+8. **El RIR debe estar en el rango [0, 2].** Valores fuera de este rango no son válidos.
+9. **La secuencia de rotación cíclica debe respetarse y es persistente.** La rutina de la sesión N+1 debe ser la sucesora de la rutina de la sesión N en la secuencia de rotación definida por el Ejecutante. La única excepción es la primera sesión del sistema, que puede iniciar en cualquier rutina. La posición en la rotación se almacena indefinidamente y **no se reinicia por ausencia**: si el Ejecutante se va de vacaciones 2 semanas, al volver retoma exactamente en la rutina que seguía. El sistema es **agnóstico al calendario** — no le importa si hoy es lunes o sábado, solo responde a la pregunta "¿Qué rutina toca ahora?".
+10. **La secuencia de versiones dentro de una rutina debe respetarse.** Si una rutina se ejecutó en V1, la siguiente ejecución de esa rutina debe ser V2 (o V1 si solo tiene una versión). La rotación es circular. Al igual que la rotación de rutinas, esta posición es persistente e inmune a ausencias.
+11. **El orden de ejecución de ejercicios dentro de una sesión es libre.** Si el Ejecutante ha dispuesto un orden sugerido en su plan, este es orientativo y **no prescribe una secuencia obligatoria**. El Ejecutante decide en qué orden ejecutarlos según la disponibilidad de estaciones en el gimnasio y sus circunstancias. Esta flexibilidad no afecta la validez de los datos ni las decisiones del sistema.
+12. **Las sustituciones puntuales no alteran el Plan de Entrenamiento.** Cuando el Ejecutante sustituye un ejercicio por indisponibilidad de equipo o dolor articular, el plan original permanece intacto para futuras sesiones. La sustitución solo se refleja en el registro de la sesión donde ocurrió. El ejercicio sustituto debe pertenecer a la misma zona muscular del ejercicio sustituido.
+13. **Las alternativas por puesto son equivalentes e intercambiables dentro de su slot.** Cuando un puesto (slot) del plan tiene múltiples ejercicios definidos como alternativas, el Ejecutante elige cuál realizar al inicio de cada sesión. Esta elección no altera el plan ni genera un historial de sustitución — es simplemente la realización de una de las opciones equivalentes prescritas. Las alternativas heredan automáticamente el número de series y repeticiones del slot.
 
 ### C. Políticas Operativas
 
@@ -431,7 +433,7 @@ $$
 **Definición:** Suma total del tonelaje ($Peso \times Reps \times Series$) de todos los ejercicios que trabajan un grupo muscular específico, medido por microciclo.
 
 $$
-\text{Tonelaje GM}_i = \sum_{j \in \text{ejercicios del grupo } i} \sum_{k=1}^{4} Peso_{j,k} \times Reps_{j,k}
+\text{Tonelaje GM}_i = \sum_{j \in \text{ejercicios del grupo } i} \sum_{k=1}^{n_j} Peso_{j,k} \times Reps_{j,k}
 $$
 
 **Interpretación:**
@@ -442,23 +444,23 @@ $$
 
 **Periodicidad de evaluación:** Cada microciclo completado.
 
-#### KPI 3: RIR Promedio por Módulo
+#### KPI 3: RIR Promedio por Rutina
 
-**Definición:** El promedio aritmético de todos los valores de RIR registrados en todas las series de todas las sesiones de un módulo durante un período dado.
+**Definición:** El promedio aritmético de todos los valores de RIR registrados en todas las series de todas las sesiones de una rutina durante un período dado.
 
 $$
-\overline{RIR}_{\text{módulo}} = \frac{\sum_{i=1}^{n} RIR_i}{n}
+\overline{RIR}_{\text{rutina}} = \frac{\sum_{i=1}^{n} RIR_i}{n}
 $$
 
-Donde $n$ es el número total de series registradas en el módulo durante el período.
+Donde $n$ es el número total de series registradas en la rutina durante el período.
 
 **Interpretación:**
 
-- **RIR promedio 2-3:** Zona óptima. El Ejecutante trabaja lo suficientemente cerca del fallo para generar estímulo, con suficiente reserva para mantener técnica y seguridad.
-- **RIR promedio < 1.5:** El Ejecutante está entrenando demasiado cerca del fallo de forma sostenida. Riesgo alto de fatiga acumulada del SNC. Considerar descarga.
-- **RIR promedio > 3.5:** El Ejecutante no está generando suficiente estímulo. Puede indicar que las cargas son demasiado conservadoras o que el RIR se está sobreestimando.
+- **RIR promedio 1:** Zona óptima. El Ejecutante trabaja lo suficientemente cerca del fallo para generar estímulo, con suficiente reserva para mantener técnica y seguridad.
+- **RIR promedio < 0.5:** El Ejecutante está entrenando demasiado cerca del fallo de forma sostenida. Riesgo alto de fatiga acumulada del SNC. Considerar descarga.
+- **RIR promedio > 1.8:** El Ejecutante no está generando suficiente estímulo. Puede indicar que las cargas son demasiado conservadoras o que el RIR se está sobreestimando.
 
-**Periodicidad de evaluación:** Cada 2 semanas o cada 2 ejecuciones del mismo módulo.
+**Periodicidad de evaluación:** Cada 2 semanas o cada 2 ejecuciones de la misma rutina.
 
 #### KPI 4: Índice de Adherencia
 
@@ -495,16 +497,16 @@ $$
 
 #### KPI 6: Distribución de Volumen por Zona Muscular
 
-**Definición:** El porcentaje del volumen total (series efectivas) que cada zona muscular recibe respecto al volumen total del módulo, medido por microciclo.
+**Definición:** El porcentaje del volumen total (series efectivas) que cada zona muscular recibe respecto al volumen total de la rutina, medido por microciclo.
 
 $$
-\text{Distribución ZM}_i = \frac{\text{Series totales de la zona } i}{\text{Series totales del módulo}} \times 100
+\text{Distribución ZM}_i = \frac{\text{Series totales de la zona } i}{\text{Series totales de la rutina}} \times 100
 $$
 
 **Interpretación:**
 
-- Permite detectar desbalances: si el Dorsal Ancho recibe el 60% del volumen del Módulo A pero la Espalda Media solo el 15%, hay una asimetría que puede limitar el desarrollo estético del ejecutante.
-- El sistema no prescribe distribuciones ideales (varían por anatomía individual), pero sí visualiza la distribución real para que el Ejecutante tome decisiones informadas sobre qué versión priorizar.
+- Permite detectar desbalances: si una zona muscular recibe una proporción desmedida del volumen de la rutina mientras otra queda subrepresentada, hay una asimetría que puede limitar el desarrollo del ejecutante.
+- El sistema no prescribe distribuciones ideales (varían por anatomía individual), pero sí visualiza la distribución real para que el Ejecutante tome decisiones informadas sobre cómo ajustar su plan.
 
 **Periodicidad de evaluación:** Cada microciclo completado.
 
@@ -515,8 +517,8 @@ Los siguientes umbrales definen cuándo el sistema considera que algo requiere a
 | **Indicador** | **Umbral de Alerta** | **Umbral de Crisis** | **Acción** |
 | --- | --- | --- | --- |
 | Tasa de Progresión por Ejercicio | < 40% en 4 semanas | < 20% en 4 semanas | Alerta → Intervención escalonada (Regla 3) |
-| RIR Promedio por Módulo | < 1.5 sostenido 2+ sesiones | < 1.0 sostenido 2+ sesiones | Alerta → Prescribir descarga (Regla 5) |
-| RIR Promedio por Módulo | > 3.5 sostenido 2+ sesiones | > 4.0 sostenido 2+ sesiones | Alerta → Recomendar incremento de carga |
+| RIR Promedio por Rutina | < 0.5 sostenido 2+ sesiones | < 0.3 sostenido 2+ sesiones | Alerta → Prescribir descarga (Regla 5) |
+| RIR Promedio por Rutina | > 1.8 sostenido 2+ sesiones | > 2.0 sostenido 2+ sesiones | Alerta → Recomendar incremento de carga |
 | Adherencia Semanal | < 60% en 1 semana | < 60% en 2+ semanas consecutivas | Alerta informativa → Evaluar si los datos son confiables |
 | Tonelaje por Grupo Muscular | Caída > 10% vs. microciclo anterior | Caída > 20% vs. microciclo anterior | Alerta → Verificar si fue descarga planificada o regresión |
-| Sesiones sin registrar un módulo | > 10 días naturales sin ejecutar un módulo | > 14 días naturales | Alerta → El grupo muscular pierde adaptaciones. Recomendar priorizar ese módulo |
+| Sesiones sin registrar una rutina | > 10 días naturales sin ejecutar una rutina | > 14 días naturales | Alerta → Los grupos musculares de esa rutina pierden adaptaciones. Recomendar priorizar esa rutina |

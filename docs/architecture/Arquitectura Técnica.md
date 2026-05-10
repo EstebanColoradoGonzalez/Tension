@@ -44,7 +44,7 @@
 
 | Librería | Rol | RNF |
 |----------|-----|-----|
-| Room Runtime | ORM sobre SQLite. Mapea las 16 entidades del Modelo de Datos a `@Entity`, `@Dao`, `@Database` | RNF35 |
+| Room Runtime | ORM sobre SQLite. Mapea las 18 entidades del Modelo de Datos a `@Entity`, `@Dao`, `@Database` | RNF35 |
 | Room KTX | Extensiones de coroutines para Room: queries suspendidas y `Flow<T>` reactivo | RNF35 |
 | Room Compiler (KSP) | Procesador de anotaciones en tiempo de compilación. Genera implementaciones de DAOs y la base de datos | RNF35 |
 
@@ -160,7 +160,7 @@ graph LR
 | Aspecto | Detalle |
 |---------|---------|
 | Tecnología | Jetpack Compose + Material 3 |
-| Composición | Cada vista del Mapa de Navegación (26 vistas: A1, B1, C1, etc.) es una función `@Composable` de nivel Screen |
+| Composición | Cada vista del Mapa de Navegación (27 vistas: A1, B1, C1, etc.) es una función `@Composable` de nivel Screen |
 | Estado | Recibe `UiState` como parámetro inmutable desde el ViewModel. No mantiene estado de negocio propio |
 | Acciones | Delega las interacciones del usuario al ViewModel mediante lambdas o llamadas a funciones del ViewModel |
 | Navegación | Gestionada por el `NavHost` central. Los Screens no navegan directamente — invocan callbacks que el nivel de navegación resuelve |
@@ -213,10 +213,10 @@ graph LR
 |---------|---------|
 | Repository | Cada Repository encapsula uno o más DAOs relacionados y expone operaciones de dominio. La interfaz se define en Domain; la implementación vive en Data. Esto invierte la dependencia: Domain no conoce Room |
 | DAO | Interfaces `@Dao` de Room. Una por entidad o por grupo de entidades estrechamente relacionadas. Métodos suspendidos para escritura, `Flow<T>` para consultas reactivas |
-| Entity | Data classes con `@Entity` que mapean 1:1 las 16 tablas del Modelo de Datos. Incluyen `@PrimaryKey`, `@ForeignKey`, `@ColumnInfo`, `@Index` |
+| Entity | Data classes con `@Entity` que mapean 1:1 las 18 tablas del Modelo de Datos. Incluyen `@PrimaryKey`, `@ForeignKey`, `@ColumnInfo`, `@Index` |
 | TypeConverters | Conversores para tipos no nativos de SQLite (ej: `String` ↔ `LocalDate` para fechas ISO 8601) |
-| Seed Data | Prepopulación mediante `RoomDatabase.Callback.onCreate()`. Patrón Facade que delega en servicios temáticos (módulos, ejercicios, zonas musculares, plan de asignación) |
-| AppDatabase | Singleton provisto por Hilt (`@Singleton`). Declara las 16 entidades, los TypeConverters y expone los DAOs |
+| Seed Data | Prepopulación mediante `RoomDatabase.Callback.onCreate()`. Patrón Facade que delega en servicios temáticos (ejercicios, zonas musculares, tipos de equipo) |
+| AppDatabase | Singleton provisto por Hilt (`@Singleton`). Declara las 18 entidades, los TypeConverters y expone los DAOs |
 
 **Patrón Repository — inversión de dependencia:**
 
@@ -297,7 +297,7 @@ com.estebancoloradogonzalez.tension/
 │   ├── metrics/                             ← Flujo G — Métricas y KPIs (G1, G2, G3)
 │   ├── alerts/                              ← Flujo H — Alertas (H1, H2)
 │   ├── deload/                              ← Flujo I — Gestión de Descarga (I1)
-│   └── settings/                            ← Flujo J — Configuración y Respaldo (J1, J2, J3)
+│   └── settings/                            ← Flujo J — Ajustes y Respaldo (J1, J2, J3)
 │
 ├── domain/                                  ← Domain Layer (Kotlin puro — sin Android)
 │   ├── model/                               ← Enums y modelos de dominio (no son entities de Room)
@@ -309,12 +309,12 @@ com.estebancoloradogonzalez.tension/
 │   ├── local/
 │   │   ├── database/                        ← TensionDatabase, TypeConverters
 │   │   ├── dao/                             ← DAOs de Room (interfaces @Dao)
-│   │   ├── entity/                          ← Entities de Room (16 entidades del Modelo de Datos)
+│   │   ├── entity/                          ← Entities de Room (18 entidades del Modelo de Datos)
 │   │   ├── seed/                            ← Seed data (PrepopulateCallback, PrepopulateFacade, Seeders)
 │   │   └── storage/                         ← ImageStorageHelper (copia/eliminación de imágenes en almacenamiento interno)
 │   └── repository/                          ← Implementaciones concretas de las interfaces de Repository
 │
-└── di/                                      ← Módulos Hilt de Inyección de Dependencias
+└── di/                                      ← Rutinas Hilt de Inyección de Dependencias
 ```
 
 Cada paquete de feature dentro de `ui/` contiene sus Screens (`@Composable`) y ViewModels (`@HiltViewModel`). Las clases concretas, su cantidad y granularidad se definen en el refinamiento de cada historia de usuario.
@@ -326,15 +326,15 @@ Cada paquete de feature dentro de `ui/` contiene sus Screens (`@Composable`) y V
 | A — Onboarding | A1 | `ui.onboarding` |
 | B — Inicio | B1 | `ui.home` |
 | C — Perfil | C1, C2 | `ui.profile` |
-| D — Catálogo | D1, D2, D3, D4, D5 | `ui.catalog` |
+| D — Catálogo | D1, D2, D3, D4, D5, D6 | `ui.catalog` |
 | E — Sesión Activa | E1, E2, E3, E4, E5 | `ui.session` |
 | F — Historial | F1, F2, F3 | `ui.history` |
 | G — Métricas | G1, G2, G3 | `ui.metrics` |
 | H — Alertas | H1, H2 | `ui.alerts` |
 | I — Descarga | I1 | `ui.deload` |
-| J — Configuración | J1, J2, J3 | `ui.settings` |
+| J — Ajustes | J1, J2, J3 | `ui.settings` |
 
-**Total:** 26 Screens distribuidos en 10 paquetes de feature + 3 paquetes transversales (`navigation`, `components`, `theme`).
+**Total:** 27 Screens distribuidos en 10 paquetes de feature + 3 paquetes transversales (`navigation`, `components`, `theme`).
 
 ---
 
@@ -342,7 +342,7 @@ Cada paquete de feature dentro de `ui/` contiene sus Screens (`@Composable`) y V
 
 ### 4.1. Patrón Single Activity
 
-La aplicación tiene una única `Activity` (`MainActivity`) que actúa como contenedor. Dentro de ella, `setContent` monta el árbol Compose con el tema, la estructura de Scaffold (Top Bar + Bottom Nav + contenido) y el `NavHost` que gestiona todas las transiciones entre las 26 vistas.
+La aplicación tiene una única `Activity` (`MainActivity`) que actúa como contenedor. Dentro de ella, `setContent` monta el árbol Compose con el tema, la estructura de Scaffold (Top Bar + Bottom Nav + contenido) y el `NavHost` que gestiona todas las transiciones entre las 27 vistas.
 
 ```mermaid
 graph TD
@@ -354,7 +354,7 @@ graph TD
         C --> F["BottomNavigationBar (condicional)"]
     end
 
-    E --> G["26 destinos Composable"]
+    E --> G["27 destinos Composable"]
 ```
 
 ### 4.2. Start destination dinámica
@@ -376,7 +376,7 @@ flowchart TD
 
 ### 4.3. Inventario de rutas
 
-Las 26 vistas se organizan en rutas dentro del `NavHost`. Cada ruta tiene un identificador string, los argumentos necesarios y la vista destino.
+Las 27 vistas se organizan en rutas dentro del `NavHost`. Cada ruta tiene un identificador string, los argumentos necesarios y la vista destino.
 
 | # | Vista | Ruta | Argumentos | Paquete UI |
 |---|-------|------|------------|------------|
@@ -387,8 +387,9 @@ Las 26 vistas se organizan en rutas dentro del `NavHost`. Cada ruta tiene un ide
 | 5 | D1 — Diccionario de Ejercicios | `exercise-dictionary` | — | `ui.catalog` |
 | 6 | D2 — Detalle de Ejercicio | `exercise-detail/{exerciseId}` | `exerciseId: Long` | `ui.catalog` |
 | 7 | D3 — Plan de Entrenamiento | `training-plan` | — | `ui.catalog` |
-| 8 | D4 — Detalle de Versión del Plan | `plan-version-detail/{moduleVersionId}` | `moduleVersionId: Long` | `ui.catalog` |
+| 8 | D4 — Detalle de Versión del Plan | `plan-version-detail/{routineVersionId}` | `routineVersionId: Long` | `ui.catalog` |
 | 8b | D5 — Crear Ejercicio | `create-exercise` | — | `ui.catalog` |
+| 8c | D6 — Crear/Editar Rutina | `edit-routine/{routineId?}` | `routineId: Long?` (null = crear) | `ui.catalog` |
 | 9 | E1 — Sesión Activa | `active-session/{sessionId}` | `sessionId: Long` | `ui.session` |
 | 10 | E2 — Registro de Serie | `register-set/{sessionExerciseId}` | `sessionExerciseId: Long` | `ui.session` |
 | 11 | E3 — Selección Sustituto | `substitute-exercise/{sessionExerciseId}` | `sessionExerciseId: Long` | `ui.session` |
@@ -403,7 +404,7 @@ Las 26 vistas se organizan en rutas dentro del `NavHost`. Cada ruta tiene un ide
 | 20 | H1 — Centro de Alertas | `alert-center` | — | `ui.alerts` |
 | 21 | H2 — Detalle de Alerta | `alert-detail/{alertId}` | `alertId: Long` | `ui.alerts` |
 | 22 | I1 — Gestión de Descarga | `deload` | — | `ui.deload` |
-| 23 | J1 — Configuración | `settings` | — | `ui.settings` |
+| 23 | J1 — Ajustes | `settings` | — | `ui.settings` |
 | 24 | J2 — Exportar Respaldo | `export-backup` | — | `ui.settings` |
 | 25 | J3 — Importar Respaldo | `import-backup` | — | `ui.settings` |
 
@@ -439,6 +440,7 @@ graph TD
             D1["exercise-dictionary"] --> D2["exercise-detail/{id}"]
             D1 --> D5["create-exercise"]
             D3["training-plan"] --> D4["plan-version-detail/{id}"]
+            D3 --> D6["edit-routine/{id?}"]
             D4 --> D2b["exercise-detail/{id}"]
         end
 
@@ -486,7 +488,7 @@ El Bottom Navigation conecta las 5 secciones principales de la app. Cada ítem a
 | 2 | Diccionario | `MenuBook` | `exercise-dictionary` (D1) | `catalog-graph` |
 | 3 | Historial | `History` | `session-history` (F1) | `history-graph` |
 | 4 | Métricas | `BarChart` | `metrics` (G1) | `metrics-graph` |
-| 5 | Configuración | `Settings` | `settings` (J1) | `settings-graph` |
+| 5 | Ajustes | `Settings` | `settings` (J1) | `settings-graph` |
 
 #### 4.5.1. Reglas de visibilidad
 
@@ -512,8 +514,8 @@ La Top App Bar varía según el contexto de la pantalla. Las variantes definidas
 | Center Aligned (con retorno) | C1, C2, D2, D4, F2, F3, G2, G3, H1, H2, I1, J2, J3 | Título centrado + ícono `←` a la izquierda |
 | Center Aligned (con cierre) | E2, E3 | Título centrado + ícono `✕` a la izquierda |
 | Sin estilo estándar | A1 | Logo "Tension" centrado + subtítulo. Sin ícono. Sin Bottom Nav |
-| Sesión Activa | E1 | Título izquierda (Módulo — Versión) + subtítulo "Sesión activa" + badge descarga condicional. Sin Bottom Nav |
-| Post-Sesión | E5 | Título centrado + subtítulo módulo/versión. Sin ícono de retorno. Sin Bottom Nav |
+| Sesión Activa | E1 | Título izquierda (Rutina — Versión) + subtítulo "Sesión activa" + badge descarga condicional. Sin Bottom Nav |
+| Post-Sesión | E5 | Título centrado + subtítulo rutina/versión. Sin ícono de retorno. Sin Bottom Nav |
 
 ### 4.7. Vistas reutilizables con contexto de origen
 
@@ -553,7 +555,7 @@ El manejo del retorno se resuelve naturalmente por el back stack de Navigation C
 
 ### 4.9. Diagrama de conexiones de navegación
 
-El Mapa de Navegación documenta **58 conexiones** entre las 26 vistas. El diagrama completo de navegación con estilos por flujo, flechas de avance (sólidas) y retorno (punteadas) se encuentra en la sección 8 del [Mapa de Navegación](Mapa%20de%20Navegación.md). No se duplica aquí para evitar divergencia — este documento define la implementación técnica (rutas, nested graphs, back stack) y aquel define las relaciones funcionales.
+El Mapa de Navegación documenta **58 conexiones** entre las 27 vistas. El diagrama completo de navegación con estilos por flujo, flechas de avance (sólidas) y retorno (punteadas) se encuentra en la sección 8 del [Mapa de Navegación](Mapa%20de%20Navegación.md). No se duplica aquí para evitar divergencia — este documento define la implementación técnica (rutas, nested graphs, back stack) y aquel define las relaciones funcionales.
 
 ---
 
@@ -593,7 +595,7 @@ El Mapa de Navegación documenta **58 conexiones** entre las 26 vistas. El diagr
 | Componente reutilizable | Nombre descriptivo sin sufijo forzado | `ProgressionIndicator`, `RirSelector` |
 | Módulo Hilt | `{Ámbito}Module` | `DatabaseModule`, `RepositoryModule` |
 | Regla del motor | `{Nombre}Rule` | `DoubleThresholdRule`, `PlateauDetectionRule` |
-| Seeder (prepopulación) | `{Entidad}Seeder` | `ExerciseSeeder`, `ModuleSeeder` |
+| Seeder (prepopulación) | `{Entidad}Seeder` | `ExerciseSeeder`, `MuscleZoneSeeder` |
 | TypeConverter | `Converters` (singular por archivo) | `Converters` |
 
 #### Funciones
@@ -604,7 +606,7 @@ El Mapa de Navegación documenta **58 conexiones** entre las 26 vistas. El diagr
 | Composable de componente | `PascalCase` | `ProgressionIndicator()` |
 | Use Case invocable | `operator fun invoke()` | `operator fun invoke(sessionId: Long): Flow<Session>` |
 | Funciones de ViewModel | `camelCase`, verbo en imperativo | `startSession()`, `registerSet()`, `closeSession()` |
-| Funciones de DAO | `camelCase`, prefijo por operación | `insert()`, `getById()`, `getAllByModule()`, `updateStatus()`, `deleteById()` |
+| Funciones de DAO | `camelCase`, prefijo por operación | `insert()`, `getById()`, `getAllByRoutine()`, `updateStatus()`, `deleteById()` |
 | Funciones suspend | Marcadas con `suspend` — no usar sufijo "Async" | `suspend fun getById(id: Long): Entity?` |
 | Callbacks/lambdas en Composables | Prefijo `on` | `onStartSession`, `onRegisterSet`, `onNavigateBack` |
 
@@ -615,8 +617,8 @@ El Mapa de Navegación documenta **58 conexiones** entre las 26 vistas. El diagr
 | StateFlow interno (ViewModel) | Prefijo `_`, tipo `MutableStateFlow` | `private val _uiState = MutableStateFlow(UiState())` |
 | StateFlow expuesto (ViewModel) | Sin prefijo, tipo `StateFlow` | `val uiState: StateFlow<UiState> = _uiState.asStateFlow()` |
 | SharedFlow para eventos | Prefijo `_` interno, tipo `SharedFlow` expuesto | `val events: SharedFlow<Event>` |
-| Argumentos de navegación | camelCase | `exerciseId`, `sessionId`, `moduleVersionId` |
-| Constantes | `SCREAMING_SNAKE_CASE` dentro de `companion object` u `object` | `MAX_SETS = 4`, `RIR_RANGE = 0..5` |
+| Argumentos de navegación | camelCase | `exerciseId`, `sessionId`, `routineVersionId` |
+| Constantes | `SCREAMING_SNAKE_CASE` dentro de `companion object` u `object` | `RIR_RANGE = 0..2` |
 | Parámetros de Composable | camelCase, descriptivos | `exerciseName: String`, `isLoading: Boolean`, `onConfirm: () -> Unit` |
 
 ### 5.3. Estructura de Composables

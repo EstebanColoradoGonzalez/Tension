@@ -147,12 +147,12 @@ class ActionSignalRuleTest {
         )
     }
 
-    // --- Escenario 13: estándar regresión + moduleRequiresDeload ---
+    // --- Escenario 13: estándar regresión + routineRequiresDeload ---
     @Test
-    fun `resolve — standard regression + module requires deload → ConsiderDeload`() {
+    fun `resolve — standard regression + routine requires deload → ConsiderDeload`() {
         val result = resolve(
             classification = ProgressionClassification.REGRESSION,
-            moduleRequiresDeload = true,
+            routineRequiresDeload = true,
             avgWeightKg = 60.0,
         )
         assertEquals(ActionSignal.ConsiderDeload, result)
@@ -163,7 +163,7 @@ class ActionSignalRuleTest {
     fun `resolve — standard regression isolated → MaintainLoad`() {
         val result = resolve(
             classification = ProgressionClassification.REGRESSION,
-            moduleRequiresDeload = false,
+            routineRequiresDeload = false,
             avgWeightKg = 60.0,
         )
         assertEquals(ActionSignal.MaintainLoad("Mantener carga"), result)
@@ -217,17 +217,36 @@ class ActionSignalRuleTest {
         assertEquals(ActionSignal.FirstSession, result)
     }
 
-    // --- Escenario 19: bodyweight regresión + moduleRequiresDeload → BodyweightSignal (NOT ConsiderDeload) ---
+    // --- Escenario 19: bodyweight regresión + routineRequiresDeload → BodyweightSignal (NOT ConsiderDeload) ---
     @Test
-    fun `resolve — bodyweight regression + module deload → BodyweightSignal (not ConsiderDeload)`() {
+    fun `resolve — bodyweight regression + routine deload → BodyweightSignal (not ConsiderDeload)`() {
         val result = resolve(
             classification = ProgressionClassification.REGRESSION,
             isBodyweight = true,
-            moduleRequiresDeload = true,
+            routineRequiresDeload = true,
             totalReps = 40,
             previousTotalReps = 45,
         )
         assertEquals(ActionSignal.BodyweightSignal(40, -5), result)
+    }
+
+    // --- Escenario: isDeload = true → DeloadSession ---
+    @Test
+    fun `resolve — isDeload true → DeloadSession regardless of classification`() {
+        val result = resolve(
+            classification = ProgressionClassification.REGRESSION,
+            isDeload = true,
+        )
+        assertEquals(ActionSignal.DeloadSession, result)
+    }
+
+    @Test
+    fun `resolve — isDeload true with null classification → DeloadSession`() {
+        val result = resolve(
+            classification = null,
+            isDeload = true,
+        )
+        assertEquals(ActionSignal.DeloadSession, result)
     }
 
     // --- Helper factory ---
@@ -235,25 +254,27 @@ class ActionSignalRuleTest {
         classification: ProgressionClassification? = ProgressionClassification.MAINTENANCE,
         prescribedLoadKg: Double? = null,
         avgWeightKg: Double = 0.0,
-        moduleRequiresDeload: Boolean = false,
+        routineRequiresDeload: Boolean = false,
         isBodyweight: Boolean = false,
         isIsometric: Boolean = false,
         totalReps: Int = 0,
         previousTotalReps: Int? = null,
         setCount: Int = 4,
         isMastered: Boolean = false,
+        isDeload: Boolean = false,
     ): ActionSignal {
         return ActionSignalRule.resolve(
             classification = classification,
             prescribedLoadKg = prescribedLoadKg,
             avgWeightKg = avgWeightKg,
-            moduleRequiresDeload = moduleRequiresDeload,
+            routineRequiresDeload = routineRequiresDeload,
             isBodyweight = isBodyweight,
             isIsometric = isIsometric,
             totalReps = totalReps,
             previousTotalReps = previousTotalReps,
             setCount = setCount,
             isMastered = isMastered,
+            isDeload = isDeload,
         )
     }
 }

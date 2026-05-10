@@ -4,16 +4,18 @@ import android.content.Context
 import androidx.room.Room
 import com.estebancoloradogonzalez.tension.data.local.dao.AlertDao
 import com.estebancoloradogonzalez.tension.data.local.dao.DeloadDao
+import com.estebancoloradogonzalez.tension.data.local.dao.DeloadFrozenVersionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.EquipmentTypeDao
 import com.estebancoloradogonzalez.tension.data.local.dao.ExerciseDao
 import com.estebancoloradogonzalez.tension.data.local.dao.ExerciseProgressionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.ExerciseSetDao
-import com.estebancoloradogonzalez.tension.data.local.dao.ModuleDao
-import com.estebancoloradogonzalez.tension.data.local.dao.ModuleVersionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.MuscleZoneDao
 import com.estebancoloradogonzalez.tension.data.local.dao.PlanAssignmentDao
 import com.estebancoloradogonzalez.tension.data.local.dao.ProfileDao
 import com.estebancoloradogonzalez.tension.data.local.dao.RotationStateDao
+import com.estebancoloradogonzalez.tension.data.local.dao.RoutineCurrentVersionDao
+import com.estebancoloradogonzalez.tension.data.local.dao.RoutineDao
+import com.estebancoloradogonzalez.tension.data.local.dao.RoutineVersionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.SessionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.SessionExerciseDao
 import com.estebancoloradogonzalez.tension.data.local.dao.WeightRecordDao
@@ -42,8 +44,7 @@ object DatabaseModule {
             "tension_database",
         )
             .addCallback(PrepopulateCallback())
-            .addMigrations(Migrations.MIGRATION_6_7, Migrations.MIGRATION_7_8)
-            .fallbackToDestructiveMigration()
+            .addMigrations(Migrations.MIGRATION_6_7, Migrations.MIGRATION_7_8, Migrations.MIGRATION_8_9, Migrations.MIGRATION_9_10, Migrations.MIGRATION_10_11, Migrations.MIGRATION_11_12, Migrations.MIGRATION_12_13)
             .build()
     }
 
@@ -63,8 +64,18 @@ object DatabaseModule {
     }
 
     @Provides
-    fun provideModuleDao(database: TensionDatabase): ModuleDao {
-        return database.moduleDao()
+    fun provideRoutineDao(database: TensionDatabase): RoutineDao {
+        return database.routineDao()
+    }
+
+    @Provides
+    fun provideRoutineVersionDao(database: TensionDatabase): RoutineVersionDao {
+        return database.routineVersionDao()
+    }
+
+    @Provides
+    fun provideRoutineCurrentVersionDao(database: TensionDatabase): RoutineCurrentVersionDao {
+        return database.routineCurrentVersionDao()
     }
 
     @Provides
@@ -80,11 +91,6 @@ object DatabaseModule {
     @Provides
     fun provideExerciseDao(database: TensionDatabase): ExerciseDao {
         return database.exerciseDao()
-    }
-
-    @Provides
-    fun provideModuleVersionDao(database: TensionDatabase): ModuleVersionDao {
-        return database.moduleVersionDao()
     }
 
     @Provides
@@ -120,5 +126,10 @@ object DatabaseModule {
     @Provides
     fun provideDeloadDao(database: TensionDatabase): DeloadDao {
         return database.deloadDao()
+    }
+
+    @Provides
+    fun provideDeloadFrozenVersionDao(database: TensionDatabase): DeloadFrozenVersionDao {
+        return database.deloadFrozenVersionDao()
     }
 }

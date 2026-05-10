@@ -42,7 +42,7 @@ class SessionDetailViewModelTest {
         val detail = SessionDetail(
             sessionId = 1L,
             date = "2026-02-15",
-            moduleCode = "A",
+            routineName = "Pull+Abs",
             versionNumber = 1,
             status = "COMPLETED",
             totalTonnageKg = 5000.0,
@@ -66,7 +66,7 @@ class SessionDetailViewModelTest {
 
         val state = viewModel.uiState.value
         assertTrue(state is SessionDetailUiState.Loaded)
-        assertEquals("A", (state as SessionDetailUiState.Loaded).detail.moduleCode)
+        assertEquals("Pull+Abs", (state as SessionDetailUiState.Loaded).detail.routineName)
         assertEquals(1, state.detail.exercises.size)
     }
 

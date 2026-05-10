@@ -280,7 +280,7 @@ private fun TriggerDataContent(triggerData: AlertTriggerData) {
         }
         is AlertTriggerData.RirTrigger -> {
             Text(
-                text = "RIR promedio: ${triggerData.avgRir} — Módulo ${triggerData.moduleCode}",
+                text = "RIR promedio: ${triggerData.avgRir} — Rutina ${triggerData.routineName}",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface,
             )
@@ -320,7 +320,21 @@ private fun TriggerDataContent(triggerData: AlertTriggerData) {
         }
         is AlertTriggerData.InactivityTrigger -> {
             Text(
-                text = "Módulo ${triggerData.moduleCode}: ${triggerData.daysSinceLastSession} días sin sesión",
+                text = "Rutina ${triggerData.routineName}: ${triggerData.daysSinceLastSession} días sin sesión",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            if (triggerData.muscleGroups.isNotEmpty()) {
+                Text(
+                    text = "Grupos afectados: ${triggerData.muscleGroups.joinToString(", ")}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+        }
+        is AlertTriggerData.DeloadTrigger -> {
+            Text(
+                text = "Rutina ${triggerData.routineName} requiere descarga",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface,
             )
@@ -341,7 +355,7 @@ private fun alertTypeDisplayName(type: String): String = when (type) {
     "RIR_OUT_OF_RANGE" -> "RIR fuera de rango"
     "LOW_ADHERENCE" -> "Adherencia baja"
     "TONNAGE_DROP" -> "Caída de tonelaje"
-    "MODULE_INACTIVITY" -> "Inactividad por módulo"
-    "MODULE_REQUIRES_DELOAD" -> "Módulo requiere descarga"
+    "ROUTINE_INACTIVITY" -> "Inactividad por rutina"
+    "ROUTINE_REQUIRES_DELOAD" -> "Rutina requiere descarga"
     else -> type
 }

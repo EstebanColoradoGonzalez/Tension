@@ -26,7 +26,7 @@ class GetExerciseHistoryUseCaseTest {
             entries = listOf(
                 ExerciseHistoryEntry(
                     date = "2026-02-15",
-                    moduleCode = "B",
+                    routineName = "Push",
                     versionNumber = 1,
                     avgWeightKg = 60.0,
                     totalReps = 40,
@@ -35,7 +35,7 @@ class GetExerciseHistoryUseCaseTest {
                 ),
                 ExerciseHistoryEntry(
                     date = "2026-02-10",
-                    moduleCode = "B",
+                    routineName = "Push",
                     versionNumber = 1,
                     avgWeightKg = 57.5,
                     totalReps = 38,
@@ -44,7 +44,7 @@ class GetExerciseHistoryUseCaseTest {
                 ),
                 ExerciseHistoryEntry(
                     date = "2026-02-05",
-                    moduleCode = "B",
+                    routineName = "Push",
                     versionNumber = 1,
                     avgWeightKg = 55.0,
                     totalReps = 36,

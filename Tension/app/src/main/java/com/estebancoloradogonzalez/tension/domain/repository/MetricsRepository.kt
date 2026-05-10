@@ -12,7 +12,7 @@ interface MetricsRepository {
 
     suspend fun getWeeklyFrequency(): Int
 
-    suspend fun getRirValuesByModule(moduleCode: String, sessionLimit: Int): List<Int>
+    suspend fun getRirValuesByRoutine(routineId: Long, sessionLimit: Int): List<Int>
 
     suspend fun getClassificationCounts(startDate: String): List<ClassificationCount>
 

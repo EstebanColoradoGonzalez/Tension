@@ -1,61 +1,35 @@
+
 # Diccionario de Ejercicios
 
-> **Nota:** Este documento define los 43 ejercicios precargados (seed data) que se incluyen en la primera versión de la app. El ejecutante puede ampliar el Diccionario creando ejercicios propios desde la app (RF62). Los ejercicios creados por el ejecutante se integran al catálogo y quedan disponibles para sustitución y asignación a versiones del plan.
+> **Nota:** Este documento define los 26 ejercicios precargados (seed data) que se incluyen en la primera versión de la app. El ejecutante puede ampliar el Diccionario creando ejercicios propios desde la app (RF62). Los ejercicios creados por el ejecutante se integran al catálogo y quedan disponibles para sustitución y asignación en cualquier rutina o versión del plan.
 
-## Modulo A: Superior — Pull + Abs (Espalda, Bíceps, Abdomen)
-
-| Ejercicio | Tipo | Zona Muscular |
-| --- | --- | --- |
-| Remo con Inclinación | Barra de Pesas | Espalda Media |
-| Remo con un solo brazo doblado | Mancuerna | Dorsal Ancho |
-| Tiro de dorsales (Agarre ancho) | Maquina | Dorsal Ancho |
-| Elevación de hombros con mancuernas | Mancuerna | Espalda Media |
-| Curl de biceps | Mancuerna | Biceps |
-| Curl de biceps | Polea | Biceps |
-| Curl de martillo cruzado | Mancuerna | Biceps |
-| Curl de martillo | Mancuerna | Biceps |
-| Curl de Contracción | Mancuerna | Biceps |
-| Abdominales | Cuerpo | Abdomen |
-| Escalador | Cuerpo | Abdomen |
-| Giro Ruso | Cuerpo | Abdomen |
-| Plancha | Cuerpo | Abdomen |
-| Plancha Lateral | Cuerpo | Abdomen |
-
-## Modulo B: Superior — Push (Pecho, Hombro, Tríceps)
+Todos los ejercicios se presentan en una única tabla alfabética, sin agrupación por rutinas, para reflejar la flexibilidad total del sistema. Cada ejercicio puede ser asignado libremente por el usuario según sus objetivos y preferencias.
 
 | Ejercicio | Tipo | Zona Muscular |
 | --- | --- | --- |
-| Press de banca | Maquina | Pecho Medio |
-| Press de mancuerna | Mancuernas | Pecho Medio |
-| Press de banca inclinada | Maquina | Pecho Superior |
-| Flexiones | Cuerpo | Pecho inferior |
-| Cruce en polea alta | Maquina | Pecho inferior |
-| Apertura de pecho sentado | Maquina | Pecho Medio |
-| Apertura de pecho inclinado | Maquina | Pecho Superior |
-| Elevacion frontal | Mancuerna | Hombro |
-| Elevación lateral | Mancuerna | Hombro |
-| Press de elevación sentado | Mancuerna | Hombro |
-| Remo vertical | Barra de Pesas | Hombro |
-| Remo vertical con cable | Maquina | Hombro |
-| Dominada de triceps banco | Pesa | Triceps |
-| Extensión de triceps por encima de la cabeza | Mancuerna | Triceps |
-| Flexión de triceps con cuerda | Maquina | Triceps |
-
-## Modulo C:  Inferior (Pierna)
-
-| Ejercicio | Tipo | Zona Muscular |
-| --- | --- | --- |
-| Extensión de Cuadriceps | Maquina | Cuádriceps |
-| Curl Femoral Tumbado | Maquina | Isquiotibiales |
-| Aductor de Cadera | Maquina | Aductores |
-| Abductor de Cadera | Maquina | Abductores |
-| Elevación de Gemelos Sentado | Maquina | Gemelos (Sóleo) |
-| Empuje de Cadera | Maquina | Glúteos |
-| Sentadilla de Sumo | Mancuerna o Pesa Rusa | Cuádriceps, Aductores |
-| Sentadilla | Cuerpo | Cuádriceps |
-| Sentadilla Bulgara Dividida | Mancuernas | Cuádriceps, Glúteos |
-| Sentadilla | Maquina Multiestación | Cuádriceps |
-| Subir Escalones | Maquina | Cuádriceps, Glúteos |
-| Zancada hacia atras | Mancuernas | Glúteos, Cuádriceps |
-| Avanzada de Zancadas | Mancuernas | Cuádriceps, Glúteos |
-| Press de Pierna | Maquina | Cuádriceps |
+| Aductores | Maquina | Aductores |
+| Cruce de Polea Alta | Polea | Pecho Inferior |
+| Crunch Abdominal | Polea | Abdomen |
+| Curl Bayesian en Banco Inclinado | Mancuernas | Bíceps |
+| Curl de Concentración | Mancuerna | Bíceps |
+| Curl de Isquiotibiales Sentado | Maquina | Isquiotibiales |
+| Curl de Martillo Cruzado | Mancuernas | Bíceps |
+| Curl de Predicador | Mancuerna | Bíceps |
+| Elevación de Pantorrilla en Máquina de Pie | Maquina | Gemelos |
+| Elevación Lateral | Mancuernas o Polea | Hombro |
+| Extensión de Cuádriceps | Maquina | Cuádriceps |
+| Extensión de Tríceps en Polea (Pushdown) | Polea con Cuerda o Polea con Barra en V | Tríceps |
+| Extensión de Tríceps por encima de la Cabeza | Mancuernas o Polea | Tríceps |
+| Face Pull | Polea con Cuerda | Espalda Alta |
+| Hip Thrust | Maquina | Glúteos |
+| Peso Muerto Rumano | Barra | Isquiotibiales, Glúteos |
+| Prensa Inclinada | Maquina | Cuádriceps |
+| Press de Banca Inclinado | Mancuerna o Polea o Barra | Pecho Superior |
+| Press de Banca Plano | Barra o Mancuernas | Pecho Medio |
+| Press Pallof | Polea | Abdomen |
+| Remo T Inclinado | Maquina | Espalda Media |
+| Sentadilla Búlgara | Mancuernas | Cuádriceps, Glúteos |
+| Sentadilla de Zumo | Mancuerna | Cuádriceps, Aductores |
+| Sentadilla Hack | Maquina | Cuádriceps |
+| Tirón de Dorsales | Polea | Dorsal Ancho |
+| Vuelos Posteriores | Mancuernas | Hombro |

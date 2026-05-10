@@ -133,9 +133,9 @@ private fun VolumeContent(
             TonnageByGroupCard(tonnageByGroup = state.tonnageByGroup)
         }
 
-        // Section 3 — Volume distribution by module
+        // Section 3 — Volume distribution by muscle group
         item {
-            VolumeDistributionCard(distributionByModule = state.distributionByModule)
+            VolumeDistributionCard(distributionByMuscleGroup = state.distributionByMuscleGroup)
         }
 
         // Section 4 — Evolution
@@ -262,7 +262,7 @@ private fun TonnageBarRow(
 
 @Composable
 private fun VolumeDistributionCard(
-    distributionByModule: Map<String, Map<String, Double>>,
+    distributionByMuscleGroup: Map<String, Map<String, Double>>,
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -278,9 +278,9 @@ private fun VolumeDistributionCard(
             )
             Spacer(modifier = Modifier.height(12.dp))
 
-            distributionByModule.toSortedMap().forEach { (moduleCode, zones) ->
+            distributionByMuscleGroup.toSortedMap().forEach { (muscleGroup, zones) ->
                 Text(
-                    text = stringResource(R.string.volume_module_header, moduleCode),
+                    text = stringResource(R.string.volume_routine_header, muscleGroup),
                     style = MaterialTheme.typography.titleSmall,
                 )
                 Spacer(modifier = Modifier.height(4.dp))

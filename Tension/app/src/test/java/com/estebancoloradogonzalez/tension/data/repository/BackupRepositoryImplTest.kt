@@ -93,7 +93,7 @@ class BackupRepositoryImplTest {
         assertTrue(parsed.has("data"))
 
         val metadata = parsed.getJSONObject("metadata")
-        assertEquals(7, metadata.getInt("schemaVersion"))
+        assertEquals(9, metadata.getInt("schemaVersion"))
         assertEquals("1.0", metadata.getString("appVersion"))
         assertTrue(metadata.has("exportDate"))
         assertTrue(metadata.has("recordCount"))
@@ -127,7 +127,7 @@ class BackupRepositoryImplTest {
 
         assertTrue(result.isValid)
         assertNotNull(result.metadata)
-        assertEquals(7, result.metadata?.schemaVersion)
+        assertEquals(9, result.metadata?.schemaVersion)
         assertEquals(5, result.sessionCount)
         assertNull(result.errorMessage)
     }
@@ -275,7 +275,7 @@ class BackupRepositoryImplTest {
         val json = JSONObject()
         json.put("metadata", JSONObject().apply {
             put("appVersion", "1.0")
-            put("schemaVersion", 7)
+            put("schemaVersion", 9)
             put("exportDate", "2026-02-20T14:00:00")
             put("recordCount", sessionCount)
         })

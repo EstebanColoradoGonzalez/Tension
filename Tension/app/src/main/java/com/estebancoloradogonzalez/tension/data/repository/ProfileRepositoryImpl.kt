@@ -93,10 +93,6 @@ class ProfileRepositoryImpl @Inject constructor(
         )
     }
 
-    override fun getLatestWeight(): Flow<Double?> {
-        return weightRecordDao.getLatestWeight().map { it?.weightKg }
-    }
-
     override fun getAllWeightRecords(): Flow<List<WeightRecord>> {
         return weightRecordDao.getAllDescByDate().map { records ->
             records.map { entity ->

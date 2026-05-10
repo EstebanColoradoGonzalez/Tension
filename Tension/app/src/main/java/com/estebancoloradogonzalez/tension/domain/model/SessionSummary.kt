@@ -2,7 +2,7 @@ package com.estebancoloradogonzalez.tension.domain.model
 
 data class SessionSummary(
     val status: String,
-    val moduleCode: String,
+    val routineName: String,
     val versionNumber: Int,
     val totalTonnageKg: Double,
     val completedExercises: Int,

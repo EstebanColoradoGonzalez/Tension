@@ -21,7 +21,6 @@ class GetSessionPreviewUseCaseTest {
             SessionPreviewExercise(
                 exerciseId = 1L,
                 exerciseName = "Sentadilla",
-                moduleCode = "C",
                 equipmentTypeName = "Barra",
                 muscleZones = "Cuádriceps",
                 sets = 4,
@@ -30,7 +29,7 @@ class GetSessionPreviewUseCaseTest {
                 isIsometric = false,
                 isToTechnicalFailure = false,
                 prescribedLoadKg = 60.0,
-                loadIncrementKg = 2.5,
+                muscleGroup = "Cuádriceps",
             ),
         )
         every { sessionRepository.getSessionPreviewExercises(1L) } returns flowOf(exercises)

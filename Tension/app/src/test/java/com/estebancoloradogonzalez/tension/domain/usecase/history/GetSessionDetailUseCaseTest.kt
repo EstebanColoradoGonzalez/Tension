@@ -23,7 +23,7 @@ class GetSessionDetailUseCaseTest {
         val detail = SessionDetail(
             sessionId = 1L,
             date = "2026-02-15",
-            moduleCode = "A",
+            routineName = "Pull+Abs",
             versionNumber = 1,
             status = "COMPLETED",
             totalTonnageKg = 5000.0,
@@ -66,7 +66,7 @@ class GetSessionDetailUseCaseTest {
         val detail = SessionDetail(
             sessionId = 2L,
             date = "2026-02-14",
-            moduleCode = "B",
+            routineName = "Push",
             versionNumber = 2,
             status = "COMPLETED",
             totalTonnageKg = 4000.0,

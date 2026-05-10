@@ -10,12 +10,6 @@ import androidx.room.PrimaryKey
     tableName = "exercise",
     foreignKeys = [
         ForeignKey(
-            entity = ModuleEntity::class,
-            parentColumns = ["code"],
-            childColumns = ["module_code"],
-            onDelete = ForeignKey.RESTRICT,
-        ),
-        ForeignKey(
             entity = EquipmentTypeEntity::class,
             parentColumns = ["id"],
             childColumns = ["equipment_type_id"],
@@ -23,7 +17,6 @@ import androidx.room.PrimaryKey
         ),
     ],
     indices = [
-        Index(value = ["module_code"]),
         Index(value = ["equipment_type_id"]),
         Index(value = ["name", "equipment_type_id"], unique = true),
     ],
@@ -35,9 +28,6 @@ data class ExerciseEntity(
 
     @ColumnInfo(name = "name")
     val name: String,
-
-    @ColumnInfo(name = "module_code")
-    val moduleCode: String,
 
     @ColumnInfo(name = "equipment_type_id")
     val equipmentTypeId: Long,

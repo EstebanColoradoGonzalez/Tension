@@ -108,31 +108,26 @@ fun TrainingPlanScreen(
                         .fillMaxSize()
                         .padding(innerPadding),
                 ) {
-                    uiState.modules.forEachIndexed { moduleIndex, module ->
-                        item(key = "header_${module.moduleCode}") {
+                    uiState.routines.forEachIndexed { routineIndex, routine ->
+                        item(key = "header_${routine.routineId}") {
                             Column(
                                 modifier = Modifier.padding(
                                     start = 16.dp,
                                     end = 16.dp,
-                                    top = if (moduleIndex == 0) 16.dp else 0.dp,
+                                    top = if (routineIndex == 0) 16.dp else 0.dp,
                                     bottom = 4.dp,
                                 ),
                             ) {
                                 Text(
-                                    text = module.moduleName,
+                                    text = routine.routineName,
                                     style = MaterialTheme.typography.titleMedium,
                                     color = MaterialTheme.colorScheme.onSurface,
-                                )
-                                Text(
-                                    text = module.groupDescription,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
                         }
                         itemsIndexed(
-                            items = module.versions,
-                            key = { _, version -> version.moduleVersionId },
+                            items = routine.versions,
+                            key = { _, version -> version.routineVersionId },
                         ) { _, version ->
                             ListItem(
                                 headlineContent = {
@@ -157,13 +152,13 @@ fun TrainingPlanScreen(
                                 },
                                 modifier = Modifier
                                     .clickable {
-                                        onNavigateToPlanVersionDetail(version.moduleVersionId)
+                                        onNavigateToPlanVersionDetail(version.routineVersionId)
                                     }
                                     .height(56.dp),
                             )
                         }
-                        if (moduleIndex < uiState.modules.lastIndex) {
-                            item(key = "divider_${module.moduleCode}") {
+                        if (routineIndex < uiState.routines.lastIndex) {
+                            item(key = "divider_${routine.routineId}") {
                                 Spacer(modifier = Modifier.height(12.dp))
                                 HorizontalDivider(
                                     thickness = 1.dp,

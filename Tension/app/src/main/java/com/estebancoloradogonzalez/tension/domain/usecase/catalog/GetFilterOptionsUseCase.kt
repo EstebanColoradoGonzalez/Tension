@@ -11,12 +11,10 @@ class GetFilterOptionsUseCase @Inject constructor(
 ) {
     operator fun invoke(): Flow<FilterOptions> =
         combine(
-            exerciseRepository.getAllModules(),
-            exerciseRepository.getAllEquipmentTypes(),
-            exerciseRepository.getAllMuscleZones(),
-        ) { modules, equipmentTypes, muscleZones ->
+            exerciseRepository.getEquipmentTypesWithExercises(),
+            exerciseRepository.getMuscleZonesWithExercises(),
+        ) { equipmentTypes, muscleZones ->
             FilterOptions(
-                modules = modules,
                 equipmentTypes = equipmentTypes,
                 muscleZones = muscleZones,
             )

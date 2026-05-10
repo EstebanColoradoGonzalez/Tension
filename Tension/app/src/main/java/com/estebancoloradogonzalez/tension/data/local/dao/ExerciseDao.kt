@@ -12,8 +12,6 @@ import kotlinx.coroutines.flow.Flow
 data class ExerciseWithDetails(
     val id: Long,
     val name: String,
-    val moduleCode: String,
-    val moduleName: String,
     val equipmentTypeName: String,
     val isBodyweight: Int,
     val isIsometric: Int,
@@ -21,6 +19,7 @@ data class ExerciseWithDetails(
     val isCustom: Int,
     val mediaResource: String?,
     val muscleZones: String?,
+    val muscleGroup: String?,
 )
 
 @Dao
@@ -31,22 +30,22 @@ interface ExerciseDao {
         SELECT 
             e.id,
             e.name,
-            e.module_code AS moduleCode,
-            m.name AS moduleName,
             et.name AS equipmentTypeName,
             e.is_bodyweight AS isBodyweight,
             e.is_isometric AS isIsometric,
             e.is_to_technical_failure AS isToTechnicalFailure,
             e.is_custom AS isCustom,
             e.media_resource AS mediaResource,
-            GROUP_CONCAT(mz.name, ', ') AS muscleZones
+            GROUP_CONCAT(DISTINCT mz.name) AS muscleZones,
+            (SELECT mz2.muscle_group FROM exercise_muscle_zone emz2
+             INNER JOIN muscle_zone mz2 ON emz2.muscle_zone_id = mz2.id
+             WHERE emz2.exercise_id = e.id LIMIT 1) AS muscleGroup
         FROM exercise e
-        INNER JOIN module m ON e.module_code = m.code
         INNER JOIN equipment_type et ON e.equipment_type_id = et.id
         LEFT JOIN exercise_muscle_zone emz ON e.id = emz.exercise_id
         LEFT JOIN muscle_zone mz ON emz.muscle_zone_id = mz.id
         GROUP BY e.id
-        ORDER BY e.module_code ASC, e.name ASC
+        ORDER BY e.name ASC
         """,
     )
     fun getAll(): Flow<List<ExerciseWithDetails>>
@@ -56,17 +55,17 @@ interface ExerciseDao {
         SELECT 
             e.id,
             e.name,
-            e.module_code AS moduleCode,
-            m.name AS moduleName,
             et.name AS equipmentTypeName,
             e.is_bodyweight AS isBodyweight,
             e.is_isometric AS isIsometric,
             e.is_to_technical_failure AS isToTechnicalFailure,
             e.is_custom AS isCustom,
             e.media_resource AS mediaResource,
-            GROUP_CONCAT(mz.name, ', ') AS muscleZones
+            GROUP_CONCAT(DISTINCT mz.name) AS muscleZones,
+            (SELECT mz2.muscle_group FROM exercise_muscle_zone emz2
+             INNER JOIN muscle_zone mz2 ON emz2.muscle_zone_id = mz2.id
+             WHERE emz2.exercise_id = e.id LIMIT 1) AS muscleGroup
         FROM exercise e
-        INNER JOIN module m ON e.module_code = m.code
         INNER JOIN equipment_type et ON e.equipment_type_id = et.id
         LEFT JOIN exercise_muscle_zone emz ON e.id = emz.exercise_id
         LEFT JOIN muscle_zone mz ON emz.muscle_zone_id = mz.id
@@ -84,73 +83,62 @@ interface ExerciseDao {
         SELECT 
             e.id,
             e.name,
-            e.module_code AS moduleCode,
-            m.name AS moduleName,
             et.name AS equipmentTypeName,
             e.is_bodyweight AS isBodyweight,
             e.is_isometric AS isIsometric,
             e.is_to_technical_failure AS isToTechnicalFailure,
             e.is_custom AS isCustom,
             e.media_resource AS mediaResource,
-            GROUP_CONCAT(mz.name, ', ') AS muscleZones
+            GROUP_CONCAT(DISTINCT mz.name) AS muscleZones,
+            (SELECT mz2.muscle_group FROM exercise_muscle_zone emz2
+             INNER JOIN muscle_zone mz2 ON emz2.muscle_zone_id = mz2.id
+             WHERE emz2.exercise_id = e.id LIMIT 1) AS muscleGroup
         FROM exercise e
-        INNER JOIN module m ON e.module_code = m.code
         INNER JOIN equipment_type et ON e.equipment_type_id = et.id
         LEFT JOIN exercise_muscle_zone emz ON e.id = emz.exercise_id
         LEFT JOIN muscle_zone mz ON emz.muscle_zone_id = mz.id
-        WHERE e.module_code = :moduleCode
-          AND e.id NOT IN (
-              SELECT exercise_id FROM plan_assignment WHERE module_version_id = :moduleVersionId
+        WHERE e.id NOT IN (
+              SELECT exercise_id FROM plan_assignment WHERE routine_version_id = :routineVersionId
           )
         GROUP BY e.id
         ORDER BY e.name ASC
         """,
     )
-    fun getByModuleCodeNotInVersion(
-        moduleCode: String,
-        moduleVersionId: Long,
-    ): Flow<List<ExerciseWithDetails>>
+    fun getNotInVersion(routineVersionId: Long): Flow<List<ExerciseWithDetails>>
 
     @Query(
         """
         SELECT 
             e.id,
             e.name,
-            e.module_code AS moduleCode,
-            m.name AS moduleName,
             et.name AS equipmentTypeName,
             e.is_bodyweight AS isBodyweight,
             e.is_isometric AS isIsometric,
             e.is_to_technical_failure AS isToTechnicalFailure,
             e.is_custom AS isCustom,
             e.media_resource AS mediaResource,
-            GROUP_CONCAT(mz.name, ', ') AS muscleZones
+            GROUP_CONCAT(DISTINCT mz.name) AS muscleZones,
+            (SELECT mz2.muscle_group FROM exercise_muscle_zone emz2
+             INNER JOIN muscle_zone mz2 ON emz2.muscle_zone_id = mz2.id
+             WHERE emz2.exercise_id = e.id LIMIT 1) AS muscleGroup
         FROM exercise e
-        INNER JOIN module m ON e.module_code = m.code
         INNER JOIN equipment_type et ON e.equipment_type_id = et.id
         LEFT JOIN exercise_muscle_zone emz ON e.id = emz.exercise_id
         LEFT JOIN muscle_zone mz ON emz.muscle_zone_id = mz.id
-        WHERE e.module_code = :moduleCode
-          AND e.id NOT IN (
+        WHERE e.id NOT IN (
               SELECT se.exercise_id FROM session_exercise se WHERE se.session_id = :sessionId
           )
         GROUP BY e.id
         ORDER BY e.name ASC
         """,
     )
-    fun getEligibleSubstitutesForSession(
-        moduleCode: String,
-        sessionId: Long,
-    ): Flow<List<ExerciseWithDetails>>
+    fun getEligibleSubstitutesForSession(sessionId: Long): Flow<List<ExerciseWithDetails>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(exercises: List<ExerciseEntity>)
 
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(exercise: ExerciseEntity): Long
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertMuscleZone(zone: ExerciseMuscleZoneEntity)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAllMuscleZones(zones: List<ExerciseMuscleZoneEntity>)
@@ -160,6 +148,9 @@ interface ExerciseDao {
 
     @Query("SELECT COUNT(*) FROM exercise WHERE name = :name AND equipment_type_id = :equipmentTypeId")
     suspend fun countByNameAndEquipment(name: String, equipmentTypeId: Long): Int
+
+    @Query("SELECT muscle_zone_id FROM exercise_muscle_zone WHERE exercise_id = :exerciseId")
+    suspend fun getMuscleZoneIdsByExerciseId(exerciseId: Long): List<Long>
 
     @Transaction
     suspend fun insertExerciseWithMuscleZones(

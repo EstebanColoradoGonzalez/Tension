@@ -7,7 +7,7 @@ sealed interface VolumeUiState {
     data object Loading : VolumeUiState
     data class Content(
         val tonnageByGroup: List<MuscleGroupTonnage>,
-        val distributionByModule: Map<String, Map<String, Double>>,
+        val distributionByMuscleGroup: Map<String, Map<String, Double>>,
         val evolution: List<TonnageSnapshot>,
         val selectedMicrocycle: Int,
         val totalMicrocycles: Int,

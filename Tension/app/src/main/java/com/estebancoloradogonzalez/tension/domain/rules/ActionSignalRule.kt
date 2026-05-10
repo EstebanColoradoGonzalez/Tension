@@ -11,14 +11,16 @@ object ActionSignalRule {
         classification: ProgressionClassification?,
         prescribedLoadKg: Double?,
         avgWeightKg: Double,
-        moduleRequiresDeload: Boolean,
+        routineRequiresDeload: Boolean,
         isBodyweight: Boolean,
         isIsometric: Boolean,
         totalReps: Int,
         previousTotalReps: Int?,
         setCount: Int,
         isMastered: Boolean,
+        isDeload: Boolean = false,
     ): ActionSignal {
+        if (isDeload) return ActionSignal.DeloadSession
         if (classification == null) return ActionSignal.FirstSession
 
         if (isIsometric) {
@@ -39,7 +41,7 @@ object ActionSignalRule {
 
         return when (classification) {
             ProgressionClassification.REGRESSION -> {
-                if (moduleRequiresDeload) {
+                if (routineRequiresDeload) {
                     ActionSignal.ConsiderDeload
                 } else {
                     ActionSignal.MaintainLoad("Mantener carga")

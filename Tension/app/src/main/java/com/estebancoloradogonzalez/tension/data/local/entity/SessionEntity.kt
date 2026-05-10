@@ -10,15 +10,15 @@ import androidx.room.PrimaryKey
     tableName = "session",
     foreignKeys = [
         ForeignKey(
-            entity = ModuleVersionEntity::class,
+            entity = RoutineVersionEntity::class,
             parentColumns = ["id"],
-            childColumns = ["module_version_id"],
+            childColumns = ["routine_version_id"],
             onDelete = ForeignKey.RESTRICT,
         ),
     ],
     indices = [
         Index(value = ["date"]),
-        Index(value = ["module_version_id"]),
+        Index(value = ["routine_version_id"]),
         Index(value = ["status"]),
         Index(value = ["deload_id"]),
     ],
@@ -28,8 +28,8 @@ data class SessionEntity(
     @ColumnInfo(name = "id")
     val id: Long = 0,
 
-    @ColumnInfo(name = "module_version_id")
-    val moduleVersionId: Long,
+    @ColumnInfo(name = "routine_version_id")
+    val routineVersionId: Long,
 
     @ColumnInfo(name = "deload_id")
     val deloadId: Long? = null,

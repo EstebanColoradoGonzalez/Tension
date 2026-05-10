@@ -38,24 +38,23 @@ class SubstituteExerciseViewModelTest {
 
     private val sessionExerciseId = 42L
     private val sessionId = 10L
-    private val moduleCode = "A"
+    private val muscleZoneIds = listOf(1L, 2L)
 
     private val substituteInfo = SubstituteExerciseInfo(
         sessionExerciseId = sessionExerciseId,
         currentExerciseId = 1L,
         currentExerciseName = "Tiro de dorsales (Agarre ancho)",
-        moduleCode = moduleCode,
         sessionId = sessionId,
+        muscleZoneIds = muscleZoneIds,
     )
 
     private val eligibleExercises = listOf(
         Exercise(
             id = 5L,
             name = "Curl de Contracción",
-            moduleCode = "A",
-            moduleName = "Módulo A",
             equipmentTypeName = "Mancuerna",
             muscleZones = listOf("Bíceps"),
+            muscleGroup = null,
             isBodyweight = false,
             isIsometric = false,
             isToTechnicalFailure = false,
@@ -65,10 +64,9 @@ class SubstituteExerciseViewModelTest {
         Exercise(
             id = 6L,
             name = "Curl de martillo",
-            moduleCode = "A",
-            moduleName = "Módulo A",
             equipmentTypeName = "Mancuerna",
             muscleZones = listOf("Bíceps"),
+            muscleGroup = null,
             isBodyweight = false,
             isIsometric = false,
             isToTechnicalFailure = false,
@@ -103,7 +101,7 @@ class SubstituteExerciseViewModelTest {
     @Test
     fun `initial state is loading`() = runTest {
         coEvery { sessionRepository.getSubstituteExerciseInfo(sessionExerciseId) } returns substituteInfo
-        every { exerciseRepository.getEligibleSubstitutes(moduleCode, sessionId) } returns MutableStateFlow(eligibleExercises)
+        every { exerciseRepository.getEligibleSubstitutes(sessionId, muscleZoneIds) } returns MutableStateFlow(eligibleExercises)
 
         val viewModel = createViewModel()
 
@@ -129,7 +127,7 @@ class SubstituteExerciseViewModelTest {
     @Test
     fun `successful load transitions to loaded state with exercises`() = runTest {
         coEvery { sessionRepository.getSubstituteExerciseInfo(sessionExerciseId) } returns substituteInfo
-        every { exerciseRepository.getEligibleSubstitutes(moduleCode, sessionId) } returns MutableStateFlow(eligibleExercises)
+        every { exerciseRepository.getEligibleSubstitutes(sessionId, muscleZoneIds) } returns MutableStateFlow(eligibleExercises)
 
         val viewModel = createViewModel()
         advanceUntilIdle()
@@ -143,20 +141,20 @@ class SubstituteExerciseViewModelTest {
     }
 
     @Test
-    fun `getEligibleSubstitutes is invoked with moduleCode and sessionId not excludedIds`() = runTest {
+    fun `getEligibleSubstitutes is invoked with sessionId and muscleZoneIds`() = runTest {
         coEvery { sessionRepository.getSubstituteExerciseInfo(sessionExerciseId) } returns substituteInfo
-        every { exerciseRepository.getEligibleSubstitutes(moduleCode, sessionId) } returns MutableStateFlow(eligibleExercises)
+        every { exerciseRepository.getEligibleSubstitutes(sessionId, muscleZoneIds) } returns MutableStateFlow(eligibleExercises)
 
         createViewModel()
         advanceUntilIdle()
 
-        coVerify(exactly = 1) { exerciseRepository.getEligibleSubstitutes(moduleCode, sessionId) }
+        coVerify(exactly = 1) { exerciseRepository.getEligibleSubstitutes(sessionId, muscleZoneIds) }
     }
 
     @Test
     fun `onExerciseSelected updates selectedExercise and shows dialog`() = runTest {
         coEvery { sessionRepository.getSubstituteExerciseInfo(sessionExerciseId) } returns substituteInfo
-        every { exerciseRepository.getEligibleSubstitutes(moduleCode, sessionId) } returns MutableStateFlow(eligibleExercises)
+        every { exerciseRepository.getEligibleSubstitutes(sessionId, muscleZoneIds) } returns MutableStateFlow(eligibleExercises)
 
         val viewModel = createViewModel()
         advanceUntilIdle()
@@ -172,7 +170,7 @@ class SubstituteExerciseViewModelTest {
     @Test
     fun `onDismissDialog clears selectedExercise and hides dialog`() = runTest {
         coEvery { sessionRepository.getSubstituteExerciseInfo(sessionExerciseId) } returns substituteInfo
-        every { exerciseRepository.getEligibleSubstitutes(moduleCode, sessionId) } returns MutableStateFlow(eligibleExercises)
+        every { exerciseRepository.getEligibleSubstitutes(sessionId, muscleZoneIds) } returns MutableStateFlow(eligibleExercises)
 
         val viewModel = createViewModel()
         advanceUntilIdle()
@@ -189,7 +187,7 @@ class SubstituteExerciseViewModelTest {
     @Test
     fun `onConfirmSubstitution invokes use case and emits navigateBack`() = runTest {
         coEvery { sessionRepository.getSubstituteExerciseInfo(sessionExerciseId) } returns substituteInfo
-        every { exerciseRepository.getEligibleSubstitutes(moduleCode, sessionId) } returns MutableStateFlow(eligibleExercises)
+        every { exerciseRepository.getEligibleSubstitutes(sessionId, muscleZoneIds) } returns MutableStateFlow(eligibleExercises)
         coEvery { substituteExerciseUseCase(sessionExerciseId, 5L) } returns Unit
 
         val viewModel = createViewModel()

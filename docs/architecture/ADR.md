@@ -104,7 +104,7 @@ La app tiene 26 vistas con estados complejos (sesión activa con progreso por ej
 **RNF:** RNF14, RNF35
 
 **Contexto:**
-La app es 100% offline (RNF09) con 16 entidades en el Modelo de Datos, relaciones complejas (ForeignKey entre sesiones, ejercicios, series, progresión) y queries que requieren joins multi-tabla (tonelaje por grupo muscular, historial de ejercicio con clasificación de progresión). Los datos crecen indefinidamente con cada sesión registrada.
+La app es 100% offline (RNF09) con 18 entidades en el Modelo de Datos, relaciones complejas (ForeignKey entre sesiones, ejercicios, series, progresión) y queries que requieren joins multi-tabla (tonelaje por grupo muscular, historial de ejercicio con clasificación de progresión). Los datos crecen indefinidamente con cada sesión registrada.
 
 **Alternativas consideradas:**
 
@@ -113,13 +113,13 @@ La app es 100% offline (RNF09) con 16 entidades en el Modelo de Datos, relacione
 | **Room** | ORM oficial de Android, compile-time query verification, integración nativa con Flow y coroutines, migraciones automáticas (RNF19), transacciones atómicas (RNF11) | Requiere procesador KSP en tiempo de compilación |
 | SQLDelight | Queries SQL-first, verificación en compilación | Menos integración con el ecosistema Jetpack, comunidad más pequeña |
 | Realm | No-SQL, API reactiva | Schema diferente al modelo relacional requerido, migración compleja, licencia |
-| SharedPreferences / DataStore | Simple para key-value | No soporta 16 entidades relacionadas ni queries complejas |
+| SharedPreferences / DataStore | Simple para key-value | No soporta 18 entidades relacionadas ni queries complejas |
 | SQLite directo (sin ORM) | Control total | Sin verificación de queries en compilación, boilerplate masivo, gestión manual de cursores |
 
 **Decisión:** Room (Runtime + KTX + Compiler vía KSP) como única capa de persistencia.
 
 **Consecuencias:**
-- Las 16 entidades del Modelo de Datos mapean directamente a `@Entity` con `@PrimaryKey`, `@ForeignKey`, `@Index`.
+- Las 18 entidades del Modelo de Datos mapean directamente a `@Entity` con `@PrimaryKey`, `@ForeignKey`, `@Index`.
 - Queries reactivas con `Flow<T>` para actualización automática de UI.
 - Funciones `suspend` para escritura (insert, update, delete).
 - TypeConverters para tipos no nativos (String ↔ LocalDate).
@@ -145,7 +145,7 @@ La app tiene un grafo de dependencias profundo: `TensionDatabase` → DAOs → R
 | **Hilt** | Basado en Dagger (compile-time), integración oficial con ViewModel y Navigation Compose (`hiltViewModel()`), scopes automáticos por componente | Anotaciones generan código — incrementa tiempo de compilación |
 | Dagger puro | Máximo control, compile-time DI | Configuración manual extensa (Components, Modules, Subcomponents), no tiene `hiltViewModel()` |
 | Koin | Simplicidad, DSL de Kotlin | Runtime DI (errores en runtime, no en compilación), sin verificación de grafo en build |
-| Manual DI | Sin librería externa | Inviable para un grafo de 16 DAOs + 9 Repositories + N Use Cases + N ViewModels |
+| Manual DI | Sin librería externa | Inviable para un grafo de 17 DAOs + 9 Repositories + N Use Cases + N ViewModels |
 
 **Decisión:** Hilt Android + Hilt Navigation Compose.
 
@@ -339,7 +339,7 @@ RNF17 permite JSON o SQLite exportado como formato de backup. El archivo debe se
 **RNF:** RNF31
 
 **Contexto:**
-El Diccionario de Ejercicios (43 ejercicios base), las zonas musculares (15), los tipos de equipo (9), los módulos (3), las versiones de módulo (9) y las asignaciones plan-ejercicio (93) deben existir en la base de datos desde el primer uso de la app (RF04, RF05). Estos datos representan el catálogo base del sistema. Adicionalmente, el ejecutante puede ampliar el diccionario con ejercicios propios (RF62) y asignarlos a versiones del plan (RF63) — estas operaciones son en runtime y no afectan el mecanismo de seed.
+El Diccionario de Ejercicios (43 ejercicios base), las zonas musculares (15) y los tipos de equipo (9) deben existir en la base de datos desde el primer uso de la app (RF04). Las rutinas, versiones y asignaciones plan-ejercicio las define el ejecutante al configurar su plan (HU-22). Adicionalmente, el ejecutante puede ampliar el diccionario con ejercicios propios (RF62) y asignarlos a versiones de cualquier rutina (RF63) — estas operaciones son en runtime y no afectan el mecanismo de seed.
 
 **Alternativas consideradas:**
 
@@ -353,7 +353,7 @@ El Diccionario de Ejercicios (43 ejercicios base), las zonas musculares (15), lo
 **Decisión:** `RoomDatabase.Callback.onCreate()` con patrón Facade que delega en servicios temáticos (Seeders).
 
 **Consecuencias:**
-- `PrepopulateFacade` orquesta la prepopulación invocando: `ModuleSeeder`, `ExerciseSeeder`, `PlanSeeder`.
+- `PrepopulateFacade` orquesta la prepopulación invocando: `ExerciseSeeder`, `MuscleZoneSeeder`, `EquipmentTypeSeeder`.
 - Cada Seeder encapsula las inserciones de sus entidades con datos literales en español.
 - El seed data es código Kotlin versionado en Git — cualquier cambio en el catálogo base o Plan se rastrea.
 - La prepopulación se ejecuta dentro de una transacción para garantizar atomicidad (o todo se inserta o nada).
@@ -557,11 +557,11 @@ Las siguientes decisiones no son de arquitectura de software sino de modelado de
 
 | # | Decisión de dominio | Impacto técnico | Fuente |
 |---|--------------------|----------------|--------|
-| D-01 | Rotación cíclica agnóstica al calendario (A→B→C) | La columna `current_module_position` y `current_version_index` del estado de rotación se persisten indefinidamente. No hay lógica de fecha/calendario en la determinación de qué módulo toca | MDS §4, §6-B.9 |
+| D-01 | Rotación cíclica agnóstica al calendario (recorre todas las rutinas en orden) | La columna `microcycle_position` del estado de rotación se persiste indefinidamente. No hay lógica de fecha/calendario en la determinación de qué rutina toca | MDS §4, §6-B.9 |
 | D-02 | Sustitución puntual solo con ejercicio "No Iniciado" (0 series) | El botón "Sustituir" se habilita/deshabilita según `session_exercise.status`. No se puede sustituir un ejercicio con series registradas | HU-07, CA-07.05, CA-07.06 |
 | D-03 | Sesiones cerradas son inmutables | No existe endpoint/función de edición post-cierre. La tabla `session` pasa a estado COMPLETED/INCOMPLETE y los datos quedan congelados | MDS §4 "Integridad del dato", HU-09 |
 | D-04 | E4 es un diálogo, no una pantalla de navegación | `AlertDialog` gestionado por estado del ViewModel (`showCloseDialog: Boolean`). No es una ruta en el `NavHost` — no entra al back stack | Wireframes E4, Arquitectura §4.3 |
 | D-05 | Objetivo de frecuencia semanal con default 4 sesiones | `settings.weekly_goal` se inicializa en 4 (rango 4-6). No se pide en onboarding — el ejecutante lo configura en J1 cuando quiera | Mapa de Navegación §6.1, HU-21 |
-| D-06 | Comparación de progresión contra último registro del mismo ejercicio (independiente de versión) | El query de comparación busca la última `session_exercise` del mismo `exercise_id`, sin filtrar por `module_version_id` | HU-10, RF23 |
-| D-07 | Incremento diferenciado: +2.5 Kg (A/B) y +5 Kg (C) | Constantes del motor de reglas: `LOAD_INCREMENT_UPPER = 2.5`, `LOAD_INCREMENT_LOWER = 5.0`. Se determinan por el módulo del ejercicio | MDS §6-A R1, HU-11 |
-| D-08 | Descarga dura 1 microciclo completo (6 sesiones A-B-C-A-B-C) | El estado de descarga se mantiene activo durante 6 sesiones consecutivas, no por tiempo calendario. La versión del módulo NO cambia durante la descarga | MDS §6-A R5, HU-17 |
+| D-06 | Comparación de progresión contra último registro del mismo ejercicio (independiente de versión) | El query de comparación busca la última `session_exercise` del mismo `exercise_id`, sin filtrar por `routine_version_id` | HU-10, RF23 |
+| D-07 | Incremento diferenciado: +2.5 Kg (tren superior) y +5 Kg (tren inferior) | Constantes del motor de reglas: `LOAD_INCREMENT_UPPER = 2.5`, `LOAD_INCREMENT_LOWER = 5.0`. Se determinan por la zona muscular del ejercicio (tren superior vs. inferior) | MDS §6-A R1, HU-11 |
+| D-08 | Descarga dura 1 microciclo completo (todas las rutinas del plan) | El estado de descarga se mantiene activo durante N sesiones consecutivas (N = total de rutinas), no por tiempo calendario. La versión de cada rutina NO cambia durante la descarga | MDS §6-A R5, HU-17 |

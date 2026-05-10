@@ -4,8 +4,8 @@ object AlertThresholdRule {
 
     const val PROGRESSION_ALERT_THRESHOLD = 40.0
     const val PROGRESSION_CRISIS_THRESHOLD = 20.0
-    const val RIR_LOW_THRESHOLD = 1.5
-    const val RIR_HIGH_THRESHOLD = 3.5
+    const val RIR_LOW_THRESHOLD = 0.5
+    const val RIR_HIGH_THRESHOLD = 1.8
     const val RIR_SUSTAINED_SESSIONS = 2
     const val ADHERENCE_THRESHOLD = 60.0
     const val ADHERENCE_CRISIS_WEEKS = 2
@@ -13,19 +13,6 @@ object AlertThresholdRule {
     const val TONNAGE_CRISIS_THRESHOLD = 20.0
     const val INACTIVITY_ALERT_DAYS = 10L
     const val INACTIVITY_CRISIS_DAYS = 14L
-
-    val MUSCLE_GROUPS_BY_MODULE: Map<String, List<String>> = mapOf(
-        "A" to listOf("Espalda", "Bíceps", "Abdomen"),
-        "B" to listOf("Pecho", "Hombro", "Tríceps"),
-        "C" to listOf(
-            "Cuádriceps",
-            "Isquiotibiales",
-            "Glúteos",
-            "Aductores",
-            "Abductores",
-            "Gemelos",
-        ),
-    )
 
     fun isProgressionAlert(rate: Double): Boolean = rate < PROGRESSION_ALERT_THRESHOLD
 

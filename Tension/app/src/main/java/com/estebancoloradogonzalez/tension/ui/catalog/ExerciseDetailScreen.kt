@@ -119,7 +119,6 @@ private fun ExerciseDetailContent(
         modifier = modifier.verticalScroll(rememberScrollState()),
     ) {
         ExerciseMediaSection(
-            moduleCode = exercise.moduleCode,
             mediaResource = exercise.mediaResource,
             onChangeImage = onChangeImage,
         )
@@ -130,11 +129,6 @@ private fun ExerciseDetailContent(
             DetailField(
                 label = stringResource(R.string.exercise_field_name),
                 value = exercise.name,
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            DetailField(
-                label = stringResource(R.string.exercise_field_module),
-                value = exercise.moduleName,
             )
             Spacer(modifier = Modifier.height(16.dp))
             DetailField(
@@ -162,11 +156,10 @@ private fun ExerciseDetailContent(
 
 @Composable
 private fun ExerciseMediaSection(
-    moduleCode: String,
     mediaResource: String?,
     onChangeImage: () -> Unit,
 ) {
-    val bitmap = rememberExerciseBitmap(moduleCode = moduleCode, mediaResource = mediaResource)
+    val bitmap = rememberExerciseBitmap(mediaResource = mediaResource)
 
     Box(
         modifier = Modifier
@@ -181,7 +174,7 @@ private fun ExerciseMediaSection(
                 bitmap = bitmap,
                 contentDescription = stringResource(R.string.exercise_media_description),
                 modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop,
+                contentScale = ContentScale.Fit,
             )
             // Small overlay icon to indicate changeability
             Box(
@@ -203,9 +196,9 @@ private fun ExerciseMediaSection(
 }
 
 @Composable
-private fun rememberExerciseBitmap(moduleCode: String, mediaResource: String?): ImageBitmap? {
+private fun rememberExerciseBitmap(mediaResource: String?): ImageBitmap? {
     val context = LocalContext.current
-    return remember(moduleCode, mediaResource) {
+    return remember(mediaResource) {
         if (mediaResource == null) return@remember null
         // First try as absolute file path (custom exercise images)
         val file = File(mediaResource)
@@ -214,15 +207,14 @@ private fun rememberExerciseBitmap(moduleCode: String, mediaResource: String?): 
                 return@remember BitmapFactory.decodeFile(mediaResource)?.asImageBitmap()
             } catch (_: Exception) { /* fall through */ }
         }
-        // Then try as asset path (seed exercise images)
+        // Then try as asset path (seed exercise images) - flat folder
         try {
-            val path = "exercises/module-${moduleCode.lowercase()}/$mediaResource.png"
-            context.assets.open(path).use { stream ->
+            val path = "exercises/$mediaResource.png"
+            return@remember context.assets.open(path).use { stream ->
                 BitmapFactory.decodeStream(stream)?.asImageBitmap()
             }
-        } catch (_: Exception) {
-            null
-        }
+        } catch (_: Exception) { /* no asset found */ }
+        null
     }
 }
 

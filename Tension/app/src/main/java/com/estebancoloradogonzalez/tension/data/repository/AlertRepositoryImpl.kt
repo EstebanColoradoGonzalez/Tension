@@ -4,7 +4,9 @@ import com.estebancoloradogonzalez.tension.data.local.dao.AlertDao
 import com.estebancoloradogonzalez.tension.data.local.dao.ExerciseDao
 import com.estebancoloradogonzalez.tension.data.local.dao.ExerciseProgressionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.ExerciseSetDao
+import com.estebancoloradogonzalez.tension.data.local.dao.PlanAssignmentDao
 import com.estebancoloradogonzalez.tension.data.local.dao.ProfileDao
+import com.estebancoloradogonzalez.tension.data.local.dao.RoutineDao
 import com.estebancoloradogonzalez.tension.data.local.dao.SessionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.SessionExerciseDao
 import com.estebancoloradogonzalez.tension.data.local.entity.AlertEntity
@@ -18,6 +20,7 @@ import com.estebancoloradogonzalez.tension.domain.rules.AdherenceRule
 import com.estebancoloradogonzalez.tension.domain.rules.AlertThresholdRule
 import com.estebancoloradogonzalez.tension.domain.rules.AvgRirRule
 import com.estebancoloradogonzalez.tension.domain.rules.CorrectiveActionRule
+import com.estebancoloradogonzalez.tension.domain.rules.LoadIncrementResolver
 import com.estebancoloradogonzalez.tension.domain.rules.PlateauCausalAnalysisRule
 import com.estebancoloradogonzalez.tension.domain.rules.ProgressionRateRule
 import com.estebancoloradogonzalez.tension.domain.rules.TonnageRule
@@ -37,6 +40,8 @@ class AlertRepositoryImpl @Inject constructor(
     private val sessionExerciseDao: SessionExerciseDao,
     private val exerciseProgressionDao: ExerciseProgressionDao,
     private val profileDao: ProfileDao,
+    private val routineDao: RoutineDao,
+    private val planAssignmentDao: PlanAssignmentDao,
 ) : AlertRepository {
 
     override fun countActive(): Flow<Int> = alertDao.countActive()
@@ -51,7 +56,8 @@ class AlertRepositoryImpl @Inject constructor(
         val entityName = when {
             entity.exerciseId != null ->
                 exerciseDao.getByIdOnce(entity.exerciseId)?.name ?: "Ejercicio"
-            entity.moduleCode != null -> "Módulo ${entity.moduleCode}"
+            entity.routineId != null ->
+                routineDao.getById(entity.routineId)?.name ?: "Rutina"
             entity.muscleGroup != null -> entity.muscleGroup
             else -> ""
         }
@@ -72,7 +78,8 @@ class AlertRepositoryImpl @Inject constructor(
         val entityName = when {
             alert.exerciseId != null ->
                 exerciseDao.getByIdOnce(alert.exerciseId)?.name ?: "Ejercicio"
-            alert.moduleCode != null -> "Módulo ${alert.moduleCode}"
+            alert.routineId != null ->
+                routineDao.getById(alert.routineId)?.name ?: "Rutina"
             alert.muscleGroup != null -> alert.muscleGroup
             else -> ""
         }
@@ -86,7 +93,7 @@ class AlertRepositoryImpl @Inject constructor(
             "LOW_PROGRESSION_RATE",
         ) && alert.exerciseId != null
 
-        val showDeloadLink = alert.type == "MODULE_REQUIRES_DELOAD" ||
+        val showDeloadLink = alert.type == "ROUTINE_REQUIRES_DELOAD" ||
             (alert.type == "RIR_OUT_OF_RANGE" && isRirLowAlert(alert))
 
         return AlertDetail(
@@ -106,8 +113,8 @@ class AlertRepositoryImpl @Inject constructor(
     }
 
     private suspend fun isRirLowAlert(alert: AlertEntity): Boolean {
-        val moduleCode = alert.moduleCode ?: return false
-        val sessionIds = sessionDao.getSessionIdsByModuleInRange(moduleCode, 2)
+        val routineId = alert.routineId ?: return false
+        val sessionIds = sessionDao.getSessionIdsByRoutineInRange(routineId, 2)
         if (sessionIds.isEmpty()) return false
         val rirValues = exerciseSetDao.getRirValuesBySessionIds(listOf(sessionIds.first()))
         if (rirValues.isEmpty()) return false
@@ -122,8 +129,8 @@ class AlertRepositoryImpl @Inject constructor(
             "RIR_OUT_OF_RANGE" -> buildRirTrigger(alert)
             "LOW_ADHERENCE" -> buildAdherenceTrigger()
             "TONNAGE_DROP" -> buildTonnageDropTrigger(alert)
-            "MODULE_INACTIVITY" -> buildInactivityTrigger(alert)
-            "MODULE_REQUIRES_DELOAD" -> buildPlateauTrigger(alert)
+            "ROUTINE_INACTIVITY" -> buildInactivityTrigger(alert)
+            "ROUTINE_REQUIRES_DELOAD" -> buildDeloadTrigger(alert)
             else -> AlertTriggerData.ProgressionRateTrigger(rate = 0.0, exerciseName = "")
         }
     }
@@ -131,7 +138,7 @@ class AlertRepositoryImpl @Inject constructor(
     private suspend fun buildPlateauTrigger(alert: AlertEntity): AlertTriggerData.PlateauTrigger {
         val exerciseId = alert.exerciseId ?: return AlertTriggerData.PlateauTrigger(emptyList())
         val entries = sessionExerciseDao.getExerciseHistoryEntries(exerciseId)
-        val sessions = entries.take(3).map { entry ->
+        val sessions = entries.filter { !it.isDeload }.take(3).map { entry ->
             AlertTriggerData.PlateauSession(
                 date = entry.date,
                 weightKg = entry.avgWeightKg,
@@ -139,6 +146,18 @@ class AlertRepositoryImpl @Inject constructor(
             )
         }
         return AlertTriggerData.PlateauTrigger(sessions)
+    }
+
+    private suspend fun buildDeloadTrigger(alert: AlertEntity): AlertTriggerData.DeloadTrigger {
+        val routineId = alert.routineId
+            ?: return AlertTriggerData.DeloadTrigger(0L, "", emptyList())
+        val routineName = routineDao.getById(routineId)?.name ?: ""
+        val muscleGroups = planAssignmentDao.getMuscleZoneNamesByRoutineId(routineId)
+        return AlertTriggerData.DeloadTrigger(
+            routineId = routineId,
+            routineName = routineName,
+            muscleGroups = muscleGroups,
+        )
     }
 
     private suspend fun buildProgressionRateTrigger(
@@ -159,15 +178,20 @@ class AlertRepositoryImpl @Inject constructor(
     }
 
     private suspend fun buildRirTrigger(alert: AlertEntity): AlertTriggerData.RirTrigger {
-        val moduleCode = alert.moduleCode ?: return AlertTriggerData.RirTrigger(0.0, "", false)
-        val sessionIds = sessionDao.getSessionIdsByModuleInRange(moduleCode, 2)
-        if (sessionIds.isEmpty()) return AlertTriggerData.RirTrigger(0.0, moduleCode, false)
+        val routineId = alert.routineId
+            ?: return AlertTriggerData.RirTrigger(0.0, 0L, "", false)
+        val routineName = routineDao.getById(routineId)?.name ?: ""
+        val sessionIds = sessionDao.getSessionIdsByRoutineInRange(routineId, 2)
+        if (sessionIds.isEmpty()) {
+            return AlertTriggerData.RirTrigger(0.0, routineId, routineName, false)
+        }
         val rirValues = exerciseSetDao.getRirValuesBySessionIds(sessionIds)
         val avgRir = AvgRirRule.calculate(rirValues)
         val isLow = AlertThresholdRule.isRirLow(avgRir)
         return AlertTriggerData.RirTrigger(
             avgRir = avgRir,
-            moduleCode = moduleCode,
+            routineId = routineId,
+            routineName = routineName,
             isLow = isLow,
         )
     }
@@ -175,8 +199,6 @@ class AlertRepositoryImpl @Inject constructor(
     private suspend fun buildAdherenceTrigger(): AlertTriggerData.AdherenceTrigger {
         val profile = profileDao.getProfile().first()
         val weeklyFrequency = profile?.weeklyFrequency ?: 6
-        // Consistent with pipeline: show PREVIOUS completed week data
-        // (the week that actually triggered the alert)
         val today = LocalDate.now()
         val prevWeekStart = today.minusWeeks(1).with(DayOfWeek.MONDAY).toString()
         val prevWeekEnd = today.minusWeeks(1).with(DayOfWeek.SUNDAY).toString()
@@ -207,14 +229,19 @@ class AlertRepositoryImpl @Inject constructor(
         val muscleGroup = alert.muscleGroup
             ?: return AlertTriggerData.TonnageDropTrigger("", 0.0, 0.0, 0.0, false)
         val closedSessions = sessionDao.getClosedSessionsOrdered()
-        // Only use complete microcycles (exactly 6 sessions) — consistent with pipeline
-        val completeMicrocycles = closedSessions.chunked(6).filter { it.size == 6 }
+        val nonDeloadSessions = closedSessions.filter { it.deloadId == null }
+        val routineCount = routineDao.countRoutines()
+        val cycleSize = if (routineCount > 0) routineCount else 1
+        val completeMicrocycles = nonDeloadSessions.chunked(cycleSize).filter { it.size == cycleSize }
         if (completeMicrocycles.size < 2) {
             return AlertTriggerData.TonnageDropTrigger(muscleGroup, 0.0, 0.0, 0.0, false)
         }
         val currentMicrocycle = completeMicrocycles.last()
         val previousMicrocycle = completeMicrocycles[completeMicrocycles.size - 2]
-        val isDeload = currentMicrocycle.any { it.deloadId != null }
+        val currentMicrocycleDates = currentMicrocycle.map { it.date }.toSet()
+        val isDeload = closedSessions.any {
+            it.deloadId != null && it.date in currentMicrocycleDates
+        }
 
         val currentTonnageData = exerciseSetDao.getTonnageDataBySessionIds(
             currentMicrocycle.map { it.id },
@@ -249,17 +276,21 @@ class AlertRepositoryImpl @Inject constructor(
     private suspend fun buildInactivityTrigger(
         alert: AlertEntity,
     ): AlertTriggerData.InactivityTrigger {
-        val moduleCode = alert.moduleCode
-            ?: return AlertTriggerData.InactivityTrigger("", 0, emptyList())
-        val lastDate = sessionDao.getLastSessionDateByModule(moduleCode)
-        val daysSince = if (lastDate != null) {
-            ChronoUnit.DAYS.between(LocalDate.parse(lastDate), LocalDate.now())
+        val routineId = alert.routineId
+            ?: return AlertTriggerData.InactivityTrigger(0L, "", 0, emptyList())
+        val routineName = routineDao.getById(routineId)?.name ?: ""
+        val lastDate = sessionDao.getLastSessionDateByRoutine(routineId)
+        val fallbackDate = routineDao.getById(routineId)?.createdAt
+        val referenceDate = lastDate ?: fallbackDate
+        val daysSince = if (referenceDate != null) {
+            ChronoUnit.DAYS.between(LocalDate.parse(referenceDate), LocalDate.now())
         } else {
             0L
         }
-        val muscleGroups = AlertThresholdRule.MUSCLE_GROUPS_BY_MODULE[moduleCode] ?: emptyList()
+        val muscleGroups = planAssignmentDao.getMuscleZoneNamesByRoutineId(routineId)
         return AlertTriggerData.InactivityTrigger(
-            moduleCode = moduleCode,
+            routineId = routineId,
+            routineName = routineName,
             daysSinceLastSession = daysSince,
             muscleGroups = muscleGroups,
         )
@@ -267,7 +298,8 @@ class AlertRepositoryImpl @Inject constructor(
 
     private suspend fun buildCausalAnalysis(alert: AlertEntity): String {
         return when (alert.type) {
-            "PLATEAU", "MODULE_REQUIRES_DELOAD" -> buildPlateauCausalAnalysis(alert)
+            "PLATEAU" -> buildPlateauCausalAnalysis(alert)
+            "ROUTINE_REQUIRES_DELOAD" -> buildDeloadCausalAnalysis(alert)
             "LOW_PROGRESSION_RATE" -> {
                 if (alert.level == "CRISIS") {
                     "Tasa de progresión en estado crítico. El ejercicio muestra estancamiento " +
@@ -278,8 +310,8 @@ class AlertRepositoryImpl @Inject constructor(
                 }
             }
             "RIR_OUT_OF_RANGE" -> {
-                val moduleCode = alert.moduleCode ?: ""
-                val sessionIds = sessionDao.getSessionIdsByModuleInRange(moduleCode, 2)
+                val routineId = alert.routineId ?: return "RIR fuera de rango sostenido."
+                val sessionIds = sessionDao.getSessionIdsByRoutineInRange(routineId, 2)
                 if (sessionIds.isNotEmpty()) {
                     val rirValues = exerciseSetDao.getRirValuesBySessionIds(
                         listOf(sessionIds.first()),
@@ -291,10 +323,10 @@ class AlertRepositoryImpl @Inject constructor(
                             "permitir recuperación del SNC."
                     } else {
                         "El estímulo puede ser insuficiente para generar adaptación. Se " +
-                            "recomienda incrementar la carga de los ejercicios del módulo."
+                            "recomienda incrementar la carga de los ejercicios de la rutina."
                     }
                 } else {
-                    "RIR fuera de rango sostenido en el módulo."
+                    "RIR fuera de rango sostenido en la rutina."
                 }
             }
             "LOW_ADHERENCE" -> {
@@ -309,11 +341,18 @@ class AlertRepositoryImpl @Inject constructor(
             }
             "TONNAGE_DROP" -> {
                 val closedSessions = sessionDao.getClosedSessionsOrdered()
-                val microcycles = closedSessions.chunked(6)
-                val isDeload = if (microcycles.isNotEmpty()) {
-                    microcycles.last().any { it.deloadId != null }
+                    .filter { it.deloadId == null }
+                val routineCount = routineDao.countRoutines()
+                val cycleSize = if (routineCount > 0) routineCount else 1
+                val microcycles = closedSessions.chunked(cycleSize)
+                val currentMicrocycleDates = if (microcycles.isNotEmpty()) {
+                    microcycles.last().map { it.date }.toSet()
                 } else {
-                    false
+                    emptySet()
+                }
+                val allSessions = sessionDao.getClosedSessionsOrdered()
+                val isDeload = allSessions.any {
+                    it.deloadId != null && it.date in currentMicrocycleDates
                 }
                 if (isDeload) {
                     "Descarga planificada — caída de tonelaje esperada y controlada."
@@ -322,17 +361,20 @@ class AlertRepositoryImpl @Inject constructor(
                         "el volumen de entrenamiento."
                 }
             }
-            "MODULE_INACTIVITY" -> {
-                val moduleCode = alert.moduleCode ?: ""
-                val lastDate = sessionDao.getLastSessionDateByModule(moduleCode)
-                val daysSince = if (lastDate != null) {
-                    ChronoUnit.DAYS.between(LocalDate.parse(lastDate), LocalDate.now())
+            "ROUTINE_INACTIVITY" -> {
+                val routineId = alert.routineId ?: return ""
+                val routine = routineDao.getById(routineId)
+                val routineName = routine?.name ?: ""
+                val lastDate = sessionDao.getLastSessionDateByRoutine(routineId)
+                val referenceDate = lastDate ?: routine?.createdAt
+                val daysSince = if (referenceDate != null) {
+                    ChronoUnit.DAYS.between(LocalDate.parse(referenceDate), LocalDate.now())
                 } else {
                     0L
                 }
-                val muscleGroups = AlertThresholdRule.MUSCLE_GROUPS_BY_MODULE[moduleCode]
-                    ?.joinToString(", ") ?: ""
-                "Módulo $moduleCode lleva $daysSince días sin sesión. Los grupos musculares " +
+                val muscleGroups = planAssignmentDao.getMuscleZoneNamesByRoutineId(routineId)
+                    .joinToString(", ")
+                "Rutina $routineName lleva $daysSince días sin sesión. Los grupos musculares " +
                     "asociados ($muscleGroups) pueden estar perdiendo adaptaciones."
             }
             else -> ""
@@ -342,22 +384,20 @@ class AlertRepositoryImpl @Inject constructor(
     private suspend fun buildPlateauCausalAnalysis(alert: AlertEntity): String {
         val exerciseId = alert.exerciseId ?: return "Meseta detectada."
         val entries = sessionExerciseDao.getExerciseHistoryEntries(exerciseId)
-        val lastRirs = entries.take(3).map { it.avgRir }
+        val lastRirs = entries.filter { !it.isDeload }.take(3).map { it.avgRir }
 
-        val moduleCode = alert.moduleCode ?: ""
-        val sessionIds = if (moduleCode.isNotEmpty()) {
-            sessionDao.getSessionIdsByModuleInRange(moduleCode, 4)
-        } else {
-            emptyList()
-        }
-        val isGroupStagnant = if (sessionIds.size >= 2) {
-            val counts = sessionExerciseDao.getClassificationCountsByPeriod(
-                LocalDate.now().minusWeeks(4).toString(),
-            )
-            val totalPositive = counts.sumOf { it.positiveCount }
-            val totalCount = counts.sumOf { it.totalCount }
-            val rate = ProgressionRateRule.calculate(totalPositive, totalCount)
-            rate < AlertThresholdRule.PROGRESSION_ALERT_THRESHOLD
+        val routineId = alert.routineId
+        val isGroupStagnant = if (routineId != null) {
+            val sessionIds = sessionDao.getSessionIdsByRoutineInRange(routineId, 4)
+            if (sessionIds.size >= 2) {
+                val counts = sessionExerciseDao.getClassificationCountsForSessions(sessionIds)
+                val totalPositive = counts.sumOf { it.positiveCount }
+                val totalCount = counts.sumOf { it.totalCount }
+                val rate = ProgressionRateRule.calculate(totalPositive, totalCount)
+                rate < AlertThresholdRule.PROGRESSION_ALERT_THRESHOLD
+            } else {
+                false
+            }
         } else {
             false
         }
@@ -375,23 +415,55 @@ class AlertRepositoryImpl @Inject constructor(
         }
     }
 
+    private suspend fun buildDeloadCausalAnalysis(alert: AlertEntity): String {
+        val routineId = alert.routineId
+            ?: return "Se detectó necesidad de descarga."
+        val routineName = routineDao.getById(routineId)?.name ?: "rutina"
+        val sessionIds = sessionDao.getSessionIdsByRoutineInRange(routineId, 4)
+        if (sessionIds.size < 2) {
+            return "Rutina $routineName muestra signos de fatiga acumulada."
+        }
+        val counts = sessionExerciseDao.getClassificationCountsForSessions(sessionIds)
+        val totalNonPositive = counts.sumOf { it.totalCount - it.positiveCount }
+        val totalCount = counts.sumOf { it.totalCount }
+        val regressPct = if (totalCount > 0) (totalNonPositive * 100 / totalCount) else 0
+        return "Rutina $routineName presenta regresión o estancamiento en $regressPct% de ejercicios " +
+            "en sesiones recientes. Fatiga acumulada — se recomienda activar descarga."
+    }
+
     private suspend fun buildRecommendations(alert: AlertEntity): List<String> {
         return when (alert.type) {
-            "PLATEAU", "MODULE_REQUIRES_DELOAD" -> {
+            "PLATEAU" -> {
                 val exerciseId = alert.exerciseId
                 val progression = exerciseId?.let {
                     exerciseProgressionDao.getByExerciseId(it).first()
                 }
                 val sessionsWithout = progression?.sessionsWithoutProgression ?: 0
+                val muscleGroup = exerciseId?.let {
+                    sessionExerciseDao.getPrimaryMuscleGroupByExercise(it)
+                }
+                val increment = LoadIncrementResolver.resolve(muscleGroup ?: "")
+                val incrementText = if (increment == 5.0) "+5.0 Kg" else "+2.5 Kg"
                 CorrectiveActionRule.recommend(sessionsWithout).map { action ->
                     when (action) {
                         CorrectiveAction.MICRO_INCREMENT_OR_EXTEND_REPS ->
-                            "Intentar microincremento (+2.5 Kg) o extensión de reps"
-                        CorrectiveAction.ROTATE_VERSION ->
-                            "Considerar rotar versión del módulo"
+                            "Intentar microincremento ($incrementText) o extensión de reps"
+                        CorrectiveAction.ROTATE_VERSION -> {
+                            val routineId = alert.routineId
+                            val routineName = routineId?.let { routineDao.getById(it)?.name }
+                            if (routineName != null) {
+                                "Considerar rotar a otra versión de la rutina \"$routineName\""
+                            } else {
+                                "Considerar rotar versión de la rutina"
+                            }
+                        }
                     }
                 }
             }
+            "ROUTINE_REQUIRES_DELOAD" -> listOf(
+                "Activar protocolo de descarga para esta rutina",
+                "Reducir cargas al 60% durante el próximo microciclo",
+            )
             "LOW_PROGRESSION_RATE" -> listOf(
                 "Evaluar si la carga o el volumen necesitan ajuste",
                 "Considerar variar el rango de repeticiones",
@@ -401,7 +473,7 @@ class AlertRepositoryImpl @Inject constructor(
                 if (isLow) {
                     listOf("Considerar prescribir una descarga para permitir recuperación")
                 } else {
-                    listOf("Incrementar la carga de los ejercicios del módulo")
+                    listOf("Incrementar la carga de los ejercicios de la rutina")
                 }
             }
             "LOW_ADHERENCE" -> listOf(
@@ -411,9 +483,11 @@ class AlertRepositoryImpl @Inject constructor(
                 "Evaluar causas de la caída de tonelaje",
                 "Considerar ajustar el volumen de entrenamiento",
             )
-            "MODULE_INACTIVITY" -> {
-                val moduleCode = alert.moduleCode ?: ""
-                listOf("Priorizar el módulo $moduleCode en las próximas sesiones")
+            "ROUTINE_INACTIVITY" -> {
+                val routineName = alert.routineId?.let {
+                    routineDao.getById(it)?.name
+                } ?: "la rutina"
+                listOf("Priorizar la rutina $routineName en las próximas sesiones")
             }
             else -> emptyList()
         }

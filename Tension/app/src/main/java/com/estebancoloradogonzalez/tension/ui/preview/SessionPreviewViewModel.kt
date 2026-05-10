@@ -3,7 +3,8 @@ package com.estebancoloradogonzalez.tension.ui.preview
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.estebancoloradogonzalez.tension.domain.repository.SessionRepository
+import com.estebancoloradogonzalez.tension.domain.model.DeloadState
+import com.estebancoloradogonzalez.tension.domain.usecase.deload.GetDeloadStateUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.session.GetSessionPreviewUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.session.StartSessionUseCase
 import com.estebancoloradogonzalez.tension.domain.util.LoadDisplayMapper
@@ -15,28 +16,30 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.net.URLDecoder
 import javax.inject.Inject
 
 @HiltViewModel
 class SessionPreviewViewModel @Inject constructor(
     private val getSessionPreviewUseCase: GetSessionPreviewUseCase,
     private val startSessionUseCase: StartSessionUseCase,
-    private val sessionRepository: SessionRepository,
+    private val getDeloadStateUseCase: GetDeloadStateUseCase,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
-    private val moduleVersionId: Long = checkNotNull(savedStateHandle["moduleVersionId"])
-    private val moduleCode: String = checkNotNull(savedStateHandle["moduleCode"])
+    private val routineVersionId: Long = checkNotNull(savedStateHandle["routineVersionId"])
+    private val routineName: String = URLDecoder.decode(
+        checkNotNull(savedStateHandle["routineName"]), "UTF-8",
+    )
     private val versionNumber: Int = checkNotNull(savedStateHandle["versionNumber"])
 
     private val _uiState = MutableStateFlow(
         SessionPreviewUiState(
-            moduleCode = moduleCode,
+            routineName = routineName,
             versionNumber = versionNumber,
-            moduleVersionId = moduleVersionId,
+            routineVersionId = routineVersionId,
         ),
     )
     val uiState: StateFlow<SessionPreviewUiState> = _uiState.asStateFlow()
@@ -46,17 +49,16 @@ class SessionPreviewViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            val activeDeload = sessionRepository.getActiveDeload().first()
+            val deloadState = getDeloadStateUseCase()
 
-            val isDeload = activeDeload != null
-            val deloadSessionsRemaining = if (activeDeload != null) {
-                val count = sessionRepository.countDeloadSessions(activeDeload.id)
-                6 - count
+            val isDeload = deloadState is DeloadState.DeloadActive
+            val deloadSessionsRemaining = if (deloadState is DeloadState.DeloadActive) {
+                deloadState.totalSessions - deloadState.progress
             } else {
                 0
             }
 
-            getSessionPreviewUseCase(moduleVersionId).collect { exercises ->
+            getSessionPreviewUseCase(routineVersionId).collect { exercises ->
                 _uiState.update { current ->
                     current.copy(
                         isLoading = false,
@@ -68,7 +70,7 @@ class SessionPreviewViewModel @Inject constructor(
                                 isIsometric = exercise.isIsometric,
                                 isBodyweight = exercise.isBodyweight,
                                 prescribedLoadKg = exercise.prescribedLoadKg,
-                                loadIncrementKg = exercise.loadIncrementKg,
+                                muscleGroup = exercise.muscleGroup,
                             )
                             val (repsText, isSpecial) = RepsDisplayMapper.mapRepsToDisplay(
                                 exercise.reps,
@@ -83,8 +85,7 @@ class SessionPreviewViewModel @Inject constructor(
                                 isRepsSpecial = isSpecial,
                                 loadDisplayText = loadText,
                                 isBodyweight = exercise.isBodyweight,
-                                showOutOfGymBadge = exercise.isBodyweight &&
-                                    exercise.moduleCode == "A",
+                                showOutOfGymBadge = exercise.isBodyweight,
                             )
                         },
                     )
@@ -96,11 +97,15 @@ class SessionPreviewViewModel @Inject constructor(
     fun startSession() {
         viewModelScope.launch {
             try {
-                val sessionId = startSessionUseCase(moduleVersionId)
+                val sessionId = startSessionUseCase(routineVersionId)
                 _navigateToActiveSession.emit(sessionId)
-            } catch (_: Exception) {
-                // Session creation failed — no action needed
+            } catch (e: Exception) {
+                _uiState.update { it.copy(errorMessage = e.message) }
             }
         }
+    }
+
+    fun dismissError() {
+        _uiState.update { it.copy(errorMessage = null) }
     }
 }

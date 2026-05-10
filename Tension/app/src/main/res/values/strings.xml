@@ -22,7 +22,7 @@
     <!-- Home B1 -->
     <string name="home_title">Tension</string>
     <string name="home_next_session_label">Tu próxima sesión</string>
-    <string name="home_next_session_format">Módulo %1$s \u2014 Versión %2$d</string>
+    <string name="home_next_session_format">%1$s \u2014 Versión %2$d</string>
     <string name="home_start_session">Iniciar Sesión</string>
     <string name="home_resume_title">Tienes una sesión activa sin cerrar</string>
     <string name="home_resume_progress">%1$d de %2$d ejercicios completados</string>
@@ -32,17 +32,12 @@
 
     <!-- Active Session E1 -->
     <string name="session_active_label">Sesión activa</string>
-    <string name="session_module_version_format">Módulo %1$s \u2014 Versión %2$d</string>
+    <string name="session_routine_version_format">%1$s \u2014 Versión %2$d</string>
     <string name="session_progress_format">%1$d de %2$d ejercicios completados</string>
-    <string name="session_status_not_started">No Iniciado \u00b7 %1$d/%2$d series</string>
-    <string name="session_status_in_progress">En Ejecución \u00b7 %1$d/%2$d series</string>
-    <string name="session_status_completed">Completado \u00b7 %1$d/%2$d series</string>
-    <string name="session_load_kg_format">%.1f Kg</string>
-    <string name="session_load_no_history">Sin historial \u2014 establecer carga</string>
-    <string name="session_load_bodyweight">Peso corporal</string>
-    <string name="session_load_isometric">Isométrico (30\u201345s)</string>
     <string name="exercise_outside_gym">Fuera del gym</string>
     <string name="session_register_set">Registrar</string>
+    <string name="session_extra_set">Serie extra</string>
+    <string name="session_finalize">Finalizar</string>
     <string name="session_substitute">Sustituir</string>
     <string name="session_close">Cerrar Sesión</string>
 
@@ -66,6 +61,7 @@
 
     <!-- Register Set E2 -->
     <string name="register_set_title_format">Serie %1$d de %2$d</string>
+    <string name="register_set_extra_title_format">Serie extra %1$d</string>
     <string name="register_set_weight_label">Peso (Kg)</string>
     <string name="register_set_weight_bodyweight_label">Peso (Kg) (Peso corporal)</string>
     <string name="register_set_weight_isometric_label">Peso (Kg) (Isométrico)</string>
@@ -85,7 +81,8 @@
     <!-- Substitute Exercise E3 -->
     <string name="substitute_exercise_title">Sustituir ejercicio</string>
     <string name="substitute_exercise_subtitle_format">Reemplazar: %1$s</string>
-    <string name="substitute_exercise_info_line1">Selecciona un ejercicio del mismo módulo como
+    <string name="substitute_exercise_info_line1">Selecciona un ejercicio de la misma zona muscular
+        como
         reemplazo.</string>
     <string name="substitute_exercise_info_line2">La sustitución es puntual y no modifica el Plan.</string>
     <string name="substitute_exercise_dialog_title_format">¿Sustituir %1$s por %2$s?</string>
@@ -94,7 +91,7 @@
     <string name="substitute_exercise_cancel">Cancelar</string>
 
     <!-- Settings J1 -->
-    <string name="settings_title">Configuración</string>
+    <string name="settings_title">Ajustes</string>
     <string name="settings_edit_profile">Editar perfil</string>
 
     <!-- Weight History C2 -->
@@ -108,25 +105,23 @@
     <string name="nav_dictionary">Diccionario</string>
     <string name="nav_history">Historial</string>
     <string name="nav_metrics">Métricas</string>
-    <string name="nav_settings">Configuración</string>
+    <string name="nav_settings">Ajustes</string>
 
     <!-- Dictionary D1 -->
     <string name="dictionary_title">Diccionario</string>
     <string name="tab_exercises">Ejercicios</string>
     <string name="tab_plan">Plan</string>
     <string name="filter_all">Todos</string>
-    <string name="filter_module">Módulo</string>
     <string name="filter_equipment">Equipo</string>
     <string name="filter_muscle_zone">Zona</string>
     <string name="exercise_count_format">Mostrando %1$d de %2$d ejercicios</string>
     <string name="no_exercises_match">No hay ejercicios que coincidan con los filtros seleccionados.</string>
-    <string name="exercise_supporting_format">Módulo %1$s · %2$s · %3$s</string>
+    <string name="exercise_supporting_format">%1$s · %2$s</string>
     <string name="badge_custom">Personalizado</string>
     <string name="fab_create_exercise">Crear ejercicio</string>
 
     <!-- Exercise Detail D2 -->
     <string name="exercise_field_name">Nombre</string>
-    <string name="exercise_field_module">Módulo</string>
     <string name="exercise_field_equipment">Tipo de equipo</string>
     <string name="exercise_field_muscle_zone">Zona muscular</string>
     <string name="exercise_history_link">Ver historial de este ejercicio \u2192</string>
@@ -178,7 +173,7 @@
     <string name="exercise_count_format_short">(%d ej.)</string>
 
     <!-- Plan Version Detail D4 -->
-    <string name="plan_version_title_format">Módulo %1$s \u2014 Versión %2$d</string>
+    <string name="plan_version_title_format">%1$s \u2014 Versión %2$d</string>
     <string name="plan_exercise_count_subtitle">%d ejercicios \u00b7 Sin orden obligatorio</string>
     <string name="prescription_format">%1$d series \u00b7 %2$s</string>
     <string name="reps_standard_format">%s reps</string>
@@ -190,8 +185,16 @@
     <string name="unassign_dialog_confirm">Desasignar</string>
     <string name="cancel">Cancelar</string>
     <string name="assign_exercise_title">Asignar ejercicio</string>
-    <string name="assign_exercise_empty">No hay ejercicios disponibles para asignar en este módulo.</string>
+    <string name="assign_exercise_empty">No hay ejercicios disponibles para asignar en esta versión.</string>
     <string name="assign_button">Asignar</string>
+    <string name="edit_assignment_title">Editar prescripción</string>
+    <string name="add_alternative_description">Agregar alternativa</string>
+    <string name="add_alternative_title">Agregar alternativa a "%1$s"</string>
+    <string name="add_alternative_hint">Este ejercicio compartirá el mismo puesto en el plan. Al
+        iniciar sesión podrás elegir cuál realizar.</string>
+    <string name="add_alternative_button">Agregar al plan</string>
+    <string name="select_exercise_for_slot">Elegir ejercicio</string>
+    <string name="confirm_selection_button">Confirmar selección</string>
     <string name="sets_label">Series</string>
     <string name="reps_label">Repeticiones</string>
     <string name="no_exercises_assigned">No hay ejercicios asignados a esta versión.</string>
@@ -204,36 +207,35 @@
 
     <!-- Deload B1 Card -->
     <string name="home_deload_active">Descarga activa</string>
-    <string name="home_deload_required">Módulo %1$s requiere descarga</string>
-    <string name="home_deload_progress">Sesión %1$d de 6</string>
+    <string name="home_deload_required">%1$s requiere descarga</string>
+    <string name="home_deload_progress">Sesión %1$d de %2$d</string>
     <string name="home_deload_manage">Ver gestión de descarga \u2192</string>
 
     <!-- Deload Management I1 -->
     <string name="deload_title">Gestión de Descarga</string>
     <string name="deload_no_active">No hay descarga activa</string>
-    <string name="deload_required_title">Módulo %1$s requiere descarga</string>
+    <string name="deload_required_title">%1$s requiere descarga</string>
     <string name="deload_required_detail">\u2265 50%% de los ejercicios están en meseta o regresión</string>
     <string name="deload_protocol_title">Al activar la descarga:</string>
     <string name="deload_protocol_load">\u00B7 Carga al 60%%</string>
     <string name="deload_protocol_sets">\u00B7 4 series</string>
     <string name="deload_protocol_reps">\u00B7 8 repeticiones</string>
-    <string name="deload_protocol_rir">\u00B7 RIR 4\u20135</string>
-    <string name="deload_protocol_duration">\u00B7 Duración 1 microciclo (6 sesiones)</string>
+    <string name="deload_protocol_rir">\u00B7 RIR 2</string>
+    <string name="deload_protocol_duration">\u00B7 Duración 1 microciclo</string>
     <string name="deload_protocol_versions">\u00B7 Versiones congeladas</string>
-    <string name="deload_protocol_bodyweight">\u00B7 Peso corporal: 8 reps, RIR 4\u20135 (sin ajuste
+    <string name="deload_protocol_bodyweight">\u00B7 Peso corporal: 8 reps, RIR 2 (sin ajuste
         de carga)</string>
-    <string name="deload_protocol_isometric">\u00B7 Isométricos: 30 seg, RIR 4\u20135</string>
+    <string name="deload_protocol_isometric">\u00B7 Isométricos: 30 seg, RIR 2</string>
     <string name="deload_protocol_reset">\u00B7 Al finalizar: reinicio al 90%% de carga pre-descarga</string>
     <string name="deload_activate">Activar Descarga</string>
     <string name="deload_active_title">Descarga activa</string>
-    <string name="deload_progress_format">Progreso: %1$d/6 sesiones</string>
+    <string name="deload_progress_format">Progreso: %1$d/%2$d sesiones</string>
     <string name="deload_remaining_format">Sesiones restantes: %1$d</string>
     <string name="deload_params_load">Carga: 60%%</string>
     <string name="deload_params_sets">Series: 4</string>
     <string name="deload_params_reps">Reps: 8</string>
-    <string name="deload_params_rir">RIR objetivo: 4\u20135</string>
-    <string name="deload_frozen_versions">Versión congelada: A\u2011V%1$d, B\u2011V%2$d,
-        C\u2011V%3$d</string>
+    <string name="deload_params_rir">RIR objetivo: 2</string>
+    <string name="deload_frozen_version_item">%1$s \u2011 Versión %2$d</string>
     <string name="deload_completed_title">Descarga completada</string>
     <string name="deload_reset_loads_title">Cargas de reinicio (90%% pre-descarga):</string>
     <string name="deload_reset_exercise_format">%1$s: %2$.1f Kg</string>
@@ -248,11 +250,11 @@
     <string name="metrics_title">Métricas</string>
     <string name="metrics_adherence_title">Adherencia semanal</string>
     <string name="metrics_adherence_detail">%1$d de %2$d sesiones esta semana</string>
-    <string name="metrics_rir_title">RIR promedio por módulo</string>
+    <string name="metrics_rir_title">RIR promedio por rutina</string>
     <string name="metrics_rir_2_sessions">2 últimas sesiones</string>
     <string name="metrics_rir_4_sessions">4 últimas sesiones</string>
     <string name="metrics_rir_6_sessions">6 últimas sesiones</string>
-    <string name="metrics_rir_reference">2\u20133 = óptimo · &lt; 1.5 = riesgo · > 3.5 =
+    <string name="metrics_rir_reference">1 = óptimo · &lt; 0.5 = riesgo · > 1.8 =
         insuficiente</string>
     <string name="metrics_rir_optimal">Óptimo</string>
     <string name="metrics_rir_risk">Riesgo</string>
@@ -272,7 +274,7 @@
     <string name="volume_microcycle_label">Microciclo %1$d</string>
     <string name="volume_tonnage_format">%1$,.0f Kg</string>
     <string name="volume_distribution_title">Distribución de volumen</string>
-    <string name="volume_module_header">Módulo %1$s</string>
+    <string name="volume_routine_header">%1$s</string>
     <string name="volume_evolution_title">Evolución temporal</string>
     <string name="volume_insufficient">Se necesitan al menos 2 microciclos para mostrar evolución
         comparativa.</string>
@@ -305,8 +307,8 @@
     <string name="alert_type_rir_out_of_range">RIR fuera de rango</string>
     <string name="alert_type_low_adherence">Adherencia baja</string>
     <string name="alert_type_tonnage_drop">Caída de tonelaje</string>
-    <string name="alert_type_module_inactivity">Inactividad por módulo</string>
-    <string name="alert_type_module_requires_deload">Módulo requiere descarga</string>
+    <string name="alert_type_routine_inactivity">Inactividad por rutina</string>
+    <string name="alert_type_routine_requires_deload">Rutina requiere descarga</string>
 
     <!-- Settings J1 — Datos -->
     <string name="settings_section_data">Datos</string>
@@ -342,7 +344,7 @@
     <string name="import_backup_success">Datos restaurados exitosamente.</string>
     <string name="import_backup_error">La importación falló. Tus datos originales han sido
         preservados.</string>
-    <string name="import_backup_back_to_settings">Volver a Configuración</string>
+    <string name="import_backup_back_to_settings">Volver a Ajustes</string>
     <string name="import_backup_read_error">Error al leer el archivo</string>
     <string name="import_backup_invalid_default">El archivo seleccionado no es un respaldo válido o
         está corrupto.</string>
@@ -353,7 +355,7 @@
     <string name="import_backup_incomplete">Archivo de respaldo incompleto</string>
 
     <!-- Session Preview -->
-    <string name="preview_title_format">Módulo %1$s — V%2$d</string>
+    <string name="preview_title_format">%1$s — V%2$d</string>
     <string name="preview_start_session">Iniciar Sesión</string>
     <string name="preview_deload_banner">Modo Descarga — %1$d sesiones restantes</string>
 
@@ -368,4 +370,40 @@
     <string name="chronometer_accessibility_idle">Cronómetro listo para iniciar</string>
     <string name="chronometer_accessibility_running">Cronómetro en %1$d segundos</string>
     <string name="chronometer_accessibility_stopped">Cronómetro detenido en %1$d segundos</string>
+
+    <!-- Routine Management -->
+    <string name="routine_list_title">Mi Plan</string>
+    <string name="routine_create_title">Crear rutina</string>
+    <string name="routine_name_label">Nombre de la rutina</string>
+    <string name="routine_name_hint">Ej: Push, Pull, Pierna…</string>
+    <string name="routine_create_button">Crear</string>
+    <string name="routine_edit_title">Editar nombre</string>
+    <string name="routine_edit_button">Guardar</string>
+    <string name="routine_delete_title">Eliminar rutina</string>
+    <string name="routine_delete_confirm">¿Eliminar \"%1$s\"? Se eliminarán todas sus versiones y
+        asignaciones de ejercicios.</string>
+    <string name="routine_delete_button">Eliminar</string>
+    <string name="routine_version_count">%1$d versiones</string>
+    <string name="routine_version_count_singular">1 versión</string>
+    <string name="routine_empty_state">No tienes rutinas aún.\nCrea tu primera rutina para comenzar.</string>
+    <string name="routine_error_empty_name">El nombre no puede estar vacío</string>
+    <string name="routine_error_too_long">El nombre no puede exceder 50 caracteres</string>
+    <string name="routine_error_duplicate">Ya existe una rutina con ese nombre</string>
+    <string name="routine_error_last_routine">No se puede eliminar la última rutina</string>
+    <string name="routine_error_active_session">No se puede eliminar una rutina con sesión activa</string>
+    <string name="routine_error_has_sessions">No se puede eliminar una rutina con historial de
+        sesiones</string>
+
+    <!-- Routine Version Management -->
+    <string name="routine_versions_title">Versiones</string>
+    <string name="routine_version_create">Crear versión</string>
+    <string name="routine_version_delete_title">Eliminar versión</string>
+    <string name="routine_version_delete_confirm">¿Eliminar versión %1$d? Se eliminarán todas las
+        asignaciones de ejercicios de esta versión.</string>
+    <string name="routine_version_delete_button">Eliminar</string>
+    <string name="routine_version_error_last">No se puede eliminar la última versión</string>
+    <string name="routine_version_error_has_sessions">No se puede eliminar una versión con historial
+        de sesiones</string>
+    <string name="routine_version_exercise_count">%1$d ejercicios</string>
+    <string name="routine_version_exercise_count_singular">1 ejercicio</string>
 </resources>

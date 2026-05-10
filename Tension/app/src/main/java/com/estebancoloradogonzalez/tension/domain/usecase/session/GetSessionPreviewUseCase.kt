@@ -8,7 +8,7 @@ import javax.inject.Inject
 class GetSessionPreviewUseCase @Inject constructor(
     private val sessionRepository: SessionRepository,
 ) {
-    operator fun invoke(moduleVersionId: Long): Flow<List<SessionPreviewExercise>> {
-        return sessionRepository.getSessionPreviewExercises(moduleVersionId)
+    operator fun invoke(routineVersionId: Long): Flow<List<SessionPreviewExercise>> {
+        return sessionRepository.getSessionPreviewExercises(routineVersionId)
     }
 }

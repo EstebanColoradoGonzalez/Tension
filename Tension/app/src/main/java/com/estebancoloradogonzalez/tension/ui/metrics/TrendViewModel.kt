@@ -28,7 +28,8 @@ class TrendViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val microcycleMap = getMicrocycleMapUseCase()
-                val completedCount = microcycleMap.count { it.value.size == 6 }
+                val cycleSize = microcycleMap.values.maxOfOrNull { it.size } ?: 1
+                val completedCount = microcycleMap.count { it.value.size == cycleSize }
                 if (completedCount < 4) {
                     _uiState.value = TrendUiState.InsufficientData(
                         remaining = 4 - completedCount,

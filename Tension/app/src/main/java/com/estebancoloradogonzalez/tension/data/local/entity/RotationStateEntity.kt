@@ -13,15 +13,6 @@ data class RotationStateEntity(
     @ColumnInfo(name = "microcycle_position")
     val microcyclePosition: Int = 1,
 
-    @ColumnInfo(name = "current_version_module_a")
-    val currentVersionModuleA: Int = 1,
-
-    @ColumnInfo(name = "current_version_module_b")
-    val currentVersionModuleB: Int = 1,
-
-    @ColumnInfo(name = "current_version_module_c")
-    val currentVersionModuleC: Int = 1,
-
     @ColumnInfo(name = "microcycle_count")
     val microcycleCount: Int = 0,
 )

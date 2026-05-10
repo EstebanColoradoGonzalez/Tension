@@ -8,96 +8,119 @@ object PlanSeeder {
 
     private const val SETS = 4
     private const val R8_12 = "8-12"
-    private const val FAILURE = "TO_TECHNICAL_FAILURE"
-    private const val R30_45 = "30-45_SEC"
 
     fun seed(db: SupportSQLiteDatabase) {
-        seedModuleVersions(db)
+        seedRoutines(db)
+        seedRoutineVersions(db)
+        seedRoutineCurrentVersions(db)
         seedPlanAssignments(db)
     }
 
-    private fun seedModuleVersions(db: SupportSQLiteDatabase) {
-        mv(db, 1, "A", 1); mv(db, 2, "A", 2); mv(db, 3, "A", 3)
-        mv(db, 4, "B", 1); mv(db, 5, "B", 2); mv(db, 6, "B", 3)
-        mv(db, 7, "C", 1); mv(db, 8, "C", 2); mv(db, 9, "C", 3)
+    private fun seedRoutines(db: SupportSQLiteDatabase) {
+        routine(db, 1, "Pierna (Leg)", 1)
+        routine(db, 2, "Pecho, Hombro, Tríceps (Push)", 2)
+        routine(db, 3, "Espalda, Bíceps y Abdomen (Pull)", 3)
     }
 
-    private fun mv(db: SupportSQLiteDatabase, id: Long, moduleCode: String, versionNumber: Int) {
+    private fun routine(db: SupportSQLiteDatabase, id: Long, name: String, sortOrder: Int) {
         val values = ContentValues().apply {
             put("id", id)
-            put("module_code", moduleCode)
+            put("name", name)
+            put("sort_order", sortOrder)
+            put("created_at", "2025-01-01")
+        }
+        db.insert("routine", SQLiteDatabase.CONFLICT_REPLACE, values)
+    }
+
+    private fun seedRoutineVersions(db: SupportSQLiteDatabase) {
+        rv(db, 1, 1, 1)  // Pierna V1
+        rv(db, 2, 1, 2)  // Pierna V2
+        rv(db, 3, 2, 1)  // Push V1
+        rv(db, 4, 3, 1)  // Pull V1
+    }
+
+    private fun rv(db: SupportSQLiteDatabase, id: Long, routineId: Long, versionNumber: Int) {
+        val values = ContentValues().apply {
+            put("id", id)
+            put("routine_id", routineId)
             put("version_number", versionNumber)
         }
-        db.insert("module_version", SQLiteDatabase.CONFLICT_REPLACE, values)
+        db.insert("routine_version", SQLiteDatabase.CONFLICT_REPLACE, values)
+    }
+
+    private fun seedRoutineCurrentVersions(db: SupportSQLiteDatabase) {
+        rcv(db, 1, 1)
+        rcv(db, 2, 1)
+        rcv(db, 3, 1)
+    }
+
+    private fun rcv(db: SupportSQLiteDatabase, routineId: Long, currentVersionNumber: Int) {
+        val values = ContentValues().apply {
+            put("routine_id", routineId)
+            put("current_version_number", currentVersionNumber)
+        }
+        db.insert("routine_current_version", SQLiteDatabase.CONFLICT_REPLACE, values)
     }
 
     @Suppress("LongMethod")
     private fun seedPlanAssignments(db: SupportSQLiteDatabase) {
-        // ===== Module A — Pull + Abs =====
-        // A-V1 (moduleVersionId = 1) — 12 exercises
-        pa(db, 1, 10, R8_12, 1);  pa(db, 1, 8, R8_12, 2);  pa(db, 1, 9, R8_12, 3)
-        pa(db, 1, 26, R8_12, 4);  pa(db, 1, 16, R8_12, 5); pa(db, 1, 18, R8_12, 6)
-        pa(db, 1, 17, R8_12, 7);  pa(db, 1, 19, R8_12, 8); pa(db, 1, 11, R8_12, 9)
-        pa(db, 1, 12, R8_12, 10); pa(db, 1, 13, R8_12, 11); pa(db, 1, 14, R30_45, 12)
+        // ===== Routine 1 — Pierna (Leg) =====
+        // V1 (routineVersionId = 1) — 6 exercises
+        pa(db, 1, 1, R8_12, 1)   // Aductores
+        pa(db, 1, 6, R8_12, 2)   // Curl de Isquiotibiales Sentado
+        pa(db, 1, 17, R8_12, 3)  // Prensa Inclinada
+        pa(db, 1, 24, R8_12, 4)  // Sentadilla Hack
+        pa(db, 1, 11, R8_12, 5)  // Extensión de Cuádriceps
+        pa(db, 1, 9, R8_12, 6)   // Elevación de Pantorrilla en Máquina de Pie
 
-        // A-V2 (moduleVersionId = 2) — 11 exercises
-        pa(db, 2, 10, R8_12, 1); pa(db, 2, 8, R8_12, 2);  pa(db, 2, 9, R8_12, 3)
-        pa(db, 2, 26, R8_12, 4); pa(db, 2, 16, R8_12, 5); pa(db, 2, 18, R8_12, 6)
-        pa(db, 2, 17, R8_12, 7); pa(db, 2, 20, R8_12, 8); pa(db, 2, 11, R8_12, 9)
-        pa(db, 2, 14, R30_45, 10); pa(db, 2, 15, R30_45, 11)
+        // V2 (routineVersionId = 2) — 6 slots, 8 exercises (slot 4 has 3 alternatives)
+        pa(db, 2, 1, R8_12, 1)            // Aductores
+        pa(db, 2, 6, R8_12, 2)            // Curl de Isquiotibiales Sentado
+        pa(db, 2, 16, R8_12, 3)           // Peso Muerto Rumano
+        pa(db, 2, 15, R8_12, 4)           // Hip Thrust (Máquina)
+        pa(db, 2, 22, R8_12, 5, slot = 4) // Sentadilla Búlgara (Mancuernas) — alternativa slot 4
+        pa(db, 2, 23, R8_12, 6, slot = 4) // Sentadilla de Zumo (Mancuerna) — alternativa slot 4
+        pa(db, 2, 11, R8_12, 7, slot = 5) // Extensión de Cuádriceps
+        pa(db, 2, 9, R8_12, 8, slot = 6)  // Elevación de Pantorrilla en Máquina de Pie
 
-        // A-V3 (moduleVersionId = 3) — 11 exercises
-        pa(db, 3, 10, R8_12, 1); pa(db, 3, 8, R8_12, 2);  pa(db, 3, 9, R8_12, 3)
-        pa(db, 3, 26, R8_12, 4); pa(db, 3, 16, R8_12, 5); pa(db, 3, 19, R8_12, 6)
-        pa(db, 3, 17, R8_12, 7); pa(db, 3, 20, R8_12, 8); pa(db, 3, 11, R8_12, 9)
-        pa(db, 3, 13, R8_12, 10); pa(db, 3, 14, R30_45, 11)
+        // ===== Routine 2 — Pecho, Hombro, Tríceps (Push) =====
+        // V1 (routineVersionId = 3) — 7 exercises
+        pa(db, 3, 10, R8_12, 1)  // Elevación Lateral
+        pa(db, 3, 18, R8_12, 2)  // Press de Banca Inclinado
+        pa(db, 3, 19, R8_12, 3)  // Press de Banca Plano
+        pa(db, 3, 26, R8_12, 4)  // Vuelos Posteriores
+        pa(db, 3, 13, R8_12, 5)  // Extensión de Tríceps por encima de la Cabeza
+        pa(db, 3, 2, R8_12, 6)   // Cruce de Polea Alta
+        pa(db, 3, 12, R8_12, 7)  // Extensión de Tríceps en Polea (Pushdown)
 
-        // ===== Module B — Push =====
-        // B-V1 (moduleVersionId = 4) — 8 exercises
-        pa(db, 4, 1, R8_12, 1);  pa(db, 4, 3, R8_12, 2);  pa(db, 4, 6, R8_12, 3)
-        pa(db, 4, 27, R8_12, 4); pa(db, 4, 25, R8_12, 5); pa(db, 4, 24, R8_12, 6)
-        pa(db, 4, 22, R8_12, 7); pa(db, 4, 23, R8_12, 8)
-
-        // B-V2 (moduleVersionId = 5) — 8 exercises
-        pa(db, 5, 1, R8_12, 1);  pa(db, 5, 7, R8_12, 2);  pa(db, 5, 5, R8_12, 3)
-        pa(db, 5, 27, R8_12, 4); pa(db, 5, 25, R8_12, 5); pa(db, 5, 29, R8_12, 6)
-        pa(db, 5, 21, R8_12, 7); pa(db, 5, 23, R8_12, 8)
-
-        // B-V3 (moduleVersionId = 6) — 8 exercises
-        pa(db, 6, 1, R8_12, 1);  pa(db, 6, 2, R8_12, 2);  pa(db, 6, 4, FAILURE, 3)
-        pa(db, 6, 27, R8_12, 4); pa(db, 6, 24, R8_12, 5); pa(db, 6, 28, R8_12, 6)
-        pa(db, 6, 21, R8_12, 7); pa(db, 6, 22, R8_12, 8)
-
-        // ===== Module C — Pierna =====
-        // C-V1 (moduleVersionId = 7) — 8 exercises
-        pa(db, 7, 39, R8_12, 1); pa(db, 7, 43, R8_12, 2); pa(db, 7, 30, R8_12, 3)
-        pa(db, 7, 31, R8_12, 4); pa(db, 7, 35, R8_12, 5); pa(db, 7, 32, R8_12, 6)
-        pa(db, 7, 33, R8_12, 7); pa(db, 7, 34, R8_12, 8)
-
-        // C-V2 (moduleVersionId = 8) — 8 exercises
-        pa(db, 8, 36, R8_12, 1); pa(db, 8, 38, R8_12, 2); pa(db, 8, 43, R8_12, 3)
-        pa(db, 8, 30, R8_12, 4); pa(db, 8, 31, R8_12, 5); pa(db, 8, 41, R8_12, 6)
-        pa(db, 8, 33, R8_12, 7); pa(db, 8, 34, R8_12, 8)
-
-        // C-V3 (moduleVersionId = 9) — 8 exercises
-        pa(db, 9, 38, R8_12, 1); pa(db, 9, 40, R8_12, 2); pa(db, 9, 37, R8_12, 3)
-        pa(db, 9, 30, R8_12, 4); pa(db, 9, 31, R8_12, 5); pa(db, 9, 32, R8_12, 6)
-        pa(db, 9, 33, R8_12, 7); pa(db, 9, 34, R8_12, 8)
+        // ===== Routine 3 — Espalda, Bíceps y Abdomen (Pull) =====
+        // V1 (routineVersionId = 4) — 8 slots, 9 exercises (slot 1 has 2 alternatives)
+        pa(db, 4, 5, R8_12, 1)            // Curl de Concentración
+        pa(db, 4, 8, R8_12, 2, slot = 1)  // Curl de Predicador (Mancuerna) — alternativa slot 1
+        pa(db, 4, 25, R8_12, 3, slot = 2) // Tirón de Dorsales
+        pa(db, 4, 21, R8_12, 4, slot = 3) // Remo T Inclinado
+        pa(db, 4, 14, R8_12, 5, slot = 4) // Face Pull
+        pa(db, 4, 4, R8_12, 6, slot = 5)  // Curl Bayesian en Banco Inclinado
+        pa(db, 4, 7, R8_12, 7, slot = 6)  // Curl de Martillo Cruzado
+        pa(db, 4, 3, R8_12, 8, slot = 7)  // Crunch Abdominal
+        pa(db, 4, 20, R8_12, 9, slot = 8) // Press Pallof
     }
 
     private fun pa(
         db: SupportSQLiteDatabase,
-        moduleVersionId: Long,
+        routineVersionId: Long,
         exerciseId: Long,
         reps: String,
         sortOrder: Int,
+        slot: Int = sortOrder,
     ) {
         val values = ContentValues().apply {
-            put("module_version_id", moduleVersionId)
+            put("routine_version_id", routineVersionId)
             put("exercise_id", exerciseId)
             put("sets", SETS)
             put("reps", reps)
             put("sort_order", sortOrder)
+            put("slot", slot)
         }
         db.insert("plan_assignment", SQLiteDatabase.CONFLICT_REPLACE, values)
     }

@@ -58,7 +58,7 @@ class SubstituteExerciseViewModel @Inject constructor(
                 return@launch
             }
 
-            exerciseRepository.getEligibleSubstitutes(info.moduleCode, info.sessionId)
+            exerciseRepository.getEligibleSubstitutes(info.sessionId, info.muscleZoneIds)
                 .collect { exercises ->
                     _uiState.update {
                         it.copy(
@@ -90,7 +90,7 @@ class SubstituteExerciseViewModel @Inject constructor(
             try {
                 substituteExerciseUseCase(sessionExerciseId, selected.exerciseId)
                 _navigateBack.emit(true)
-            } catch (_: IllegalStateException) {
+            } catch (_: Exception) {
                 _navigateBack.emit(true)
             } finally {
                 _uiState.update { it.copy(isSubstituting = false) }

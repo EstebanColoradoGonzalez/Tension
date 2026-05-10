@@ -8,7 +8,6 @@ class CreateExerciseUseCase @Inject constructor(
 ) {
     suspend operator fun invoke(
         name: String,
-        moduleCode: String,
         equipmentTypeId: Long,
         muscleZoneIds: List<Long>,
         isBodyweight: Boolean,
@@ -24,7 +23,6 @@ class CreateExerciseUseCase @Inject constructor(
 
         return exerciseRepository.createExercise(
             name = name.trim(),
-            moduleCode = moduleCode,
             equipmentTypeId = equipmentTypeId,
             muscleZoneIds = muscleZoneIds,
             isBodyweight = isBodyweight,

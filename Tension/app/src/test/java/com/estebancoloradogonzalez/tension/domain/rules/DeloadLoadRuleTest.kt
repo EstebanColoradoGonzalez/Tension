@@ -32,9 +32,9 @@ class DeloadLoadRuleTest {
     }
 
     @Test
-    fun `deload 60 pct of 2_5 Kg with increment 2_5 returns 0_0`() {
-        // 2.5 × 0.60 = 1.5 → floor(1.5/2.5)×2.5 = 0.0
-        assertEquals(0.0, DeloadLoadRule.calculateDeloadLoad(2.5, 2.5), 0.001)
+    fun `deload 60 pct of 2_5 Kg with increment 2_5 returns minimum increment`() {
+        // 2.5 × 0.60 = 1.5 → floor(1.5/2.5)×2.5 = 0.0 → clamped to 2.5
+        assertEquals(2.5, DeloadLoadRule.calculateDeloadLoad(2.5, 2.5), 0.001)
     }
 
     @Test
@@ -93,5 +93,11 @@ class DeloadLoadRuleTest {
     @Test
     fun `reset with increment 0_0 returns 0_0`() {
         assertEquals(0.0, DeloadLoadRule.calculateResetLoad(60.0, 0.0), 0.001)
+    }
+
+    @Test
+    fun `reset 90 pct of 2_5 Kg with increment 2_5 returns minimum increment`() {
+        // 2.5 × 0.90 = 2.25 → floor(2.25/2.5)×2.5 = 0.0 → clamped to 2.5
+        assertEquals(2.5, DeloadLoadRule.calculateResetLoad(2.5, 2.5), 0.001)
     }
 }

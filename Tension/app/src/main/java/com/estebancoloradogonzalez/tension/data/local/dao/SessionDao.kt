@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.Flow
 
 data class ActiveSessionInfo(
     val sessionId: Long,
-    val moduleCode: String,
+    val routineName: String,
     val versionNumber: Int,
     val totalExercises: Int,
     val completedExercises: Int,
@@ -16,8 +16,9 @@ data class ActiveSessionInfo(
 
 data class SessionSummaryInfo(
     val status: String,
-    val moduleCode: String,
+    val routineName: String,
     val versionNumber: Int,
+    val routineId: Long,
     val totalTonnageKg: Double,
     val totalExercises: Int,
     val completedExercises: Int,
@@ -26,7 +27,7 @@ data class SessionSummaryInfo(
 data class ClosedSessionDto(
     val sessionId: Long,
     val date: String,
-    val moduleCode: String,
+    val routineName: String,
     val versionNumber: Int,
     val status: String,
     val totalTonnageKg: Double,
@@ -48,29 +49,27 @@ interface SessionDao {
         """
         SELECT 
             s.id AS sessionId,
-            mv.module_code AS moduleCode,
-            mv.version_number AS versionNumber,
-            (SELECT COUNT(*) FROM session_exercise WHERE session_id = s.id) AS totalExercises,
+            r.name AS routineName,
+            rv.version_number AS versionNumber,
+            (SELECT COUNT(*) FROM session_exercise WHERE session_id = s.id AND pending_selection = 0) AS totalExercises,
             (SELECT COUNT(*) FROM session_exercise se2
-             INNER JOIN (
-                 SELECT session_exercise_id, COUNT(*) AS cnt
-                 FROM exercise_set GROUP BY session_exercise_id HAVING cnt >= 4
-             ) completed ON se2.id = completed.session_exercise_id
              WHERE se2.session_id = s.id
+               AND se2.is_finalized = 1
             ) AS completedExercises
         FROM session s
-        INNER JOIN module_version mv ON s.module_version_id = mv.id
+        INNER JOIN routine_version rv ON s.routine_version_id = rv.id
+        INNER JOIN routine r ON rv.routine_id = r.id
         WHERE s.status = 'IN_PROGRESS'
         LIMIT 1
         """,
     )
-    fun getActiveSessionWithModuleVersion(): Flow<ActiveSessionInfo?>
+    fun getActiveSessionWithRoutineVersion(): Flow<ActiveSessionInfo?>
 
     @Query("UPDATE session SET status = :status WHERE id = :sessionId")
     suspend fun updateStatus(sessionId: Long, status: String)
 
-    @Query("SELECT module_version_id FROM session WHERE id = :sessionId")
-    suspend fun getModuleVersionIdBySessionId(sessionId: Long): Long
+    @Query("SELECT routine_version_id FROM session WHERE id = :sessionId")
+    suspend fun getRoutineVersionIdBySessionId(sessionId: Long): Long
 
     @Query("SELECT deload_id FROM session WHERE id = :sessionId")
     suspend fun getDeloadIdBySessionId(sessionId: Long): Long?
@@ -82,6 +81,9 @@ interface SessionDao {
         """,
     )
     suspend fun countDeloadSessions(deloadId: Long): Int
+
+    @Query("SELECT id FROM session WHERE deload_id = :deloadId AND status IN ('COMPLETED', 'INCOMPLETE')")
+    suspend fun getSessionIdsByDeloadId(deloadId: Long): List<Long>
 
     @Query(
         """
@@ -99,8 +101,9 @@ interface SessionDao {
         """
         SELECT
             s.status,
-            mv.module_code AS moduleCode,
-            mv.version_number AS versionNumber,
+            r.name AS routineName,
+            rv.version_number AS versionNumber,
+            r.id AS routineId,
             COALESCE(
                 (SELECT SUM(es.weight_kg * es.reps)
                  FROM exercise_set es
@@ -108,16 +111,20 @@ interface SessionDao {
                  WHERE se.session_id = s.id),
                 0.0
             ) AS totalTonnageKg,
-            (SELECT COUNT(*) FROM session_exercise WHERE session_id = s.id) AS totalExercises,
-            (SELECT COUNT(*) FROM session_exercise se2
-             INNER JOIN (
-                 SELECT session_exercise_id, COUNT(*) AS cnt
-                 FROM exercise_set GROUP BY session_exercise_id HAVING cnt >= 4
-             ) completed ON se2.id = completed.session_exercise_id
+            (SELECT COUNT(DISTINCT se.id)
+             FROM session_exercise se
+             WHERE se.session_id = s.id
+               AND (SELECT COUNT(*) FROM exercise_set es WHERE es.session_exercise_id = se.id) > 0
+            ) AS totalExercises,
+            (SELECT COUNT(DISTINCT se2.id)
+             FROM session_exercise se2
              WHERE se2.session_id = s.id
+               AND se2.is_finalized = 1
+               AND (SELECT COUNT(*) FROM exercise_set es2 WHERE es2.session_exercise_id = se2.id) > 0
             ) AS completedExercises
         FROM session s
-        INNER JOIN module_version mv ON s.module_version_id = mv.id
+        INNER JOIN routine_version rv ON s.routine_version_id = rv.id
+        INNER JOIN routine r ON rv.routine_id = r.id
         WHERE s.id = :sessionId
         """,
     )
@@ -125,7 +132,7 @@ interface SessionDao {
 
     @Query(
         """
-        SELECT id, module_version_id, deload_id, date, status
+        SELECT id, routine_version_id, deload_id, date, status
         FROM session
         WHERE status IN ('COMPLETED', 'INCOMPLETE')
         ORDER BY date ASC, id ASC
@@ -143,26 +150,29 @@ interface SessionDao {
     )
     suspend fun countSessionsInWeek(weekStartDate: String, weekEndDate: String): Int
 
+    @Query("SELECT MIN(date) FROM session WHERE status IN ('COMPLETED', 'INCOMPLETE')")
+    suspend fun getFirstSessionDate(): String?
+
     @Query(
         """
         SELECT s.id FROM session s
-        INNER JOIN module_version mv ON s.module_version_id = mv.id
-        WHERE mv.module_code = :moduleCode
+        INNER JOIN routine_version rv ON s.routine_version_id = rv.id
+        WHERE rv.routine_id = :routineId
           AND s.status IN ('COMPLETED', 'INCOMPLETE')
           AND s.deload_id IS NULL
         ORDER BY s.date DESC, s.id DESC
         LIMIT :limit
         """,
     )
-    suspend fun getSessionIdsByModuleInRange(moduleCode: String, limit: Int): List<Long>
+    suspend fun getSessionIdsByRoutineInRange(routineId: Long, limit: Int): List<Long>
 
     @Query(
         """
         SELECT
             s.id AS sessionId,
             s.date,
-            mv.module_code AS moduleCode,
-            mv.version_number AS versionNumber,
+            r.name AS routineName,
+            rv.version_number AS versionNumber,
             s.status,
             COALESCE(
                 (SELECT SUM(es.weight_kg * es.reps)
@@ -172,7 +182,8 @@ interface SessionDao {
                 0.0
             ) AS totalTonnageKg
         FROM session s
-        INNER JOIN module_version mv ON s.module_version_id = mv.id
+        INNER JOIN routine_version rv ON s.routine_version_id = rv.id
+        INNER JOIN routine r ON rv.routine_id = r.id
         WHERE s.status IN ('COMPLETED', 'INCOMPLETE')
         ORDER BY s.date DESC, s.id DESC
         """,
@@ -183,10 +194,54 @@ interface SessionDao {
         """
         SELECT MAX(s.date)
         FROM session s
-        INNER JOIN module_version mv ON s.module_version_id = mv.id
-        WHERE mv.module_code = :moduleCode
+        INNER JOIN routine_version rv ON s.routine_version_id = rv.id
+        WHERE rv.routine_id = :routineId
           AND s.status IN ('COMPLETED', 'INCOMPLETE')
         """,
     )
-    suspend fun getLastSessionDateByModule(moduleCode: String): String?
+    suspend fun getLastSessionDateByRoutine(routineId: Long): String?
+
+    @Query(
+        """
+        SELECT EXISTS(
+            SELECT 1 FROM session s
+            INNER JOIN routine_version rv ON s.routine_version_id = rv.id
+            WHERE rv.routine_id = :routineId
+              AND s.status = 'IN_PROGRESS'
+        )
+        """,
+    )
+    suspend fun hasActiveSessionForRoutine(routineId: Long): Boolean
+
+    @Query(
+        """
+        SELECT EXISTS(
+            SELECT 1 FROM session
+            WHERE routine_version_id = :routineVersionId
+              AND status = 'IN_PROGRESS'
+        )
+        """,
+    )
+    suspend fun hasActiveSessionForVersion(routineVersionId: Long): Boolean
+
+    @Query(
+        """
+        SELECT EXISTS(
+            SELECT 1 FROM session
+            WHERE routine_version_id = :routineVersionId
+        )
+        """,
+    )
+    suspend fun hasSessionsForVersion(routineVersionId: Long): Boolean
+
+    @Query(
+        """
+        SELECT EXISTS(
+            SELECT 1 FROM session s
+            INNER JOIN routine_version rv ON s.routine_version_id = rv.id
+            WHERE rv.routine_id = :routineId
+        )
+        """,
+    )
+    suspend fun hasSessionsForRoutine(routineId: Long): Boolean
 }

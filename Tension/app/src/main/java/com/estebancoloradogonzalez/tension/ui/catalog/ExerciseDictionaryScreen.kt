@@ -147,7 +147,6 @@ fun ExerciseDictionaryScreen(
                 ) {
                     FilterSection(
                         uiState = uiState,
-                        onModuleSelected = viewModel::onModuleFilterSelected,
                         onEquipmentSelected = viewModel::onEquipmentFilterSelected,
                         onMuscleZoneSelected = viewModel::onMuscleZoneFilterSelected,
                     )
@@ -191,7 +190,6 @@ fun ExerciseDictionaryScreen(
 @Composable
 private fun FilterSection(
     uiState: ExerciseDictionaryUiState,
-    onModuleSelected: (String?) -> Unit,
     onEquipmentSelected: (String?) -> Unit,
     onMuscleZoneSelected: (String?) -> Unit,
 ) {
@@ -203,14 +201,6 @@ private fun FilterSection(
             .padding(horizontal = 16.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        CompactDropdown(
-            label = stringResource(R.string.filter_module),
-            options = uiState.moduleOptions,
-            selectedOption = uiState.selectedModule,
-            allLabel = allLabel,
-            onOptionSelected = onModuleSelected,
-            modifier = Modifier.weight(1f),
-        )
         CompactDropdown(
             label = stringResource(R.string.filter_equipment),
             options = uiState.equipmentOptions,
@@ -324,7 +314,6 @@ private fun ExerciseList(
                     Text(
                         text = stringResource(
                             R.string.exercise_supporting_format,
-                            exercise.moduleCode,
                             exercise.equipmentTypeName,
                             exercise.muscleZonesSummary,
                         ),

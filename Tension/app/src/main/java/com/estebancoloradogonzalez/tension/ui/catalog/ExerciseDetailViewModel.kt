@@ -39,8 +39,6 @@ class ExerciseDetailViewModel @Inject constructor(
                         exercise = ExerciseDetailItem(
                             id = exercise.id,
                             name = exercise.name,
-                            moduleCode = exercise.moduleCode,
-                            moduleName = exercise.moduleName,
                             equipmentTypeName = exercise.equipmentTypeName,
                             muscleZones = exercise.muscleZones.joinToString(", "),
                             isCustom = exercise.isCustom,

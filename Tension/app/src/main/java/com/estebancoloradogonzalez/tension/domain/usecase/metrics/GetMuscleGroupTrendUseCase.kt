@@ -16,12 +16,13 @@ class GetMuscleGroupTrendUseCase @Inject constructor(
     suspend operator fun invoke(
         microcycleMap: Map<Int, List<Long>>,
     ): List<MuscleGroupTrend> {
-        val completedMicrocycles = microcycleMap.filter { it.value.size == 6 }
+        val cycleSize = microcycleMap.values.maxOfOrNull { it.size } ?: return emptyList()
+        val completedMicrocycles = microcycleMap.filter { it.value.size == cycleSize }
         if (completedMicrocycles.size < 4) return emptyList()
 
         val recentMicrocycles = completedMicrocycles.entries
             .sortedByDescending { it.key }
-            .take(6)
+            .take(4)
             .sortedBy { it.key }
 
         val tonnageSnapshots = recentMicrocycles.map { (number, sessionIds) ->

@@ -11,9 +11,9 @@ import kotlinx.coroutines.flow.Flow
 
 data class SessionExerciseWithDetails(
     val sessionExerciseId: Long,
-    val exerciseId: Long,
-    val exerciseName: String,
-    val equipmentTypeName: String,
+    val exerciseId: Long?,
+    val exerciseName: String?,
+    val equipmentTypeName: String?,
     val muscleZones: String?,
     val sets: Int,
     val reps: String,
@@ -22,7 +22,11 @@ data class SessionExerciseWithDetails(
     val isToTechnicalFailure: Int,
     val prescribedLoadKg: Double?,
     val completedSets: Int,
-    val loadIncrementKg: Double,
+    val muscleGroup: String?,
+    val isFinalized: Int,
+    val pendingSelection: Int,
+    val slot: Int,
+    val alternativesInSlot: Int,
 )
 
 data class SetExerciseInfo(
@@ -33,6 +37,8 @@ data class SetExerciseInfo(
     val isToTechnicalFailure: Int,
     val totalSets: Int,
     val reps: String,
+    val deloadId: Long?,
+    val originalExerciseId: Long?,
 )
 
 data class SessionExerciseForSubstitution(
@@ -41,7 +47,6 @@ data class SessionExerciseForSubstitution(
     val exerciseId: Long,
     val originalExerciseId: Long?,
     val exerciseName: String,
-    val moduleCode: String,
     val completedSets: Int,
 )
 
@@ -50,8 +55,7 @@ data class SessionExerciseForProgression(
     val exerciseId: Long,
     val isBodyweight: Int,
     val isIsometric: Int,
-    val moduleCode: String,
-    val loadIncrementKg: Double,
+    val muscleGroup: String?,
 )
 
 data class ExerciseSummaryDto(
@@ -64,9 +68,11 @@ data class ExerciseSummaryDto(
     val avgWeightKg: Double,
     val totalReps: Int,
     val setCount: Int,
+    val prescribedSets: Int,
     val isMastered: Int,
-    val moduleCode: String,
+    val muscleGroup: String?,
     val previousTotalReps: Int?,
+    val isDeload: Int,
 )
 
 data class SessionDetailExerciseDto(
@@ -76,16 +82,18 @@ data class SessionDetailExerciseDto(
     val classification: String?,
     val originalExerciseName: String?,
     val setCount: Int,
+    val isDeload: Boolean,
 )
 
 data class ExerciseHistoryEntryDto(
     val date: String,
-    val moduleCode: String,
+    val routineName: String,
     val versionNumber: Int,
     val avgWeightKg: Double,
     val totalReps: Int,
     val avgRir: Double,
     val classification: String?,
+    val isDeload: Boolean,
 )
 
 @Dao
@@ -93,6 +101,9 @@ interface SessionExerciseDao {
 
     @Insert
     suspend fun insertAll(exercises: List<SessionExerciseEntity>)
+
+    @Query("SELECT DISTINCT COALESCE(original_exercise_id, exercise_id) FROM session_exercise WHERE session_id = :sessionId")
+    suspend fun getExerciseIdsBySessionId(sessionId: Long): List<Long>
 
     @Query("SELECT * FROM session_exercise WHERE session_id = :sessionId")
     fun getBySessionId(sessionId: Long): Flow<List<SessionExerciseEntity>>
@@ -107,30 +118,41 @@ interface SessionExerciseDao {
             GROUP_CONCAT(DISTINCT mz.name) AS muscleZones,
             COALESCE(pa.sets, 4) AS sets,
             COALESCE(pa.reps, '8-12') AS reps,
-            e.is_bodyweight AS isBodyweight,
-            e.is_isometric AS isIsometric,
-            e.is_to_technical_failure AS isToTechnicalFailure,
+            COALESCE(e.is_bodyweight, 0) AS isBodyweight,
+            COALESCE(e.is_isometric, 0) AS isIsometric,
+            COALESCE(e.is_to_technical_failure, 0) AS isToTechnicalFailure,
             ep.prescribed_load_kg AS prescribedLoadKg,
             (SELECT COUNT(*) FROM exercise_set es WHERE es.session_exercise_id = se.id) AS completedSets,
-            m.load_increment_kg AS loadIncrementKg
+            (SELECT mz2.muscle_group FROM exercise_muscle_zone emz2
+             INNER JOIN muscle_zone mz2 ON emz2.muscle_zone_id = mz2.id
+             WHERE emz2.exercise_id = COALESCE(se.original_exercise_id, se.exercise_id) LIMIT 1) AS muscleGroup,
+            se.is_finalized AS isFinalized,
+            se.pending_selection AS pendingSelection,
+            se.slot AS slot,
+            (SELECT COUNT(*) FROM plan_assignment pa_alt
+             WHERE pa_alt.routine_version_id = s.routine_version_id
+               AND pa_alt.slot = se.slot) AS alternativesInSlot
         FROM session_exercise se
-        INNER JOIN exercise e ON se.exercise_id = e.id
-        INNER JOIN equipment_type et ON e.equipment_type_id = et.id
+        LEFT JOIN exercise e ON se.exercise_id = e.id
+        LEFT JOIN equipment_type et ON e.equipment_type_id = et.id
         INNER JOIN session s ON se.session_id = s.id
-        INNER JOIN module m ON e.module_code = m.code
-        LEFT JOIN plan_assignment pa ON pa.module_version_id = s.module_version_id
-            AND pa.exercise_id = se.exercise_id
+        LEFT JOIN plan_assignment pa ON pa.routine_version_id = s.routine_version_id
+            AND pa.exercise_id = CASE
+                WHEN se.exercise_id IS NOT NULL
+                    THEN COALESCE(se.original_exercise_id, se.exercise_id)
+                ELSE
+                    (SELECT pa2.exercise_id FROM plan_assignment pa2
+                     WHERE pa2.routine_version_id = s.routine_version_id
+                       AND pa2.slot = se.slot
+                     ORDER BY pa2.sort_order ASC
+                     LIMIT 1)
+            END
         LEFT JOIN exercise_muscle_zone emz ON e.id = emz.exercise_id
         LEFT JOIN muscle_zone mz ON emz.muscle_zone_id = mz.id
-        LEFT JOIN exercise_progression ep ON e.id = ep.exercise_id
+        LEFT JOIN exercise_progression ep ON COALESCE(se.original_exercise_id, se.exercise_id) = ep.exercise_id
         WHERE se.session_id = :sessionId
         GROUP BY se.id
-        ORDER BY COALESCE(
-          (SELECT pa2.sort_order FROM plan_assignment pa2
-           WHERE pa2.module_version_id = s.module_version_id
-           AND pa2.exercise_id = COALESCE(se.original_exercise_id, se.exercise_id)),
-          9999
-        ) ASC
+        ORDER BY se.slot ASC
         """,
     )
     fun getBySessionIdWithDetails(sessionId: Long): Flow<List<SessionExerciseWithDetails>>
@@ -144,12 +166,14 @@ interface SessionExerciseDao {
             e.is_isometric AS isIsometric,
             e.is_to_technical_failure AS isToTechnicalFailure,
             COALESCE(pa.sets, 4) AS totalSets,
-            COALESCE(pa.reps, '8-12') AS reps
+            COALESCE(pa.reps, '8-12') AS reps,
+            s.deload_id AS deloadId,
+            se.original_exercise_id AS originalExerciseId
         FROM session_exercise se
         INNER JOIN exercise e ON se.exercise_id = e.id
         INNER JOIN session s ON se.session_id = s.id
-        LEFT JOIN plan_assignment pa ON pa.module_version_id = s.module_version_id
-            AND pa.exercise_id = se.exercise_id
+        LEFT JOIN plan_assignment pa ON pa.routine_version_id = s.routine_version_id
+            AND pa.exercise_id = COALESCE(se.original_exercise_id, se.exercise_id)
         WHERE se.id = :sessionExerciseId
         """,
     )
@@ -163,7 +187,6 @@ interface SessionExerciseDao {
             se.exercise_id AS exerciseId,
             se.original_exercise_id AS originalExerciseId,
             e.name AS exerciseName,
-            e.module_code AS moduleCode,
             (SELECT COUNT(*) FROM exercise_set es WHERE es.session_exercise_id = se.id) AS completedSets
         FROM session_exercise se
         INNER JOIN exercise e ON se.exercise_id = e.id
@@ -176,18 +199,29 @@ interface SessionExerciseDao {
         """
         SELECT 
             se.id AS sessionExerciseId,
-            se.exercise_id AS exerciseId,
+            COALESCE(se.original_exercise_id, se.exercise_id) AS exerciseId,
             e.is_bodyweight AS isBodyweight,
             e.is_isometric AS isIsometric,
-            e.module_code AS moduleCode,
-            m.load_increment_kg AS loadIncrementKg
+            (SELECT mz.muscle_group FROM exercise_muscle_zone emz
+             INNER JOIN muscle_zone mz ON emz.muscle_zone_id = mz.id
+             WHERE emz.exercise_id = COALESCE(se.original_exercise_id, se.exercise_id) LIMIT 1) AS muscleGroup
         FROM session_exercise se
         INNER JOIN exercise e ON se.exercise_id = e.id
-        INNER JOIN module m ON e.module_code = m.code
-        WHERE se.session_id = :sessionId
+        WHERE se.session_id = :sessionId AND se.exercise_id IS NOT NULL
         """,
     )
     suspend fun getSessionExercisesForProgression(sessionId: Long): List<SessionExerciseForProgression>
+
+    @Query(
+        """
+        SELECT mz.muscle_group
+        FROM exercise_muscle_zone emz
+        INNER JOIN muscle_zone mz ON emz.muscle_zone_id = mz.id
+        WHERE emz.exercise_id = :exerciseId
+        LIMIT 1
+        """,
+    )
+    suspend fun getPrimaryMuscleGroupByExercise(exerciseId: Long): String?
 
     @Query(
         """
@@ -210,6 +244,34 @@ interface SessionExerciseDao {
 
     @Query(
         """
+        UPDATE session_exercise
+        SET is_finalized = 1
+        WHERE id = :sessionExerciseId
+        """,
+    )
+    suspend fun finalizeExercise(sessionExerciseId: Long)
+
+    @Query(
+        """
+        UPDATE session_exercise
+        SET is_finalized = 1
+        WHERE session_id = :sessionId AND is_finalized = 0
+        """,
+    )
+    suspend fun finalizeAllInSession(sessionId: Long)
+
+    @Query(
+        """
+        UPDATE session_exercise
+        SET exercise_id = :exerciseId,
+            original_exercise_id = NULL
+        WHERE id = :sessionExerciseId
+        """,
+    )
+    suspend fun switchAlternativeExercise(sessionExerciseId: Long, exerciseId: Long)
+
+    @Query(
+        """
         SELECT
             se.exercise_id AS exerciseId,
             e.name AS exerciseName,
@@ -226,31 +288,41 @@ interface SessionExerciseDao {
                 0
             ) AS totalReps,
             (SELECT COUNT(*) FROM exercise_set es WHERE es.session_exercise_id = se.id) AS setCount,
+            COALESCE(
+                (SELECT pa.sets FROM plan_assignment pa
+                 WHERE pa.routine_version_id = s.routine_version_id
+                   AND pa.exercise_id = COALESCE(se.original_exercise_id, se.exercise_id)),
+                4
+            ) AS prescribedSets,
             CASE WHEN ep.status = 'MASTERED' THEN 1 ELSE 0 END AS isMastered,
-            e.module_code AS moduleCode,
+            (SELECT mz.muscle_group FROM exercise_muscle_zone emz
+             INNER JOIN muscle_zone mz ON emz.muscle_zone_id = mz.id
+             WHERE emz.exercise_id = COALESCE(se.original_exercise_id, se.exercise_id) LIMIT 1) AS muscleGroup,
             (SELECT SUM(es3.reps)
              FROM exercise_set es3
              WHERE es3.session_exercise_id = (
                  SELECT se3.id
                  FROM session_exercise se3
                  INNER JOIN session s3 ON se3.session_id = s3.id
-                 WHERE se3.exercise_id = se.exercise_id
+                 WHERE COALESCE(se3.original_exercise_id, se3.exercise_id) = COALESCE(se.original_exercise_id, se.exercise_id)
                    AND s3.id != :sessionId
                    AND s3.status IN ('COMPLETED', 'INCOMPLETE')
+                   AND s3.deload_id IS NULL
                  ORDER BY s3.date DESC, s3.id DESC
                  LIMIT 1
              )
-            ) AS previousTotalReps
+            ) AS previousTotalReps,
+            CASE WHEN s.deload_id IS NOT NULL THEN 1 ELSE 0 END AS isDeload
         FROM session_exercise se
         INNER JOIN exercise e ON se.exercise_id = e.id
         INNER JOIN session s ON se.session_id = s.id
-        LEFT JOIN exercise_progression ep ON e.id = ep.exercise_id
+        LEFT JOIN exercise_progression ep ON COALESCE(se.original_exercise_id, se.exercise_id) = ep.exercise_id
         WHERE se.session_id = :sessionId
         GROUP BY se.id
         HAVING setCount > 0
-        ORDER BY COALESCE(
+        ORDER BY se.slot ASC, COALESCE(
           (SELECT pa2.sort_order FROM plan_assignment pa2
-           WHERE pa2.module_version_id = s.module_version_id
+           WHERE pa2.routine_version_id = s.routine_version_id
            AND pa2.exercise_id = COALESCE(se.original_exercise_id, se.exercise_id)),
           9999
         ) ASC
@@ -261,19 +333,19 @@ interface SessionExerciseDao {
     @Query(
         """
         SELECT
-            se.exercise_id AS exerciseId,
+            COALESCE(se.original_exercise_id, se.exercise_id) AS exerciseId,
             e.name AS exerciseName,
             e.is_bodyweight AS isBodyweight,
             SUM(CASE WHEN se.progression_classification = 'POSITIVE_PROGRESSION' THEN 1 ELSE 0 END) AS positiveCount,
             COUNT(se.progression_classification) AS totalCount
         FROM session_exercise se
         INNER JOIN session s ON se.session_id = s.id
-        INNER JOIN exercise e ON se.exercise_id = e.id
+        INNER JOIN exercise e ON COALESCE(se.original_exercise_id, se.exercise_id) = e.id
         WHERE s.status IN ('COMPLETED', 'INCOMPLETE')
           AND s.deload_id IS NULL
           AND s.date >= :startDate
           AND se.progression_classification IS NOT NULL
-        GROUP BY se.exercise_id
+        GROUP BY COALESCE(se.original_exercise_id, se.exercise_id)
         """,
     )
     suspend fun getClassificationCountsByPeriod(startDate: String): List<ClassificationCount>
@@ -281,7 +353,24 @@ interface SessionExerciseDao {
     @Query(
         """
         SELECT
-            se.exercise_id AS exerciseId,
+            COALESCE(se.original_exercise_id, se.exercise_id) AS exerciseId,
+            e.name AS exerciseName,
+            e.is_bodyweight AS isBodyweight,
+            SUM(CASE WHEN se.progression_classification = 'POSITIVE_PROGRESSION' THEN 1 ELSE 0 END) AS positiveCount,
+            COUNT(se.progression_classification) AS totalCount
+        FROM session_exercise se
+        INNER JOIN exercise e ON COALESCE(se.original_exercise_id, se.exercise_id) = e.id
+        WHERE se.session_id IN (:sessionIds)
+          AND se.progression_classification IS NOT NULL
+        GROUP BY COALESCE(se.original_exercise_id, se.exercise_id)
+        """,
+    )
+    suspend fun getClassificationCountsForSessions(sessionIds: List<Long>): List<ClassificationCount>
+
+    @Query(
+        """
+        SELECT
+            COALESCE(se.original_exercise_id, se.exercise_id) AS exerciseId,
             e.name AS exerciseName,
             e.is_bodyweight AS isBodyweight,
             e.is_isometric AS isIsometric,
@@ -290,11 +379,11 @@ interface SessionExerciseDao {
             COUNT(DISTINCT se.session_id) AS sessionCount
         FROM session_exercise se
         INNER JOIN session s ON se.session_id = s.id
-        INNER JOIN exercise e ON se.exercise_id = e.id
+        INNER JOIN exercise e ON COALESCE(se.original_exercise_id, se.exercise_id) = e.id
         WHERE s.status IN ('COMPLETED', 'INCOMPLETE')
           AND s.deload_id IS NULL
           AND s.date >= :startDate
-        GROUP BY se.exercise_id
+        GROUP BY COALESCE(se.original_exercise_id, se.exercise_id)
         """,
     )
     suspend fun getExerciseSessionRangeByPeriod(startDate: String): List<ExerciseSessionRange>
@@ -307,7 +396,7 @@ interface SessionExerciseDao {
             COUNT(se.progression_classification) AS totalCount
         FROM session_exercise se
         INNER JOIN session s ON se.session_id = s.id
-        INNER JOIN exercise_muscle_zone emz ON se.exercise_id = emz.exercise_id
+        INNER JOIN exercise_muscle_zone emz ON COALESCE(se.original_exercise_id, se.exercise_id) = emz.exercise_id
         INNER JOIN muscle_zone mz ON emz.muscle_zone_id = mz.id
         WHERE se.session_id IN (:sessionIds)
           AND s.deload_id IS NULL
@@ -327,7 +416,8 @@ interface SessionExerciseDao {
             e.name AS exerciseName,
             se.progression_classification AS classification,
             oe.name AS originalExerciseName,
-            (SELECT COUNT(*) FROM exercise_set es WHERE es.session_exercise_id = se.id) AS setCount
+            (SELECT COUNT(*) FROM exercise_set es WHERE es.session_exercise_id = se.id) AS setCount,
+            CASE WHEN s.deload_id IS NOT NULL THEN 1 ELSE 0 END AS isDeload
         FROM session_exercise se
         INNER JOIN exercise e ON se.exercise_id = e.id
         INNER JOIN session s ON se.session_id = s.id
@@ -335,9 +425,9 @@ interface SessionExerciseDao {
         WHERE se.session_id = :sessionId
         GROUP BY se.id
         HAVING setCount > 0
-        ORDER BY COALESCE(
+        ORDER BY se.slot ASC, COALESCE(
           (SELECT pa2.sort_order FROM plan_assignment pa2
-           WHERE pa2.module_version_id = s.module_version_id
+           WHERE pa2.routine_version_id = s.routine_version_id
            AND pa2.exercise_id = COALESCE(se.original_exercise_id, se.exercise_id)),
           9999
         ) ASC
@@ -349,15 +439,17 @@ interface SessionExerciseDao {
         """
         SELECT
             s.date,
-            mv.module_code AS moduleCode,
-            mv.version_number AS versionNumber,
+            r.name AS routineName,
+            rv.version_number AS versionNumber,
             COALESCE(AVG(es.weight_kg), 0.0) AS avgWeightKg,
             COALESCE(SUM(es.reps), 0) AS totalReps,
             COALESCE(AVG(es.rir), 0.0) AS avgRir,
-            se.progression_classification AS classification
+            se.progression_classification AS classification,
+            CASE WHEN s.deload_id IS NOT NULL THEN 1 ELSE 0 END AS isDeload
         FROM session_exercise se
         INNER JOIN session s ON se.session_id = s.id
-        INNER JOIN module_version mv ON s.module_version_id = mv.id
+        INNER JOIN routine_version rv ON s.routine_version_id = rv.id
+        INNER JOIN routine r ON rv.routine_id = r.id
         INNER JOIN exercise_set es ON es.session_exercise_id = se.id
         WHERE se.exercise_id = :exerciseId
           AND s.status IN ('COMPLETED', 'INCOMPLETE')

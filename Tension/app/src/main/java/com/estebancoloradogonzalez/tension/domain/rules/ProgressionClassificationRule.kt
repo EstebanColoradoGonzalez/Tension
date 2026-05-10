@@ -52,7 +52,6 @@ object ProgressionClassificationRule {
                 val newCounter = currentCounter + 1
                 val newStatus = when {
                     newCounter >= PLATEAU_THRESHOLD -> "IN_PLATEAU"
-                    currentStatus == "NO_HISTORY" -> "IN_PROGRESSION"
                     else -> currentStatus
                 }
                 newStatus to newCounter

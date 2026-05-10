@@ -136,7 +136,7 @@ fun CreateExerciseScreen(
                                     bitmap = bitmap,
                                     contentDescription = stringResource(R.string.exercise_media_description),
                                     modifier = Modifier.fillMaxSize(),
-                                    contentScale = ContentScale.Crop,
+                                    contentScale = ContentScale.Fit,
                                 )
                             } else {
                                 ExerciseImagePlaceholder()
@@ -163,44 +163,6 @@ fun CreateExerciseScreen(
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                     )
-
-                    // Module dropdown
-                    var moduleExpanded by remember { mutableStateOf(false) }
-                    ExposedDropdownMenuBox(
-                        expanded = moduleExpanded,
-                        onExpandedChange = { moduleExpanded = it },
-                    ) {
-                        OutlinedTextField(
-                            value = uiState.selectedModuleName,
-                            onValueChange = {},
-                            readOnly = true,
-                            label = { Text(stringResource(R.string.exercise_field_module)) },
-                            trailingIcon = {
-                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = moduleExpanded)
-                            },
-                            isError = uiState.moduleError != null,
-                            supportingText = uiState.moduleError?.let { error ->
-                                { Text(error) }
-                            },
-                            modifier = Modifier
-                                .menuAnchor(MenuAnchorType.PrimaryNotEditable)
-                                .fillMaxWidth(),
-                        )
-                        ExposedDropdownMenu(
-                            expanded = moduleExpanded,
-                            onDismissRequest = { moduleExpanded = false },
-                        ) {
-                            uiState.modules.forEach { module ->
-                                DropdownMenuItem(
-                                    text = { Text(module.name) },
-                                    onClick = {
-                                        viewModel.onModuleSelected(module.code)
-                                        moduleExpanded = false
-                                    },
-                                )
-                            }
-                        }
-                    }
 
                     // Equipment type dropdown
                     var equipmentExpanded by remember { mutableStateOf(false) }

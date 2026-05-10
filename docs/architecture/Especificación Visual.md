@@ -288,14 +288,14 @@ Material 3 define una escala tipográfica con 15 estilos. Tension usa la fuente 
 | Center Aligned (con retorno) | C1, C2, D2, D4, F2, F3, G2, G3, H1, H2, I1, J2, J3 | Título centrado + ícono `←` a la izquierda. Color: Surface Container Lowest |
 | Center Aligned (con cierre) | E2, E3 | Título centrado + ícono `✕` a la izquierda. Sin Bottom Nav |
 | Sin estilo estándar | A1 | Logo "Tension" centrado + subtítulo. Sin ícono. Sin Bottom Nav |
-| Sesión Activa | E1 | Título izquierda (Módulo — Versión) + subtítulo "Sesión activa" + badge descarga condicional. Sin Bottom Nav |
-| Post-Sesión | E5 | Título centrado + subtítulo módulo/versión. Sin ícono retorno. Sin Bottom Nav |
+| Sesión Activa | E1 | Título izquierda (Rutina — Versión) + subtítulo "Sesión activa" + badge descarga condicional. Sin Bottom Nav |
+| Post-Sesión | E5 | Título centrado + subtítulo rutina/versión. Sin ícono retorno. Sin Bottom Nav |
 
 ### 7.2 Bottom Navigation Bar
 
 | Propiedad | Valor |
 |-----------|-------|
-| Ítems | 5: Inicio, Diccionario, Historial, Métricas, Configuración |
+| Ítems | 5: Inicio, Diccionario, Historial, Métricas, Ajustes |
 | Íconos | Material Symbols: `Home`, `MenuBook`, `History`, `BarChart`, `Settings` |
 | Ícono activo | Filled, color Primary |
 | Ícono inactivo | Outlined, color On Surface Variant |
@@ -344,7 +344,7 @@ Material 3 define una escala tipográfica con 15 estilos. Tension usa la fuente 
 
 | Propiedad | Valor |
 |-----------|-------|
-| Tipo | Fila horizontal de 6 chips circulares (0, 1, 2, 3, 4, 5) |
+| Tipo | Fila horizontal de 3 chips circulares (0, 1, 2) |
 | Tamaño por chip | 48 × 48 dp (cumple RNF06) |
 | Espaciado entre chips | 8 dp |
 | Chip no seleccionado | Fondo: Surface Container, borde: Outline, texto: On Surface |
@@ -358,10 +358,10 @@ Material 3 define una escala tipográfica con 15 estilos. Tension usa la fuente 
 | Lista de ejercicios (catálogo) | D1, D4, E3 | 3 líneas: Title Medium (nombre), Body Medium (metadata separada por `·`), Body Medium (series · rango). Divider 1 dp entre filas |
 | Lista de ejercicios (sesión) | E1 | Leading: ícono de estado (24 dp), 3 líneas: Title Medium (nombre), Body Medium (estado + series), Body Medium (carga). Trailing: botones de acción. Fondo de fila según estado (§4.3) |
 | Lista de progresión | E5, F2 | 3 líneas: Title Medium (nombre), Body Medium (señal + color + carga), Body Small (señal de acción). Leading: ícono de progresión. Color de texto del ícono según señal |
-| Lista de sesiones | F1 | 3 líneas: Body Medium (fecha), Title Medium (módulo-versión + estado con ícono), Body Medium (tonelaje). Divider entre filas |
-| Lista de historial ejercicio | F3 | 3 líneas: Body Medium (fecha + módulo-versión), Body Medium (peso + reps + RIR), Body Small (clasificación progresión con color). Divider entre filas |
+| Lista de sesiones | F1 | 3 líneas: Body Medium (fecha), Title Medium (rutina-versión + estado con ícono), Body Medium (tonelaje). Divider entre filas |
+| Lista de historial ejercicio | F3 | 3 líneas: Body Medium (fecha + rutina-versión), Body Medium (peso + reps + RIR), Body Small (clasificación progresión con color). Divider entre filas |
 | Lista de alertas | H1 | Leading: indicador circular de nivel (12 dp, color del nivel). 3 líneas: Title Medium (tipo), Body Medium (entidad), Body Small (dato clave). Agrupadas por sección (Crisis / Alertas) |
-| Lista de KPIs | G1 | 2 líneas: Title Medium (nombre ejercicio/módulo), Body Medium (valor + indicador). Trailing: ícono de tendencia con color. Divider entre filas |
+| Lista de KPIs | G1 | 2 líneas: Title Medium (nombre ejercicio/rutina), Body Medium (valor + indicador). Trailing: ícono de tendencia con color. Divider entre filas |
 | Lista de tendencias | G3 | 2 líneas: Title Medium (grupo muscular), Body Medium (clasificación). Trailing: ícono de tendencia. Divider entre filas |
 | Lista de peso corporal | C2 | 2 líneas: Body Medium (fecha izquierda, peso derecha). Etiqueta "Registro inicial" como Body Small si aplica |
 | Lista de versiones | D3 | Dentro de secciones agrupadas. 1 línea: Title Medium ("Versión N") + trailing Body Medium ("(X ej.)") |
@@ -379,8 +379,8 @@ Material 3 define una escala tipográfica con 15 estilos. Tension usa la fuente 
 | Propiedad | Valor |
 |-----------|-------|
 | Tipo | 3 × ExposedDropdownMenuBox M3 con OutlinedTextField read-only |
-| Opciones por filtro | Módulo: "Todos", "A", "B", "C". Equipo: "Todos" + [9 tipos]. Zona: "Todos" + [15 zonas] |
-| Labels | "Módulo", "Equipo", "Zona" — cada dropdown con su label flotante |
+| Opciones por filtro | Equipo: "Todos" + [9 tipos]. Zona: "Todos" + [15 zonas] |
+| Labels | "Equipo", "Zona" — cada dropdown con su label flotante |
 | Valor por defecto | "Todos" en los 3 filtros (equivale a sin filtro activo) |
 | Disposición | Los 3 dropdowns en una única fila horizontal (Row), cada uno con `weight(1f)`, separados por 8 dp. Padding horizontal 16 dp, vertical 8 dp |
 | Touch target | Altura visual ~56 dp (OutlinedTextField M3), cumple RNF06 |
@@ -477,20 +477,20 @@ Material 3 define una escala tipográfica con 15 estilos. Tension usa la fuente 
 |------|----------|----------------|------------------|
 | Top Bar | "Tension" | Text, Title Large | Color: Primary (`#8B1A1A`) · Alineado izquierda · Padding horizontal: 16 dp · Top Bar: Surface Container Lowest (`#FFFFFF`), elevation 0 |
 | Top Bar | Badge alertas `🔔` | IconButton + Badge M3 | Ícono: `Notifications` Material Symbol, tint On Surface Variant · Badge circular sobre ícono, containerColor: Error (`#BA1A1A`), content: On Error (`#FFFFFF`), texto: Label Small (número de alertas) · Sin alertas: badge sin número, containerColor: Outline (`#857370`), tamaño reducido (6 dp punto) |
-| Body | Card "Reanudar Sesión" | Elevated Card | **Condicional:** solo visible si hay sesión activa no cerrada (crash recovery, CA-05 + RNF10) · Fondo: Error Container (`#FFDAD6`) · Elevation: Level 2 (3 dp sombra) · Corner: 12 dp · Leading ícono: ⚠️, 24 dp, color Error · Título "Tienes una sesión activa sin cerrar": Title Medium, On Error Container (`#410002`) · Subtítulo "Módulo X — Versión N · N de M completados": Body Medium, On Error Container · Botón "Reanudar Sesión": Filled Button, containerColor: Primary, contentColor: On Primary · **Cuando visible, se muestra ANTES de Card Próxima Sesión y la oculta** |
-| Body | Card "Próxima Sesión" | Filled Card | **Oculta si hay sesión pendiente de reanudar** · Fondo: Primary Container (`#F5DDDD`) · Corner: 12 dp · Elevation: tonal (Level 1) · "Módulo X — Versión N": Title Medium, On Primary Container (`#5C0E0E`) · "Tu próxima sesión": Body Medium, On Primary Container · Botón "Iniciar Sesión": Filled Button, full width dentro de card, containerColor: Primary, contentColor: On Primary · Padding card interno: 16 dp |
+| Body | Card "Reanudar Sesión" | Elevated Card | **Condicional:** solo visible si hay sesión activa no cerrada (crash recovery, CA-05 + RNF10) · Fondo: Error Container (`#FFDAD6`) · Elevation: Level 2 (3 dp sombra) · Corner: 12 dp · Leading ícono: ⚠️, 24 dp, color Error · Título "Tienes una sesión activa sin cerrar": Title Medium, On Error Container (`#410002`) · Subtítulo "[Nombre de Rutina] — Versión N · N de M completados": Body Medium, On Error Container · Botón "Reanudar Sesión": Filled Button, containerColor: Primary, contentColor: On Primary · **Cuando visible, se muestra ANTES de Card Próxima Sesión y la oculta** |
+| Body | Card "Próxima Sesión" | Filled Card | **Oculta si hay sesión pendiente de reanudar** · Fondo: Primary Container (`#F5DDDD`) · Corner: 12 dp · Elevation: tonal (Level 1) · "[Nombre de Rutina] — Versión N": Title Medium, On Primary Container (`#5C0E0E`) · "Tu próxima sesión": Body Medium, On Primary Container · Botón "Iniciar Sesión": Filled Button, full width dentro de card, containerColor: Primary, contentColor: On Primary · Padding card interno: 16 dp |
 | Body | Sección "Progreso" | Column | Separación top: 24 dp (separador visual `---` = Divider M3, Outline Variant) · Número: Headline Medium, color Primary · Label "microciclos": Body Small, On Surface Variant · Centrado horizontalmente · Sin card, texto directo |
-| Body | Card "Estado de Descarga" | Filled Card | **Condicional:** visible si descarga activa o módulo que la requiere (HU-16, HU-17) · Fondo: Secondary Container (`#F0E0E0`) · Corner: 12 dp · Ícono 🔄: 24 dp, color azul descarga (`#1565C0`) · "Descarga activa" o "Módulo X requiere descarga": Title Medium, On Secondary Container · Progreso o indicación: Body Medium · Enlace "Ver gestión de descarga →": Text Button, color Primary |
+| Body | Card "Estado de Descarga" | Filled Card | **Condicional:** visible si descarga activa o rutina que la requiere (HU-16, HU-17) · Fondo: Secondary Container (`#F0E0E0`) · Corner: 12 dp · Ícono 🔄: 24 dp, color azul descarga (`#1565C0`) · "Descarga activa" o "[Nombre de Rutina] requiere descarga": Title Medium, On Secondary Container · Progreso o indicación: Body Medium · Enlace "Ver gestión de descarga →": Text Button, color Primary |
 | Bottom | Bottom Navigation | NavigationBar M3 | 5 ítems · Inicio activo: ícono filled Primary, label Primary, pill indicator Primary Container · Innactivos: ícono outlined On Surface Variant, label On Surface Variant · Fondo: Surface Container Lowest |
 
 **Estados de B1:**
 
 | Estado | Card Reanudar | Card Próxima | Card Descarga | Microciclos | Badge |
 |--------|---------------|--------------|---------------|-------------|-------|
-| Primera sesión (sin historial) | Oculta | Visible: "Módulo A — Versión 1" | Oculta | "0" | "0" (punto solo) |
-| Uso normal | Oculta | Visible: módulo/versión calculado | Oculta | Número ≥ 1 | Número real de alertas |
+| Primera sesión (sin historial) | Oculta | Visible: "[Nombre de Rutina] — Versión 1" | Oculta | "0" | "0" (punto solo) |
+| Uso normal | Oculta | Visible: rutina/versión calculado | Oculta | Número ≥ 1 | Número real de alertas |
 | Sesión pendiente (crash) | **Visible**, prominente | **Oculta** | Según estado descarga | Sin cambio | Sin cambio |
-| Descarga activa | Según sesión pendiente | Según sesión pendiente | **Visible**: progreso N/6 | Sin cambio | Sin cambio |
+| Descarga activa | Según sesión pendiente | Según sesión pendiente | **Visible**: progreso N/T (T = total rutinas) | Sin cambio | Sin cambio |
 | Descarga requerida (no activa) | Según sesión pendiente | Según sesión pendiente | **Visible**: indicación con enlace a I1 | Sin cambio | Sin cambio |
 
 ---
@@ -511,7 +511,7 @@ Material 3 define una escala tipográfica con 15 estilos. Tension usa la fuente 
 | Body | Selector "Nivel de experiencia" | RadioButton group | Mismos estilos que A1 · Opción actual preseleccionada con radio filled Primary |
 | Body | Botón "Guardar" | Filled Button, full width | Margin top: 32 dp · **Deshabilitado si no hay cambios** (sin dirty state): misma apariencia disabled que A1 · Habilitado si hay cambios válidos: Primary |
 | Body | "Ver historial de peso →" | Text Button | Color: Primary · Alineado izquierda · Margin top: 16 dp · Sin padding adicional: alineado con margen de 16 dp |
-| Bottom | Bottom Navigation | NavigationBar M3 | Configuración activo |
+| Bottom | Bottom Navigation | NavigationBar M3 | Ajustes activo |
 
 **Estados visuales de C1:**
 
@@ -535,7 +535,7 @@ Material 3 define una escala tipográfica con 15 estilos. Tension usa la fuente 
 | Body | Fila de peso | ListItem M3, 56 dp | headlineContent: Body Medium, On Surface (fecha "dd MMM yyyy", alineado izquierda) · trailingContent: Body Medium, On Surface, fontWeight Medium (peso "XX.X Kg", alineado derecha) · Padding horizontal: 16 dp |
 | Body | Etiqueta "Registro inicial" | Text | Body Small · On Surface Variant · Solo en la última fila (la más antigua). Padding top: 2 dp bajo el peso |
 | Body | Divider entre filas | Divider M3 | Thickness: 1 dp · Color: Outline Variant (`#D8C2BD`) · Sin inset (full width) |
-| Bottom | Bottom Navigation | NavigationBar M3 | Configuración activo |
+| Bottom | Bottom Navigation | NavigationBar M3 | Ajustes activo |
 
 **Estados:**
 
@@ -558,9 +558,9 @@ Material 3 define una escala tipográfica con 15 estilos. Tension usa la fuente 
 |------|----------|----------------|------------------|
 | Top Bar | "Diccionario" | CenterAlignedTopAppBar | Título: Title Large, On Surface · Fondo: Surface Container Lowest |
 | Top Bar | Tabs "Ejercicios" / "Plan" | TabRow M3 (Primary Tabs) | Tab activo "Ejercicios": texto Primary (`#8B1A1A`), indicador inferior Primary (3 dp height) · Tab inactivo "Plan": texto On Surface Variant (`#524340`) · Fondo TabRow: Surface Container Lowest |
-| Body | Fila de filtros (Row) | 3 × ExposedDropdownMenuBox M3 | Los 3 dropdowns en una fila horizontal: (1) "Módulo" — opciones: Todos, A, B, C; (2) "Equipo" — opciones: Todos + 9 tipos; (3) "Zona" — opciones: Todos + 15 zonas. Cada dropdown: OutlinedTextField read-only, label flotante, trailing icon flecha, 13 sp texto valor, singleLine. Borde: Outline Variant. Cada uno con `weight(1f)`. Spacing: 8 dp entre dropdowns. Padding: horizontal 16 dp, vertical 8 dp. Valor por defecto: "Todos" |
+| Body | Fila de filtros (Row) | 2 × ExposedDropdownMenuBox M3 | Los 2 dropdowns en una fila horizontal: (1) "Equipo" — opciones: Todos + 9 tipos; (2) "Zona" — opciones: Todos + 15 zonas. Cada dropdown: OutlinedTextField read-only, label flotante, trailing icon flecha, 13 sp texto valor, singleLine. Borde: Outline Variant. Cada uno con `weight(1f)`. Spacing: 8 dp entre dropdowns. Padding: horizontal 16 dp, vertical 8 dp. Valor por defecto: "Todos" |
 | Body | Contador resultados | Text | Body Small · On Surface Variant · "Mostrando N de T ejercicios" (T = total en diccionario, incluye precargados + creados) · Padding top: 12 dp, bottom: 8 dp · Alineado izquierda |
-| Body | Fila de ejercicio | ListItem M3, 72 dp | headlineContent: Title Medium, On Surface (nombre prominente) · supportingContent: Body Medium, On Surface Variant (módulo · equipo · zona, separados por " · ") · Para ejercicios custom (`is_custom = 1`), mostrar badge "Personalizado" en On Tertiary Container · clickable: ripple default · Divider: 1 dp, Outline Variant entre filas |
+| Body | Fila de ejercicio | ListItem M3, 72 dp | headlineContent: Title Medium, On Surface (nombre prominente) · supportingContent: Body Medium, On Surface Variant (equipo · zona, separados por " · ") · Para ejercicios custom (`is_custom = 1`), mostrar badge "Personalizado" en On Tertiary Container · clickable: ripple default · Divider: 1 dp, Outline Variant entre filas |
 | Body | Estado sin resultados | Column centrada | Text: Body Large, On Surface Variant, centrado. "No hay ejercicios que coincidan con los filtros seleccionados." · Padding vertical: 48 dp |
 | FAB | Botón crear ejercicio | FloatingActionButton M3 | Ícono: Add (24 dp) · Container: Primary Container · Content: On Primary Container · Posición: bottom-end, margin 16 dp · Al tocar → navega a formulario de creación de ejercicio (CA-03.10) |
 | Bottom | Bottom Navigation | NavigationBar M3 | Diccionario activo |
@@ -584,10 +584,8 @@ Material 3 define una escala tipográfica con 15 estilos. Tension usa la fuente 
 | Zona | Elemento | Componente M3 | Estilo detallado |
 |------|----------|----------------|------------------|
 | Top Bar | `←` + nombre del ejercicio | CenterAlignedTopAppBar | navigationIcon: ArrowBack (retorna al origen: D1, D4, E1 o F3) · Título: Title Large, On Surface (nombre dinámico) |
-| Body | Media visual | Image (PNG) en Box, clickable | Height: 240 dp · Width: full width · ContentScale: Crop · Corner radius top: 12 dp, bottom: 0 · **Placeholder** (cuando `mediaResource == null`): logo de la app centrado (64 dp) + ícono AddAPhoto (24 dp, On Surface Variant) + texto "Toca para agregar imagen" (Body Small, On Surface Variant) · **Imagen cargada**: si `mediaResource` es ruta absoluta (almacenamiento interno, ejercicio custom), se carga desde filesystem; si no, se carga desde `assets/exercises/module-{code}/{mediaResource}.png` via AssetManager · **Clickable**: al tocar abre selector de galería del dispositivo (aplica tanto a ejercicios precargados como custom). La imagen seleccionada se copia a `filesDir/exercise_images/` y se actualiza `media_resource` en BD · **Overlay**: ícono AddAPhoto 24 dp en esquina inferior derecha (alpha 0.7, On Primary Container, fondo semi-transparente) para indicar que la imagen es editable · Nota: en futuras iteraciones se podrá migrar a AnimatedImage (GIF) / VideoPlayer sin cambios en el layout |
+| Body | Media visual | Image (PNG) en Box, clickable | Height: 240 dp · Width: full width · ContentScale: Crop · Corner radius top: 12 dp, bottom: 0 · **Placeholder** (cuando `mediaResource == null`): logo de la app centrado (64 dp) + ícono AddAPhoto (24 dp, On Surface Variant) + texto "Toca para agregar imagen" (Body Small, On Surface Variant) · **Imagen cargada**: si `mediaResource` es ruta absoluta (almacenamiento interno, ejercicio custom), se carga desde filesystem; si no, se carga desde `assets/exercises/{mediaResource}.png` via AssetManager · **Clickable**: al tocar abre selector de galería del dispositivo (aplica tanto a ejercicios precargados como custom). La imagen seleccionada se copia a `filesDir/exercise_images/` y se actualiza `media_resource` en BD · **Overlay**: ícono AddAPhoto 24 dp en esquina inferior derecha (alpha 0.7, On Primary Container, fondo semi-transparente) para indicar que la imagen es editable · Nota: en futuras iteraciones se podrá migrar a AnimatedImage (GIF) / VideoPlayer sin cambios en el layout |
 | Body | Campo "Nombre" | Column | overlineContent: Label Medium, On Surface Variant ("Nombre") · headlineContent: Body Large, On Surface (valor) · Padding vertical: 8 dp |
-| Body | Campo "Módulo" | Column | overlineContent: Label Medium, On Surface Variant ("Módulo") · headlineContent: Body Large, On Surface ("A — Superior" / "B — Superior" / "C — Inferior") |
-| Body | Campo "Tipo de equipo" | Column | overlineContent: Label Medium, On Surface Variant ("Tipo de equipo") · headlineContent: Body Large, On Surface (valor) |
 | Body | Campo "Zona muscular" | Column | overlineContent: Label Medium, On Surface Variant ("Zona muscular") · headlineContent: Body Large, On Surface (valor) |
 | Body | "Ver historial de este ejercicio →" | Text Button | Color: Primary · Margin top: 24 dp · Navega a F3 |
 | Bottom | Bottom Navigation | Condicional | **Visible** si origen = D1, D4, F3 (Diccionario activo o según origen) · **Oculto** si origen = E1 (sesión activa — sin nav global) |
@@ -606,7 +604,6 @@ Material 3 define una escala tipográfica con 15 estilos. Tension usa la fuente 
 | Body | Zona de imagen | Box clickable + Column | Height: 240 dp · Corner radius: 12 dp · **Placeholder** (sin imagen): `ExerciseImagePlaceholder` compartido (logo de la app 64 dp + ícono AddAPhoto 24 dp, On Surface Variant + texto "Toca para agregar imagen" Body Small, On Surface Variant) · **Con imagen**: Image con ContentScale.Crop, full size · Al tocar → abre selector de galería del dispositivo (`image/*`) |
 | Body | Hint de imagen | Text | Body Small · On Surface Variant · "La imagen es opcional. Puedes agregarla después." |
 | Body | Campo "Nombre" | OutlinedTextField | Obligatorio · singleLine · Label: "Nombre" · supportingText: error en Color Error si vacío |
-| Body | Dropdown "Módulo" | ExposedDropdownMenuBox | Obligatorio · OutlinedTextField read-only · Label: "Módulo" · Opciones: A — Superior, B — Superior, C — Inferior · supportingText: error si no seleccionado |
 | Body | Dropdown "Tipo de equipo" | ExposedDropdownMenuBox | Obligatorio · OutlinedTextField read-only · Label: "Tipo de equipo" · Opciones: 9 tipos · supportingText: error si no seleccionado |
 | Body | Label "Zona muscular" | Text | Label Large · On Surface · Obligatorio (≥1 seleccionada) |
 | Body | Zonas musculares | FlowRow de FilterChip | Multi-select · 15 zonas · `FilterChipDefaults.filterChipColors`: selectedContainerColor Primary Container, selectedLabelColor On Primary Container · Spacing: horizontal 8 dp, vertical 4 dp |
@@ -622,7 +619,7 @@ Material 3 define una escala tipográfica con 15 estilos. Tension usa la fuente 
 
 | Estado | Contenido | Acción |
 |--------|-----------|--------|
-| Cargando opciones | CircularProgressIndicator centrado | Esperando módulos, equipos y zonas |
+| Cargando opciones | CircularProgressIndicator centrado | Esperando equipos y zonas |
 | Formulario vacío | Placeholder imagen, campos vacíos, botón disabled | El ejecutante completa campos |
 | Formulario parcial | Algunos campos completos, botón disabled | Completar campos faltantes |
 | Imagen seleccionada | Imagen de galería reemplaza placeholder | Opcional — no bloquea el botón |
@@ -637,35 +634,33 @@ Material 3 define una escala tipográfica con 15 estilos. Tension usa la fuente 
 
 **Trazabilidad:** HU-04 (CA-04.01, CA-04.05) · RF05, RF08
 
-**Contexto visual:** Navegación por módulos y versiones. Comparte tabs con D1. Los módulos se presentan como secciones agrupadas con encabezado descriptivo.
+**Contexto visual:** Navegación por rutinas y versiones. Comparte tabs con D1. Las rutinas se presentan como secciones agrupadas con encabezado descriptivo.
 
 | Zona | Elemento | Componente M3 | Estilo detallado |
 |------|----------|----------------|------------------|
 | Top Bar | "Diccionario" + Tabs | CenterAlignedTopAppBar + TabRow | Tab activo = "Plan": texto Primary, indicador Primary · Tab inactivo = "Ejercicios": texto On Surface Variant |
-| Body | Sección Módulo A | Column | Encabezado: Title Medium, On Surface ("Módulo A — Superior (Pull + Abs)") · Subtítulo: Body Small, On Surface Variant ("Espalda, Bíceps, Abdomen") · Margin bottom tras subtítulo: 8 dp |
-| Body | Fila Versión N (dentro de módulo) | ListItem M3, 56 dp | headlineContent: Title Medium, On Surface ("Versión N") · trailingContent: Body Medium, On Surface Variant ("(11 ej.)") · clickable → D4 · Ripple default |
-| Body | Sección Módulo B | Column | Encabezado: Title Medium ("Módulo B — Superior (Push)") · Subtítulo: Body Small ("Pecho, Hombro, Tríceps") · 3 versiones |
-| Body | Sección Módulo C | Column | Encabezado: Title Medium ("Módulo C — Inferior") · Subtítulo: Body Small ("Pierna") · 3 versiones |
-| Body | Separación entre módulos | Spacer + Divider | Spacer: 12 dp · Divider: Outline Variant · Spacer: 12 dp |
+| Body | Sección Rutina N | Column | Encabezado: Title Medium, On Surface ("[Nombre de Rutina]") · Subtítulo: Body Small, On Surface Variant (zonas musculares cubiertas) · Margin bottom tras subtítulo: 8 dp |
+| Body | Fila Versión N (dentro de rutina) | ListItem M3, 56 dp | headlineContent: Title Medium, On Surface ("Versión N") · trailingContent: Body Medium, On Surface Variant ("(11 ej.)") · clickable → D4 · Ripple default |
+| Body | Separación entre rutinas | Spacer + Divider | Spacer: 12 dp · Divider: Outline Variant · Spacer: 12 dp |
 | Bottom | Bottom Navigation | NavigationBar M3 | Diccionario activo |
 
 ---
 
 #### D4 — Detalle de Versión del Plan
 
-**Trazabilidad:** HU-04 (CA-04.02 a CA-04.04, CA-04.06, CA-04.07, CA-04.08) · RF05, RF06, RF08, RF63, RF64
+**Trazabilidad:** HU-04 (CA-04.02 a CA-04.04, CA-04.06, CA-04.07, CA-04.08) · HU-25 (CA-03, CA-04, CA-05) · RF05, RF06, RF08, RF63, RF64, RF65
 
-**Contexto visual:** Lista de ejercicios de una combinación módulo-versión. Nota explícita de que el listado no implica orden de ejecución (RF06). Las condiciones especiales (peso corporal, isométricos) se presentan con estilo diferenciado. El ejecutante puede asignar nuevos ejercicios (FAB) y desasignar existentes.
+**Contexto visual:** Lista de ejercicios de una combinación rutina-versión. Nota explícita de que el listado no implica orden de ejecución (RF06). Las condiciones especiales (peso corporal, isométricos) se presentan con estilo diferenciado. El ejecutante puede asignar nuevos ejercicios (FAB) y desasignar existentes.
 
 | Zona | Elemento | Componente M3 | Estilo detallado |
 |------|----------|----------------|------------------|
-| Top Bar | `←` + "Módulo X — Versión N" | CenterAlignedTopAppBar | navigationIcon: ArrowBack → D3 · Título dinámico: Title Large |
+| Top Bar | `←` + "[Nombre de Rutina] — Versión N" | CenterAlignedTopAppBar | navigationIcon: ArrowBack → D3 · Título dinámico: Title Large |
 | Body | Subtítulo informativo | Text | Body Small · On Surface Variant · "N ejercicios · Sin orden obligatorio" · Padding bottom: 16 dp |
-| Body | Fila ejercicio estándar | ListItem M3, 80 dp | headlineContent: Title Medium, On Surface (nombre) · supportingContent, línea 1: Body Medium, On Surface Variant (zona · equipo) · supportingContent, línea 2: Body Medium, On Surface Variant ("4 series · 8-12 reps") · trailingContent: IconButton Delete (tint Error, 48 dp touch target) para desasignar (CA-04.08) · clickable → D2 · Divider 1 dp entre filas |
-| Body | Fila ejercicio peso corporal (Flexiones) | ListItem M3, 80 dp | Misma estructura · Línea 2: Body Medium, On Surface Variant, **fontStyle: italic** ("4 series · Al fallo técnico") |
-| Body | Fila ejercicio isométrico (Plancha, Plancha Lateral) | ListItem M3, 80 dp | Misma estructura · Línea 2: Body Medium, On Surface Variant, **fontStyle: italic** ("4 series · 30-45 seg") |
-| Body | Fila ejercicio peso corporal (otros: Abdominales, etc.) | ListItem M3, 80 dp | Misma estructura · Línea 2: Body Medium, On Surface Variant ("4 series · 8-12 reps") — sin distinción visual especial |
-| FAB | Botón asignar ejercicio | FloatingActionButton M3 | Ícono: Add (24 dp) · Container: Primary Container · Content: On Primary Container · Posición: bottom-end, margin 16 dp · Al tocar → presenta lista de ejercicios del mismo módulo aún no asignados a esta versión (CA-04.07) |
+| Body | Fila ejercicio estándar | ListItem M3, 80 dp | headlineContent: Title Medium, On Surface. Si el slot tiene alternativas, el headline concatena nombres con " ó " (e.g., "Hip Thrust ó Sentadilla Búlgara ó Sentadilla de Zumo"), maxLines 2. Badges de Custom / Peso Corporal al lado del nombre. supportingContent, línea 1: Body Medium, On Surface Variant (zona · equipo del ejercicio primario) · supportingContent, línea 2: Body Medium, On Surface Variant ("{N} series · 8-12 reps") · trailingContent: Row con IconButton Add (tint Secondary) para agregar alternativa + IconButton Edit (tint Primary) + IconButton Delete (tint Error) · clickable → D2 · Divider 1 dp entre filas |
+| Body | Fila ejercicio peso corporal (Flexiones) | ListItem M3, 80 dp | Misma estructura · Línea 2: Body Medium, On Surface Variant, **fontStyle: italic** ("{N} series · Al fallo técnico") |
+| Body | Fila ejercicio isométrico (Plancha, Plancha Lateral) | ListItem M3, 80 dp | Misma estructura · Línea 2: Body Medium, On Surface Variant, **fontStyle: italic** ("{N} series · 30-45 seg") |
+| Body | Fila ejercicio peso corporal (otros: Abdominales, etc.) | ListItem M3, 80 dp | Misma estructura · Línea 2: Body Medium, On Surface Variant ("{N} series · 8-12 reps") — sin distinción visual especial |
+| FAB | Botón asignar ejercicio | FloatingActionButton M3 | Ícono: Add (24 dp) · Container: Primary Container · Content: On Primary Container · Posición: bottom-end, margin 16 dp · Al tocar → presenta lista de ejercicios aún no asignados a esta versión (CA-04.07) |
 | Bottom | Bottom Navigation | NavigationBar M3 | Diccionario activo |
 
 ---
@@ -674,20 +669,20 @@ Material 3 define una escala tipográfica con 15 estilos. Tension usa la fuente 
 
 #### E1 — Sesión Activa
 
-**Trazabilidad:** HU-05 (CA-05.06 a CA-05.09) · HU-06 (CA-06.10, CA-06.12) · HU-07 (CA-07.01, CA-07.05, CA-07.06) · HU-08 (CA-08.01, CA-08.04) · RF12, RF13, RF15, RF16, RF22 · RNF04, RNF05, RNF06, RNF10
+**Trazabilidad:** HU-05 (CA-05.06 a CA-05.09) · HU-06 (CA-06.10, CA-06.12) · HU-07 (CA-07.01, CA-07.05, CA-07.06) · HU-08 (CA-08.01, CA-08.04) · HU-25 (CA-10 a CA-13) · RF12, RF13, RF15, RF16, RF22, RF65 · RNF04, RNF05, RNF06, RNF10
 **HU indirectas visibles:** HU-11 (carga objetivo), HU-17 (indicador de descarga)
 
 **Contexto visual:** Centro operativo de la sesión. Sin Bottom Navigation (restricción de sesión activa). El fondo de cada fila de ejercicio cambia según su estado (No Iniciado / En Ejecución / Completado). Los botones de acción visibles dependen del estado.
 
 | Zona | Elemento | Componente M3 | Estilo detallado |
 |------|----------|----------------|------------------|
-| Top Bar | Módulo — Versión | Text, Title Large | On Surface · Alineado izquierda · "Módulo X — Versión N" |
-| Top Bar | "Sesión activa" | Text, Title Small | On Surface Variant · Bajo el módulo |
-| Top Bar | Badge descarga | AssistChip M3 | **Condicional:** solo si descarga activa (HU-17) · Ícono: 🔄 en azul descarga (`#1565C0`) · Label: "Descarga · Sesión N/6" en Label Medium · containerColor: `#E3F2FD` (claro) / `#1A2733` (oscuro) · Margin top: 4 dp bajo "Sesión activa" |
+| Top Bar | Rutina — Versión | Text, Title Large | On Surface · Alineado izquierda · "[Nombre de Rutina] — Versión N" |
+| Top Bar | "Sesión activa" | Text, Title Small | On Surface Variant · Bajo la rutina |
+| Top Bar | Badge descarga | AssistChip M3 | **Condicional:** solo si descarga activa (HU-17) · Ícono: 🔄 en azul descarga (`#1565C0`) · Label: "Descarga · Sesión N/T" en Label Medium · containerColor: `#E3F2FD` (claro) / `#1A2733` (oscuro) · Margin top: 4 dp bajo "Sesión activa" |
 | Body | Barra progreso | Column | Texto: Body Medium, On Surface ("N de M ejercicios completados") · LinearProgressIndicator determinate: track Surface Variant, indicator Primary, height 8 dp, corner 4 dp · Porcentaje: Label Small, On Surface Variant, alineado derecha · Padding bottom: 16 dp |
-| Body | Fila ejercicio **No Iniciado** | Outlined Card, 88 dp | Borde: Outline Variant · Fondo: transparente (Background) · Leading: ícono ⚪ gris Outline (`#857370`), 24 dp · Línea 1: Title Medium, On Surface (nombre) · Línea 2: Body Medium, On Surface Variant ("No Iniciado · 0/4 series") · Línea 3: Body Medium, On Surface Variant (carga objetivo — ver variantes de carga abajo) · Trailing: Row con spacing 8 dp: botón "Registrar" (Filled Tonal Button, compact 36 dp visual height, **48 dp touch target** con padding vertical incluido, containerColor Primary Container, contentColor On Primary Container) + "Sustituir" (Outlined Button, compact 36 dp visual height, **48 dp touch target**, borderColor Outline) + IconButton 📷 (tint On Surface Variant, 48×48 dp touch, 24 dp icon) |
-| Body | Fila ejercicio **En Ejecución** | Filled Card, 88 dp | Fondo: azul fila claro `#E3F2FD` / oscuro `#1A2733` · Leading: ícono 🔵 azul (`#1565C0` / `#64B5F6`), 24 dp · Línea 2: "En Ejecución · N/4 series" · Trailing: "Registrar" (Filled Button, compact 36 dp visual height, **48 dp touch target**, containerColor Primary) + IconButton 📷 · **Sin botón "Sustituir"** (CA-07.06: solo si 0 series) |
-| Body | Fila ejercicio **Completado** | Filled Card, 72 dp | Fondo: verde fila claro `#E8F5E9` / oscuro `#1A2E1A` · Leading: ícono ✅ verde (`#2E7D32` / `#81C784`), 24 dp · Línea 2: "Completado · 4/4 series" · Texto: On Surface con opacity 0.7 (menor énfasis — completado) · Trailing: solo IconButton 📷 · **Sin botones de acción** |
+| Body | Fila ejercicio **No Iniciado** | Outlined Card, 88 dp | Borde: Outline Variant · Fondo: transparente (Background) · Leading: ícono ⚪ gris Outline (`#857370`), 24 dp · Línea 1: Title Medium, On Surface (nombre) · Línea 2: Body Medium, On Surface Variant ("No Iniciado · 0/{N} series") · Línea 3: Body Medium, On Surface Variant (carga objetivo — ver variantes de carga abajo) · Trailing: Row con spacing 8 dp: botón "Registrar" (Filled Tonal Button, compact 36 dp visual height, **48 dp touch target** con padding vertical incluido, containerColor Primary Container, contentColor On Primary Container) + "Sustituir" (Outlined Button, compact 36 dp visual height, **48 dp touch target**, borderColor Outline) + **IconButton ↔ SwapHoriz** (condicional: solo si `alternativesInSlot > 1`, tint Secondary, 48×48 dp touch, 24 dp icon — permite intercambiar el ejercicio por otra alternativa del mismo slot) + IconButton 📷 (tint On Surface Variant, 48×48 dp touch, 24 dp icon) |
+| Body | Fila ejercicio **En Ejecución** | Filled Card, 88 dp | Fondo: azul fila claro `#E3F2FD` / oscuro `#1A2733` · Leading: ícono 🔵 azul (`#1565C0` / `#64B5F6`), 24 dp · Línea 2: "En Ejecución · {completedSets}/{prescribedSets} series" · Trailing: "Registrar" (Filled Button, compact 36 dp visual height, **48 dp touch target**, containerColor Primary) + IconButton 📷 · **Sin botón "Sustituir"** (CA-07.06: solo si 0 series) |
+| Body | Fila ejercicio **Completado** | Filled Card, 72 dp | Fondo: verde fila claro `#E8F5E9` / oscuro `#1A2E1A` · Leading: ícono ✅ verde (`#2E7D32` / `#81C784`), 24 dp · Línea 2: "Completado · {completedSets}/{prescribedSets} series" · Texto: On Surface con opacity 0.7 (menor énfasis — completado) · Trailing: OutlinedButton "Agregar serie extra" + IconButton 📷 |
 | Body | Botón "Cerrar Sesión" | Outlined Button, full width | borderColor: Secondary (`#6B4F4F`) · contentColor: Secondary · Margin top: 24 dp · Navega a E4 |
 | — | Sin Bottom Navigation | — | — |
 
@@ -719,7 +714,7 @@ Material 3 define una escala tipográfica con 15 estilos. Tension usa la fuente 
 | Body | Campo "Peso (Kg)" — **peso corporal / isométrico** | OutlinedTextField | Mismo layout pero **enabled = false** · Valor fijo: "0" · Fondo: Surface Container Highest (`#EDE0D5`) con opacity 0.5 · Texto: On Surface Variant · Label incluye nota "(Peso corporal)" o "(Isométrico)" |
 | Body | Campo "Repeticiones" — **estándar y peso corporal** | OutlinedTextField | Label: "Repeticiones" · trailingIcon: "reps" · keyboardType: Number · Sin precarga (vacío) · Validación: ≥ 1 (CA-06.06) |
 | Body | Campo "Segundos sostenidos" — **isométrico** | OutlinedTextField | Label: "Segundos sostenidos" · trailingIcon: "seg" · keyboardType: Number · Sin precarga · supportingText: "(Referencia: 30-45 seg)" en Body Small, On Surface Variant (CA-08.05) · Validación: ≥ 1 |
-| Body | Selector RIR | Row de 6 chips circulares | Label superior: "RIR" en Label Medium, On Surface Variant · 6 chips: "0", "1", "2", "3", "4", "5" · Tamaño: 48×48 dp cada uno (RNF06) · Spacing: 8 dp · No seleccionado: fondo Surface Container (`#F8EBE0`), borde Outline, texto On Surface · Seleccionado: fondo Primary (`#8B1A1A`), sin borde, texto On Primary (`#FFFFFF`) · Single select · Sin precarga |
+| Body | Selector RIR | Row de 3 chips circulares | Label superior: "RIR" en Label Medium, On Surface Variant · 3 chips: "0", "1", "2" · Tamaño: 48×48 dp cada uno (RNF06) · Spacing: 8 dp · No seleccionado: fondo Surface Container (`#F8EBE0`), borde Outline, texto On Surface · Seleccionado: fondo Primary (`#8B1A1A`), sin borde, texto On Primary (`#FFFFFF`) · Single select · Sin precarga |
 | Body | Botón "Confirmar" | Filled Button, full width | containerColor: Primary · Height: 48 dp · Margin top: 24 dp · Al confirmar con datos válidos: persiste serie (CA-06.08) → retorna a E1 |
 | Body | "Cancelar" | Text Button, centrado | Color: Primary · Descarta → retorna a E1 sin cambios |
 | — | Sin Bottom Navigation | — | — |
@@ -731,7 +726,7 @@ Material 3 define una escala tipográfica con 15 estilos. Tension usa la fuente 
 | Peso | < 0 | "El peso debe ser ≥ 0 Kg" | Borde Error (`#BA1A1A`), supportingText Error |
 | Repeticiones | < 1 | "Las repeticiones deben ser ≥ 1" | Borde Error, supportingText Error |
 | Segundos | < 1 | "La duración debe ser ≥ 1 segundo" | Borde Error, supportingText Error |
-| RIR | Ningún chip seleccionado | — (no se puede seleccionar fuera de rango al ser chips fijos 0-5) | Botón Confirmar disabled hasta selección |
+| RIR | Ningún chip seleccionado | — (no se puede seleccionar fuera de rango al ser chips fijos 0-2) | Botón Confirmar disabled hasta selección |
 
 **Resumen de variantes de E2:**
 
@@ -747,14 +742,14 @@ Material 3 define una escala tipográfica con 15 estilos. Tension usa la fuente 
 
 **Trazabilidad:** HU-07 (CA-07.01 a CA-07.06) · RF16 · RNF06
 
-**Contexto visual:** Lista filtrada de ejercicios elegibles del mismo módulo. Solo accesible si el ejercicio está en "No Iniciado" (0 series). La sustitución es puntual: no modifica el Plan.
+**Contexto visual:** Lista filtrada de ejercicios elegibles de la misma zona muscular. Solo accesible si el ejercicio está en "No Iniciado" (0 series). La sustitución es puntual: no modifica el Plan.
 
 | Zona | Elemento | Componente M3 | Estilo detallado |
 |------|----------|----------------|------------------|
 | Top Bar | `✕` + "Sustituir ejercicio" | CenterAlignedTopAppBar | navigationIcon: Close · Título: Title Large ("Sustituir ejercicio") |
 | Top Bar | "Reemplazar: [nombre]" | Text | Title Small · On Surface Variant · Nombre del ejercicio a reemplazar |
-| Body | Texto informativo | Column de Text | Body Medium, On Surface Variant · Línea 1: "Selecciona un ejercicio del mismo módulo como reemplazo." · Línea 2: "La sustitución es puntual y no modifica el Plan." · Margin bottom: 16 dp |
-| Body | Fila ejercicio elegible | ListItem M3, 64 dp | headlineContent: Title Medium, On Surface (nombre) · supportingContent: Body Medium, On Surface Variant (zona · equipo) · Solo ejercicios del mismo módulo, excluidos los ya prescritos en la sesión (CA-07.01) · clickable → diálogo de confirmación |
+| Body | Texto informativo | Column de Text | Body Medium, On Surface Variant · Línea 1: "Selecciona un ejercicio de la misma zona muscular como reemplazo." · Línea 2: "La sustitución es puntual y no modifica el Plan." · Margin bottom: 16 dp |
+| Body | Fila ejercicio elegible | ListItem M3, 64 dp | headlineContent: Title Medium, On Surface (nombre) · supportingContent: Body Medium, On Surface Variant (zona · equipo) · Solo ejercicios de la misma zona muscular, excluidos los ya prescritos en la sesión (CA-07.01) · clickable → diálogo de confirmación |
 | Body | Divider entre filas | Divider M3 | 1 dp, Outline Variant |
 | Body | Diálogo de confirmación | AlertDialog M3 | title: Title Medium, "¿Sustituir [original] por [sustituto]?" · text: Body Medium, "Esta sustitución es solo para esta sesión." · confirmButton: Filled Button "Confirmar" (Primary) · dismissButton: Text Button "Cancelar" · Corner: 28 dp · Elevation: Level 3 |
 | Body | "Cancelar" (enlace) | Text Button | Color: Primary · Retorna a E1 sin cambios. Margin top: 16 dp |
@@ -794,14 +789,14 @@ Material 3 define una escala tipográfica con 15 estilos. Tension usa la fuente 
 | Zona | Elemento | Componente M3 | Estilo detallado |
 |------|----------|----------------|------------------|
 | Top Bar | "Resumen de Sesión" | CenterAlignedTopAppBar | Sin navigationIcon (no hay retorno) · Título: Title Large |
-| Top Bar | "Módulo X — VN" | Text | Title Small · On Surface Variant |
+| Top Bar | "[Nombre de Rutina] — VN" | Text | Title Small · On Surface Variant |
 | Body | Card estado + tonelaje (Completada) | Filled Card | Fondo: Primary Container (`#F5DDDD`) · Estado: Title Medium + ícono ✅ verde `#2E7D32`, texto "Completada" · Tonelaje: Headline Large (`32 sp`), color Primary (`#8B1A1A`), separador de miles (" 12,450 Kg") · Ejercicios: Body Medium, On Primary Container ("11/11 ejercicios") · Corner: 12 dp · Padding: 16 dp |
 | Body | Card estado + tonelaje (Incompleta) | Filled Card | Fondo: Error Container (`#FFDAD6`) · Estado: Title Medium + ícono ⚠️ naranja `#E65100`, texto "Incompleta" · Tonelaje parcial: Headline Large, On Error Container · Ejercicios: "N/M ejercicios" · Solo lista ejercicios CON registros (CA-13.07) |
 | Body | Separador | Divider M3 | Outline Variant · Margin vertical 16 dp |
 | Body | Fila progresión — **Progresión positiva** | ListItem M3, 80 dp | Leading: ícono `↑` 24 dp, color verde `#2E7D32` / `#81C784` · headlineContent: Title Medium, On Surface (nombre) · supportingContent línea 1: Body Medium, color verde ("↑ Progresión · 60 Kg") · supportingContent línea 2: Body Small, On Surface Variant (señal: "Subir carga → 62.5 Kg" para estándar, o "48 reps totales (+3)" para peso corporal, o "4×42s — Progresando" para isométrico) · clickable → F3 |
 | Body | Fila progresión — **Mantenimiento** | ListItem M3, 80 dp | Leading: ícono `=` 24 dp, color ámbar `#8D6E00` / `#FFD54F` · supportingContent línea 1: Body Medium, color ámbar `#8D6E00` / `#FFD54F` ("= Mantenimiento · 22.5 Kg") · línea 2: Body Small ("Mantener carga") · clickable → F3 |
 | Body | Fila progresión — **Regresión** | ListItem M3, 80 dp | Leading: ícono `↓` 24 dp, color rojo `#C62828` / `#EF9A9A` · supportingContent línea 1: Body Medium, color rojo ("↓ Regresión · 40 Kg") · línea 2: Body Small ("Considerar descarga") · clickable → F3 |
-| Body | Badge "🏆 Dominado" | AssistChip M3 | **Condicional:** solo isométricos con 4 series ≥ 45s (CA-08.07) · containerColor: Tertiary Container (`#E0EEDD`) · label: "Dominado", Label Medium, On Tertiary Container · leadingIcon: 🏆 emoji · Se muestra junto al nombre del ejercicio |
+| Body | Badge "🏆 Dominado" | AssistChip M3 | **Condicional:** solo isométricos con todas las series prescritas ≥ 45s (CA-08.07) · containerColor: Tertiary Container (`#E0EEDD`) · label: "Dominado", Label Medium, On Tertiary Container · leadingIcon: 🏆 emoji · Se muestra junto al nombre del ejercicio |
 | Body | Botón "Ir al Inicio" | Filled Button, full width | containerColor: Primary · Margin top: 24 dp · Navega a B1 |
 | — | Sin Bottom Navigation | — | — |
 
@@ -809,7 +804,7 @@ Material 3 define una escala tipográfica con 15 estilos. Tension usa la fuente 
 
 | Tipo ejercicio | Si progresión | Si mantenimiento | Si regresión |
 |----------------|---------------|-------------------|--------------|
-| Estándar — Doble Umbral cumplido (≥12 reps en 3/4 series + RIR prom ≥ 2) | "Subir carga → X Kg" (RF26: +2.5 Kg módulos A/B, +5 Kg módulo C) | N/A (si DU se cumple, la clasificación es siempre Progresión) | N/A |
+| Estándar — Doble Umbral cumplido (≥12 reps en 3 de las series prescritas + RIR prom ≥ 2) | "Subir carga → X Kg" (RF26: +2.5 Kg tren superior, +5 Kg tren inferior, por zona muscular) | N/A (si DU se cumple, la clasificación es siempre Progresión) | N/A |
 | Estándar — Doble Umbral no cumplido | "Progresar en reps (misma carga)" (RF27) | "Mantener carga — progresar en reps" | "Considerar descarga" |
 | Peso corporal | "N reps totales (+diferencia)" | "N reps totales (=)" | "N reps totales (−diferencia)" |
 | Isométrico | "N×Xs — Progresando" | "N×Xs — Manteniendo" | "N×Xs — Regresando" |
@@ -828,7 +823,7 @@ Material 3 define una escala tipográfica con 15 estilos. Tension usa la fuente 
 | Zona | Elemento | Componente M3 | Estilo detallado |
 |------|----------|----------------|------------------|
 | Top Bar | "Historial" | CenterAlignedTopAppBar | Sin navigationIcon · Título: Title Large |
-| Body | Fila de sesión | ListItem M3, 80 dp | overlineContent: Body Medium, On Surface Variant (fecha "dd MMM yyyy") · headlineContent: Row — Title Medium On Surface ("Módulo X — VN") + Spacer + Badge estado (ver abajo) · supportingContent: Body Medium, On Surface Variant ("Tonelaje: 12,450 Kg") · clickable → F2 · Divider 1 dp Outline Variant entre filas |
+| Body | Fila de sesión | ListItem M3, 80 dp | overlineContent: Body Medium, On Surface Variant (fecha "dd MMM yyyy") · headlineContent: Row — Title Medium On Surface ("[Nombre de Rutina] — VN") + Spacer + Badge estado (ver abajo) · supportingContent: Body Medium, On Surface Variant ("Tonelaje: 12,450 Kg") · clickable → F2 · Divider 1 dp Outline Variant entre filas |
 | Body | Badge "Completada" | Text + ícono inline | ícono ✅ 16 dp, color verde `#2E7D32` · texto "Completada", Body Small, color verde |
 | Body | Badge "Incompleta" | Text + ícono inline | ícono ⚠️ 16 dp, color naranja `#E65100` · texto "Incompleta", Body Small, color naranja |
 | Body | Estado vacío | Column centrada | Body Large, On Surface Variant, centrado · "No hay sesiones pasadas disponibles." · Padding vertical: 48 dp |
@@ -840,11 +835,11 @@ Material 3 define una escala tipográfica con 15 estilos. Tension usa la fuente 
 
 **Trazabilidad:** HU-24 (CA-24.02, CA-24.04, CA-24.05) · HU-10 (clasificación de progresión) · RF60
 
-**Contexto visual:** Solo lectura (CA-24.05). Resumen seguido de lista expandida de ejercicios con sus 4 series. Sustituciones se indican con nota.
+**Contexto visual:** Solo lectura (CA-24.05). Resumen seguido de lista expandida de ejercicios con sus series registradas. Sustituciones se indican con nota.
 
 | Zona | Elemento | Componente M3 | Estilo detallado |
 |------|----------|----------------|------------------|
-| Top Bar | `←` + "Módulo X — VN" | CenterAlignedTopAppBar | navigationIcon: ArrowBack → F1 · Título: Title Large |
+| Top Bar | `←` + "[Nombre de Rutina] — VN" | CenterAlignedTopAppBar | navigationIcon: ArrowBack → F1 · Título: Title Large |
 | Top Bar | "dd MMM yyyy · Completada/Incompleta" | Text | Title Small · On Surface Variant |
 | Body | Card resumen | Filled Card | Fondo: Surface Container High (`#F2E5DA`) · Corner: 12 dp · "Tonelaje: X Kg": Title Medium, On Surface · "Ejercicios: N/M": Body Medium, On Surface Variant · "Estado: Completada ✅" o "Incompleta ⚠️": Body Medium con ícono + color estado (verde/naranja) |
 | Body | Separador | Divider M3 | Outline Variant · Margin vertical 16 dp |
@@ -857,7 +852,7 @@ Material 3 define una escala tipográfica con 15 estilos. Tension usa la fuente 
 
 **Trazabilidad:** HU-23 (CA-23.01 a CA-23.06) · HU-10 (clasificación) · RF43, RF50, RF51
 
-**Contexto visual:** Historial longitudinal de un ejercicio: estado de progresión actual, gráfico de tendencia, lista de sesiones. Incluye registros de cualquier módulo-versión (CA-23.03).
+**Contexto visual:** Historial longitudinal de un ejercicio: estado de progresión actual, gráfico de tendencia, lista de sesiones. Incluye registros de cualquier rutina-versión (CA-23.03).
 
 | Zona | Elemento | Componente M3 | Estilo detallado |
 |------|----------|----------------|------------------|
@@ -866,7 +861,7 @@ Material 3 define una escala tipográfica con 15 estilos. Tension usa la fuente 
 | Body | Badge estado progresión | AssistChip M3, read-only | En Progresión: containerColor `#E8F5E9`/`#1A2E1A`, label verde, ícono 🟢 · En Meseta: containerColor `#FFF8E1`/`#4A3800`, label ámbar, ícono 🟡 · En Descarga: containerColor `#E3F2FD`/`#1A2733`, label azul, ícono 🔵 · Sin Historial: containerColor Surface Variant, label On Surface Variant, ícono ⚪ |
 | Body | Gráfico tendencia de carga | Canvas/Chart en Filled Card | Fondo card: Surface Container (`#F8EBE0`) · Corner: 12 dp · Padding: 16 dp · Línea: Primary, strokeWidth 2 dp · Puntos: Primary, radio 6 dp (relleno), 3 dp borde On Primary · Grid horizontal: Outline Variant, 1 dp dashed · Labels eje Y: Label Small, On Surface Variant (Kg o "reps" para peso corporal) · Labels eje X: Label Small, On Surface Variant ("S1", "S2"... sesiones) · Height total: 200 dp · Para peso corporal: eje Y = reps totales |
 | Body | Separador | Divider M3 | Outline Variant · Margin vertical 16 dp |
-| Body | Fila sesión del ejercicio | ListItem M3, 72 dp | overlineContent: Body Medium, On Surface Variant (fecha + módulo-versión: "10 feb 2026 · A-V1") · headlineContent: Body Medium, On Surface (peso + reps totales + RIR: "60 Kg · 45 reps · RIR 2.3") · supportingContent: Body Small con ícono + color semántico (clasificación: "↑ Progresión" verde, "= Mantenimiento" ámbar, "↓ Regresión" rojo) · Divider entre filas |
+| Body | Fila sesión del ejercicio | ListItem M3, 72 dp | overlineContent: Body Medium, On Surface Variant (fecha + rutina-versión: "10 feb 2026 · R1-V1") · headlineContent: Body Medium, On Surface (peso + reps totales + RIR: "60 Kg · 45 reps · RIR 2.3") · supportingContent: Body Small con ícono + color semántico (clasificación: "↑ Progresión" verde, "= Mantenimiento" ámbar, "↓ Regresión" rojo) · Divider entre filas |
 | Body | "Ver técnica de ejecución →" | Text Button | Color: Primary · Navega a D2 · Margin top: 16 dp |
 | Body | Estado vacío | Column centrada | Body Large, On Surface Variant · "No hay registros disponibles para este ejercicio." · Padding vertical: 48 dp |
 | Bottom | Bottom Navigation | Condicional | **Visible** si origen = F2, G1, H2, D2 · **Oculto** si origen = E5 |
@@ -885,7 +880,7 @@ Material 3 define una escala tipográfica con 15 estilos. Tension usa la fuente 
 |------|----------|----------------|------------------|
 | Top Bar | "Métricas" | CenterAlignedTopAppBar | Sin navigationIcon · Título: Title Large |
 | Body | **Sección 1: Índice de Adherencia** | Filled Card | Fondo: Secondary Container (`#F0E0E0`) · Corner: 12 dp · "Adherencia semanal": Title Medium, On Secondary Container · Porcentaje: Headline Medium, Primary (`#8B1A1A`) · Desglose: Body Medium, On Secondary Container ("5 de 6 sesiones esta semana") · Referencia: objetivo desde J1 (CA-21.05) |
-| Body | **Sección 2: RIR Promedio por Módulo** | Filled Card, Surface Container High | Corner: 12 dp · Selector período: ExposedDropdownMenuBox M3, opciones "2 últimas sesiones" (defecto), "4 últimas sesiones", "6 últimas sesiones" (CA-21.02) · OutlinedTextField readOnly con trailingIcon ▼ · Dropdown: Surface Container, Elevation Level 2 · **Fila por módulo (A, B, C):** Row — Title Medium (módulo) + Body Medium fontWeight Medium (valor numérico RIR) + Badge interpretación · Badge Óptimo (2-3): containerColor `#E8F5E9`, label `#1B5E20` (verde oscuro) 🟢 · Badge Riesgo (< 1.5): containerColor `#FFDAD6`, label On Error Container (`#410002`) 🔴 · Badge Insuficiente (> 3.5): containerColor `#FFF8E1`, label `#5D4200` (ámbar oscuro) 🟡 · Referencia: Body Small, On Surface Variant ("2-3 = óptimo, < 1.5 = riesgo, > 3.5 = insuficiente") |
+| Body | **Sección 2: RIR Promedio por Rutina** | Filled Card, Surface Container High | Corner: 12 dp · Selector período: ExposedDropdownMenuBox M3, opciones "2 últimas sesiones" (defecto), "4 últimas sesiones", "6 últimas sesiones" (CA-21.02) · OutlinedTextField readOnly con trailingIcon ▼ · Dropdown: Surface Container, Elevation Level 2 · **Fila por rutina:** Row — Title Medium (nombre rutina) + Body Medium fontWeight Medium (valor numérico RIR) + Badge interpretación · Badge Óptimo (1): containerColor `#E8F5E9`, label `#1B5E20` (verde oscuro) 🟢 · Badge Riesgo (< 0.5): containerColor `#FFDAD6`, label On Error Container (`#410002`) 🔴 · Badge Insuficiente (> 1.8): containerColor `#FFF8E1`, label `#5D4200` (ámbar oscuro) 🟡 · Referencia: Body Small, On Surface Variant ("1 = óptimo, < 0.5 = riesgo, > 1.8 = insuficiente") |
 | Body | **Sección 3: Tasa de Progresión** | Column | Selector período: ExposedDropdownMenuBox, opciones "4 semanas" (defecto), "8 semanas", "12 semanas" (CA-19.02) · **Fila por ejercicio:** ListItem M3, 56 dp — headlineContent: Title Medium (nombre) + trailing: Body Medium fontWeight Medium (porcentaje) + ícono tendencia (↑ verde si ≥ 60%, = ámbar si 40-59%, ↓ rojo si < 40%) · clickable → F3 · Divider entre filas |
 | Body | **Sección 4: Velocidad de Carga** | Column | **Fila por ejercicio:** ListItem M3, 56 dp — headlineContent: Title Medium (nombre) + trailing: Body Medium ("+X.X Kg/sesión" o "0 Kg/sesión") · Peso corporal: trailing "N/A" en On Surface Variant, fontStyle italic · clickable → F3 · Divider entre filas |
 | Body | Separador | Divider M3 | Outline Variant · Margin vertical 16 dp |
@@ -897,7 +892,7 @@ Material 3 define una escala tipográfica con 15 estilos. Tension usa la fuente 
 
 #### G2 — Volumen por Grupo Muscular
 
-**Trazabilidad:** HU-20 (CA-20.01 a CA-20.06) · HU-25 (CA-25.01 a CA-25.04) · RF45, RF49, RF52
+**Trazabilidad:** HU-20 (CA-20.01 a CA-20.06) · HU-15 (CA-25.01 a CA-25.04, pre-renumeración) · RF45, RF49, RF52
 
 **Contexto visual:** Detalle de volumen con selector de microciclo, barras de tonelaje, distribución porcentual y gráfico de evolución temporal.
 
@@ -908,7 +903,7 @@ Material 3 define una escala tipográfica con 15 estilos. Tension usa la fuente 
 | Body | **Tonelaje por grupo muscular** | Filled Card | Fondo: Surface Container · Corner: 12 dp · 12 filas (una por grupo muscular) · Cada fila: Row — Body Medium On Surface (nombre grupo, width fijo 120 dp) + Barra horizontal (fondo Surface Variant, fill Primary, height 16 dp, corner 4 dp, width proporcional al máximo) + Body Medium On Surface Variant (valor "X,XXX Kg" alineado derecha) · Spacing entre filas: 8 dp |
 | Body | **Distribución de volumen (%)** | Filled Card | Fondo: Surface Container · Corner: 12 dp · Misma estructura de filas · Barra: fill Secondary (`#6B4F4F`) · Porcentaje: Body Medium ("22%") |
 | Body | **Evolución temporal** (multilínea) | Filled Card | Fondo: Surface Container · Corner: 12 dp · Height: 200 dp · Líneas diferenciadas por grupo (Primary, Secondary, Tertiary y variantes: `#8B1A1A`, `#6B4F4F`, `#5C6B4F`, más tonos) · Leyenda inferior: Label Small con punto de color + nombre grupo · Grid: Outline Variant dashed · Labels ejes: Label Small, On Surface Variant |
-| Body | Estado vacío (< 2 microciclos) | Column centrada | Body Large, On Surface Variant · "Se necesitan al menos 2 microciclos para mostrar evolución comparativa." (CA-25.04) |
+| Body | Estado vacío (< 2 microciclos) | Column centrada | Body Large, On Surface Variant · "Se necesitan al menos 2 microciclos para mostrar evolución comparativa." (HU-15, CA-25.04 pre-renumeración) |
 | Bottom | Bottom Navigation | NavigationBar M3 | Métricas activo |
 
 ---
@@ -948,7 +943,7 @@ Material 3 define una escala tipográfica con 15 estilos. Tension usa la fuente 
 | Body | Encabezado "Crisis" | Row | Text: Title Small, Error (`#BA1A1A`) · Solo visible si hay alertas crisis · Divider inferior: Error, 1 dp · Margin bottom: 12 dp |
 | Body | Card alerta **crisis (🔴)** | Elevated Card | Fondo: Error Container (`#FFDAD6` / `#930009`) · Elevation Level 2 · Corner: 12 dp · Leading: indicador circular relleno, 12 dp, color `#C62828` / `#EF9A9A` · Título tipo alerta: Title Medium, On Error Container · Entidad afectada: Body Medium, On Error Container · Dato clave: Body Small, On Error Container · Spacing entre cards: 8 dp · clickable → H2 |
 | Body | Encabezado "Alertas" | Row | Text: Title Small, On Surface Variant · Solo visible si hay alertas no-crisis · Divider inferior: Outline Variant · Margin top: 16 dp si hay crisis arriba |
-| Body | Card alerta **alta (🟠)** | Filled Card | Fondo: `#FFF3E0` / `#4E2600` · Corner: 12 dp · Leading: indicador circular 12 dp, color `#E65100` / `#FFB74D` · Texto: On Surface (`#1C1B1B`) / On Surface dark (`#E8E0DC`) · Tipos: meseta detectada, módulo requiere descarga · clickable → H2 |
+| Body | Card alerta **alta (🟠)** | Filled Card | Fondo: `#FFF3E0` / `#4E2600` · Corner: 12 dp · Leading: indicador circular 12 dp, color `#E65100` / `#FFB74D` · Texto: On Surface (`#1C1B1B`) / On Surface dark (`#E8E0DC`) · Tipos: meseta detectada, rutina requiere descarga · clickable → H2 |
 | Body | Card alerta **media (🟡)** | Filled Card | Fondo: `#FFF8E1` / `#4A3800` · Corner: 12 dp · Leading: indicador circular 12 dp, color `#8D6E00` / `#FFD54F` · Texto: On Surface (`#1C1B1B`) / On Surface dark (`#E8E0DC`) · Tipos: RIR fuera de rango, adherencia baja, caída tonelaje > 10%, inactividad > 10 días, tasa progresión < 40% · clickable → H2 |
 | Body | Estado vacío | Column centrada | ícono ✅ 48 dp, color verde `#2E7D32` · Text: Body Large, On Surface Variant, "No hay alertas activas. Todo en orden." · Padding vertical: 48 dp |
 | Bottom | Bottom Navigation | NavigationBar M3 | Inicio activo (se llega desde B1) |
@@ -959,11 +954,11 @@ Material 3 define una escala tipográfica con 15 estilos. Tension usa la fuente 
 |------|---------|----------|----------|----------|
 | Tasa de progresión baja | Ejercicio | < 40% | — | < 20% |
 | Meseta detectada | Ejercicio | — | 3 sesiones sin progresión | — |
-| RIR fuera de rango | Módulo | < 1.5 o > 3.5 sostenido 2+ sesiones | — | — |
+| RIR fuera de rango | Rutina | < 0.5 o > 1.8 sostenido 2+ sesiones | — | — |
 | Adherencia baja | Semanal | < 60% (1 semana) | — | < 60% (2+ semanas) |
 | Caída de tonelaje | Grupo muscular | > 10% | — | > 20% |
-| Inactividad por módulo | Módulo | > 10 días | — | > 14 días |
-| Módulo requiere descarga | Módulo | — | ≥ 50% en meseta/regresión | — |
+| Inactividad por rutina | Rutina | > 10 días | — | > 14 días |
+| Rutina requiere descarga | Rutina | — | ≥ 50% en meseta/regresión | — |
 
 ---
 
@@ -977,12 +972,12 @@ Material 3 define una escala tipográfica con 15 estilos. Tension usa la fuente 
 | Zona | Elemento | Componente M3 | Estilo detallado |
 |------|----------|----------------|------------------|
 | Top Bar | `←` + "Detalle de Alerta" | CenterAlignedTopAppBar | navigationIcon: ArrowBack → H1 |
-| Body | Card tipo y nivel | Filled Card | Fondo: color según nivel de alerta (ver H1 §4.3) · Corner: 12 dp · Leading: indicador de nivel (circular, 16 dp) · Título tipo: Title Medium, On [nivel] Container (ej. "MESETA DETECTADA") · Entidad: Body Medium (nombre ejercicio/módulo) · Dato resumen: Body Small ("3 sesiones sin progresión") |
+| Body | Card tipo y nivel | Filled Card | Fondo: color según nivel de alerta (ver H1 §4.3) · Corner: 12 dp · Leading: indicador de nivel (circular, 16 dp) · Título tipo: Title Medium, On [nivel] Container (ej. "MESETA DETECTADA") · Entidad: Body Medium (nombre ejercicio/rutina) · Dato resumen: Body Small ("3 sesiones sin progresión") |
 | Body | Datos que dispararon la alerta | Filled Card | Fondo: Surface Container High (`#F2E5DA`) · Corner: 12 dp · Contenido: Column de Body Medium, On Surface (sesión por sesión: "Sesión 1: 22.5 Kg · 38 reps", etc.) · Período: Body Small, On Surface Variant ("Período: 27 ene — 10 feb") |
-| Body | Análisis causal | Column | Text: Body Large, On Surface · Sin card (texto directo sobre Background) · Padding horizontal: 16 dp · **Contenido varía por tipo de alerta:** Meseta + RIR bajo (0-1): "entrenando cerca del fallo técnico — posible límite de carga" (CA-14.04) · Meseta + RIR alto (3+): "carga conservadora — margen para incrementar" (CA-14.05) · Estancamiento grupal: "fatiga sistémica del grupo muscular" (CA-14.06) · Caída tonelaje + descarga activa: "Caída esperada por descarga — controlada" (HU-12, HU-29 CA-29.03, CA-29.04) en color azul descarga, no crisis |
-| Body | Recomendaciones escalonadas | Column | Título: Title Small, On Surface ("Recomendaciones") · Cada recomendación: Row — Leading `▸` Text Primary + Body Medium On Surface · Sesión 4: "Intentar microincremento (+2.5 Kg) o extensión de reps" (CA-15.01) · Sesión 6+: "Considerar rotar versión del módulo" (CA-15.02, CA-15.03) · Padding entre recomendaciones: 8 dp |
+| Body | Análisis causal | Column | Text: Body Large, On Surface · Sin card (texto directo sobre Background) · Padding horizontal: 16 dp · **Contenido varía por tipo de alerta:** Meseta + RIR bajo (0): "entrenando al fallo técnico — posible límite de carga" (CA-14.04) · Meseta + RIR alto (>1.8): "carga conservadora — margen para incrementar" (CA-14.05) · Estancamiento grupal: "fatiga sistémica del grupo muscular" (CA-14.06) · Caída tonelaje + descarga activa: "Caída esperada por descarga — controlada" (HU-12, HU-29 CA-29.03, CA-29.04) en color azul descarga, no crisis |
+| Body | Recomendaciones escalonadas | Column | Título: Title Small, On Surface ("Recomendaciones") · Cada recomendación: Row — Leading `▸` Text Primary + Body Medium On Surface · Sesión 4: "Intentar microincremento (+2.5 Kg) o extensión de reps" (CA-15.01) · Sesión 6+: "Considerar rotar versión de la rutina" (CA-15.02, CA-15.03) · Padding entre recomendaciones: 8 dp |
 | Body | "Ver historial del ejercicio →" | Text Button | **Condicional:** visible en alertas de meseta y tasa progresión baja · Color: Primary · Navega a F3 |
-| Body | "Gestionar descarga →" | Text Button | **Condicional:** visible en alertas de descarga/fatiga (módulo requiere descarga, caída tonelaje por fatiga) · Color: Primary · Navega a I1 |
+| Body | "Gestionar descarga →" | Text Button | **Condicional:** visible en alertas de descarga/fatiga (rutina requiere descarga, caída tonelaje por fatiga) · Color: Primary · Navega a I1 |
 | Bottom | Bottom Navigation | NavigationBar M3 | Inicio activo |
 
 ---
@@ -992,7 +987,7 @@ Material 3 define una escala tipográfica con 15 estilos. Tension usa la fuente 
 #### I1 — Gestión de Descarga
 
 **Trazabilidad:** HU-16 (CA-16.01, CA-16.04) · HU-17 (CA-17.01 a CA-17.09) · RF37 a RF40
-**HU indirecta visible:** HU-12 (detección de fatiga acumulada → módulo requiere descarga)
+**HU indirecta visible:** HU-12 (detección de fatiga acumulada → rutina requiere descarga)
 
 **Contexto visual:** Pantalla con 3 estados mutuamente excluyentes. El protocolo de descarga incluye excepciones para peso corporal e isométricos (CA-17.09). La activación es decisión del ejecutante (informativa, CA-16.04).
 
@@ -1001,13 +996,13 @@ Material 3 define una escala tipográfica con 15 estilos. Tension usa la fuente 
 | Top Bar | `←` + "Gestión de Descarga" | CenterAlignedTopAppBar | navigationIcon: ArrowBack (retorna a origen: B1 o H2) |
 | | | | |
 | **Estado A: Descarga requerida, no activa** | | | |
-| Body | Card estado actual | Outlined Card | Borde: Outline · Corner: 12 dp · "No hay descarga activa": Body Large, On Surface · Ícono ⚠️ + "Módulo X requiere descarga": Body Medium, Error · "≥ 50% de los ejercicios están en meseta o regresión": Body Small, On Surface Variant |
-| Body | Protocolo de descarga | Filled Card | Fondo: Secondary Container (`#F0E0E0`) · Corner: 12 dp · Título: Title Small, On Secondary Container ("Al activar la descarga:") · Parámetros, cada uno como Body Medium, On Secondary Container, con leading "·": Carga al 60%, 4 series, 8 repeticiones, RIR 4-5, Duración 1 microciclo (6 sesiones), Versiones congeladas · **Excepciones (CA-17.09):** "· Peso corporal: 8 reps, RIR 4-5 (sin ajuste de carga, Peso = 0)" e "· Isométricos: 30 seg, RIR 4-5" · Nota final: "· Al finalizar: reinicio al 90% de carga pre-descarga" |
+| Body | Card estado actual | Outlined Card | Borde: Outline · Corner: 12 dp · "No hay descarga activa": Body Large, On Surface · Ícono ⚠️ + "[Nombre de Rutina] requiere descarga": Body Medium, Error · "≥ 50% de los ejercicios están en meseta o regresión": Body Small, On Surface Variant |
+| Body | Protocolo de descarga | Filled Card | Fondo: Secondary Container (`#F0E0E0`) · Corner: 12 dp · Título: Title Small, On Secondary Container ("Al activar la descarga:") · Parámetros, cada uno como Body Medium, On Secondary Container, con leading "·": Carga al 60%, series prescritas, 8 repeticiones, RIR 2, Duración 1 microciclo (6 sesiones), Versiones congeladas · **Excepciones (CA-17.09):** "· Peso corporal: 8 reps, RIR 2 (sin ajuste de carga, Peso = 0)" e "· Isométricos: 30 seg, RIR 2" · Nota final: "· Al finalizar: reinicio al 90% de carga pre-descarga" |
 | Body | Botón "Activar Descarga" | Filled Button, full width | containerColor: Primary · Margin top: 24 dp |
 | | | | |
 | **Estado B: Descarga activa** | | | |
 | Body | Card progreso | Filled Card | Fondo: Secondary Container · Corner: 12 dp · Ícono 🔄 24 dp color azul descarga (`#1565C0`) + "Descarga activa": Title Medium, color azul · "Progreso: N/6 sesiones": Body Medium, On Secondary Container · LinearProgressIndicator determinate: track Surface Variant, indicator azul descarga, height 8 dp · "Sesiones restantes: N": Body Medium, On Secondary Container |
-| Body | Parámetros vigentes | Filled Card | Fondo: Surface Container High · Corner: 12 dp · Lista de parámetros: Body Medium, On Surface ("Carga: 60%", "Series: 4", "Reps: 8", "RIR objetivo: 4-5") · Versiones congeladas: Body Medium, On Surface Variant ("Versión congelada: A-V2, B-V1, C-V3") |
+| Body | Parámetros vigentes | Filled Card | Fondo: Surface Container High · Corner: 12 dp · Lista de parámetros: Body Medium, On Surface ("Carga: 60%", "Series: 4", "Reps: 8", "RIR objetivo: 2") · Versiones congeladas: Body Medium, On Surface Variant ("Versión congelada: A-V2, B-V1, C-V3") |
 | | | | |
 | **Estado C: Post-descarga** | | | |
 | Body | Card reinicio | Filled Card | Fondo: Tertiary Container (`#E0EEDD`) · Corner: 12 dp · Ícono ✅ 24 dp verde · "Descarga completada": Title Medium, On Tertiary Container (`#334A29`) · "Cargas de reinicio (90% pre-descarga):": Body Medium, On Tertiary Container · Lista ejercicios: Body Medium, On Tertiary Container ("Press de banca: 54 Kg", etc.) · Nota: Body Small, On Tertiary Container italic ("Las versiones retoman su avance normal.") |
@@ -1015,9 +1010,9 @@ Material 3 define una escala tipográfica con 15 estilos. Tension usa la fuente 
 
 ---
 
-### Flujo J — Configuración y Respaldo
+### Flujo J — Ajustes y Respaldo
 
-#### J1 — Configuración
+#### J1 — Ajustes
 
 **Trazabilidad:** HU-21 (CA-21.05) · HU-31 · HU-32 · RNF15, RNF16
 
@@ -1025,7 +1020,7 @@ Material 3 define una escala tipográfica con 15 estilos. Tension usa la fuente 
 
 | Zona | Elemento | Componente M3 | Estilo detallado |
 |------|----------|----------------|------------------|
-| Top Bar | "Configuración" | CenterAlignedTopAppBar | Sin navigationIcon · Título: Title Large |
+| Top Bar | "Ajustes" | CenterAlignedTopAppBar | Sin navigationIcon · Título: Title Large |
 | Body | Encabezado "Perfil" | Text | Label Large · On Surface Variant · Padding top: 8 dp |
 | Body | "Editar perfil" | ListItem M3, 56 dp | headlineContent: Body Large, On Surface ("Editar perfil") · trailingContent: ícono ChevronRight, On Surface Variant, 24 dp · clickable → C1 |
 | Body | Divider | Divider M3 | 1 dp, Outline Variant · Margin vertical: 8 dp |
@@ -1035,7 +1030,7 @@ Material 3 define una escala tipográfica con 15 estilos. Tension usa la fuente 
 | Body | Encabezado "Datos" | Text | Label Large · On Surface Variant |
 | Body | "Exportar respaldo" | ListItem M3, 56 dp | headlineContent: Body Large, On Surface · trailingContent: ChevronRight · clickable → J2 |
 | Body | "Importar respaldo" | ListItem M3, 56 dp | headlineContent: Body Large, On Surface · trailingContent: ChevronRight · clickable → J3 |
-| Bottom | Bottom Navigation | NavigationBar M3 | Configuración activo |
+| Bottom | Bottom Navigation | NavigationBar M3 | Ajustes activo |
 
 ---
 
@@ -1053,7 +1048,7 @@ Material 3 define una escala tipográfica con 15 estilos. Tension usa la fuente 
 | Body (durante) | Card progreso | Filled Card | Fondo: Surface Container · Corner: 12 dp · "Exportando datos...": Body Medium, On Surface · LinearProgressIndicator indeterminate: indicator Primary |
 | Body (post) | Card confirmación | Filled Card | Fondo: Tertiary Container (`#E0EEDD`) · Corner: 12 dp · Leading: ícono ✅ 24 dp, verde · "Respaldo exportado": Title Medium, On Tertiary Container · "Archivo: tension_backup_YYYYMMDD.json": Body Medium · "Ubicación: Descargas/": Body Small, On Tertiary Container |
 | Body (post) | Botón "Compartir" | Filled Tonal Button | containerColor: Secondary Container · contentColor: On Secondary Container · Abre share sheet nativo (CA-31.03) |
-| Bottom | Bottom Navigation | NavigationBar M3 | Configuración activo |
+| Bottom | Bottom Navigation | NavigationBar M3 | Ajustes activo |
 
 ---
 
@@ -1074,8 +1069,8 @@ Material 3 define una escala tipográfica con 15 estilos. Tension usa la fuente 
 | Body (paso 3) | "Cancelar" | Text Button, centrado | Color: Primary · Retorna a J1 |
 | Body (paso 4) | Indicador progreso | Column | "Restaurando datos...": Body Medium, On Surface · LinearProgressIndicator indeterminate: indicator Primary · Padding: 24 dp |
 | Body (resultado OK) | Texto éxito | Column centrada | ícono ✅ 48 dp, verde · "Datos restaurados exitosamente.": Body Large, On Surface, centrado · Navegación automática a B1 tras 2 segundos (CA-32.04) |
-| Body (resultado error) | Card error rollback | Filled Card | Fondo: Error Container · ícono ❌ · "La importación falló. Tus datos originales han sido preservados.": Body Medium, On Error Container (CA-32.08) · Botón "Volver a Configuración": Outlined Button, borderColor Outline → J1 |
-| Bottom | Bottom Navigation | NavigationBar M3 | Configuración activo |
+| Body (resultado error) | Card error rollback | Filled Card | Fondo: Error Container · ícono ❌ · "La importación falló. Tus datos originales han sido preservados.": Body Medium, On Error Container (CA-32.08) · Botón "Volver a Ajustes": Outlined Button, borderColor Outline → J1 |
+| Bottom | Bottom Navigation | NavigationBar M3 | Ajustes activo |
 
 ---
 

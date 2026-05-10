@@ -6,4 +6,5 @@ data class SessionDetailExercise(
     val classification: ProgressionClassification?,
     val originalExerciseName: String?,
     val sets: List<SetData>,
+    val isDeload: Boolean = false,
 )

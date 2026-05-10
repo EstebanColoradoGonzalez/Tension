@@ -1,6 +1,7 @@
 package com.estebancoloradogonzalez.tension.ui.session
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -21,6 +22,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.outlined.PhotoCamera
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -35,12 +37,15 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -66,6 +71,15 @@ fun ActiveSessionScreen(
     viewModel: ActiveSessionViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val alternativeSelectionState by viewModel.alternativeSelectionState.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(uiState.errorMessage) {
+        uiState.errorMessage?.let { message ->
+            snackbarHostState.showSnackbar(message)
+            viewModel.dismissError()
+        }
+    }
 
     LaunchedEffect(Unit) {
         viewModel.navigateToSessionSummary.collect { sessionId ->
@@ -73,12 +87,14 @@ fun ActiveSessionScreen(
         }
     }
 
-    BackHandler { viewModel.onCloseSessionRequested() }
+    BackHandler {
+        viewModel.onCloseSessionRequested()
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
             SessionTopBar(
-                moduleCode = uiState.moduleCode,
+                routineName = uiState.routineName,
                 versionNumber = uiState.versionNumber,
                 isDeloadSession = uiState.isDeloadSession,
                 deloadProgress = uiState.deloadProgress,
@@ -101,11 +117,12 @@ fun ActiveSessionScreen(
                 items(uiState.exercises, key = { it.sessionExerciseId }) { exercise ->
                     ExerciseRow(
                         exercise = exercise,
-                        moduleCode = uiState.moduleCode,
                         isDeloadSession = uiState.isDeloadSession,
                         onRegister = { onNavigateToRegisterSet(exercise.sessionExerciseId) },
                         onSubstitute = { onNavigateToSubstitute(exercise.sessionExerciseId) },
-                        onViewDetail = { onNavigateToExerciseDetail(exercise.exerciseId) },
+                        onViewDetail = { exercise.exerciseId?.let { onNavigateToExerciseDetail(it) } },
+                        onFinalize = { viewModel.onFinalizeExercise(exercise.sessionExerciseId) },
+                        onSelectAlternative = { viewModel.onSelectAlternative(exercise) },
                     )
                 }
 
@@ -122,7 +139,9 @@ fun ActiveSessionScreen(
                             brush = androidx.compose.ui.graphics.SolidColor(Color(0xFF6B4F4F)),
                         ),
                     ) {
-                        Text(text = stringResource(R.string.session_close))
+                        Text(
+                            text = stringResource(R.string.session_close),
+                        )
                     }
                     Spacer(modifier = Modifier.height(16.dp))
                 }
@@ -138,12 +157,27 @@ fun ActiveSessionScreen(
                 onDismiss = { viewModel.onCloseDialogDismissed() },
             )
         }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter),
+        )
+    }
+
+    // Alternative selection bottom sheet
+    if (alternativeSelectionState.isVisible) {
+        AlternativeSelectionSheet(
+            state = alternativeSelectionState,
+            onDismiss = viewModel::onDismissAlternativeSelection,
+            onAlternativeSelected = viewModel::onAlternativeSelected,
+            onConfirm = viewModel::onConfirmAlternativeSelection,
+        )
     }
 }
 
 @Composable
 private fun SessionTopBar(
-    moduleCode: String,
+    routineName: String,
     versionNumber: Int,
     isDeloadSession: Boolean,
     deloadProgress: String,
@@ -154,7 +188,7 @@ private fun SessionTopBar(
             .padding(horizontal = 16.dp, vertical = 12.dp),
     ) {
         Text(
-            text = stringResource(R.string.session_module_version_format, moduleCode, versionNumber),
+            text = stringResource(R.string.session_routine_version_format, routineName, versionNumber),
             style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.onSurface,
         )
@@ -234,34 +268,35 @@ private fun ProgressBar(
 @Composable
 private fun ExerciseRow(
     exercise: ExerciseUiItem,
-    moduleCode: String,
     isDeloadSession: Boolean,
     onRegister: () -> Unit,
     onSubstitute: () -> Unit,
     onViewDetail: () -> Unit,
+    onFinalize: () -> Unit,
+    onSelectAlternative: () -> Unit,
 ) {
     val isDark = isSystemInDarkTheme()
-    when (exercise.status) {
-        ExerciseSessionStatus.NOT_STARTED -> NotStartedExerciseRow(
+    when {
+        exercise.status == ExerciseSessionStatus.NOT_STARTED -> NotStartedExerciseRow(
             exercise = exercise,
-            moduleCode = moduleCode,
             isDeloadSession = isDeloadSession,
             onRegister = onRegister,
             onSubstitute = onSubstitute,
             onViewDetail = onViewDetail,
+            onSelectAlternative = onSelectAlternative,
         )
-        ExerciseSessionStatus.IN_PROGRESS -> InProgressExerciseRow(
+        exercise.status == ExerciseSessionStatus.IN_PROGRESS -> InProgressExerciseRow(
             exercise = exercise,
-            moduleCode = moduleCode,
             isDeloadSession = isDeloadSession,
             isDark = isDark,
             onRegister = onRegister,
+            onFinalize = onFinalize,
             onViewDetail = onViewDetail,
         )
-        ExerciseSessionStatus.COMPLETED -> CompletedExerciseRow(
+        else -> CompletedExerciseRow(
             exercise = exercise,
-            moduleCode = moduleCode,
             isDark = isDark,
+            onRegister = onRegister,
             onViewDetail = onViewDetail,
         )
     }
@@ -270,11 +305,11 @@ private fun ExerciseRow(
 @Composable
 private fun NotStartedExerciseRow(
     exercise: ExerciseUiItem,
-    moduleCode: String,
     isDeloadSession: Boolean,
     onRegister: () -> Unit,
     onSubstitute: () -> Unit,
     onViewDetail: () -> Unit,
+    onSelectAlternative: () -> Unit,
 ) {
     OutlinedCard(
         modifier = Modifier.fillMaxWidth(),
@@ -297,7 +332,7 @@ private fun NotStartedExerciseRow(
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
-                if (moduleCode == "A" && exercise.isBodyweight) {
+                if (exercise.isBodyweight) {
                     Surface(
                         shape = RoundedCornerShape(4.dp),
                         color = MaterialTheme.colorScheme.secondaryContainer,
@@ -346,16 +381,45 @@ private fun NotStartedExerciseRow(
                             style = MaterialTheme.typography.labelLarge,
                         )
                     }
-                    IconButton(
-                        onClick = onViewDetail,
-                        modifier = Modifier.size(48.dp),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.PhotoCamera,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(24.dp),
-                        )
+                    if (!exercise.hasAlternatives) {
+                        IconButton(
+                            onClick = onViewDetail,
+                            modifier = Modifier.size(48.dp),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.PhotoCamera,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(24.dp),
+                            )
+                        }
+                    }
+                }
+                if (exercise.hasAlternatives) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        IconButton(
+                            onClick = onSelectAlternative,
+                            modifier = Modifier.size(48.dp),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.SwapHoriz,
+                                contentDescription = stringResource(R.string.select_exercise_for_slot),
+                                tint = MaterialTheme.colorScheme.secondary,
+                                modifier = Modifier.size(24.dp),
+                            )
+                        }
+                        IconButton(
+                            onClick = onViewDetail,
+                            modifier = Modifier.size(48.dp),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.PhotoCamera,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(24.dp),
+                            )
+                        }
                     }
                 }
             }
@@ -366,10 +430,10 @@ private fun NotStartedExerciseRow(
 @Composable
 private fun InProgressExerciseRow(
     exercise: ExerciseUiItem,
-    moduleCode: String,
     isDeloadSession: Boolean,
     isDark: Boolean,
     onRegister: () -> Unit,
+    onFinalize: () -> Unit,
     onViewDetail: () -> Unit,
 ) {
     val bgColor = if (isDark) Color(0xFF1A2733) else Color(0xFFE3F2FD)
@@ -394,7 +458,7 @@ private fun InProgressExerciseRow(
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
-                if (moduleCode == "A" && exercise.isBodyweight) {
+                if (exercise.isBodyweight) {
                     Surface(
                         shape = RoundedCornerShape(4.dp),
                         color = MaterialTheme.colorScheme.secondaryContainer,
@@ -421,6 +485,7 @@ private fun InProgressExerciseRow(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    val isExtraSet = exercise.completedSets >= exercise.sets
                     Button(
                         onClick = onRegister,
                         modifier = Modifier.defaultMinSize(minHeight = 48.dp),
@@ -430,7 +495,20 @@ private fun InProgressExerciseRow(
                         ),
                     ) {
                         Text(
-                            text = stringResource(R.string.session_register_set),
+                            text = if (isExtraSet) {
+                                stringResource(R.string.session_extra_set)
+                            } else {
+                                stringResource(R.string.session_register_set)
+                            },
+                            style = MaterialTheme.typography.labelLarge,
+                        )
+                    }
+                    FilledTonalButton(
+                        onClick = onFinalize,
+                        modifier = Modifier.defaultMinSize(minHeight = 48.dp),
+                    ) {
+                        Text(
+                            text = stringResource(R.string.session_finalize),
                             style = MaterialTheme.typography.labelLarge,
                         )
                     }
@@ -454,8 +532,8 @@ private fun InProgressExerciseRow(
 @Composable
 private fun CompletedExerciseRow(
     exercise: ExerciseUiItem,
-    moduleCode: String,
     isDark: Boolean,
+    onRegister: () -> Unit,
     onViewDetail: () -> Unit,
 ) {
     val bgColor = if (isDark) Color(0xFF1A2E1A) else Color(0xFFE8F5E9)
@@ -482,7 +560,7 @@ private fun CompletedExerciseRow(
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
-                if (moduleCode == "A" && exercise.isBodyweight) {
+                if (exercise.isBodyweight) {
                     Surface(
                         shape = RoundedCornerShape(4.dp),
                         color = MaterialTheme.colorScheme.secondaryContainer,
@@ -504,18 +582,31 @@ private fun CompletedExerciseRow(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-            }
 
-            IconButton(
-                onClick = onViewDetail,
-                modifier = Modifier.size(48.dp),
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.PhotoCamera,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(24.dp),
-                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(
+                        onClick = onRegister,
+                        modifier = Modifier.defaultMinSize(minHeight = 48.dp),
+                    ) {
+                        Text(
+                            text = stringResource(R.string.session_extra_set),
+                            style = MaterialTheme.typography.labelLarge,
+                        )
+                    }
+                    IconButton(
+                        onClick = onViewDetail,
+                        modifier = Modifier.size(48.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.PhotoCamera,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(24.dp),
+                        )
+                    }
+                }
             }
         }
     }
@@ -620,4 +711,52 @@ private fun CloseSessionDialog(
             }
         },
     )
+}
+
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+private fun AlternativeSelectionSheet(
+    state: AlternativeSelectionUiState,
+    onDismiss: () -> Unit,
+    onAlternativeSelected: (Long) -> Unit,
+    onConfirm: () -> Unit,
+) {
+    val sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    androidx.compose.material3.ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+            Text(
+                text = stringResource(R.string.select_exercise_for_slot),
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(bottom = 16.dp),
+            )
+            LazyColumn(modifier = Modifier.weight(1f, fill = false)) {
+                items(state.alternatives) { option ->
+                    androidx.compose.material3.ListItem(
+                        headlineContent = { Text(option.name) },
+                        supportingContent = { Text("${option.muscleZonesSummary} · ${option.equipmentTypeName}") },
+                        modifier = Modifier.clickable { onAlternativeSelected(option.exerciseId) },
+                        colors = androidx.compose.material3.ListItemDefaults.colors(
+                            containerColor = if (state.selectedExerciseId == option.exerciseId) {
+                                MaterialTheme.colorScheme.primaryContainer
+                            } else {
+                                MaterialTheme.colorScheme.surface
+                            },
+                        ),
+                    )
+                }
+            }
+            androidx.compose.material3.FilledTonalButton(
+                onClick = onConfirm,
+                enabled = state.selectedExerciseId != null,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 16.dp),
+            ) {
+                Text(stringResource(R.string.confirm_selection_button))
+            }
+        }
+    }
 }

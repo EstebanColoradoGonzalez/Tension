@@ -8,6 +8,6 @@ import javax.inject.Inject
 class GetPlanVersionDetailUseCase @Inject constructor(
     private val planRepository: PlanRepository,
 ) {
-    operator fun invoke(moduleVersionId: Long): Flow<PlanVersionDetail?> =
-        planRepository.getVersionDetail(moduleVersionId)
+    operator fun invoke(routineVersionId: Long): Flow<PlanVersionDetail?> =
+        planRepository.getVersionDetail(routineVersionId)
 }

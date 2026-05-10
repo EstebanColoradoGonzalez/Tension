@@ -54,20 +54,27 @@ class HomeViewModel @Inject constructor(
                     alertCount = alertCount,
                 )
             }.collect { newState ->
-                _uiState.value = newState
+                _uiState.update { current ->
+                    newState.copy(deloadState = current.deloadState)
+                }
             }
         }
 
+        loadDeloadState()
+    }
+
+    private fun loadDeloadState() {
         viewModelScope.launch {
             try {
                 val deloadState = getDeloadStateUseCase()
                 val homeState = when (deloadState) {
                     is DeloadState.DeloadActive -> DeloadHomeState.Active(
                         progress = deloadState.progress,
-                        moduleCode = "",
+                        totalSessions = deloadState.totalSessions,
+                        routineName = "",
                     )
                     is DeloadState.DeloadRequired -> DeloadHomeState.Required(
-                        moduleCode = deloadState.modules.firstOrNull() ?: "",
+                        routineName = deloadState.routineNames.firstOrNull() ?: "",
                     )
                     else -> null
                 }
@@ -78,17 +85,25 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    fun refreshDeloadState() {
+        loadDeloadState()
+    }
+
     fun startSession() {
-        val moduleVersionId = _uiState.value.nextSession?.moduleVersionId ?: return
-        _uiState.update { it.copy(isLoading = true) }
+        val routineVersionId = _uiState.value.nextSession?.routineVersionId ?: return
+        _uiState.update { it.copy(isLoading = true, errorMessage = null) }
         viewModelScope.launch {
             try {
-                val sessionId = startSessionUseCase(moduleVersionId)
+                val sessionId = startSessionUseCase(routineVersionId)
                 _navigationEvent.emit(sessionId)
-            } catch (_: Exception) {
-                _uiState.update { it.copy(isLoading = false) }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isLoading = false, errorMessage = e.message) }
             }
         }
+    }
+
+    fun dismissError() {
+        _uiState.update { it.copy(errorMessage = null) }
     }
 
     fun resumeSession(sessionId: Long) {

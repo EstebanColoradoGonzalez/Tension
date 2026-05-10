@@ -11,10 +11,10 @@ class GetVolumeDistributionUseCase @Inject constructor(
     suspend operator fun invoke(sessionIds: List<Long>): Map<String, Map<String, Double>> {
         if (sessionIds.isEmpty()) return emptyMap()
         val distribution = metricsRepository.getSetDistributionBySessionIds(sessionIds)
-        return distribution.groupBy { it.moduleCode }.mapValues { (_, moduleSets) ->
-            val totalSets = moduleSets.sumOf { it.setCount }
-            val setsByZone = moduleSets.associate { it.muscleZoneName to it.setCount }
-            VolumeDistributionRule.calculate(setsByZone, totalSets)
+        val globalTotalSets = distribution.sumOf { it.setCount }
+        return distribution.groupBy { it.muscleGroup }.mapValues { (_, groupSets) ->
+            val setsByZone = groupSets.associate { it.muscleZoneName to it.setCount }
+            VolumeDistributionRule.calculate(setsByZone, globalTotalSets)
         }
     }
 }

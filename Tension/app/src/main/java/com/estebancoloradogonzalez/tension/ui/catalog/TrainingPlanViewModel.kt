@@ -16,17 +16,16 @@ class TrainingPlanViewModel @Inject constructor(
 ) : ViewModel() {
 
     val uiState: StateFlow<TrainingPlanUiState> =
-        getTrainingPlanUseCase().map { modulesWithVersions ->
+        getTrainingPlanUseCase().map { routinesWithVersions ->
             TrainingPlanUiState(
                 isLoading = false,
-                modules = modulesWithVersions.map { mwv ->
-                    ModuleSectionItem(
-                        moduleCode = mwv.module.code,
-                        moduleName = mwv.module.name,
-                        groupDescription = mwv.module.groupDescription,
-                        versions = mwv.versions.map { vs ->
+                routines = routinesWithVersions.map { rwv ->
+                    RoutineSectionItem(
+                        routineId = rwv.routine.id,
+                        routineName = rwv.routine.name,
+                        versions = rwv.versions.map { vs ->
                             VersionItem(
-                                moduleVersionId = vs.moduleVersionId,
+                                routineVersionId = vs.routineVersionId,
                                 versionNumber = vs.versionNumber,
                                 exerciseCount = vs.exerciseCount,
                             )

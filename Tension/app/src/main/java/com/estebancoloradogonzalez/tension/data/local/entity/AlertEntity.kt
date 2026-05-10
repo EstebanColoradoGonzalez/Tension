@@ -16,17 +16,17 @@ import androidx.room.PrimaryKey
             onDelete = ForeignKey.RESTRICT,
         ),
         ForeignKey(
-            entity = ModuleEntity::class,
-            parentColumns = ["code"],
-            childColumns = ["module_code"],
-            onDelete = ForeignKey.RESTRICT,
+            entity = RoutineEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["routine_id"],
+            onDelete = ForeignKey.CASCADE,
         ),
     ],
     indices = [
         Index(value = ["is_active"]),
         Index(value = ["type"]),
         Index(value = ["exercise_id"]),
-        Index(value = ["module_code"]),
+        Index(value = ["routine_id"]),
     ],
 )
 data class AlertEntity(
@@ -43,8 +43,8 @@ data class AlertEntity(
     @ColumnInfo(name = "exercise_id")
     val exerciseId: Long? = null,
 
-    @ColumnInfo(name = "module_code")
-    val moduleCode: String? = null,
+    @ColumnInfo(name = "routine_id")
+    val routineId: Long? = null,
 
     @ColumnInfo(name = "muscle_group")
     val muscleGroup: String? = null,

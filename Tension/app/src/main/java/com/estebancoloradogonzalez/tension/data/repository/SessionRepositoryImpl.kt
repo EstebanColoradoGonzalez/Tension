@@ -1186,7 +1186,10 @@ class SessionRepositoryImpl @Inject constructor(
             }
 
             val lastDate = sessionDao.getLastSessionDateByRoutine(routine.id)
-                ?: routine.createdAt
+            if (lastDate == null) {
+                alertDao.resolveByRoutineAndType(routine.id, "ROUTINE_INACTIVITY", today)
+                continue
+            }
             val daysSince = ChronoUnit.DAYS.between(
                 LocalDate.parse(lastDate),
                 LocalDate.now(),

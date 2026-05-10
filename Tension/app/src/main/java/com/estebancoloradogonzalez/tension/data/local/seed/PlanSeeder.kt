@@ -17,9 +17,9 @@ object PlanSeeder {
     }
 
     private fun seedRoutines(db: SupportSQLiteDatabase) {
-        routine(db, 1, "Pierna (Leg)", 1)
-        routine(db, 2, "Pecho, Hombro, Tríceps (Push)", 2)
-        routine(db, 3, "Espalda, Bíceps y Abdomen (Pull)", 3)
+        routine(db, 1, "Pierna (Leg)", 3)
+        routine(db, 2, "Pecho, Hombro y Tríceps (Push)", 1)
+        routine(db, 3, "Espalda, Bíceps y Abdomen (Pull)", 2)
     }
 
     private fun routine(db: SupportSQLiteDatabase, id: Long, name: String, sortOrder: Int) {

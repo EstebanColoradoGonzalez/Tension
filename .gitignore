@@ -1,6 +1,7 @@
 .DS_Store
 .vscode/
 .github/
+.claude/
 .venv/
 
 Tension/local.properties
@@ -32,3 +33,15 @@ Tension/.idea/modules.xml
 Tension/.idea/navEditor.xml
 Tension/.idea/jarRepositories.xml
 Tension/.idea/compiler.xml
+
+# Método Ceiba - Auto-managed agent files
+.github/agents/metodo-ceiba-*.agent.md
+.claude/commands/metodo-ceiba-*.md
+# Método Ceiba - Auto-managed kanban prompts
+.github/prompts/ceiba-*.prompt.md
+.claude/commands/ceiba-*.md
+# Método Ceiba - Auto-injected agent skills
+.github/skills/
+.claude/skills/
+# Método Ceiba - Metodología exportada (Claude Code)
+.ceiba-metodo/

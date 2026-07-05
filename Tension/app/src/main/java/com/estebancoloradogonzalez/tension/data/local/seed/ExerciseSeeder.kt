@@ -39,6 +39,13 @@ object ExerciseSeeder {
         ex(db, 24, "Sentadilla Hack", 1, media = "sentadilla_hack_maquina")
         ex(db, 25, "Tirón de Dorsales", 6, media = "tiron_de_dorsales_polea")
         ex(db, 26, "Vuelos Posteriores", 2, media = "vuelos_posteriores_mancuernas")
+        ex(db, 27, "Remo al Mentón", 13, media = "remo_al_menton_barra")
+        ex(db, 28, "Aperturas", 1, media = "aperturas_contractor")
+        ex(db, 29, "Pull-Over", 6, media = "pull_over_polea")
+        ex(db, 30, "Curl Martillo", 2, media = "curl_martillo_mancuernas")
+        ex(db, 31, "Rompecráneos", 13, media = "rompecraneos_barra")
+        ex(db, 32, "Remo Horizontal", 6, media = "remo_horizontal_polea")
+        ex(db, 33, "Zancadas", 2, media = "zancadas_mancuernas")
     }
 
     private fun ex(
@@ -92,6 +99,15 @@ object ExerciseSeeder {
         emz(db, 16, 11); emz(db, 16, 15) // Peso Muerto Rumano → Isquiotibiales + Glúteos
         emz(db, 22, 10); emz(db, 22, 15) // Sentadilla Búlgara → Cuádriceps + Glúteos
         emz(db, 23, 10); emz(db, 23, 12) // Sentadilla de Zumo → Cuádriceps + Aductores
+        emz(db, 27, 7);  emz(db, 27, 17) // Remo al Mentón → Hombro + Trapecio
+        emz(db, 33, 10); emz(db, 33, 15) // Zancadas → Cuádriceps + Glúteos
+
+        // Single-zone new exercises
+        emz(db, 28, 1)   // Aperturas → Pecho Medio
+        emz(db, 29, 5)   // Pull-Over → Dorsal Ancho
+        emz(db, 30, 9)   // Curl Martillo → Bíceps
+        emz(db, 31, 8)   // Rompecráneos → Tríceps
+        emz(db, 32, 4)   // Remo Horizontal → Espalda Media
     }
 
     private fun emz(db: SupportSQLiteDatabase, exerciseId: Long, muscleZoneId: Long) {

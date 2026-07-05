@@ -60,7 +60,7 @@
 - **Contenedor `DB-01`: Base de Datos Local (SQLite via Room)**
   - **Naturaleza Técnica:** SQLite nativo de Android, accedido exclusivamente a través de Room ORM. Versión de esquema actual: 13 (migraciones registradas v1→v2…v12→v13). Archivo único en el directorio interno de la app: `filesDir/databases/tension.db`. Sin cifrado (ADR-15).
   - **Responsabilidad Central:** Persistir de forma durable todos los datos del sistema: histórico de sesiones y series (inmutables una vez registradas), plan de entrenamiento del ejecutante, catálogo de ejercicios, estados de progresión, rotación cíclica, ciclos de descarga y alertas. Garantiza integridad referencial mediante ForeignKeys y consistencia mediante transacciones atómicas.
-  - **Mapeo de Persistencia:** 18 tablas que mapean 1:1 el esquema definido en `domain_and_state_model.md`. Datos semilla en `muscle_zone` (20 filas), `equipment_type` (23 filas), `exercise` (43 filas) y `exercise_muscle_zone` (48 filas) — precargados en `onCreate()`.
+  - **Mapeo de Persistencia:** 18 tablas que mapean 1:1 el esquema definido en `domain_and_state_model.md`. Datos semilla en `muscle_zone` (20 filas), `equipment_type` (23 filas), `exercise` (33 filas) y `exercise_muscle_zone` (38 filas) — precargados en `onCreate()`.
 
 - **Contenedor `DI-01`: Módulo de Inyección de Dependencias (Hilt)**
   - **Naturaleza Técnica:** Hilt Android + Hilt Navigation Compose. Framework basado en Dagger con verificación del grafo de dependencias en tiempo de compilación. Anotaciones: `@HiltAndroidApp`, `@AndroidEntryPoint`, `@HiltViewModel`, `@Inject`, `@Singleton`.
@@ -164,7 +164,7 @@
 - **Módulo / Componente:** Seed Data (data.local.seed)
   - **Responsabilidad (SRP):** Prepoblar la base de datos con los datos de inicialización en el primer uso de la app mediante `RoomDatabase.Callback.onCreate()`.
   - **Interfaces Expuestas:** `PrepopulateFacade` — coordina la inserción de todos los datos semilla invocando Seeders temáticos.
-  - **Dependencias Internas:** `ExerciseSeeder` (43 ejercicios base), `MuscleZoneSeeder` (20 zonas), `EquipmentTypeSeeder` (23 tipos), `ExerciseMuscleZoneSeeder` (48 relaciones ejercicio-zona).
+  - **Dependencias Internas:** `ExerciseSeeder` (33 ejercicios base), `MuscleZoneSeeder` (20 zonas), `EquipmentTypeSeeder` (23 tipos), `ExerciseMuscleZoneSeeder` (38 relaciones ejercicio-zona).
   - **Estructuras Atómicas Clave:** Cada Seeder encapsula inserciones de sus entidades con datos literales en español.
 
 ---

@@ -503,65 +503,58 @@ enum MuscleGroup {
 
 - **`equipment_type` (23 filas):** Catálogo completo de tipos de equipamiento precargado. Valores: Máquina, Mancuernas, Barra de Pesas, Cuerpo, Mancuerna, Polea, Pesa, Mancuerna o Pesa Rusa, Máquina Multiestación, Polea con Cuerda, Polea con Barra en V, Mancuerna o Polea, Mancuerna o Polea o Barra, Barra o Mancuernas, Mancuernas o Polea, Banda Elástica, Kettlebell, Barra EZ, TRX/Suspensión, Balón Medicinal, Rodillo de Abdomen, Paralelas/Dip Station, Barra Fija. *Nota: "Mancuerna" (singular, un implemento) y "Mancuernas" (plural, dos implementos) son tipos distintos.*
 
-- **`exercise` (43 filas):** Catálogo base de ejercicios precargados con sus flags correspondientes:
+- **`exercise` (33 filas):** Catálogo base de ejercicios precargados con sus flags correspondientes:
 
   | name | equipment_type | is_bodyweight | is_isometric | is_to_technical_failure |
   |------|----------------|:---:|:---:|:---:|
-  | Remo con Inclinación | Barra de Pesas | 0 | 0 | 0 |
-  | Remo con un solo brazo doblado | Mancuerna | 0 | 0 | 0 |
-  | Tiro de dorsales (Agarre ancho) | Máquina | 0 | 0 | 0 |
-  | Elevación de hombros con mancuernas | Mancuerna | 0 | 0 | 0 |
-  | Curl de bíceps | Mancuerna | 0 | 0 | 0 |
-  | Curl de bíceps | Polea | 0 | 0 | 0 |
-  | Curl de martillo cruzado | Mancuerna | 0 | 0 | 0 |
-  | Curl de martillo | Mancuerna | 0 | 0 | 0 |
-  | Curl de Contracción | Mancuerna | 0 | 0 | 0 |
-  | Abdominales | Cuerpo | 1 | 0 | 0 |
-  | Escalador | Cuerpo | 1 | 0 | 0 |
-  | Giro Ruso | Cuerpo | 1 | 0 | 0 |
-  | Plancha | Cuerpo | 1 | 1 | 0 |
-  | Plancha Lateral | Cuerpo | 1 | 1 | 0 |
-  | Press de banca | Máquina | 0 | 0 | 0 |
-  | Press de mancuerna | Mancuernas | 0 | 0 | 0 |
-  | Press de banca inclinada | Máquina | 0 | 0 | 0 |
-  | Flexiones | Cuerpo | 1 | 0 | 1 |
-  | Cruce en polea alta | Máquina | 0 | 0 | 0 |
-  | Apertura de pecho sentado | Máquina | 0 | 0 | 0 |
-  | Apertura de pecho inclinado | Máquina | 0 | 0 | 0 |
-  | Elevación frontal | Mancuerna | 0 | 0 | 0 |
-  | Elevación lateral | Mancuerna | 0 | 0 | 0 |
-  | Press de elevación sentado | Mancuerna | 0 | 0 | 0 |
-  | Remo vertical | Barra de Pesas | 0 | 0 | 0 |
-  | Remo vertical con cable | Máquina | 0 | 0 | 0 |
-  | Dominada de tríceps banco | Pesa | 0 | 0 | 0 |
-  | Extensión de tríceps por encima de la cabeza | Mancuerna | 0 | 0 | 0 |
-  | Flexión de tríceps con cuerda | Máquina | 0 | 0 | 0 |
+  | Aductores | Máquina | 0 | 0 | 0 |
+  | Cruce de Polea Alta | Polea | 0 | 0 | 0 |
+  | Crunch Abdominal | Polea | 0 | 0 | 0 |
+  | Curl Bayesian en Banco Inclinado | Mancuernas | 0 | 0 | 0 |
+  | Curl de Concentración | Mancuerna | 0 | 0 | 0 |
+  | Curl de Isquiotibiales Sentado | Máquina | 0 | 0 | 0 |
+  | Curl de Martillo Cruzado | Mancuernas | 0 | 0 | 0 |
+  | Curl de Predicador | Mancuerna | 0 | 0 | 0 |
+  | Elevación de Pantorrilla en Máquina de Pie | Máquina | 0 | 0 | 0 |
+  | Elevación Lateral | Mancuernas | 0 | 0 | 0 |
   | Extensión de Cuádriceps | Máquina | 0 | 0 | 0 |
-  | Curl Femoral Tumbado | Máquina | 0 | 0 | 0 |
-  | Aductor de Cadera | Máquina | 0 | 0 | 0 |
-  | Abductor de Cadera | Máquina | 0 | 0 | 0 |
-  | Elevación de Gemelos Sentado | Máquina | 0 | 0 | 0 |
-  | Empuje de Cadera | Máquina | 0 | 0 | 0 |
-  | Sentadilla de Sumo | Mancuerna o Pesa Rusa | 0 | 0 | 0 |
-  | Sentadilla | Cuerpo | 1 | 0 | 0 |
-  | Sentadilla Búlgara Dividida | Mancuernas | 0 | 0 | 0 |
-  | Sentadilla | Máquina Multiestación | 0 | 0 | 0 |
-  | Subir Escalones | Máquina | 0 | 0 | 0 |
-  | Zancada hacia atrás | Mancuernas | 0 | 0 | 0 |
-  | Avanzada de Zancadas | Mancuernas | 0 | 0 | 0 |
-  | Press de Pierna | Máquina | 0 | 0 | 0 |
+  | Extensión de Tríceps en Polea (Pushdown) | Polea con Cuerda | 0 | 0 | 0 |
+  | Extensión de Tríceps por encima de la Cabeza | Mancuernas | 0 | 0 | 0 |
+  | Face Pull | Polea con Cuerda | 0 | 0 | 0 |
+  | Hip Thrust | Máquina | 0 | 0 | 0 |
+  | Peso Muerto Rumano | Barra | 0 | 0 | 0 |
+  | Prensa Inclinada | Máquina | 0 | 0 | 0 |
+  | Press de Banca Inclinado | Mancuerna o Polea o Barra | 0 | 0 | 0 |
+  | Press de Banca Plano | Barra o Mancuernas | 0 | 0 | 0 |
+  | Press Pallof | Polea | 0 | 0 | 0 |
+  | Remo T Inclinado | Máquina | 0 | 0 | 0 |
+  | Sentadilla Búlgara | Mancuernas | 0 | 0 | 0 |
+  | Sentadilla de Zumo | Mancuerna | 0 | 0 | 0 |
+  | Sentadilla Hack | Máquina | 0 | 0 | 0 |
+  | Tirón de Dorsales | Polea | 0 | 0 | 0 |
+  | Vuelos Posteriores | Mancuernas | 0 | 0 | 0 |
+  | Remo al Mentón | Barra | 0 | 0 | 0 |
+  | Aperturas | Máquina | 0 | 0 | 0 |
+  | Pull-Over | Polea | 0 | 0 | 0 |
+  | Curl Martillo | Mancuernas | 0 | 0 | 0 |
+  | Rompecráneos | Barra | 0 | 0 | 0 |
+  | Remo Horizontal | Polea | 0 | 0 | 0 |
+  | Zancadas | Mancuernas | 0 | 0 | 0 |
 
-- **`exercise_muscle_zone` (48 filas):** Cada uno de los 43 ejercicios seed está vinculado a su(s) zona(s) muscular(es). 38 ejercicios tienen 1 zona. 5 ejercicios tienen 2 zonas: Sentadilla de Sumo (Cuádriceps + Aductores), Sentadilla Búlgara Dividida (Cuádriceps + Glúteos), Subir Escalones (Cuádriceps + Glúteos), Zancada hacia atrás (Glúteos + Cuádriceps), Avanzada de Zancadas (Cuádriceps + Glúteos).
+- **`exercise_muscle_zone` (38 filas):** Cada uno de los 33 ejercicios seed está vinculado a su(s) zona(s) muscular(es). 28 ejercicios tienen 1 zona. 5 ejercicios tienen 2 zonas: Peso Muerto Rumano (Isquiotibiales + Glúteos), Sentadilla Búlgara (Cuádriceps + Glúteos), Sentadilla de Zumo (Cuádriceps + Aductores), Remo al Mentón (Hombro + Trapecio), Zancadas (Cuádriceps + Glúteos).
 
 - **`rotation_state` (1 fila):** Se inicializa con `id=1, microcycle_position=1, microcycle_count=0` junto con el perfil del ejecutante al completar el onboarding.
 
 - **`routine_current_version` (1 fila por rutina del plan):** Se inicializa con `current_version_number=1` para cada rutina que el ejecutante crea al configurar su plan.
 
-- **Plan de entrenamiento de referencia del ejecutante:** El ejecutante configura su plan manualmente al iniciar el sistema. El siguiente es el plan actual que sirve como referencia de validación de la lógica de rotación, prescripción y progresión:
-  - **Rutina 1 — Pierna (Leg):** 2 versiones. V1: Aductores, Curl de Isquiotibiales Sentado, Prensa Inclinada, Sentadilla Hack, Extensión de Cuádriceps, Elevación de Pantorrilla en Máquina de Pie. V2: Aductores, Curl de Isquiotibiales Sentado, Peso Muerto Rumano, Hip Thrust / Sentadilla Búlgara / Sentadilla de Zumo (slot con alternativas), Extensión de Cuádriceps, Elevación de Pantorrilla en Máquina de Pie.
-  - **Rutina 2 — Push (Pecho, Hombro, Tríceps):** 1 versión. Ejercicios: Elevación Lateral, Press de Banca Inclinado, Press de Banca Plano, Vuelos Posteriores, Extensión de Tríceps por encima de la Cabeza, Cruce de Polea Alta, Extensión de Tríceps en Polea (Pushdown).
-  - **Rutina 3 — Pull (Espalda, Bíceps, Abdomen):** 1 versión. Ejercicios: Curl de Concentración / Curl de Predicador (slot con alternativas), Tirón de Dorsales, Remo T Inclinado, Face Pull, Curl Bayesian en Banco Inclinado, Curl de Martillo Cruzado, Crunch Abdominal, Press Pallof.
-  - **Rotación del microciclo:** Pierna (V1) → Push → Pull → cierre de microciclo → Pierna (V2) → Push → Pull → cierre → Pierna (V1) → …
+- **Plan de entrenamiento predeterminado (seed):** Plan de 6 rutinas semanales precargado en instalación fresca. Cada rutina tiene exactamente 1 versión.
+  - **Rutina 1 — Lunes: Pecho y Hombro (Push - Foco Deltoides Lateral):** Elevación Lateral (4s), Press de Banca Inclinado (3s), Press de Banca Plano (3s), Remo al Mentón (3s), Aperturas (3s).
+  - **Rutina 2 — Martes: Espalda, Bíceps y Abdomen (Pull - Foco Dorsal Ancho):** Tirón de Dorsales (4s), Pull-Over (3s), Curl Martillo (3s), Curl Bayesian en Banco Inclinado (3s), Crunch Abdominal (3s).
+  - **Rutina 3 — Miércoles: Pierna (Lower - Foco Cuádriceps):** Aductores (3s), Extensión de Cuádriceps (4s), Sentadilla Hack **o** Prensa Inclinada (slot dual, 3s), Sentadilla Búlgara (3s), Elevación de Pantorrilla (3s).
+  - **Rutina 4 — Jueves: Pecho y Tríceps (Push - Foco Tríceps):** Extensión de Tríceps por encima de la Cabeza (4s), Press de Banca Plano (3s), Aperturas (3s), Extensión de Tríceps en Polea Pushdown (3s), Rompecráneos (3s).
+  - **Rutina 5 — Viernes: Espalda, Bíceps y Abdomen (Pull - Foco Espalda Alta):** Remo T Inclinado (4s), Remo Horizontal (3s), Face Pull **o** Vuelos Posteriores (slot dual, 3s), Curl de Predicador (3s), Crunch Abdominal (3s).
+  - **Rutina 6 — Sábado: Pierna (Lower - Foco Isquiotibiales):** Aductores (3s), Curl de Isquiotibiales Sentado (4s), Peso Muerto Rumano (3s), Zancadas (3s), Extensión de Cuádriceps (3s), Elevación de Pantorrilla (3s).
+  - **Rotación del microciclo:** Push → Pull → Lower → Push → Pull → Lower → (ciclo completo de 6 sesiones).
 
 ### 6.2. Volumen y Depuración (Purge / Archiving)
 

@@ -133,10 +133,10 @@ fun ActiveSessionScreen(
                         modifier = Modifier.fillMaxWidth(),
                         enabled = !uiState.isClosing,
                         colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = Color(0xFF6B4F4F),
+                            contentColor = MaterialTheme.colorScheme.primary,
                         ),
-                        border = ButtonDefaults.outlinedButtonBorder.copy(
-                            brush = androidx.compose.ui.graphics.SolidColor(Color(0xFF6B4F4F)),
+                        border = ButtonDefaults.outlinedButtonBorder(enabled = !uiState.isClosing).copy(
+                            brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary),
                         ),
                     ) {
                         Text(

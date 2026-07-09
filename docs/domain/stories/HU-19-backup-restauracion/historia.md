@@ -1,0 +1,110 @@
+# Historia de Usuario
+
+**Como** ejecutante,
+**Quiero** poder exportar un respaldo completo de todos mis datos de entrenamiento en un archivo autodescriptivo con metadatos de versión y poder importarlo para restaurar mis datos completos,
+**Para** proteger mi historial ante pérdida o cambio de dispositivo, tener la tranquilidad de que meses o años de datos no están atados a un solo dispositivo, y poder recuperar mi historial sin perder progresión registrada.
+
+## Descripción
+
+Esta historia consolida las siguientes historias del diseño original, que son dos caras del mismo formato de archivo y deben co-diseñarse para garantizar compatibilidad:
+
+- **HU-31 original** — Exportar respaldo de datos (RNF15, RNF17, RNF18, RNF26, RNF27)
+- **HU-32 original** — Importar respaldo de datos (RNF16, RNF17, RNF18)
+
+---
+
+## Criterios de Aceptación (BDD)
+
+### Bloque A — Exportar Respaldo de Datos (RNF15, RNF17, RNF18, RNF26, RNF27)
+
+#### CA-19.01 — Generación del archivo de backup
+
+**Dado que** el ejecutante desea respaldar sus datos,
+**cuando** ejecuta la funcionalidad de exportación de respaldo,
+**entonces** el sistema genera un archivo que contiene todos los datos del usuario: perfil, historial de peso, sesiones, registros de series, estado de rotación, estados de progresión de ejercicios, conteo de microciclos y configuraciones.
+
+#### CA-19.02 — Formato autodescriptivo con metadatos de versión
+
+**Dado que** el sistema genera el archivo de backup,
+**cuando** construye la estructura del archivo,
+**entonces** utiliza un formato autodescriptivo (JSON) que incluye metadatos de versión del esquema de datos de la aplicación, permitiendo migraciones futuras si la estructura de datos evoluciona en nuevas versiones de la app.
+
+#### CA-19.03 — Almacenamiento y compartición
+
+**Dado que** el sistema ha generado el archivo de backup,
+**cuando** completa la exportación,
+**entonces** permite al ejecutante almacenar el archivo en el almacenamiento externo del dispositivo o compartirlo vía aplicaciones del sistema operativo (Google Drive, correo electrónico, mensajería, etc.).
+
+#### CA-19.04 — Rendimiento de la exportación
+
+**Dado que** el ejecutante ejecuta la exportación de respaldo,
+**cuando** el sistema procesa la generación del archivo,
+**entonces** el proceso completo se ejecuta en menos de 10 segundos para un historial de hasta 2 años de datos de entrenamiento.
+
+#### CA-19.05 — Advertencia sobre contenido del archivo
+
+**Dado que** el sistema genera el archivo de backup sin cifrado,
+**cuando** presenta el archivo al ejecutante o antes de iniciar la exportación,
+**entonces** muestra una advertencia informativa indicando que el archivo contiene sus datos de entrenamiento y que no está cifrado.
+
+#### CA-19.06 — Permisos mínimos requeridos
+
+**Dado que** el sistema necesita acceder al almacenamiento para exportar el backup,
+**cuando** solicita permisos al sistema operativo,
+**entonces** solo solicita el permiso de almacenamiento estrictamente necesario para la operación de backup, sin requerir permisos adicionales innecesarios.
+
+#### CA-19.07 — Indicación de progreso y confirmación de exportación
+
+**Dado que** el ejecutante inicia la exportación,
+**cuando** el sistema procesa la generación del archivo,
+**entonces** muestra una indicación de progreso durante el proceso y una confirmación clara al completarse exitosamente, incluyendo la ubicación o destino del archivo.
+
+### Bloque B — Importar Respaldo de Datos (RNF16, RNF17, RNF18)
+
+#### CA-19.08 — Selección del archivo de backup
+
+**Dado que** el ejecutante desea restaurar sus datos,
+**cuando** accede a la funcionalidad de importación de respaldo,
+**entonces** el sistema permite seleccionar un archivo de backup previamente exportado desde el almacenamiento del dispositivo o desde una aplicación del sistema (Drive, correo, etc.).
+
+#### CA-19.09 — Validación del archivo de backup
+
+**Dado que** el ejecutante selecciona un archivo para importar,
+**cuando** el sistema lee el archivo,
+**entonces** valida que el formato sea autodescriptivo y contenga los metadatos de versión esperados; si el archivo no es válido o está corrupto, informa al ejecutante con un mensaje de error claro y no procede con la importación.
+
+#### CA-19.10 — Confirmación de reemplazo de datos
+
+**Dado que** el sistema ha validado el archivo de backup exitosamente,
+**cuando** está listo para proceder con la importación,
+**entonces** solicita confirmación explícita al ejecutante advirtiendo que todos los datos actuales serán reemplazados por los datos del backup, y que esta operación no es reversible.
+
+#### CA-19.11 — Reemplazo completo de datos
+
+**Dado que** el ejecutante confirma la importación,
+**cuando** el sistema ejecuta la restauración,
+**entonces** reemplaza todos los datos actuales (perfil, historial de peso, sesiones, registros de series, estado de rotación, estados de progresión, conteo de microciclos y configuraciones) con los datos del archivo de backup.
+
+#### CA-19.12 — Migración de versiones
+
+**Dado que** el archivo de backup fue generado con una versión anterior del esquema de datos,
+**cuando** el sistema detecta que los metadatos de versión no coinciden con la versión actual,
+**entonces** aplica las migraciones necesarias para adaptar los datos a la versión actual del esquema, sin pérdida de información.
+
+#### CA-19.13 — Rendimiento de la importación
+
+**Dado que** el ejecutante ejecuta la importación de respaldo,
+**cuando** el sistema procesa la restauración,
+**entonces** el proceso completo se ejecuta en menos de 10 segundos para un historial de hasta 2 años de datos.
+
+#### CA-19.14 — Indicación de progreso y confirmación de importación
+
+**Dado que** el ejecutante inicia la importación,
+**cuando** el sistema procesa la restauración,
+**entonces** muestra una indicación de progreso durante el proceso y una confirmación clara al completarse exitosamente, indicando que los datos han sido restaurados.
+
+#### CA-19.15 — Rollback ante error
+
+**Dado que** el sistema está ejecutando la importación,
+**cuando** ocurre un error durante el proceso (archivo corrupto parcialmente, fallo de escritura),
+**entonces** el sistema revierte la operación y mantiene los datos anteriores intactos, informando al ejecutante que la importación falló y sus datos originales están preservados.

@@ -42,7 +42,7 @@
 | **[HU-14](./HU-14.md)** | Protocolo de Descarga y Conteo de Microciclos | HU-14 | EPIC-04 | `Done` | Alta |
 | **[HU-15](./HU-15.md)** | Analítica y KPIs del Entrenamiento | HU-15 | EPIC-04 | `Done` | Alta |
 | **[HU-16](./HU-16.md)** | Migración a división Pull / Push / Legs | HU-15.5 | EPIC-05 | `Todo` | Alta |
-| **[HU-17](./HU-17.md)** | Historial de Ejercicios y Sesiones | HU-16 | EPIC-05 | `Todo` | Alta |
+| **[HU-17](./HU-17-consultar-historial-ejercicios-sesiones/historia.md)** | Consultar historial de ejercicios y sesiones | HU-16 | EPIC-05 | `Done` | Alta |
 | **[HU-18](./HU-18.md)** | Sistema de Alertas | HU-17 | EPIC-05 | `Todo` | Alta |
 | **[HU-19](./HU-19.md)** | Backup y Restauración | HU-18 | EPIC-05 | `Todo` | Alta |
 | **[HU-20](./HU-20.md)** | Corrección de sustitución de ejercicios en sesión activa | HU-19 | EPIC-06 | `Todo` | Media |

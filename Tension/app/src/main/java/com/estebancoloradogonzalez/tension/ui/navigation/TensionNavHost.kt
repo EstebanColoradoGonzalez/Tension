@@ -55,6 +55,7 @@ import com.estebancoloradogonzalez.tension.ui.session.SessionSummaryScreen
 import com.estebancoloradogonzalez.tension.ui.settings.ExportBackupScreen
 import com.estebancoloradogonzalez.tension.ui.settings.ImportBackupScreen
 import com.estebancoloradogonzalez.tension.ui.settings.SettingsScreen
+import com.estebancoloradogonzalez.tension.ui.tree.TreeScreen
 
 @Composable
 fun TensionNavHost(
@@ -149,6 +150,9 @@ fun TensionNavHost(
                                         versionNumber,
                                     ),
                                 )
+                            },
+                            onNavigateToTree = {
+                                navController.navigate(NavigationRoutes.TREE)
                             },
                         )
                     }
@@ -479,6 +483,12 @@ fun TensionNavHost(
                                     popUpTo(navController.graph.id) { inclusive = true }
                                 }
                             },
+                        )
+                    }
+
+                    composable(NavigationRoutes.TREE) {
+                        TreeScreen(
+                            onNavigateBack = { navController.popBackStack() },
                         )
                     }
 

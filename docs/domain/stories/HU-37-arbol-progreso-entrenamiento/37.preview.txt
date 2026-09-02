@@ -1,0 +1,247 @@
+╔══════════════════════════════════════════════════════════════╗
+║  ⚠️  PROTOTIPO — PROPUESTA PENDIENTE DE VALIDACIÓN CON DISEÑO  ║
+╚══════════════════════════════════════════════════════════════╝
+
+HU #37 — El árbol de mi entrenamiento
+Plataforma: mobile / portrait (390 px) · Material 3 · targets ≥ 48 dp
+
+Representación NATIVA (ícono vectorial por etapa, teñido por salud).
+El modelo 3D llega en HU-38 y sustituye únicamente el área del árbol.
+
+
+────────────────────────────────────────────────────────────────
+ INICIO  ·  tarjeta de acceso al árbol (CA-37.01)
+────────────────────────────────────────────────────────────────
+
+  La tarjeta va DEBAJO de la tarjeta de sesión del día y reutiliza
+  su mismo estilo: elevación, radio de esquinas, padding y colores.
+
++──────────────────────────────────────────+
+|  Tension                            (!)  |
++──────────────────────────────────────────+
+|                                          |
+|  Jueves 3 de septiembre                  |
+|                                          |
+|  +────────────────────────────────────+  |
+|  |  Hoy te toca                       |  |
+|  |                                    |  |
+|  |  Jueves — Push                     |  |
+|  |  Foco Tríceps                      |  |
+|  |                                    |  |
+|  |  5 ejercicios · ~55 min            |  |
+|  |                                    |  |
+|  |    [   Iniciar sesión   ]          |  |
+|  |                                    |  |
+|  |    Ver antes de iniciar  >         |  |
+|  |    Hacer otra rutina hoy >         |  |
+|  |    Hoy no entreno        >         |  |
+|  +────────────────────────────────────+  |
+|                                          |
+|  +────────────────────────────────────+  |  ← TARJETA NUEVA
+|  |  [ 🌳 ]   Tu árbol                 |  |     subordinada a la
+|  |   48dp    Está en su mejor momento |  |     acción del día
+|  |                                 >  |  |
+|  +────────────────────────────────────+  |
+|                                          |
+|  Microciclo 14 · posición 4 de 6         |
+|                                          |
++──────────────────────────────────────────+
+|   Inicio   Plan   Historial   Métricas   |
++──────────────────────────────────────────+
+
+
+────────────────────────────────────────────────────────────────
+ INICIO  ·  la tarjeta cambia con el estado (CA-37.05)
+────────────────────────────────────────────────────────────────
+
+  La FORMA del ícono comunica la etapa.
+  El COLOR del ícono comunica la salud.
+
+  +────────────────────────────────────+
+  |  [ 🌱 ]   Tu árbol                 |   Semilla · 0 sesiones
+  |           Aún no ha germinado      |   gris neutro
+  +────────────────────────────────────+
+
+  +────────────────────────────────────+
+  |  [ 🌿 ]   Tu árbol                 |   Brote · salud 100
+  |           Está en su mejor momento |   verde vivo
+  +────────────────────────────────────+
+
+  +────────────────────────────────────+
+  |  [ 🌳 ]   Tu árbol                 |   Joven · salud 50
+  |           Empieza a secarse        |   amarillo seco
+  +────────────────────────────────────+
+
+  +────────────────────────────────────+
+  |  [ 🌳 ]   Tu árbol                 |   Maduro · salud 20
+  |           Se está marchitando      |   marrón claro
+  +────────────────────────────────────+
+
+  +────────────────────────────────────+
+  |  [ 🌳 ]   Tu árbol                 |   Maduro · salud 0
+  |           Está marchito            |   marrón oscuro
+  +────────────────────────────────────+
+
+  Bandas:  Alta ≥ 67   Media 34–66   Baja 1–33   Marchito 0
+
+
+────────────────────────────────────────────────────────────────
+ PANTALLA DEL ÁRBOL  ·  salud alta (CA-37.02)
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+|  <   Tu árbol                            |  ← TopAppBar, back nativo
++──────────────────────────────────────────+
+|                                          |
+|                                          |
+|         ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐          |
+|                                          |
+|         │      [ 🖼 ícono ]    │         |  ← ÁREA DEL ÁRBOL
+|                   180×180                |     HU-38 sustituye
+|         │      verde vivo      │         |     SOLO este bloque
+|                                          |
+|         └ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘          |
+|                                          |
+|                                          |
+|              ── Maduro ──                |  ← etapa
+|                                          |
+|                   100                    |  ← puntaje 0–100
+|                  Salud                   |
+|                                          |
+|   Último entrenamiento: ayer             |
+|                                          |
+|   Vienes entrenando. Tu árbol lo         |
+|   refleja.                               |
+|                                          |
++──────────────────────────────────────────+
+
+
+────────────────────────────────────────────────────────────────
+ PANTALLA DEL ÁRBOL  ·  salud media y baja
+────────────────────────────────────────────────────────────────
+
+  SALUD MEDIA (50) — d = 8 días
+
++──────────────────────────────────────────+
+|  <   Tu árbol                            |
++──────────────────────────────────────────+
+|         │   [ 🖼 amarillo ]   │          |
+|              ── Joven ──                 |
+|                    50                    |
+|                  Salud                   |
+|   Último entrenamiento: hace 8 días      |
+|   Han pasado 8 días. Tu árbol empieza    |
+|   a secarse.                             |
++──────────────────────────────────────────+
+
+  SALUD BAJA (25) — d = 11 días
+
++──────────────────────────────────────────+
+|  <   Tu árbol                            |
++──────────────────────────────────────────+
+|         │  [ 🖼 marrón claro ] │         |
+|              ── Joven ──                 |
+|                    25                    |
+|                  Salud                   |
+|   Último entrenamiento: hace 11 días     |
+|   Han pasado 11 días. Tu árbol se está   |
+|   marchitando.                           |
++──────────────────────────────────────────+
+
+
+────────────────────────────────────────────────────────────────
+ CASO EXTREMO  ·  sin historial — Semilla (CA-37.10)
+────────────────────────────────────────────────────────────────
+
+  Sin sesiones registradas NO se muestra conteo de días:
+  no hay referencia contra la cual contar.
+
++──────────────────────────────────────────+
+|  <   Tu árbol                            |
++──────────────────────────────────────────+
+|                                          |
+|         ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐          |
+|         │   [ 🖼 semilla ]     │         |
+|         │    gris neutro       │         |
+|         └ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘          |
+|                                          |
+|              ── Semilla ──               |
+|                                          |
+|                   100                    |
+|                  Salud                   |
+|                                          |
+|   ( sin línea de días )                  |
+|                                          |
+|   Registra tu primera sesión y tu        |
+|   árbol germinará.                       |
+|                                          |
++──────────────────────────────────────────+
+
+
+────────────────────────────────────────────────────────────────
+ CASO EXTREMO  ·  maduro y marchito (CA-37.11)
+────────────────────────────────────────────────────────────────
+
+  La etapa NUNCA retrocede. 30 días sin entrenar dejan un árbol
+  maduro completamente marchito — no un brote.
+
++──────────────────────────────────────────+
+|  <   Tu árbol                            |
++──────────────────────────────────────────+
+|                                          |
+|         ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐          |
+|         │   [ 🖼 ícono ]       │         |
+|         │  MISMO tamaño        │         |
+|         │  marrón oscuro       │         |
+|         └ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘          |
+|                                          |
+|              ── Maduro ──                |  ← etapa conservada
+|                                          |
+|                    0                     |
+|                  Salud                   |
+|                                          |
+|   Último entrenamiento: hace 30 días     |
+|                                          |
+|   Han pasado 30 días. Tu árbol está      |
+|   marchito. Una sesión basta para        |
+|   revivirlo.                             |
+|                                          |
++──────────────────────────────────────────+
+
+
+────────────────────────────────────────────────────────────────
+ FLUJO DE NAVEGACIÓN
+────────────────────────────────────────────────────────────────
+
+   INICIO  ──[ toca tarjeta "Tu árbol" ]──>  PANTALLA DEL ÁRBOL
+      ^                                              |
+      └──────────[ back de TopAppBar ]───────────────┘
+
+   Ruta nueva. Sin pestaña propia en la navegación inferior.
+   Sin modales, sin formularios, sin acciones destructivas.
+
+
+────────────────────────────────────────────────────────────────
+ NOTAS PARA DISEÑO
+────────────────────────────────────────────────────────────────
+
+  · Los emojis 🌱🌿🌳 son PLACEHOLDERS del wireframe. La entrega
+    son 4 íconos vectoriales — semilla, brote, joven, maduro —
+    teñidos en tiempo de ejecución según la salud.
+
+  · El tinte se deriva del tema y debe leerse correctamente en
+    modo claro y oscuro (RNF23). Verificar contraste del marrón
+    oscuro sobre fondo oscuro: es el caso límite.
+
+  · El área del árbol se dimensiona previendo que HU-38 la
+    sustituya por un WebView sin reorganizar el resto del layout.
+
+  · Solo portrait (RNF07). Pantallas de 5" a 7" (RNF21).
+
+  · La tarjeta de Inicio es nativa de forma permanente: nunca
+    llevará WebView, tampoco después de HU-38 (RNF01).
+
+
+╔══════════════════════════════════════════════════════════════╗
+║  ⚠️  PROTOTIPO — PROPUESTA PENDIENTE DE VALIDACIÓN CON DISEÑO  ║
+╚══════════════════════════════════════════════════════════════╝

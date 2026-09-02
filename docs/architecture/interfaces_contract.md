@@ -218,6 +218,7 @@
   - **Sin ninguna serie:** se borra. No hubo entrenamiento, así que no llega al historial, no cuenta como adherencia y la rotación no avanza.
 - **El día no entrenado no deja registro.** Su ausencia de sesión ya es lo que leen el historial, la adherencia (`countSessionsInWeek`) y la alerta de inactividad (`ROUTINE_INACTIVITY`). No se escribe nada en `day_skip` para días pasados: esa tabla es de fila única y solo describe el día en curso.
 - **Limitación declarada:** con la aplicación cerrada no se ejecuta nada. Android no ofrece un temporizador fiable en segundo plano para esto y no se añade uno: el barrido ocurre en cuanto la aplicación vuelve a abrirse, y el resultado observable es el mismo porque el ejecutante solo ve la aplicación cuando la abre.
+- **El árbol de entrenamiento se recalcula después de este barrido, nunca antes** (`N1-T1`). El barrido cierra la sesión de ayer **conservando su `date` original**; recalcular primero leería una fecha de último entrenamiento desactualizada y marchitaría el árbol de alguien que sí entrenó. El orden es secuencial dentro de la misma corrutina, no una coincidencia entre dos observadores.
 
 **Payload / Parámetros (Input):**
 
@@ -261,6 +262,33 @@
   "week_day": "TEXT // Día de hoy",
   "day_outcome": null,
   "navigation": "ninguna"
+}
+```
+
+---
+
+#### `B1-T8`: Abrir el Árbol de Entrenamiento
+
+- **Tipo de Trigger (Entrada):** `Acción del ejecutante: toca la tarjeta "Tu árbol" de B1, ubicada debajo de la tarjeta de sesión del día.`
+- **Descripción:** Navega a la pantalla dedicada del árbol (`N1`). La tarjeta **se compone siempre** — es la única de B1 sin condición de visibilidad, porque el árbol existe desde antes de la primera sesión, aunque sea como semilla — y refleja el estado actual mediante el ícono de su etapa teñido según la salud, más una línea de texto que cambia con el estado. La tarjeta es **nativa de forma permanente**: nunca renderiza contenido web, para no penalizar el arranque de B1 (RNF01).
+- **Precondiciones:** Ninguna. Está disponible con sesión activa, con el día resuelto y en día de descanso.
+- **Efecto sobre el estado del sistema:** Ninguno. La navegación no escribe nada; el recálculo lo dispara la pantalla de destino (`N1-T1`).
+
+**Payload / Parámetros (Input):**
+
+```json
+{}
+```
+
+**Respuesta / Salida (Output Esperado):**
+
+- **Estado de Éxito:** `Navegación a N1. Ruta nueva, sin pestaña propia en la barra de navegación inferior.`
+
+```json
+{
+  "growth_stage": "TEXT // SEED | SPROUT | YOUNG | MATURE — gobierna la FORMA del ícono",
+  "health_score": "INTEGER // 0-100 — gobierna el COLOR del ícono",
+  "navigation": "N1"
 }
 ```
 
@@ -1397,6 +1425,67 @@ Los valores viven en un único punto del código, `AlertThresholdRule`. Esta tab
 
 - **Estado de Error (formato inválido):** `Mensaje de error al validar. No se ejecuta la restauración. Los datos actuales no se alteran.`
 - **Estado de Error (fallo durante restauración):** `Rollback automático. Los datos originales se preservan. Mensaje de error al ejecutante.`
+- **Compatibilidad de formato:** `Se aceptan el formato vigente (12), el inmediatamente anterior (11) y el legado (8). Un respaldo v11 no trae tree_state; la restauración lo reconstruye desde el historial restaurado (N1-T1), de modo que el árbol queda en un estado válido sin necesidad de que el respaldo lo traiga.`
+
+---
+
+### 2.11. Módulo: `Flujo N — Árbol de Entrenamiento`
+
+*Flujo de una sola pantalla, alcanzable exclusivamente desde `B1-T8`. **No produce efectos sobre ningún otro contenedor:** no altera la determinación de sesión, no genera alertas, no modifica ningún KPI y ningún componente del motor de decisión lee su estado. Es la excepción de alcance declarada en ADR-020 — puramente visual y de dependencia unidireccional.*
+
+---
+
+#### `N1-T1`: Recalcular y Mostrar el Estado del Árbol
+
+- **Tipo de Trigger (Entrada):** `Automático: al componerse N1. También se dispara al cerrar una sesión (E4-T1), en cada emisión del cambio de día —después de B1-T7— y tras restaurar un respaldo (J3-T1).`
+- **Descripción:** Deriva las dos dimensiones del árbol del historial de sesiones y las persiste antes de presentarlas. **Recalcular antes de observar** es lo que garantiza que lo mostrado nunca sea un valor rancio, aunque la aplicación llevara horas abierta sin cruzar la medianoche.
+  - **Etapa (la forma):** por total de sesiones `COMPLETED` e `INCOMPLETE` — Semilla 0 · Brote 1–9 · Joven 10–29 · Maduro 30+. **Nunca retrocede** cualquiera que sea la salud.
+  - **Salud (el color):** por días naturales `d` desde la última sesión — `d ≤ 2` → 100 · `2 < d < 14` → descenso lineal · `d ≥ 14` → 0. El corte de 14 se alinea con el umbral de crisis de `ROUTINE_INACTIVITY`, que mide inactividad **por rutina** frente a la medida **global** del árbol: son complementarias y no se acoplan.
+- **Qué cuenta como entrenamiento:** sesiones `COMPLETED` e `INCOMPLETE`; **no** las `IN_PROGRESS`. Los días registrados en `day_skip` **no protegen al árbol** — omitir un día lo marchita igual que no abrir la aplicación. Una sesión reasignada temporalmente (`B1-T3`) cuenta como cualquier otra: al árbol le da igual **qué** rutina se entrenó.
+- **Sin historial:** la etapa es Semilla y **no se presenta conteo de días** — no hay referencia contra la cual contar, y la salud se muestra en 100 para no castigar a quien todavía no ha tenido oportunidad de entrenar.
+- **Modo de fallo:** *best-effort*. Si el recálculo falla, se presenta lo último persistido, que sigue siendo una lectura válida del historial; la pantalla nunca queda vacía y el fallo no interrumpe el cierre de sesión ni el arranque. El cálculo no bloquea la interfaz (RNF01).
+
+**Payload / Parámetros (Input):**
+
+```json
+{}
+```
+
+**Respuesta / Salida (Output Esperado):**
+
+- **Estado de Éxito:** `N1 presenta el árbol en el área principal, su etapa, el puntaje de salud, los días desde el último entrenamiento y un mensaje contextual.`
+
+```json
+{
+  "growth_stage": "TEXT // SEED | SPROUT | YOUNG | MATURE",
+  "health_score": "INTEGER // 0-100",
+  "days_since_last_session": "INTEGER | null // null = sin historial; entonces la línea de días no se presenta",
+  "navigation": "ninguna"
+}
+```
+
+---
+
+#### `N1-T2`: Volver a Inicio
+
+- **Tipo de Trigger (Entrada):** `Acción del ejecutante: retroceso nativo de la barra superior de N1.`
+- **Descripción:** **Única acción de navegación de la pantalla.** N1 no tiene formularios, ni modales, ni acciones destructivas: aquí no se decide nada, solo se mira.
+
+**Payload / Parámetros (Input):**
+
+```json
+{}
+```
+
+**Respuesta / Salida (Output Esperado):**
+
+- **Estado de Éxito:** `Navegación a B1. Ningún cambio de estado del sistema.`
+
+```json
+{
+  "navigation": "B1"
+}
+```
 
 ---
 
@@ -1453,4 +1542,6 @@ Los valores viven en un único punto del código, `AlertThresholdRule`. Esta tab
 - **Inmutabilidad de sesiones cerradas:** `Las sesiones con status = 'COMPLETED' o 'INCOMPLETE' no tienen ningún trigger de edición disponible. F2 (Detalle de Sesión Pasada) es estrictamente de solo lectura. Ninguna interfaz expone acciones de modificación retroactiva de series ya registradas.`
 - **Restricción de navegación durante sesión activa:** `Cuando el flujo E (Sesión Activa) está en curso, la barra de navegación global (Bottom Navigation) se oculta completamente. El único canal de salida del flujo de sesión es E4 (Confirmación de Cierre). No existe ningún trigger que permita abandonar la sesión sin cerrarla formalmente.`
 - **Restricción de orientación:** `La interfaz opera exclusivamente en orientación vertical (portrait). El sistema no soporta modo horizontal (landscape). Si el dispositivo se rota, la vista se mantiene en portrait (RNF-07).`
+- **El árbol no decide nada:** `N1 es de solo lectura y su estado no alimenta ninguna decision del sistema. Ningun componente del motor de decision —prescripcion de carga, Doble Umbral, meseta, regresion, fatiga, protocolo de descarga, rotacion ciclica— lee el puntaje ni la etapa; el arbol no genera alertas ni modifica ROUTINE_INACTIVITY o LOW_ADHERENCE, y la adherencia semanal se calcula exactamente igual. La dependencia es unidireccional: el arbol lee del historial y nada del sistema lee del arbol (ADR-020).`
+- **El árbol no tiene pestaña propia:** `N1 es una ruta nueva alcanzable solo desde la tarjeta de B1 (B1-T8). No se añade a la barra de navegacion inferior, que permanece visible durante la pantalla.`
 - **Idioma único:** `Toda la interfaz opera exclusivamente en español. No existe selector de idioma ni soporte para internacionalización (RNF-08).`

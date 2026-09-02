@@ -2,7 +2,7 @@
 
 > Este documento define la arquitectura estructural de la memoria del sistema y el ciclo de vida de sus entidades. Actúa simultáneamente como Modelo Entidad-Relación, Diccionario de Datos y Máquina de Estados. Se utiliza una sintaxis declarativa (pseudo-código estilo Prisma/TypeScript) para definir las estructuras, utilizando los comentarios inline como el diccionario de datos.
 >
-> **Versión de esquema:** 18 (migraciones registradas: v1 → v2 → … → v15 → v16). **v17 ni v18 tienen migración**: HU-36 introduce `week_day`, `daily_routine_override` y `day_skip` durante la beta, y la excepción documentada a RNF19 resuelve el cambio de esquema sobre instalación fresca. Una base anterior no puede abrir el build vigente — el reinicio lo realiza el ejecutante desinstalando y reinstalando, no la aplicación.
+> **Versión de esquema:** 19 (migraciones registradas: v1 → v2 → … → v15 → v16). **v17, v18 ni v19 tienen migración**: HU-36 introduce `week_day`, `daily_routine_override` y `day_skip`, y HU-37 introduce `tree_state`, todas durante la beta, y la excepción documentada a RNF19 (ADR-019) resuelve el cambio de esquema sobre instalación fresca. Una base anterior no puede abrir el build vigente — el reinicio lo realiza el ejecutante desinstalando y reinstalando, no la aplicación.
 
 ---
 
@@ -15,7 +15,7 @@
 - **Manejo de Valores de Alta Precisión (Peso en Kg):** `Los valores de peso corporal y carga de ejercicio se almacenan como REAL (punto flotante de 64 bits). El incremento mínimo del sistema es 0.5 Kg, por lo que la precisión de REAL es suficiente sin recurrir a enteros escalados. Los valores calculados derivados (tonelaje, promedios, tendencias) NO se persisten — se computan en la capa de aplicación a partir de los datos base en cada consulta.`
 - **Kilogramo como Unidad Canónica:** `El kilogramo es la única unidad de almacenamiento, cálculo, agregación y comparación del sistema. El ejecutante puede capturar la carga de cada ejercicio en libras (exercise_set.capture_unit), pero esa unidad es exclusivamente una preferencia de captura y presentación: la conversión a kilogramos ocurre en la frontera de captura, con el factor fijo 1 lb = 0.45359237 kg y 2 decimales de precisión. El valor convertido NO se redondea al múltiplo de 0.5 Kg — el incremento del sistema rige los controles de ajuste, no la precisión del dato. Ninguna regla del motor, consulta agregada ni métrica consulta la unidad de captura; solo el detalle de la serie individual la muestra.`
 - **Convenciones de Nomenclatura de Esquema:** `Nombres de tablas y columnas en snake_case en inglés (ej: routine_version, exercise_id). Claves primarias autoincrement: id INTEGER PRIMARY KEY AUTOINCREMENT. Claves foráneas: sufijo _id para referencias a PKs enteras. Datos de catálogo (seed) usan ON DELETE RESTRICT; datos transaccionales usan ON DELETE CASCADE donde aplica.`
-- **Cardinalidad de Instancias:** `El sistema es single-user. Las tablas profile y rotation_state son de fila única (id = 1 siempre). Todas las demás tablas crecen indefinidamente con el historial del ejecutante.`
+- **Cardinalidad de Instancias:** `El sistema es single-user. Las tablas profile, rotation_state, daily_routine_override, day_skip y tree_state son de fila única (id = 1 siempre). Todas las demás tablas crecen indefinidamente con el historial del ejecutante.`
 
 ---
 
@@ -301,6 +301,25 @@ model day_skip {
 }
 
 // ==========================================
+// ENTIDAD: tree_state
+// PROPÓSITO: Estado visual del árbol de entrenamiento.
+// Tabla de fila única. Dos dimensiones ortogonales: la etapa
+// expresa el historial acumulado y la salud expresa la
+// recencia del último entrenamiento. Un árbol maduro puede
+// estar marchito y un brote puede estar sano.
+// FUNCIONALIDAD PURAMENTE VISUAL Y AISLADA: se deriva de
+// session y ningún componente de decisión, alerta o KPI lee
+// esta tabla. La dependencia es unidireccional.
+// ==========================================
+model tree_state {
+  id                INTEGER  @id @default(1) @check("= 1")           // Siempre 1. Garantiza fila única: el árbol es uno solo.
+  health_score      INTEGER  @notNull @check(">= 0 AND <= 100")      // Salud 0–100 por días transcurridos: d <= 2 → 100; 2 < d < 14 → descenso lineal; d >= 14 → 0. El corte de 14 coincide con el umbral de crisis de ROUTINE_INACTIVITY.
+  growth_stage      TEXT     @notNull @enum(TreeGrowthStage)         // Etapa por sesiones acumuladas. No retrocede porque el conteo no baja, no por un máximo persistido.
+  last_session_date TEXT     @nullable @format("YYYY-MM-DD")         // Fecha de la última sesión COMPLETED o INCOMPLETE. NULL = sin historial, y es la señal única del caso Semilla. Los días transcurridos se derivan de aquí al leer, nunca se persisten: un entero guardado ayer es rancio hoy.
+  calculated_at     TEXT     @notNull @format("YYYY-MM-DD")          // Fecha del último recálculo. Hace auditable el orden respecto al barrido de cierre automático del cambio de día.
+}
+
+// ==========================================
 // ENTIDAD: deload
 // PROPÓSITO: Ciclo de descarga (Deload).
 // Se activa cuando el motor detecta fatiga acumulada
@@ -380,6 +399,7 @@ model alert {
 | `routine` | `1 : N` | `deload_frozen_version` | "Tiene versiones congeladas en descargas" | RESTRICT: una rutina no se puede eliminar si tiene versiones congeladas en un ciclo de descarga. |
 | `exercise` | `1 : N` | `alert (exercise_id)` | "Genera alertas de progresión" | RESTRICT: un ejercicio no se puede eliminar si tiene alertas asociadas. |
 | `routine` | `1 : N` | `alert (routine_id)` | "Genera alertas de rutina" | CASCADE: si se elimina una rutina, sus alertas se eliminan. |
+| `tree_state` | `—` | `—` | **Sin relaciones** | `tree_state` no declara ninguna clave foránea. Se **deriva** de `session` por cálculo, no por referencia: la dependencia es de lectura y no de integridad, y una FK a `session` la convertiría en integridad haciendo que borrar una sesión arrastrara el árbol. La dirección es única — el árbol lee del historial y ninguna entidad del sistema lee del árbol. |
 
 ---
 
@@ -443,6 +463,13 @@ enum WeightUnit {
   LB  // Libras. Unidad alternativa de captura para implementos rotulados en libras. Paso de captura: 1 lb. El valor se convierte a kilogramos antes de persistirse (factor 0.45359237, 2 decimales).
 }
 
+enum TreeGrowthStage {
+  SEED    // Semilla. 0 sesiones registradas. Estado de partida: no se muestra conteo de días porque no hay referencia contra la cual contar.
+  SPROUT  // Brote. De 1 a 9 sesiones.
+  YOUNG   // Joven. De 10 a 29 sesiones.
+  MATURE  // Maduro/Florecido. 30 sesiones o más.
+}
+
 enum RepsMode {
   STANDARD           // "8-12" — rango estándar de repeticiones para la mayoría de ejercicios. Se aplica el Doble Umbral.
   TO_TECHNICAL_FAILURE // "TO_TECHNICAL_FAILURE" — sin límite superior. Solo para Flexiones (is_to_technical_failure=1). Progresión por repeticiones totales.
@@ -496,6 +523,7 @@ enum MuscleGroup {
 - **Cierre condicionado:** cerrar exige **al menos una fila en `exercise_set`**. Sin ninguna no hay nada que terminar, y persistirla como `INCOMPLETE` la haría contar en la adherencia y silenciar la inactividad de su rutina. La sesión permanece `IN_PROGRESS` y es reanudable: el ejecutante puede salir y volver.
 - **Muerte prematura (cancelación del día):** la única salida de una sesión `IN_PROGRESS` sin series es cancelar el día (`B1-T5`), que la **borra** y registra la fecha en `day_skip`. **No avanza `rotation_state`** — no hubo sesión que contar. Con una sola serie registrada la cancelación deja de estar disponible: lo entrenado se conserva cerrando como `INCOMPLETE`.
 - **Cierre automático al cambiar el día:** una sesión `IN_PROGRESS` cuya `date` es anterior a hoy pertenece a un día que terminó y no puede continuarse. El sistema la resuelve por el ejecutante: **con al menos una serie** la cierra con el protocolo completo y queda `INCOMPLETE`, conservando su `date` original —el día que sí se entrenó—; **sin ninguna serie** la borra. El barrido corre al abrir la app y al cruzar la medianoche con la app abierta. El día no entrenado **no deja registro propio**: su ausencia de sesión ya es lo que leen el historial, la adherencia y la alerta de inactividad. La reasignación se agota en la determinación: `session` no guarda de dónde vino la rutina, y `rotation_state` no participa en esta resolución. Es la frontera por la que la reasignación temporal no puede alterar la rotación cíclica.
+- **Lectura posterior sin efecto (árbol de entrenamiento):** cerrar una sesión dispara el recálculo de `tree_state`, y el barrido del cambio de día lo dispara **después** de resolver la sesión rancia, nunca antes — el barrido conserva la `date` original, y recalcular primero leería una fecha de último entrenamiento desactualizada. El recálculo **no altera `session` ni ninguna de sus transiciones**: es una lectura agregada del historial, es best-effort y su fallo no impide el cierre.
 - **Estado Inicial (Nacimiento):** `IN_PROGRESS` — se asigna al crear la sesión.
 - **Estados Finales (Terminación):** `COMPLETED`, `INCOMPLETE` — una vez alcanzados, la sesión y todos sus datos son **inmutables**.
 
@@ -643,6 +671,8 @@ enum MuscleGroup {
 - **`daily_routine_override` (0 filas):** No se siembra. La tabla nace vacía y solo tiene fila mientras hay una reasignación temporal vigente.
 
 - **`day_skip` (0 filas):** No se siembra. La tabla nace vacía y solo tiene fila el día que el ejecutante declara que no entrena.
+
+- **`tree_state` (0 filas):** No se siembra, a diferencia de `rotation_state`. El árbol es **enteramente derivable** del historial, y sembrarlo exigiría un seeder para un dato que el primer recálculo produce solo. Mientras la fila no existe, la lectura devuelve el estado de partida — `SEED`, salud 100, sin fecha de última sesión —, que es exactamente lo que corresponde a un ejecutante que aún no ha entrenado. La fila nace en el primer recálculo, que ocurre al abrir la app.
 
 - **`routine_current_version` (1 fila por rutina del plan):** Se inicializa con `current_version_number=1` para cada rutina que el ejecutante crea al configurar su plan.
 

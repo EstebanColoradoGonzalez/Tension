@@ -25,6 +25,9 @@ import org.junit.Test
 
 class BackupRepositoryImplTest {
 
+    /** Espejo del valor privado del impl: el formato anterior, sin `tree_state`. */
+    private val PREVIOUS_SCHEMA_VERSION = 11
+
     private lateinit var database: TensionDatabase
     private lateinit var context: Context
     private lateinit var db: SupportSQLiteDatabase
@@ -205,6 +208,65 @@ class BackupRepositoryImplTest {
 
         assertFalse(result.isValid)
         assertNotNull(result.errorMessage)
+    }
+
+    // =========================================================================
+    // Arbol de entrenamiento — compatibilidad de formato (HU-37, CA-37.09)
+    // =========================================================================
+
+    @Test
+    fun `exportToJson carries the tree state table`() = runTest {
+        BackupRepositoryImpl.TABLE_ORDER_INSERT.forEach { table ->
+            every { db.query("SELECT * FROM $table") } returns createEmptyCursor()
+        }
+
+        val data = JSONObject(repository.exportToJson()).getJSONObject("data")
+
+        assertTrue(data.has("tree_state"))
+    }
+
+    // El formato anterior no traia tree_state. Rechazarlo inutilizaria todo respaldo
+    // exportado hasta ahora, y el arbol es enteramente derivable del historial restaurado.
+
+    @Test
+    fun `validateBackup accepts the previous format without the tree state table`() {
+        val result = repository.validateBackup(buildPreviousFormatBackupJson())
+
+        assertTrue(result.isValid)
+        assertEquals(PREVIOUS_SCHEMA_VERSION, result.metadata?.schemaVersion)
+        assertNull(result.errorMessage)
+    }
+
+    @Test
+    fun `validateBackup still rejects the format before the previous one`() {
+        val result = repository.validateBackup(buildBackupJsonWithSchemaVersion(10))
+
+        assertFalse(result.isValid)
+        assertNotNull(result.errorMessage)
+    }
+
+    // Un respaldo del formato actual sin la tabla si esta incompleto: la exporto y la perdio.
+
+    @Test
+    fun `validateBackup rejects a current backup missing the tree state table`() {
+        val json = JSONObject(buildValidBackupJson())
+        json.getJSONObject("data").remove("tree_state")
+
+        val result = repository.validateBackup(json.toString())
+
+        assertFalse(result.isValid)
+        assertNotNull(result.errorMessage)
+    }
+
+    @Test
+    fun `importFromJson restores the previous format without failing`() = runTest {
+        var transactionSuccessfulCalled = false
+        every { db.setTransactionSuccessful() } answers { transactionSuccessfulCalled = true }
+
+        repository.importFromJson(buildPreviousFormatBackupJson())
+
+        assertTrue(transactionSuccessfulCalled)
+        verify { db.endTransaction() }
     }
 
     @Test
@@ -426,6 +488,23 @@ class BackupRepositoryImplTest {
             }
             data.put(table, rows)
         }
+        json.put("data", data)
+        return json.toString()
+    }
+
+    /** Respaldo del formato inmediatamente anterior: sin `tree_state`. */
+    private fun buildPreviousFormatBackupJson(): String {
+        val json = JSONObject()
+        json.put("metadata", JSONObject().apply {
+            put("appVersion", "1.0")
+            put("schemaVersion", PREVIOUS_SCHEMA_VERSION)
+            put("exportDate", "2026-02-20T14:00:00")
+            put("recordCount", 0)
+        })
+        val data = JSONObject()
+        BackupRepositoryImpl.TABLE_ORDER_INSERT
+            .filter { it != "tree_state" }
+            .forEach { data.put(it, org.json.JSONArray()) }
         json.put("data", data)
         return json.toString()
     }

@@ -1,0 +1,194 @@
+╔══════════════════════════════════════════════════════════════╗
+║  ⚠️  PROTOTIPO — PROPUESTA PENDIENTE DE VALIDACIÓN CON DISEÑO  ║
+╚══════════════════════════════════════════════════════════════╝
+
+HU #38 — El árbol en 3D
+Plataforma: mobile / portrait (390 px) · Material 3 · targets ≥ 48 dp
+
+Esta historia NO crea pantallas ni rutas. Sustituye ÚNICAMENTE el
+área del árbol dentro de la pantalla que dejó HU-37.
+
+
+────────────────────────────────────────────────────────────────
+ QUÉ CAMBIA Y QUÉ NO
+────────────────────────────────────────────────────────────────
+
+        ANTES (HU-37)                    DESPUÉS (HU-38)
+
+  +─────────────────────────+      +─────────────────────────+
+  |  <   Tu árbol           |      |  <   Tu árbol           |  = igual
+  +─────────────────────────+      +─────────────────────────+
+  |                         |      |                         |
+  |    ┌ ─ ─ ─ ─ ─ ─ ┐      |      |    ┌ ─ ─ ─ ─ ─ ─ ┐      |
+  |    │ [ 🖼 ícono ] │     |  ──> |    │  WebView 3D  │     |  ← CAMBIA
+  |    │  vectorial   │     |      |    │  Three.js    │     |    solo esto
+  |    └ ─ ─ ─ ─ ─ ─ ┘      |      |    └ ─ ─ ─ ─ ─ ─ ┘      |
+  |                         |      |                         |
+  |      ── Maduro ──       |      |      ── Maduro ──       |  = igual
+  |           100           |      |           100           |  = igual
+  |         Salud           |      |         Salud           |  = igual
+  |  Último entrenamiento:  |      |  Último entrenamiento:  |  = igual
+  |  ayer                   |      |  ayer                   |  = igual
+  |  Vienes entrenando. Tu  |      |  Vienes entrenando. Tu  |  = igual
+  |  árbol lo refleja.      |      |  árbol lo refleja.      |  = igual
+  +─────────────────────────+      +─────────────────────────+
+
+  La TARJETA DE INICIO no se toca. Sigue siendo nativa y con el
+  ícono vectorial, de forma permanente (RNF01).
+
+
+────────────────────────────────────────────────────────────────
+ PANTALLA DEL ÁRBOL  ·  render 3D (CA-38.01, CA-38.02)
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+|  <   Tu árbol                            |
++──────────────────────────────────────────+
+|▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒|  ← el fondo NATIVO
+|▒▒▒▒▒▒▒▒▒▒▒▒ WebView transparente ▒▒▒▒▒▒▒▒|    se ve a través
+|▒▒▒▒▒▒▒▒▒▒▒▒▒ alpha: true ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒|    del WebView
+|▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒◢◣▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒|
+|▒▒▒▒▒▒▒▒▒▒▒▒▒◢███◣▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒|  copa Low-Poly:
+|▒▒▒▒▒▒▒▒▒▒▒◢██████◣▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒|  icosaedros /
+|▒▒▒▒▒▒▒▒▒▒▒▒◥████◤▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒|  esferas
+|▒▒▒▒▒▒▒▒▒▒▒▒▒▒║║▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒|  superpuestas
+|▒▒▒▒▒▒▒▒▒▒▒▒▒▒║║▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒|
+|▒▒▒▒▒▒▒▒▒▒▒▒▒▒║║▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒|  tronco cilíndrico
+|▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒|
+|▒▒▒▒▒▒▒  ( ↺  arrastra para rotar )  ▒▒▒▒▒|  sin barras de
+|▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒|  desplazamiento
++──────────────────────────────────────────+
+|                                          |
+|              ── Maduro ──                |  bloque de estado
+|                   100                    |  heredado de HU-37,
+|                  Salud                   |  SIN cambios
+|   Último entrenamiento: ayer             |
+|   Vienes entrenando. Tu árbol lo         |
+|   refleja.                               |
+|                                          |
++──────────────────────────────────────────+
+
+
+────────────────────────────────────────────────────────────────
+ ESTADOS DE SALUD  ·  transición CONTINUA (CA-38.02)
+────────────────────────────────────────────────────────────────
+
+  No son tres modelos fijos: es una interpolación fluida.
+  El tamaño lo fija la ETAPA; el follaje y el color, la SALUD.
+
+  SALUD 100                SALUD 50               SALUD 0
+
+     ◢█████◣               ◢███◣                    · ·
+    ◢███████◣              ◢███◣                   ╲   ╱
+     ◥█████◤                ◥█◤                     ╲ ╱
+       ║║                    ║║                      ║║
+       ║║                    ║║                      ║║
+       ║║                    ║║                      ║║
+
+  copa completa           copa reducida          sin follaje
+  verde vivo              verde amarillento      marrón oscuro
+  y brillante             o seco                 ramas caídas
+
+  ── entre 100 y 0 NO hay saltos: escala y color interpolan ──
+
+
+────────────────────────────────────────────────────────────────
+ INTERACTIVIDAD DE CÁMARA  ·  CA-38.03
+────────────────────────────────────────────────────────────────
+
+           arrastre horizontal  →  órbita alrededor del árbol
+           arrastre vertical    →  elevación, ACOTADA
+           pinza                →  zoom, ACOTADO
+
+                        ┌───────────┐
+                   ╭────┤   LÍMITE  ├────╮
+                   │    └───────────┘    │
+                   │        ◢█◣          │   · no se puede
+                   │         ║           │     atravesar el árbol
+                   │    ─────╨─────      │   · no se puede perder
+                   │                     │     de vista
+                   ╰─────────────────────╯   · al reentrar, la
+                                               cámara vuelve al
+    El gesto NO propaga scroll ni al WebView    inicio
+    ni a la pantalla nativa.
+
+
+────────────────────────────────────────────────────────────────
+ FALLBACK NATIVO  ·  CA-38.05
+────────────────────────────────────────────────────────────────
+
+  WebView no disponible, desactualizado o incapaz de renderizar.
+  Se sustituye en SILENCIO por la representación de HU-37.
+  NO hay mensaje de error. NO hay pantalla en blanco.
+
++──────────────────────────────────────────+
+|  <   Tu árbol                            |
++──────────────────────────────────────────+
+|                                          |
+|         ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐          |
+|         │   [ 🖼 ícono ]       │         |  ← el vectorial
+|         │   180×180            │         |    de HU-37
+|         │   teñido por salud   │         |
+|         └ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘          |
+|                                          |
+|              ── Maduro ──                |
+|                   100                    |  todo el bloque de
+|                  Salud                   |  estado sigue
+|   Último entrenamiento: ayer             |  funcionando
+|   Vienes entrenando. Tu árbol lo         |
+|   refleja.                               |
+|                                          |
++──────────────────────────────────────────+
+
+  La pantalla sigue siendo útil. El ejecutante no se entera de
+  que hubo un problema — y no necesita enterarse.
+
+
+────────────────────────────────────────────────────────────────
+ DEGRADACIÓN POR RENDIMIENTO  ·  CA-38.06
+────────────────────────────────────────────────────────────────
+
+  El presupuesto (< 1 s de carga y render inicial) MANDA sobre
+  la fidelidad visual. Si el dispositivo no llega, se degrada
+  por código, en este orden:
+
+     1. sin sombras
+     2. menos esferas / icosaedros en la copa
+     3. menos segmentos en el tronco cilíndrico
+     4. menos polígonos por primitiva
+
+  GAMA MEDIA                        GAMA BAJA degradada
+
+     ◢█████◣                            ◢███◣
+    ◢███████◣                          ◢█████◣
+     ◥█████◤                            ◥███◤
+       ║║                                 ║║
+       ║║                                 ║║
+     ░░░░░░░  ← sombra                    ║║   ← sin sombra
+
+  Antes lento que bonito.
+
+
+────────────────────────────────────────────────────────────────
+ NOTAS PARA DISEÑO
+────────────────────────────────────────────────────────────────
+
+  · El árbol se genera 100% por código. NO hay .glb ni .gltf.
+    El wireframe solo indica proporción y silueta.
+
+  · Fondo transparente sobre el fondo nativo, correcto en modo
+    claro y oscuro (RNF23). Verificar sobre distintos
+    fabricantes: es el riesgo declarado de la historia.
+
+  · Three.js viaja empaquetado en el APK. Sin CDN, sin red.
+    El WebView no navega fuera de su archivo local (RNF09).
+
+  · Ningún texto nuevo. Se conservan íntegras las tablas de
+    textos y las bandas de salud definidas en HU-37.
+
+  · Solo portrait (RNF07). Pantallas de 5" a 7" (RNF21).
+
+
+╔══════════════════════════════════════════════════════════════╗
+║  ⚠️  PROTOTIPO — PROPUESTA PENDIENTE DE VALIDACIÓN CON DISEÑO  ║
+╚══════════════════════════════════════════════════════════════╝

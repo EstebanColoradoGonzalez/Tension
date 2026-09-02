@@ -14,6 +14,7 @@ import com.estebancoloradogonzalez.tension.domain.usecase.session.SetTemporaryRo
 import com.estebancoloradogonzalez.tension.domain.usecase.session.SkipTodayUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.session.StartSessionUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.session.UndoSkipTodayUseCase
+import com.estebancoloradogonzalez.tension.domain.usecase.tree.GetTreeStateUseCase
 import com.estebancoloradogonzalez.tension.domain.model.DeloadState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -40,6 +41,7 @@ class HomeViewModel @Inject constructor(
     private val clearTemporaryRoutineUseCase: ClearTemporaryRoutineUseCase,
     private val skipTodayUseCase: SkipTodayUseCase,
     private val undoSkipTodayUseCase: UndoSkipTodayUseCase,
+    private val getTreeStateUseCase: GetTreeStateUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -69,6 +71,9 @@ class HomeViewModel @Inject constructor(
                 _uiState.update { current ->
                     newState.copy(
                         deloadState = current.deloadState,
+                        // El arbol no viaja en el combine y se perderia en cada emision del
+                        // estado del dia si no se preservara aqui, igual que la descarga.
+                        treeState = current.treeState,
                         isReassignDialogOpen = current.isReassignDialogOpen,
                     )
                 }
@@ -76,6 +81,19 @@ class HomeViewModel @Inject constructor(
         }
 
         loadDeloadState()
+        observeTreeState()
+    }
+
+    /**
+     * El arbol se observa aparte: el `combine` de arriba ya agota la sobrecarga de cinco
+     * flujos, y el estado del arbol no depende de ninguno de ellos.
+     */
+    private fun observeTreeState() {
+        viewModelScope.launch {
+            getTreeStateUseCase().collect { treeState ->
+                _uiState.update { it.copy(treeState = treeState) }
+            }
+        }
     }
 
     private fun loadDeloadState() {

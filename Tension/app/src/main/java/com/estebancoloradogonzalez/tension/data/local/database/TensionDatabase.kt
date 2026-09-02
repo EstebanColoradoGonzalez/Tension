@@ -21,6 +21,7 @@ import com.estebancoloradogonzalez.tension.data.local.dao.RoutineDao
 import com.estebancoloradogonzalez.tension.data.local.dao.RoutineVersionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.SessionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.SessionExerciseDao
+import com.estebancoloradogonzalez.tension.data.local.dao.TreeStateDao
 import com.estebancoloradogonzalez.tension.data.local.dao.WeekDayDao
 import com.estebancoloradogonzalez.tension.data.local.dao.WeightRecordDao
 import com.estebancoloradogonzalez.tension.data.local.entity.AlertEntity
@@ -42,6 +43,7 @@ import com.estebancoloradogonzalez.tension.data.local.entity.RoutineEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.RoutineVersionEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.SessionEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.SessionExerciseEntity
+import com.estebancoloradogonzalez.tension.data.local.entity.TreeStateEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.WeekDayEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.WeightRecordEntity
 
@@ -68,8 +70,9 @@ import com.estebancoloradogonzalez.tension.data.local.entity.WeightRecordEntity
         AlertEntity::class,
         DeloadEntity::class,
         DeloadFrozenVersionEntity::class,
+        TreeStateEntity::class,
     ],
-    version = 18,
+    version = 19,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -94,4 +97,5 @@ abstract class TensionDatabase : RoomDatabase() {
     abstract fun alertDao(): AlertDao
     abstract fun deloadDao(): DeloadDao
     abstract fun deloadFrozenVersionDao(): DeloadFrozenVersionDao
+    abstract fun treeStateDao(): TreeStateDao
 }

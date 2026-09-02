@@ -45,3 +45,13 @@ Tension/.idea/compiler.xml
 .claude/skills/
 # Método Ceiba - Metodología exportada (Claude Code)
 .ceiba-metodo/
+
+# Método Ceiba - Worktrees y script auxiliar
+ceiba-worktree.js
+/worktrees/
+.claude/log-agent-activity.ps1
+.claude/log-agent-activity.sh
+.claude/settings.json
+.github/hooks/agent-activity.json
+.github/log-agent-activity.ps1
+.github/log-agent-activity.sh

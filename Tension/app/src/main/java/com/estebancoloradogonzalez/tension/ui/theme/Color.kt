@@ -150,6 +150,20 @@ val ChartSeriesDark = listOf(
     Color(0xFFCE93D8),
 )
 
+// Semantic Domain Colors — Training Tree (B1, N1)
+// La forma del icono comunica la etapa; el color comunica la salud. En modo oscuro los dos
+// marrones se invierten a marrones claros: un marron oscuro sobre el fondo #1C1B1B no se lee.
+val TreeSeedLight = Color(0xFF857370)
+val TreeSeedDark = Color(0xFFA08C88)
+val TreeHealthyLight = Color(0xFF2E7D32)
+val TreeHealthyDark = Color(0xFF81C784)
+val TreeDryLight = Color(0xFF8D6E00)
+val TreeDryDark = Color(0xFFFFD54F)
+val TreeWitheringLight = Color(0xFF8D5524)
+val TreeWitheringDark = Color(0xFFD2A679)
+val TreeWitheredLight = Color(0xFF5D4037)
+val TreeWitheredDark = Color(0xFFA1887F)
+
 // Semantic Domain Colors — Insufficient Metric Data (G1, G2, G3)
 val MetricInsufficientLight = Color(0xFF857370)
 val MetricInsufficientDark = Color(0xFFA08C88)

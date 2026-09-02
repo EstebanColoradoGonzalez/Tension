@@ -102,6 +102,11 @@ data class TensionSemanticColors(
     val deloadActive: Color = Color.Unspecified,
     val chartSeries: List<Color> = emptyList(),
     val metricInsufficient: Color = Color.Unspecified,
+    val treeSeed: Color = Color.Unspecified,
+    val treeHealthy: Color = Color.Unspecified,
+    val treeDry: Color = Color.Unspecified,
+    val treeWithering: Color = Color.Unspecified,
+    val treeWithered: Color = Color.Unspecified,
 )
 
 private val LightSemanticColors = TensionSemanticColors(
@@ -127,6 +132,11 @@ private val LightSemanticColors = TensionSemanticColors(
     deloadActive = DeloadActiveLight,
     chartSeries = ChartSeriesLight,
     metricInsufficient = MetricInsufficientLight,
+    treeSeed = TreeSeedLight,
+    treeHealthy = TreeHealthyLight,
+    treeDry = TreeDryLight,
+    treeWithering = TreeWitheringLight,
+    treeWithered = TreeWitheredLight,
 )
 
 private val DarkSemanticColors = TensionSemanticColors(
@@ -152,6 +162,11 @@ private val DarkSemanticColors = TensionSemanticColors(
     deloadActive = DeloadActiveDark,
     chartSeries = ChartSeriesDark,
     metricInsufficient = MetricInsufficientDark,
+    treeSeed = TreeSeedDark,
+    treeHealthy = TreeHealthyDark,
+    treeDry = TreeDryDark,
+    treeWithering = TreeWitheringDark,
+    treeWithered = TreeWitheredDark,
 )
 
 val LocalTensionSemanticColors = staticCompositionLocalOf { TensionSemanticColors() }

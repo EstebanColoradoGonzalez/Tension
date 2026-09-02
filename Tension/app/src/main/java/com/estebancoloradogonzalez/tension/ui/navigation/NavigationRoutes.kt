@@ -30,6 +30,7 @@ object NavigationRoutes {
     const val EXPORT_BACKUP = "export-backup"
     const val IMPORT_BACKUP = "import-backup"
     const val SESSION_PREVIEW = "session-preview/{routineVersionId}/{routineName}/{versionNumber}"
+    const val TREE = "tree"
 
     fun exerciseDetailRoute(exerciseId: Long) = "exercise-detail/$exerciseId"
     fun exerciseHistoryRoute(exerciseId: Long) = "exercise-history/$exerciseId"

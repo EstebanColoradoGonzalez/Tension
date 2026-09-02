@@ -20,6 +20,7 @@ import com.estebancoloradogonzalez.tension.data.local.dao.RoutineDao
 import com.estebancoloradogonzalez.tension.data.local.dao.RoutineVersionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.SessionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.SessionExerciseDao
+import com.estebancoloradogonzalez.tension.data.local.dao.TreeStateDao
 import com.estebancoloradogonzalez.tension.data.local.dao.WeekDayDao
 import com.estebancoloradogonzalez.tension.data.local.dao.WeightRecordDao
 import com.estebancoloradogonzalez.tension.data.local.database.Migrations
@@ -149,5 +150,10 @@ object DatabaseModule {
     @Provides
     fun provideDeloadFrozenVersionDao(database: TensionDatabase): DeloadFrozenVersionDao {
         return database.deloadFrozenVersionDao()
+    }
+
+    @Provides
+    fun provideTreeStateDao(database: TensionDatabase): TreeStateDao {
+        return database.treeStateDao()
     }
 }

@@ -6,6 +6,8 @@ import com.estebancoloradogonzalez.tension.domain.model.DeloadState
 import com.estebancoloradogonzalez.tension.domain.model.NextSession
 import com.estebancoloradogonzalez.tension.domain.model.ReassignableRoutine
 import com.estebancoloradogonzalez.tension.domain.model.TodaySession
+import com.estebancoloradogonzalez.tension.domain.model.TreeGrowthStage
+import com.estebancoloradogonzalez.tension.domain.model.TreeState
 import com.estebancoloradogonzalez.tension.domain.model.UpcomingSession
 import com.estebancoloradogonzalez.tension.domain.model.WeekDay
 import com.estebancoloradogonzalez.tension.domain.usecase.alerts.GetActiveAlertCountUseCase
@@ -19,6 +21,7 @@ import com.estebancoloradogonzalez.tension.domain.usecase.session.SetTemporaryRo
 import com.estebancoloradogonzalez.tension.domain.usecase.session.SkipTodayUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.session.StartSessionUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.session.UndoSkipTodayUseCase
+import com.estebancoloradogonzalez.tension.domain.usecase.tree.GetTreeStateUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -27,6 +30,7 @@ import io.mockk.mockk
 import io.mockk.runs
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -36,6 +40,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -57,6 +62,7 @@ class HomeViewModelTest {
     private val clearTemporaryRoutineUseCase: ClearTemporaryRoutineUseCase = mockk()
     private val skipTodayUseCase: SkipTodayUseCase = mockk()
     private val undoSkipTodayUseCase: UndoSkipTodayUseCase = mockk()
+    private val getTreeStateUseCase: GetTreeStateUseCase = mockk()
 
     @Before
     fun setUp() {
@@ -65,6 +71,7 @@ class HomeViewModelTest {
         every { getActiveAlertCountUseCase() } returns flowOf(0)
         every { getReassignableRoutinesUseCase() } returns flowOf(reassignOptions())
         coEvery { getDeloadStateUseCase() } returns DeloadState.NoDeloadNeeded
+        every { getTreeStateUseCase() } returns flowOf(sproutTree())
     }
 
     @After
@@ -321,6 +328,72 @@ class HomeViewModelTest {
         coVerify { undoSkipTodayUseCase() }
     }
 
+    // CA-37.01 — La tarjeta de acceso refleja el estado actual del arbol
+
+    @Test
+    fun `tree state reaches the ui state`() = runTest {
+        every { getTodaySessionUseCase() } returns flowOf(regularTodaySession())
+        every { getActiveSessionUseCase() } returns flowOf(null)
+
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(TreeGrowthStage.SPROUT, state.treeState?.stage)
+        assertEquals(100, state.treeState?.healthScore)
+    }
+
+    // El arbol no viaja en el combine del estado del dia: si el copy no lo preservara, cada
+    // emision del dia lo borraria de la pantalla.
+
+    @Test
+    fun `tree state survives a later emission of the day state`() = runTest {
+        val todaySessions = MutableSharedFlow<TodaySession>(replay = 1)
+        todaySessions.tryEmit(regularTodaySession())
+        every { getTodaySessionUseCase() } returns todaySessions
+        every { getActiveSessionUseCase() } returns flowOf(null)
+
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+        assertNotNull(viewModel.uiState.value.treeState)
+
+        todaySessions.tryEmit(trainedTodaySession())
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(DayOutcome.TRAINED, state.dayOutcome)
+        assertEquals(TreeGrowthStage.SPROUT, state.treeState?.stage)
+    }
+
+    // CA-37.10 — Sin historial no hay conteo de dias que mostrar
+
+    @Test
+    fun `tree without history reports no elapsed days`() = runTest {
+        every { getTodaySessionUseCase() } returns flowOf(regularTodaySession())
+        every { getActiveSessionUseCase() } returns flowOf(null)
+        every { getTreeStateUseCase() } returns flowOf(seedTree())
+
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        val treeState = viewModel.uiState.value.treeState
+        assertEquals(TreeGrowthStage.SEED, treeState?.stage)
+        assertFalse(treeState?.hasHistory == true)
+        assertNull(treeState?.daysSinceLastSession)
+    }
+
+    private fun sproutTree() = TreeState(
+        stage = TreeGrowthStage.SPROUT,
+        healthScore = 100,
+        daysSinceLastSession = 0,
+    )
+
+    private fun seedTree() = TreeState(
+        stage = TreeGrowthStage.SEED,
+        healthScore = 100,
+        daysSinceLastSession = null,
+    )
+
     private fun createViewModel() = HomeViewModel(
         getTodaySessionUseCase = getTodaySessionUseCase,
         getActiveSessionUseCase = getActiveSessionUseCase,
@@ -333,6 +406,7 @@ class HomeViewModelTest {
         clearTemporaryRoutineUseCase = clearTemporaryRoutineUseCase,
         skipTodayUseCase = skipTodayUseCase,
         undoSkipTodayUseCase = undoSkipTodayUseCase,
+        getTreeStateUseCase = getTreeStateUseCase,
     )
 
     private fun regularTodaySession() = TodaySession(

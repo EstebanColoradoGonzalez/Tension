@@ -168,6 +168,28 @@ interface SessionDao {
     @Query("SELECT MIN(date) FROM session WHERE status IN ('COMPLETED', 'INCOMPLETE')")
     suspend fun getFirstSessionDate(): String?
 
+    /**
+     * Total de sesiones registradas, sin distinguir rutina.
+     *
+     * Cuenta el esfuerzo real: `COMPLETED` e `INCOMPLETE`, nunca `IN_PROGRESS`. Cerrar una
+     * sesión sin ninguna serie la descarta en lugar de persistirla, así que toda fila contada
+     * aquí implica al menos una serie registrada.
+     *
+     * Incluye las sesiones de descarga: una descarga es entrenamiento registrado.
+     */
+    @Query("SELECT COUNT(*) FROM session WHERE status IN ('COMPLETED', 'INCOMPLETE')")
+    suspend fun countClosedSessions(): Int
+
+    /**
+     * Fecha de la última sesión registrada, sin distinguir rutina.
+     *
+     * Es la contraparte **global** de [getLastSessionDateByRoutine], que filtra por rutina
+     * porque `ROUTINE_INACTIVITY` mide la inactividad de cada rutina por separado. Son medidas
+     * distintas a propósito y no deben acoplarse.
+     */
+    @Query("SELECT MAX(date) FROM session WHERE status IN ('COMPLETED', 'INCOMPLETE')")
+    suspend fun getLastClosedSessionDate(): String?
+
     /** Si el ejecutante ya cerró una sesión en [date]. Resuelve el día como entrenado. */
     @Query(
         """

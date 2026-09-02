@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Brote: de 1 a 9 sesiones. Tallo corto y dos hojas opuestas.
+    El color lo aporta Compose en tiempo de ejecución (fillColor blanco opaco).
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Tallo -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M11.2,8h1.6v13h-1.6z" />
+    <!-- Hoja izquierda -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M11.2,12.6C11.2,12.6 10.6,8.2 4.6,7.6C4.6,7.6 4.4,12.6 11.2,12.6z" />
+    <!-- Hoja derecha -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M12.8,10.6C12.8,10.6 13.4,5.4 19.4,4.8C19.4,4.8 19.6,10.6 12.8,10.6z" />
+    <!-- Línea de tierra -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M6,21h12v1.6h-12z" />
+</vector>

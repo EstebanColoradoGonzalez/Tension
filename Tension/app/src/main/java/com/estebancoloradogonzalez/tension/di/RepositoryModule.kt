@@ -8,6 +8,7 @@ import com.estebancoloradogonzalez.tension.data.repository.PlanRepositoryImpl
 import com.estebancoloradogonzalez.tension.data.repository.ProfileRepositoryImpl
 import com.estebancoloradogonzalez.tension.data.repository.RoutineRepositoryImpl
 import com.estebancoloradogonzalez.tension.data.repository.SessionRepositoryImpl
+import com.estebancoloradogonzalez.tension.data.repository.TreeRepositoryImpl
 import com.estebancoloradogonzalez.tension.data.repository.WeekDayRepositoryImpl
 import com.estebancoloradogonzalez.tension.domain.repository.AlertRepository
 import com.estebancoloradogonzalez.tension.domain.repository.BackupRepository
@@ -17,6 +18,7 @@ import com.estebancoloradogonzalez.tension.domain.repository.PlanRepository
 import com.estebancoloradogonzalez.tension.domain.repository.ProfileRepository
 import com.estebancoloradogonzalez.tension.domain.repository.RoutineRepository
 import com.estebancoloradogonzalez.tension.domain.repository.SessionRepository
+import com.estebancoloradogonzalez.tension.domain.repository.TreeRepository
 import com.estebancoloradogonzalez.tension.domain.repository.WeekDayRepository
 import dagger.Binds
 import dagger.Module
@@ -81,4 +83,10 @@ abstract class RepositoryModule {
     abstract fun bindWeekDayRepository(
         impl: WeekDayRepositoryImpl,
     ): WeekDayRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindTreeRepository(
+        impl: TreeRepositoryImpl,
+    ): TreeRepository
 }

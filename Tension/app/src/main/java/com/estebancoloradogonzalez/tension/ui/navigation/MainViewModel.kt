@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.estebancoloradogonzalez.tension.domain.usecase.profile.CheckProfileExistsUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.session.ResolveStaleSessionUseCase
+import com.estebancoloradogonzalez.tension.domain.usecase.tree.RecalculateTreeStateUseCase
 import com.estebancoloradogonzalez.tension.domain.util.CurrentDateProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -23,6 +24,7 @@ enum class StartDestination {
 class MainViewModel @Inject constructor(
     checkProfileExistsUseCase: CheckProfileExistsUseCase,
     private val resolveStaleSessionUseCase: ResolveStaleSessionUseCase,
+    private val recalculateTreeStateUseCase: RecalculateTreeStateUseCase,
     private val currentDateProvider: CurrentDateProvider,
 ) : ViewModel() {
 
@@ -35,6 +37,12 @@ class MainViewModel @Inject constructor(
             currentDateProvider.dateFlow().collect {
                 try {
                     resolveStaleSessionUseCase()
+                    // DESPUÉS del barrido, nunca antes, y por eso va aquí y no en un
+                    // observador aparte: el barrido cierra la sesión de ayer conservando su
+                    // fecha original. Recalcular primero leería una fecha de último
+                    // entrenamiento desactualizada y marchitaría el árbol de alguien que sí
+                    // entrenó. Si el barrido se mueve algún día, esto se mueve con él.
+                    recalculateTreeStateUseCase()
                 } catch (_: Exception) {
                     // El barrido es best-effort: si falla, la sesión sigue reanudable a mano.
                 }

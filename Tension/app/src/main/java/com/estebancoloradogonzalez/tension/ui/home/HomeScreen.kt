@@ -7,12 +7,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.Badge
@@ -46,9 +48,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.estebancoloradogonzalez.tension.R
 import com.estebancoloradogonzalez.tension.ui.components.EntityNameText
 import com.estebancoloradogonzalez.tension.ui.components.ReassignRoutineDialog
+import com.estebancoloradogonzalez.tension.ui.components.TreeIcon
+import com.estebancoloradogonzalez.tension.ui.components.treeCardMessageRes
 import com.estebancoloradogonzalez.tension.ui.components.weekDayName
 import com.estebancoloradogonzalez.tension.domain.model.DeloadHomeState
 import com.estebancoloradogonzalez.tension.domain.model.DayOutcome
+import com.estebancoloradogonzalez.tension.domain.model.TreeGrowthStage
 import com.estebancoloradogonzalez.tension.domain.model.UpcomingSession
 import com.estebancoloradogonzalez.tension.domain.model.WeekDay
 import com.estebancoloradogonzalez.tension.ui.theme.LocalTensionSemanticColors
@@ -59,6 +64,7 @@ fun HomeScreen(
     onNavigateToActiveSession: (Long) -> Unit,
     onNavigateToDeloadManagement: () -> Unit,
     onNavigateToPreview: (Long, String, Int) -> Unit,
+    onNavigateToTree: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -168,6 +174,16 @@ fun HomeScreen(
                         onNavigateToDeload = onNavigateToDeloadManagement,
                     )
                 }
+            }
+
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
+                TreeAccessCard(
+                    stage = uiState.treeState?.stage ?: TreeGrowthStage.SEED,
+                    healthScore = uiState.treeState?.healthScore ?: 0,
+                    hasHistory = uiState.treeState?.hasHistory == true,
+                    onClick = onNavigateToTree,
+                )
             }
 
             item {
@@ -605,6 +621,74 @@ private fun dayRoutineText(weekDay: WeekDay?, routineName: String): String {
         routineName
     } else {
         stringResource(R.string.session_day_routine_format, weekDayName(weekDay), routineName)
+    }
+}
+
+/**
+ * Acceso al arbol de entrenamiento.
+ *
+ * Se compone **siempre**: es la unica tarjeta de Inicio sin condicion de visibilidad, porque
+ * el arbol existe desde antes de la primera sesion, aunque sea como semilla.
+ *
+ * Reutiliza la forma de `RestDayCard` y `ResolvedDayCard` en lugar del contenedor primario de
+ * la tarjeta de sesion: su posicion debajo de esta ya le da la jerarquia subordinada que le
+ * corresponde, y competir en color la contradiria.
+ *
+ * **Es nativa de forma permanente.** No renderiza contenido web ni lo hara: cargar un WebView
+ * aqui penalizaria el arranque de Inicio.
+ */
+@Composable
+private fun TreeAccessCard(
+    stage: TreeGrowthStage,
+    healthScore: Int,
+    hasHistory: Boolean,
+    onClick: () -> Unit,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        ),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                // El area tactil cubre la fila entera, no solo el icono.
+                .heightIn(min = 48.dp)
+                .clickable(onClick = onClick)
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            TreeIcon(
+                stage = stage,
+                healthScore = healthScore,
+                hasHistory = hasHistory,
+                size = 48.dp,
+            )
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.tree_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = stringResource(treeCardMessageRes(healthScore, hasHistory)),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = stringResource(R.string.tree_open_description),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
 

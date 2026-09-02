@@ -6,6 +6,7 @@ import com.estebancoloradogonzalez.tension.domain.model.DayOutcome
 import com.estebancoloradogonzalez.tension.domain.model.NextSession
 import com.estebancoloradogonzalez.tension.domain.model.ReassignableRoutine
 import com.estebancoloradogonzalez.tension.domain.model.TodaySession
+import com.estebancoloradogonzalez.tension.domain.model.TreeState
 import com.estebancoloradogonzalez.tension.domain.model.UpcomingSession
 
 data class HomeUiState(
@@ -15,6 +16,8 @@ data class HomeUiState(
     val microcycleCount: Int = 0,
     val alertCount: Int = 0,
     val deloadState: DeloadHomeState? = null,
+    /** Estado del arbol. Nulo solo hasta la primera emision: la tarjeta se compone siempre. */
+    val treeState: TreeState? = null,
     val reassignOptions: List<ReassignableRoutine> = emptyList(),
     val isReassignDialogOpen: Boolean = false,
     val errorMessage: String? = null,

@@ -526,4 +526,38 @@
     <string name="settings_plateau_threshold_breakdown">Baja → %1$d · Media → %2$d · Alta →
         %3$d</string>
     <string name="settings_plateau_threshold_range">Rango permitido: %1$d a %2$d</string>
+
+    <!-- Training tree N1 (HU-37) -->
+    <string name="tree_title">Tu árbol</string>
+    <string name="tree_icon_description">Árbol de entrenamiento</string>
+    <string name="tree_open_description">Ver el árbol de entrenamiento</string>
+    <string name="tree_health_label">Salud</string>
+
+    <string name="tree_stage_seed">Semilla</string>
+    <string name="tree_stage_sprout">Brote</string>
+    <string name="tree_stage_young">Joven</string>
+    <string name="tree_stage_mature">Maduro</string>
+
+    <!-- Linea dinamica de la tarjeta de Inicio, por banda de salud -->
+    <string name="tree_card_seed">Aún no ha germinado</string>
+    <string name="tree_card_high">Está en su mejor momento</string>
+    <string name="tree_card_medium">Empieza a secarse</string>
+    <string name="tree_card_low">Se está marchitando</string>
+    <string name="tree_card_withered">Está marchito</string>
+
+    <!-- Mensaje contextual de la pantalla dedicada, por banda de salud -->
+    <string name="tree_message_seed">Registra tu primera sesión y tu árbol
+        germinará.</string>
+    <string name="tree_message_high">Vienes entrenando. Tu árbol lo refleja.</string>
+    <string name="tree_message_medium">Han pasado %1$d días. Tu árbol empieza a
+        secarse.</string>
+    <string name="tree_message_low">Han pasado %1$d días. Tu árbol se está
+        marchitando.</string>
+    <string name="tree_message_withered">Han pasado %1$d días. Tu árbol está
+        marchito. Una sesión basta para revivirlo.</string>
+
+    <!-- Linea de dias transcurridos. En Semilla no se muestra. -->
+    <string name="tree_last_session_today">Último entrenamiento: hoy</string>
+    <string name="tree_last_session_yesterday">Último entrenamiento: ayer</string>
+    <string name="tree_last_session_days">Último entrenamiento: hace %1$d días</string>
 </resources>

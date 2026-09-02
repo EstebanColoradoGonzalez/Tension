@@ -28,16 +28,35 @@ class BackupRepositoryImpl @Inject constructor(
 ) : BackupRepository {
 
     companion object {
-        const val SCHEMA_VERSION = 11
+        const val SCHEMA_VERSION = 12
+
+        /**
+         * Formato inmediatamente anterior, sin `tree_state`. Se acepta porque el arbol es
+         * enteramente derivable del historial: restaurar sin el nunca deja un estado
+         * invalido, y rechazarlo inutilizaria todo respaldo exportado hasta ahora.
+         */
+        private const val PREVIOUS_SCHEMA_VERSION = 11
         private const val LEGACY_SCHEMA_VERSION = 8
         const val APP_VERSION = "1.0"
 
         private val MODULE_CODE_TO_ROUTINE_ID = mapOf("A" to 1L, "B" to 2L, "C" to 3L)
 
+        /** Tabla que el formato anterior no traia. */
+        private const val TREE_STATE_TABLE = "tree_state"
+
+        private val ACCEPTED_SCHEMA_VERSIONS = setOf(
+            SCHEMA_VERSION,
+            PREVIOUS_SCHEMA_VERSION,
+            LEGACY_SCHEMA_VERSION,
+        )
+
         // INSERT order: parents first (FK dependencies satisfied)
         val TABLE_ORDER_INSERT = listOf(
             "profile",
             "rotation_state",
+            // tree_state no lleva FK: su lugar en el orden es indiferente para la
+            // integridad, y va junto a rotation_state por ser la otra tabla de fila unica.
+            "tree_state",
             "weight_record",
             "routine",
             // week_day y daily_routine_override llevan FK a routine y deben insertarse
@@ -168,7 +187,7 @@ class BackupRepositoryImpl @Inject constructor(
             )
         }
 
-        if (schemaVersion != SCHEMA_VERSION && schemaVersion != LEGACY_SCHEMA_VERSION) {
+        if (schemaVersion !in ACCEPTED_SCHEMA_VERSIONS) {
             return BackupValidationResult(
                 isValid = false,
                 metadata = null,
@@ -191,10 +210,10 @@ class BackupRepositoryImpl @Inject constructor(
         }
 
         val dataJson = parsed.getJSONObject("data")
-        val requiredTables = if (schemaVersion == LEGACY_SCHEMA_VERSION) {
-            LEGACY_TABLE_ORDER
-        } else {
-            TABLE_ORDER_INSERT
+        val requiredTables = when (schemaVersion) {
+            LEGACY_SCHEMA_VERSION -> LEGACY_TABLE_ORDER
+            PREVIOUS_SCHEMA_VERSION -> TABLE_ORDER_INSERT - TREE_STATE_TABLE
+            else -> TABLE_ORDER_INSERT
         }
         for (table in requiredTables) {
             if (!dataJson.has(table)) {
@@ -241,7 +260,10 @@ class BackupRepositoryImpl @Inject constructor(
             }
 
             for (table in TABLE_ORDER_INSERT) {
-                val rows = dataJson.getJSONArray(table)
+                // Un respaldo del formato anterior no trae tree_state. Leerlo con
+                // getJSONArray abortaria la restauracion entera por una tabla que el
+                // recalculo posterior reconstruye sola.
+                val rows = dataJson.optJSONArray(table) ?: JSONArray()
                 // A backup file carries the columns of the schema that produced it. Keys
                 // that no longer exist are dropped instead of handed to insert(), which
                 // would fail the whole restore with "no column named ...". The only such
@@ -494,6 +516,9 @@ class BackupRepositoryImpl @Inject constructor(
         result.put("week_day", buildLegacyWeekDays(routines))
         result.put("daily_routine_override", JSONArray())
         result.put("day_skip", JSONArray())
+        // La importacion borra e reinserta cada tabla de TABLE_ORDER_INSERT: omitirla la
+        // dejaria vacia en silencio. Se repone vacia y el recalculo posterior la llena.
+        result.put("tree_state", JSONArray())
 
         return result
     }

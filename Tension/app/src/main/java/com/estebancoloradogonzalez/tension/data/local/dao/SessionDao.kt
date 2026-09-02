@@ -12,6 +12,8 @@ data class ActiveSessionInfo(
     val versionNumber: Int,
     val totalExercises: Int,
     val completedExercises: Int,
+    /** Series registradas. Cero significa que la sesión puede cancelarse sin cerrarla. */
+    val registeredSets: Int,
 )
 
 data class SessionSummaryInfo(
@@ -42,6 +44,15 @@ interface SessionDao {
     @Query("SELECT * FROM session WHERE status = 'IN_PROGRESS' LIMIT 1")
     fun getActiveSession(): Flow<SessionEntity?>
 
+    /**
+     * La sesión en curso que quedó de un día anterior, si la hay.
+     *
+     * Pasada la medianoche ya no puede continuarse: pertenece a un día que terminó, y mientras
+     * siga viva tapa la propuesta del día nuevo con la tarjeta de reanudar.
+     */
+    @Query("SELECT id FROM session WHERE status = 'IN_PROGRESS' AND date < :today LIMIT 1")
+    suspend fun getStaleActiveSessionId(today: String): Long?
+
     @Query("SELECT * FROM session WHERE id = :sessionId")
     fun getById(sessionId: Long): Flow<SessionEntity?>
 
@@ -55,7 +66,11 @@ interface SessionDao {
             (SELECT COUNT(*) FROM session_exercise se2
              WHERE se2.session_id = s.id
                AND se2.is_finalized = 1
-            ) AS completedExercises
+            ) AS completedExercises,
+            (SELECT COUNT(*) FROM exercise_set es
+             INNER JOIN session_exercise se3 ON es.session_exercise_id = se3.id
+             WHERE se3.session_id = s.id
+            ) AS registeredSets
         FROM session s
         INNER JOIN routine_version rv ON s.routine_version_id = rv.id
         INNER JOIN routine r ON rv.routine_id = r.id
@@ -152,6 +167,27 @@ interface SessionDao {
 
     @Query("SELECT MIN(date) FROM session WHERE status IN ('COMPLETED', 'INCOMPLETE')")
     suspend fun getFirstSessionDate(): String?
+
+    /** Si el ejecutante ya cerró una sesión en [date]. Resuelve el día como entrenado. */
+    @Query(
+        """
+        SELECT EXISTS(
+            SELECT 1 FROM session
+            WHERE status IN ('COMPLETED', 'INCOMPLETE') AND date = :date
+        )
+        """,
+    )
+    fun hasClosedSessionOn(date: String): Flow<Boolean>
+
+    /**
+     * Borra la sesión. `session_exercise` y `exercise_set` caen por CASCADE.
+     *
+     * Solo se usa para descartar una sesión que se cierra sin ninguna serie registrada: no
+     * hubo entrenamiento, y persistirla como INCOMPLETE la haría contar en la adherencia y
+     * silenciaría la alerta de inactividad de su rutina.
+     */
+    @Query("DELETE FROM session WHERE id = :sessionId")
+    suspend fun delete(sessionId: Long)
 
     @Query(
         """

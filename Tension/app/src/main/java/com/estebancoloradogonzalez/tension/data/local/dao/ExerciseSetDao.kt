@@ -10,6 +10,17 @@ import com.estebancoloradogonzalez.tension.domain.model.SetTonnageData
 @Dao
 interface ExerciseSetDao {
 
+    /** Series registradas en la sesión. Cero significa que no se entrenó nada. */
+    @Query(
+        """
+        SELECT COUNT(*)
+        FROM exercise_set es
+        INNER JOIN session_exercise se ON es.session_exercise_id = se.id
+        WHERE se.session_id = :sessionId
+        """,
+    )
+    suspend fun countSetsInSession(sessionId: Long): Int
+
     @Insert
     suspend fun insert(set: ExerciseSetEntity): Long
 

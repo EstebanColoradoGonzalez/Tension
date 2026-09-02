@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.estebancoloradogonzalez.tension.data.local.dao.AlertDao
 import com.estebancoloradogonzalez.tension.data.local.dao.DailyRoutineOverrideDao
+import com.estebancoloradogonzalez.tension.data.local.dao.DaySkipDao
 import com.estebancoloradogonzalez.tension.data.local.dao.DeloadDao
 import com.estebancoloradogonzalez.tension.data.local.dao.DeloadFrozenVersionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.EquipmentTypeDao
@@ -88,6 +89,11 @@ object DatabaseModule {
     @Provides
     fun provideDailyRoutineOverrideDao(database: TensionDatabase): DailyRoutineOverrideDao {
         return database.dailyRoutineOverrideDao()
+    }
+
+    @Provides
+    fun provideDaySkipDao(database: TensionDatabase): DaySkipDao {
+        return database.daySkipDao()
     }
 
     @Provides

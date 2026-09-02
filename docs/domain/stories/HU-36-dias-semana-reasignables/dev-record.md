@@ -158,3 +158,68 @@ Revisión del ejecutante sobre la app. Se corrigió en código y documentación 
 | Modificado | `test/…/data/local/seed/DefaultPlanTest.kt` | 2 casos que fijan el conteo por slot del plan predeterminado |
 | Modificado | `test/…/domain/usecase/session/GetReassignableRoutinesUseCaseTest.kt`, `test/…/ui/home/HomeViewModelTest.kt` | Adaptados a `weekDays` |
 | Modificado | `docs/architecture/*.md` | `D6-T2`, `ERR_WEEK_DAYS_DELOAD_ACTIVE`, D-11 y D-12, cardinalidad y conteo por slot |
+
+---
+
+### Ajuste posterior: una sesión por día (2026-09-01)
+
+Reportado por el ejecutante: al cerrar la sesión del día, Inicio volvía a proponer **la misma**, de modo que podía ejecutarse varias veces la misma jornada. Y no había forma de decir «hoy no entreno» salvo iniciar una sesión y cerrarla vacía.
+
+**Validación previa, con un hallazgo que contradecía la hipótesis:**
+
+| Suposición | Resultado |
+|---|---|
+| Cancelar = iniciar y cerrar sin ejercicios → `INCOMPLETE` | ✅ Confirmado |
+| Una sesión cerrada sin ejercicios no queda en el historial | ❌ **Falso.** `getClosedSessionsWithSummary` filtra solo por estado, no por series: aparecía con tonelaje 0 |
+| — | ⚠️ **No previsto:** esa fila contaba en `countSessionsInWeek` (**subiendo la adherencia**) y actualizaba `getLastSessionDateByRoutine` (**silenciando `ROUTINE_INACTIVITY`**). Cancelar un día premiaba en las métricas como si se hubiera entrenado |
+
+**Lo implementado:**
+
+- **El día se resuelve una sola vez** (D-13). Una sesión cerrada con la fecha de hoy, o una fila en `day_skip`, dejan el día resuelto. Resuelto, Inicio presenta la sesión del **siguiente día con rutina** —saltando los de descanso— con el inicio **deshabilitado** y la indicación de cuándo estará disponible. Ni la reasignación temporal ni la omisión se ofrecen entonces: serían la puerta trasera para una segunda sesión. El preview aplica el mismo bloqueo.
+- **Acción explícita «Hoy no entreno»** (`B1-T5`), reversible con «Sí voy a entrenar» (`B1-T6`) mientras siga siendo hoy. **No crea sesión**: omitir un día es exactamente no haber entrenado.
+- **La sesión vacía se descarta** (D-14). Cerrar sin ninguna serie borra la sesión en lugar de guardarla como `INCOMPLETE`, registra el día como omitido y **no avanza la rotación**. Con al menos una serie, el comportamiento es el de siempre. El diálogo de cierre lo anuncia con su propio mensaje en vez de prometer que «se guardará como incompleta».
+- **`closeSession` devuelve `SessionCloseOutcome`.** Sin ese dato la app habría navegado al resumen de una sesión recién borrada — un crash que la implementación inicial tenía y se detectó al revisar el cableado de navegación. Con `DISCARDED` vuelve a Inicio.
+- **La rotación sigue intacta.** `RotationResolver.advanceRotation` no cambió; el descarte y la omisión simplemente no la alcanzan, porque no hay sesión que contar.
+
+**Esquema v17 → v18** con la tabla `day_skip`, sin migración, por ADR-019. Respaldo `SCHEMA_VERSION` 10 → 11.
+
+**Verificación:** `./gradlew build` BUILD SUCCESSFUL · **649 tests · 0 fallos** en debug y release (625 → 649) · Lint 0 errores, 95 warnings, ninguno nuevo.
+
+| Acción | Archivo | Descripción |
+|--------|---------|-------------|
+| Creado | `data/local/entity/DaySkipEntity.kt` + `data/local/dao/DaySkipDao.kt` | Tabla de fila única con la fecha omitida |
+| Creado | `domain/model/DayOutcome.kt`, `UpcomingSession.kt`, `SessionCloseOutcome.kt` | Estado del día, propuesta no iniciable y resultado del cierre |
+| Creado | `domain/rules/DayResolutionRule.kt` | Regla pura: entrenado, omitido o abierto |
+| Creado | `domain/rules/NextTrainingDayRule.kt` | Regla pura: siguiente día con rutina, saltando descansos |
+| Creado | `domain/usecase/session/SkipTodayUseCase.kt` + `UndoSkipTodayUseCase.kt` | Omitir y deshacer; rechaza con sesión en curso |
+| Creado | 4 suites de test | `DayResolutionRuleTest` (5), `NextTrainingDayRuleTest` (7), `SkipTodayUseCaseTest` (3), `UndoSkipTodayUseCaseTest` (1) |
+| Modificado | `data/repository/SessionRepositoryImpl.kt` | `getTodaySession` resuelve el día antes de proponer; `closeSession` descarta la sesión vacía y devuelve su resultado; `skipToday`/`undoSkipToday` |
+| Modificado | `data/local/dao/SessionDao.kt`, `ExerciseSetDao.kt` | `hasClosedSessionOn`, `delete`, `countSetsInSession` |
+| Modificado | `ui/home/*`, `ui/preview/*`, `ui/session/*` | Tarjeta de día resuelto, acción de omitir, bloqueo del preview, diálogo de cierre con mensaje de descarte |
+| Modificado | `test/…/HomeViewModelTest.kt`, `CloseSessionUseCaseTest.kt` | 6 casos nuevos del día resuelto y del resultado del cierre |
+| Modificado | `docs/architecture/*.md` | `day_skip`, `B1-T5`, `B1-T6`, `ERR_SKIP_SESSION_ACTIVE`, D-13 y D-14, ADR-019 ampliado |
+
+#### Revisión del ajuste: cerrar y cancelar dejan de ser lo mismo (2026-09-01)
+
+El descarte automático al cerrar una sesión vacía se sustituye por una frontera explícita, a petición del ejecutante.
+
+- **Cerrar exige al menos una serie.** Sin ninguna, el botón de confirmar de E4 queda deshabilitado con su motivo y la sesión **permanece `IN_PROGRESS`**: se puede salir y reanudar. Guarda equivalente en la capa de datos.
+- **Cancelar el día es la única vía de "hoy no entreno"**, y ahora se ofrece **también con una sesión en curso** — abrir la sesión y no entrenar nada es justo el caso que hay que poder cancelar. Descarta esa sesión vacía al hacerlo.
+- **La frontera es el primer `exercise_set`.** Con una serie registrada la cancelación se muestra **deshabilitada**, no ausente, indicando que la salida es reanudar y cerrar como incompleta. Es una excepción deliberada al criterio de "no existe en lugar de existir deshabilitado" de esta historia: aquí el estado deshabilitado *es* la instrucción.
+- **`SessionCloseOutcome` se retira.** Existía para distinguir la sesión guardada de la descartada; sin descarte al cerrar, todo cierre registra, y la navegación al resumen vuelve a ser incondicional.
+- `ActiveSession` gana `registeredSets`, que es lo que habilita o bloquea la cancelación en Inicio sin consultas extra.
+
+**Verificación:** `./gradlew build` BUILD SUCCESSFUL · **652 tests · 0 fallos** en debug y release · Lint 0 errores.
+
+#### Cierre automático al cambiar el día (2026-09-01)
+
+Pedido: pasada la medianoche, un día sin entrenar debe darse por no entrenado y proponerse el siguiente; y una sesión que quedó abierta debe cerrarse sola como incompleta.
+
+**Hallazgo al validar: la mitad ya funcionaba.** `getTodaySession` cuelga de un flujo de fecha que reemite al cruzar la medianoche, así que el día nuevo ya proponía su sesión. Lo que **no** funcionaba es que la sesión abierta de ayer seguía viva y tapaba esa propuesta con la tarjeta de reanudar. Ese era el trabajo real.
+
+- **`ResolveStaleSessionUseCase`** resuelve la sesión en curso cuya fecha es anterior a hoy: la cierra con el protocolo completo si tiene series —queda incompleta, conservando su fecha original— y la descarta si no tiene ninguna.
+- **`CurrentDateProvider`** extrae el ticker de medianoche que vivía privado en `SessionRepositoryImpl` y lo comparte: la determinación de la sesión y el barrido dependen del mismo reloj. Su primera emisión es inmediata, de modo que recolectarlo desde `MainViewModel` cubre el arranque de la app y el cambio de día con una sola suscripción.
+- **El día no entrenado no deja registro** (D-15, decidido con el PO). `day_skip` sigue siendo fila única del día en curso. La ausencia de sesión ya es lo que leen el historial, la adherencia y la alerta de inactividad; una tabla de días omitidos no tendría consumidor.
+- **Limitación declarada:** con la app cerrada no corre nada. No se añade un worker en segundo plano — poco fiable con Doze y sin efecto observable, porque el ejecutante solo ve la app cuando la abre.
+
+**Verificación:** `./gradlew build` BUILD SUCCESSFUL · **656 tests · 0 fallos** en debug y release · Lint 0 errores.

@@ -151,6 +151,7 @@ fun SessionPreviewScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp),
+                    enabled = !uiState.isDayResolved,
                 ) {
                     Text(text = stringResource(R.string.preview_start_session))
                 }

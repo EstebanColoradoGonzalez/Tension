@@ -96,7 +96,8 @@ class SessionPreviewViewModel @Inject constructor(
                         routineVersionId = todaySession.session?.routineVersionId
                             ?: current.routineVersionId,
                         isTemporaryOverride = todaySession.isTemporaryOverride,
-                        canReassign = !hasActiveSession,
+                        isDayResolved = todaySession.isDayResolved,
+                        canReassign = !hasActiveSession && !todaySession.isDayResolved,
                         reassignOptions = reassignOptions,
                     )
                 }
@@ -172,6 +173,9 @@ class SessionPreviewViewModel @Inject constructor(
         todaySession.session?.routineVersionId ?: initialRoutineVersionId
 
     fun startSession() {
+        // El día resuelto bloquea también aquí: si no, el preview sería la puerta trasera
+        // para ejecutar una segunda sesión el mismo día.
+        if (_uiState.value.isDayResolved) return
         val routineVersionId = _uiState.value.routineVersionId
         viewModelScope.launch {
             try {

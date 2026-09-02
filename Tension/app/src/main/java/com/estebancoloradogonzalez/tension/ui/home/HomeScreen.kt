@@ -48,6 +48,8 @@ import com.estebancoloradogonzalez.tension.ui.components.EntityNameText
 import com.estebancoloradogonzalez.tension.ui.components.ReassignRoutineDialog
 import com.estebancoloradogonzalez.tension.ui.components.weekDayName
 import com.estebancoloradogonzalez.tension.domain.model.DeloadHomeState
+import com.estebancoloradogonzalez.tension.domain.model.DayOutcome
+import com.estebancoloradogonzalez.tension.domain.model.UpcomingSession
 import com.estebancoloradogonzalez.tension.domain.model.WeekDay
 import com.estebancoloradogonzalez.tension.ui.theme.LocalTensionSemanticColors
 
@@ -97,9 +99,12 @@ fun HomeScreen(
                         versionNumber = uiState.activeSession?.versionNumber ?: 0,
                         completedExercises = uiState.activeSession?.completedExercises ?: 0,
                         totalExercises = uiState.activeSession?.totalExercises ?: 0,
+                        showSkipToday = uiState.showSkipToday,
+                        canSkipToday = uiState.canSkipToday,
                         onResume = {
                             uiState.activeSession?.let { viewModel.resumeSession(it.sessionId) }
                         },
+                        onSkipToday = { viewModel.skipToday() },
                     )
                 }
             }
@@ -114,9 +119,12 @@ fun HomeScreen(
                         isLoading = uiState.isLoading,
                         isTemporaryOverride = uiState.isTemporaryOverride,
                         canReassign = uiState.canReassign,
+                        showSkipToday = uiState.showSkipToday,
+                        canSkipToday = uiState.canSkipToday,
                         onStartSession = { viewModel.startSession() },
                         onReassign = { viewModel.openReassignDialog() },
                         onUndoReassign = { viewModel.undoReassign() },
+                        onSkipToday = { viewModel.skipToday() },
                         onCardClick = {
                             uiState.nextSession?.let {
                                 onNavigateToPreview(
@@ -137,6 +145,17 @@ fun HomeScreen(
                         weekDay = uiState.todaySession?.weekDay,
                         canReassign = uiState.canReassign,
                         onReassign = { viewModel.openReassignDialog() },
+                    )
+                }
+            }
+
+            if (uiState.showResolvedCard) {
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    ResolvedDayCard(
+                        outcome = uiState.dayOutcome,
+                        upcoming = uiState.upcoming,
+                        onUndoSkip = { viewModel.undoSkipToday() },
                     )
                 }
             }
@@ -223,7 +242,10 @@ private fun ResumeSessionCard(
     versionNumber: Int,
     completedExercises: Int,
     totalExercises: Int,
+    showSkipToday: Boolean,
+    canSkipToday: Boolean,
     onResume: () -> Unit,
+    onSkipToday: () -> Unit,
 ) {
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
@@ -278,7 +300,44 @@ private fun ResumeSessionCard(
             ) {
                 Text(text = stringResource(R.string.home_resume_session))
             }
+
+            if (showSkipToday) {
+                SkipTodayAction(
+                    enabled = canSkipToday,
+                    onSkipToday = onSkipToday,
+                    contentColor = Color(0xFF410002),
+                )
+            }
         }
+    }
+}
+
+/**
+ * Cancelar el día. Deshabilitada en cuanto hay una serie registrada: entonces la salida es
+ * reanudar la sesión y cerrarla como incompleta, y el texto de apoyo lo dice.
+ */
+@Composable
+private fun SkipTodayAction(
+    enabled: Boolean,
+    onSkipToday: () -> Unit,
+    contentColor: Color = MaterialTheme.colorScheme.primary,
+) {
+    TextButton(
+        onClick = onSkipToday,
+        enabled = enabled,
+        modifier = Modifier.height(48.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.home_skip_today),
+            color = if (enabled) contentColor else MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+    if (!enabled) {
+        Text(
+            text = stringResource(R.string.home_skip_blocked),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
@@ -298,9 +357,12 @@ private fun NextSessionCard(
     isLoading: Boolean,
     isTemporaryOverride: Boolean,
     canReassign: Boolean,
+    showSkipToday: Boolean,
+    canSkipToday: Boolean,
     onStartSession: () -> Unit,
     onReassign: () -> Unit,
     onUndoReassign: () -> Unit,
+    onSkipToday: () -> Unit,
     onCardClick: () -> Unit,
 ) {
     Card(
@@ -369,6 +431,110 @@ private fun NextSessionCard(
                         } else {
                             stringResource(R.string.home_reassign_action)
                         },
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            }
+
+            if (showSkipToday) {
+                SkipTodayAction(enabled = canSkipToday, onSkipToday = onSkipToday)
+            }
+        }
+    }
+}
+
+/**
+ * El día ya se resolvió: se entrenó o se declaró que no se entrena.
+ *
+ * Presenta la sesión del siguiente día **sin dejar iniciarla**. Es lo que impide ejecutar
+ * varias sesiones el mismo día, y la razón de que el botón se muestre deshabilitado en lugar
+ * de ausente: lo que hay que comunicar no es que no exista, sino cuándo estará disponible.
+ */
+@Composable
+private fun ResolvedDayCard(
+    outcome: DayOutcome?,
+    upcoming: UpcomingSession?,
+    onUndoSkip: () -> Unit,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        ),
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = if (outcome == DayOutcome.SKIPPED) {
+                    stringResource(R.string.home_day_skipped_title)
+                } else {
+                    stringResource(R.string.home_day_trained_title)
+                },
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+
+            if (outcome == DayOutcome.SKIPPED) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = stringResource(R.string.home_day_skipped_body),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            Spacer(modifier = Modifier.height(12.dp))
+
+            if (upcoming == null) {
+                Text(
+                    text = stringResource(R.string.home_upcoming_none),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            } else {
+                Text(
+                    text = stringResource(R.string.home_upcoming_label),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                EntityNameText(
+                    text = stringResource(
+                        R.string.session_day_routine_format,
+                        weekDayName(upcoming.weekDay),
+                        upcoming.routineName,
+                    ),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Button(
+                    onClick = { },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = false,
+                ) {
+                    Text(text = stringResource(R.string.home_start_session))
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = stringResource(
+                        R.string.home_upcoming_available,
+                        weekDayName(upcoming.weekDay),
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            if (outcome == DayOutcome.SKIPPED) {
+                TextButton(
+                    onClick = onUndoSkip,
+                    modifier = Modifier.height(48.dp),
+                ) {
+                    Text(
+                        text = stringResource(R.string.home_skip_undo),
                         color = MaterialTheme.colorScheme.primary,
                     )
                 }

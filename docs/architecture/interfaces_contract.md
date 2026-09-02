@@ -66,6 +66,7 @@
 - **Tipo de Trigger (Entrada):** `Acción del ejecutante: toca el botón "Iniciar Sesión" en la vista B1 (Home). Solo disponible si no hay sesión IN_PROGRESS existente y si el día de hoy tiene rutina resuelta.`
 - **Descripción:** El sistema determina la rutina por el **día de la semana** — `week_day.routine_id` del día de hoy, sustituido por `daily_routine_override.routine_id` si existe una reasignación cuya fecha es hoy (`B1-T3`) —, resuelve su versión vigente (o la congelada si hay descarga activa), crea una nueva sesión con status `IN_PROGRESS`, crea una fila `session_exercise` por cada slot del plan de la rutina-versión asignada con el ejercicio primario de cada slot, y navega a E1.
 - **Determinación sin propuesta:** si el día no tiene rutina asignada y no hay reasignación vigente, B1 presenta la tarjeta de **día de descanso** en lugar del botón de inicio, con la acción de reasignación como única vía para entrenar (`B1-T3`).
+- **Día ya resuelto:** si existe una sesión cerrada con la fecha de hoy o el día está registrado en `day_skip`, B1 **no ofrece nada iniciable**. Presenta la sesión del siguiente día con rutina —saltando los de descanso— con el botón de inicio deshabilitado y la indicación de cuándo estará disponible. Ni el inicio, ni la reasignación temporal (`B1-T3`), ni la omisión (`B1-T5`) se ofrecen: es lo que impide ejecutar varias sesiones el mismo día. El preview (B2) aplica el mismo bloqueo.
 - **Frontera con la rotación:** la reasignación se agota en la determinación. El inicio de sesión no distingue si la rutina vino del día o de la reasignación, y `rotation_state` no participa en esta resolución — su avance ocurre íntegramente en `E4-T1`.
 
 **Payload / Parámetros (Input):**
@@ -169,6 +170,96 @@
   "week_day": "TEXT // Día de hoy",
   "routine_id": "INTEGER | null // Rutina permanente del día; null si es día sin rutina asignada",
   "is_temporary_override": 0,
+  "navigation": "ninguna"
+}
+```
+
+---
+
+#### `B1-T5`: Omitir el Día
+
+- **Tipo de Trigger (Entrada):** `Acción del ejecutante: toca "Hoy no entreno" en B1. Se muestra mientras el día no esté resuelto, tanto en la tarjeta de sesión propuesta como en la de reanudar sesión.`
+- **Descripción:** El ejecutante declara que hoy no entrena. El sistema registra la fecha en `day_skip` (fila única) y el día queda resuelto: B1 pasa a informar qué toca el siguiente día con rutina, sin permitir iniciarlo.
+- **Es la única forma de cancelar el día.** Si hay una sesión `IN_PROGRESS` **sin series**, la acción la descarta: se abrió y no se entrenó nada, y dejarla viva bloquearía el inicio de las siguientes.
+- **Se bloquea con la primera serie.** La acción se presenta **deshabilitada** —no ausente— en cuanto la sesión tiene al menos una fila en `exercise_set`, indicando que la salida es reanudar y cerrar como `INCOMPLETE`. A partir de ahí hubo entrenamiento real y cancelarlo lo borraría.
+- **No crea sesión.** Cancelar un día es exactamente no haber entrenado: no aparece en el historial, no cuenta en `countSessionsInWeek` y no actualiza la última fecha de ejecución de ninguna rutina.
+- **La rotación no se toca.** No hubo sesión, así que `rotation_state` no avanza y el conteo de microciclos no cambia.
+- **Caducidad:** la omisión solo se honra el día de su fecha. Al cambiar el día deja de aplicar sin borrado programado, igual que la reasignación temporal.
+
+**Payload / Parámetros (Input):**
+
+```json
+{}
+```
+
+**Respuesta / Salida (Output Esperado):**
+
+- **Estado de Éxito:** `day_skip con date = hoy. La sesión IN_PROGRESS sin series, si la había, se borra. No se crea ninguna. rotation_state NO se modifica.`
+
+```json
+{
+  "week_day": "TEXT // Día de hoy",
+  "day_outcome": "SKIPPED",
+  "upcoming_week_day": "TEXT // Siguiente día con rutina, saltando los de descanso",
+  "upcoming_routine_name": "TEXT",
+  "navigation": "ninguna"
+}
+```
+
+- **Estado de Error:** `ERR_SKIP_SESSION_HAS_SETS` — se intenta cancelar el día con series ya registradas. Esa sesión se resuelve cerrándola.
+
+---
+
+#### `B1-T7`: Resolver la Sesión del Día Anterior (automático)
+
+- **Tipo de Trigger (Entrada):** `Automático: al arrancar la aplicación y al cruzar la medianoche local con la aplicación abierta. Sin intervención del ejecutante.`
+- **Descripción:** Una sesión `IN_PROGRESS` cuya `date` es anterior a hoy pertenece a un día que terminó y no puede continuarse; mientras siga viva tapa la propuesta del día nuevo con la tarjeta de reanudar. El sistema hace por el ejecutante lo que él habría hecho:
+  - **Con al menos una serie registrada:** se ejecuta el protocolo completo de `E4-T1` y la sesión queda `INCOMPLETE`. Conserva su `date` original — el día que sí se entrenó —, de modo que la adherencia la cuenta donde corresponde y la rotación avanza como en cualquier cierre.
+  - **Sin ninguna serie:** se borra. No hubo entrenamiento, así que no llega al historial, no cuenta como adherencia y la rotación no avanza.
+- **El día no entrenado no deja registro.** Su ausencia de sesión ya es lo que leen el historial, la adherencia (`countSessionsInWeek`) y la alerta de inactividad (`ROUTINE_INACTIVITY`). No se escribe nada en `day_skip` para días pasados: esa tabla es de fila única y solo describe el día en curso.
+- **Limitación declarada:** con la aplicación cerrada no se ejecuta nada. Android no ofrece un temporizador fiable en segundo plano para esto y no se añade uno: el barrido ocurre en cuanto la aplicación vuelve a abrirse, y el resultado observable es el mismo porque el ejecutante solo ve la aplicación cuando la abre.
+
+**Payload / Parámetros (Input):**
+
+```json
+{}
+```
+
+**Respuesta / Salida (Output Esperado):**
+
+- **Estado de Éxito:** `Ninguna sesión IN_PROGRESS de un día anterior. B1 propone la sesión del día en curso.`
+
+```json
+{
+  "resolved_session_id": "INTEGER | null // Sesión resuelta, o null si no había ninguna",
+  "resolution": "TEXT | null // 'CLOSED_AS_INCOMPLETE' o 'DISCARDED'",
+  "navigation": "ninguna"
+}
+```
+
+- **Modo de fallo:** el barrido es *best-effort*. Si falla, la sesión sigue en curso y el ejecutante puede reanudarla y cerrarla a mano; no se interrumpe el arranque.
+
+---
+
+#### `B1-T6`: Deshacer la Omisión del Día
+
+- **Tipo de Trigger (Entrada):** `Acción del ejecutante: toca "Sí voy a entrenar" en la tarjeta del día resuelto de B1. Visible solo cuando el día se resolvió por omisión, no por haber entrenado.`
+- **Descripción:** Borra la fila de `day_skip` y el día vuelve a proponer su sesión. No existe contrapartida para un día resuelto por entrenamiento: una sesión cerrada no se reabre.
+
+**Payload / Parámetros (Input):**
+
+```json
+{}
+```
+
+**Respuesta / Salida (Output Esperado):**
+
+- **Estado de Éxito:** `day_skip vacía. B1 vuelve a proponer la sesión del día.`
+
+```json
+{
+  "week_day": "TEXT // Día de hoy",
+  "day_outcome": null,
   "navigation": "ninguna"
 }
 ```
@@ -589,7 +680,8 @@
 
 #### `E4-T1`: Cerrar Sesión
 
-- **Tipo de Trigger (Entrada):** `Acción del ejecutante: confirma el cierre en el diálogo E4 (Confirmación de Cierre de Sesión).`
+- **Tipo de Trigger (Entrada):** `Acción del ejecutante: confirma el cierre en el diálogo E4 (Confirmación de Cierre de Sesión). La confirmación está deshabilitada mientras la sesión no tenga ninguna serie registrada.`
+- **Precondición — al menos una serie:** cerrar da por terminado lo entrenado, y sin ninguna fila en `exercise_set` no hay nada que terminar. La sesión permanece `IN_PROGRESS` y es reanudable; para resolver el día sin entrenar, la vía es `B1-T5`.
 - **Descripción:** El sistema ejecuta el protocolo de cierre de sesión: (1) finaliza todos los `session_exercise` no finalizados, (2) calcula tonelaje, (3) ejecuta el motor de reglas por cada ejercicio (comparación histórica, clasificación de progresión, actualización de `exercise_progression`, detección de mesetas y alertas), (4) actualiza `rotation_state`, (5) determina el status de sesión, (6) navega a E5.
 
 **Payload / Parámetros (Input):**
@@ -1334,6 +1426,8 @@ Los valores viven en un único punto del código, `AlertThresholdRule`. Esta tab
 | `ERR_VALIDATION_PROFILE` | Peso o altura ≤ 0, o nivel de experiencia no reconocido | Mostrar error inline bajo el campo afectado. |
 | `ERR_SESSION_ALREADY_ACTIVE` | Se intenta iniciar una sesión cuando ya existe una `IN_PROGRESS` | Mostrar la tarjeta "Reanudar Sesión" en B1. Deshabilitar "Iniciar Sesión". |
 | `ERR_REASSIGN_SESSION_ACTIVE` | Se intenta reasignar temporalmente la rutina (`B1-T3`) con una sesión `IN_PROGRESS` | La acción no se compone con sesión activa: B1 muestra "Reanudar Sesión", que no la aloja, y E1 no la ofrece. Si llega a la capa de datos, mostrar Snackbar: la rutina queda fijada al iniciar la sesión. |
+| `ERR_SKIP_SESSION_HAS_SETS` | Se intenta cancelar el día (`B1-T5`) con al menos una serie registrada | B1 ya presenta la acción deshabilitada con el motivo. Si llega a la capa de datos, mostrar Snackbar: reanudar la sesión y cerrarla como incompleta. |
+| `ERR_CLOSE_WITHOUT_SETS` | Se intenta cerrar (`E4-T1`) una sesión sin ninguna serie | E4 ya presenta el botón de confirmar deshabilitado con el motivo. Si llega a la capa de datos, mostrar Snackbar: cancelar el día desde B1. |
 | `ERR_WEEK_DAYS_DELOAD_ACTIVE` | Se intentan cambiar los días de una rutina (`D6-T2`) con una descarga `ACTIVE` | Mostrar Snackbar en D6 explicando que el plan no se reorganiza durante una descarga. Consistente con la creación, el borrado y el reordenamiento de rutinas. |
 | `ERR_EXERCISE_NOT_IN_DICT` | Se intenta registrar un ejercicio que no existe en `exercise` | Estado inválido — previsto por la arquitectura. Log de error interno. |
 | `ERR_DEASSIGN_SESSION_ACTIVE` | Se intenta desasignar un ejercicio del plan con sesión activa de esa versión | Deshabilitar el botón de eliminar en D4. Mostrar tooltip explicativo. |
@@ -1351,6 +1445,8 @@ Los valores viven en un único punto del código, `AlertThresholdRule`. Esta tab
 - **Descarga única concurrente:** `Solo puede existir un registro `deload` con status = 'ACTIVE' a la vez. El botón "Activar Descarga" en I1 se deshabilita si hay descarga activa.`
 - **Tamaño mínimo de elemento interactivo:** `Todo elemento táctil (botón, campo, fila de lista, chip) debe tener un área de toque mínima de 48 × 48 dp (RNF-06). Los elementos visualmente más pequeños amplían su área de toque mediante padding invisible.`
 - **Un día, una rutina:** `week_day.routine_id apunta a una rutina o a ninguna. Una rutina puede ocupar varios días de la semana; un día no puede ejecutar dos rutinas. Asignar a una rutina un día que pertenecía a otra lo traslada, y la rutina de origen lo pierde.`
+- **Ninguna sesión sobrevive a su día:** `Una sesion IN_PROGRESS de un dia anterior se resuelve automaticamente (B1-T7) al arrancar la aplicacion o al cruzar la medianoche con ella abierta. No es posible reanudar la sesion de ayer.`
+- **Una sesión por día:** `Un día se resuelve una sola vez, al cerrar una sesión con esa fecha o al cancelarlo. Resuelto, ni B1 ni B2 ofrecen iniciar nada hasta que llegue el siguiente día con rutina. No existe forma de ejecutar dos sesiones en la misma jornada.`
 - **Reasignación única y temporal:** `Solo puede existir una fila en daily_routine_override. La reasignación aplica al día de su fecha y a ninguno más: no se ofrece reasignar por adelantado ni para varios días. Cambiar de forma permanente qué rutina corresponde a qué día no está expuesto en ninguna interfaz.`
 - **Reasignación no disponible con sesión iniciada:** `La acción de reasignación vive en la tarjeta de sesión propuesta y en la de día de descanso, ninguna de las cuales se compone cuando existe una sesión IN_PROGRESS. No se presenta deshabilitada: no existe en ese estado.`
 - **Tiempo máximo de ejecución de Backup/Restore:** `El proceso de exportación e importación de datos debe completarse en menos de 10 segundos para un historial de hasta 2 años (estimado: ~35,000 registros en exercise_set, base de datos < 5 MB) (RNF-18).`

@@ -2,7 +2,7 @@
 
 > Este documento define la arquitectura estructural de la memoria del sistema y el ciclo de vida de sus entidades. Actúa simultáneamente como Modelo Entidad-Relación, Diccionario de Datos y Máquina de Estados. Se utiliza una sintaxis declarativa (pseudo-código estilo Prisma/TypeScript) para definir las estructuras, utilizando los comentarios inline como el diccionario de datos.
 >
-> **Versión de esquema:** 17 (migraciones registradas: v1 → v2 → … → v15 → v16). **v17 no tiene migración**: HU-36 introduce `week_day` y `daily_routine_override` durante la beta, y la excepción documentada a RNF19 resuelve el cambio de esquema sobre instalación fresca. Una base en v16 no puede abrir el build de v17 — el reinicio lo realiza el ejecutante desinstalando y reinstalando, no la aplicación.
+> **Versión de esquema:** 18 (migraciones registradas: v1 → v2 → … → v15 → v16). **v17 ni v18 tienen migración**: HU-36 introduce `week_day`, `daily_routine_override` y `day_skip` durante la beta, y la excepción documentada a RNF19 resuelve el cambio de esquema sobre instalación fresca. Una base anterior no puede abrir el build vigente — el reinicio lo realiza el ejecutante desinstalando y reinstalando, no la aplicación.
 
 ---
 
@@ -288,6 +288,19 @@ model daily_routine_override {
 }
 
 // ==========================================
+// ENTIDAD: day_skip
+// PROPÓSITO: Día que el ejecutante resolvió sin entrenar.
+// Tabla de fila única. NO crea session: omitir un día es
+// exactamente no haber entrenado, de modo que no aparece
+// en el historial, no cuenta como adherencia y no
+// silencia la alerta de inactividad.
+// ==========================================
+model day_skip {
+  id    INTEGER  @id @default(1) @check("= 1")   // Siempre 1. Garantiza fila única: solo interesa el día en curso.
+  date  TEXT     @notNull @format("YYYY-MM-DD")  // Día ISO omitido. Solo se honra cuando coincide con hoy, así que caduca sola al cambiar el día. Misma mecánica de caducidad que daily_routine_override.
+}
+
+// ==========================================
 // ENTIDAD: deload
 // PROPÓSITO: Ciclo de descarga (Deload).
 // Se activa cuando el motor detecta fatiga acumulada
@@ -478,7 +491,11 @@ enum MuscleGroup {
 
 ### 5.1. Ciclo de Vida de: `session`
 
-- **Antes del Nacimiento (determinación):** la rutina de la sesión se resuelve por el día de la semana — `week_day.routine_id` del día de hoy — sustituida por `daily_routine_override.routine_id` cuando existe una reasignación cuya `date` es hoy. Si la resolución no arroja rutina, el día es de descanso y no nace ninguna sesión. La reasignación se agota en la determinación: `session` no guarda de dónde vino la rutina, y `rotation_state` no participa en esta resolución. Es la frontera por la que la reasignación temporal no puede alterar la rotación cíclica.
+- **Antes del Nacimiento (determinación):** la rutina de la sesión se resuelve por el día de la semana — `week_day.routine_id` del día de hoy — sustituida por `daily_routine_override.routine_id` cuando existe una reasignación cuya `date` es hoy. Si la resolución no arroja rutina, el día es de descanso y no nace ninguna sesión.
+- **Día resuelto (nacimiento bloqueado):** un día se resuelve al cerrar una sesión con esa fecha o al registrarlo en `day_skip`. Resuelto, **no nace ninguna sesión más ese día**: es lo que impide ejecutar la misma rutina varias veces en la misma jornada. La interfaz informa qué toca el siguiente día con rutina, sin permitir iniciarlo.
+- **Cierre condicionado:** cerrar exige **al menos una fila en `exercise_set`**. Sin ninguna no hay nada que terminar, y persistirla como `INCOMPLETE` la haría contar en la adherencia y silenciar la inactividad de su rutina. La sesión permanece `IN_PROGRESS` y es reanudable: el ejecutante puede salir y volver.
+- **Muerte prematura (cancelación del día):** la única salida de una sesión `IN_PROGRESS` sin series es cancelar el día (`B1-T5`), que la **borra** y registra la fecha en `day_skip`. **No avanza `rotation_state`** — no hubo sesión que contar. Con una sola serie registrada la cancelación deja de estar disponible: lo entrenado se conserva cerrando como `INCOMPLETE`.
+- **Cierre automático al cambiar el día:** una sesión `IN_PROGRESS` cuya `date` es anterior a hoy pertenece a un día que terminó y no puede continuarse. El sistema la resuelve por el ejecutante: **con al menos una serie** la cierra con el protocolo completo y queda `INCOMPLETE`, conservando su `date` original —el día que sí se entrenó—; **sin ninguna serie** la borra. El barrido corre al abrir la app y al cruzar la medianoche con la app abierta. El día no entrenado **no deja registro propio**: su ausencia de sesión ya es lo que leen el historial, la adherencia y la alerta de inactividad. La reasignación se agota en la determinación: `session` no guarda de dónde vino la rutina, y `rotation_state` no participa en esta resolución. Es la frontera por la que la reasignación temporal no puede alterar la rotación cíclica.
 - **Estado Inicial (Nacimiento):** `IN_PROGRESS` — se asigna al crear la sesión.
 - **Estados Finales (Terminación):** `COMPLETED`, `INCOMPLETE` — una vez alcanzados, la sesión y todos sus datos son **inmutables**.
 
@@ -624,6 +641,8 @@ enum MuscleGroup {
   Es solo el punto de partida: el ejecutante puede reasignar los días desde la gestión del plan (`D6-T2`), dejar días de descanso adicionales o hacer que una misma rutina ocupe varios días.
 
 - **`daily_routine_override` (0 filas):** No se siembra. La tabla nace vacía y solo tiene fila mientras hay una reasignación temporal vigente.
+
+- **`day_skip` (0 filas):** No se siembra. La tabla nace vacía y solo tiene fila el día que el ejecutante declara que no entrena.
 
 - **`routine_current_version` (1 fila por rutina del plan):** Se inicializa con `current_version_number=1` para cada rutina que el ejecutante crea al configurar su plan.
 

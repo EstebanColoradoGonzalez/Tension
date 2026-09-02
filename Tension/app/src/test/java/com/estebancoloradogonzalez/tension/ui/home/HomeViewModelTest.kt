@@ -1,10 +1,12 @@
 package com.estebancoloradogonzalez.tension.ui.home
 
 import com.estebancoloradogonzalez.tension.domain.model.ActiveSession
+import com.estebancoloradogonzalez.tension.domain.model.DayOutcome
 import com.estebancoloradogonzalez.tension.domain.model.DeloadState
 import com.estebancoloradogonzalez.tension.domain.model.NextSession
 import com.estebancoloradogonzalez.tension.domain.model.ReassignableRoutine
 import com.estebancoloradogonzalez.tension.domain.model.TodaySession
+import com.estebancoloradogonzalez.tension.domain.model.UpcomingSession
 import com.estebancoloradogonzalez.tension.domain.model.WeekDay
 import com.estebancoloradogonzalez.tension.domain.usecase.alerts.GetActiveAlertCountUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.deload.GetDeloadStateUseCase
@@ -14,7 +16,9 @@ import com.estebancoloradogonzalez.tension.domain.usecase.session.GetMicrocycleC
 import com.estebancoloradogonzalez.tension.domain.usecase.session.GetReassignableRoutinesUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.session.GetTodaySessionUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.session.SetTemporaryRoutineUseCase
+import com.estebancoloradogonzalez.tension.domain.usecase.session.SkipTodayUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.session.StartSessionUseCase
+import com.estebancoloradogonzalez.tension.domain.usecase.session.UndoSkipTodayUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -32,6 +36,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -50,6 +55,8 @@ class HomeViewModelTest {
     private val getReassignableRoutinesUseCase: GetReassignableRoutinesUseCase = mockk()
     private val setTemporaryRoutineUseCase: SetTemporaryRoutineUseCase = mockk()
     private val clearTemporaryRoutineUseCase: ClearTemporaryRoutineUseCase = mockk()
+    private val skipTodayUseCase: SkipTodayUseCase = mockk()
+    private val undoSkipTodayUseCase: UndoSkipTodayUseCase = mockk()
 
     @Before
     fun setUp() {
@@ -111,6 +118,46 @@ class HomeViewModelTest {
 
         assertFalse(viewModel.uiState.value.canReassign)
         assertFalse(viewModel.uiState.value.showNextSessionCard)
+    }
+
+    // Cancelar el día es la única vía, y deja de estarlo en cuanto hay una serie
+
+    @Test
+    fun `cancelling the day is offered for an open session without sets`() = runTest {
+        every { getTodaySessionUseCase() } returns flowOf(regularTodaySession())
+        every { getActiveSessionUseCase() } returns flowOf(activeSession(registeredSets = 0))
+
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.showSkipToday)
+        assertTrue(viewModel.uiState.value.canSkipToday)
+    }
+
+    @Test
+    fun `cancelling the day is shown but blocked once a set is registered`() = runTest {
+        every { getTodaySessionUseCase() } returns flowOf(regularTodaySession())
+        every { getActiveSessionUseCase() } returns flowOf(activeSession(registeredSets = 1))
+
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.showSkipToday)
+        assertFalse(viewModel.uiState.value.canSkipToday)
+    }
+
+    @Test
+    fun `skipToday does nothing when the open session already has sets`() = runTest {
+        every { getTodaySessionUseCase() } returns flowOf(regularTodaySession())
+        every { getActiveSessionUseCase() } returns flowOf(activeSession(registeredSets = 3))
+
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        viewModel.skipToday()
+        advanceUntilIdle()
+
+        coVerify(exactly = 0) { skipTodayUseCase() }
     }
 
     @Test
@@ -189,6 +236,91 @@ class HomeViewModelTest {
         coVerify { clearTemporaryRoutineUseCase() }
     }
 
+    // Un día resuelto no vuelve a proponerse: es lo que evita varias sesiones el mismo día
+
+    @Test
+    fun `a day already trained shows the resolved card and hides the session card`() = runTest {
+        every { getTodaySessionUseCase() } returns flowOf(trainedTodaySession())
+        every { getActiveSessionUseCase() } returns flowOf(null)
+
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertTrue(state.showResolvedCard)
+        assertFalse(state.showNextSessionCard)
+        assertEquals(DayOutcome.TRAINED, state.dayOutcome)
+    }
+
+    @Test
+    fun `a resolved day reports the upcoming session without making it startable`() = runTest {
+        every { getTodaySessionUseCase() } returns flowOf(trainedTodaySession())
+        every { getActiveSessionUseCase() } returns flowOf(null)
+
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(WeekDay.FRIDAY, state.upcoming?.weekDay)
+        assertNull(state.nextSession)
+    }
+
+    @Test
+    fun `a resolved day offers neither reassignment nor skipping`() = runTest {
+        every { getTodaySessionUseCase() } returns flowOf(trainedTodaySession())
+        every { getActiveSessionUseCase() } returns flowOf(null)
+
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.canReassign)
+        assertFalse(viewModel.uiState.value.canSkipToday)
+    }
+
+    @Test
+    fun `skipToday resolves the day without a session`() = runTest {
+        every { getTodaySessionUseCase() } returns flowOf(regularTodaySession())
+        every { getActiveSessionUseCase() } returns flowOf(null)
+        coEvery { skipTodayUseCase() } just runs
+
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        viewModel.skipToday()
+        advanceUntilIdle()
+
+        coVerify { skipTodayUseCase() }
+    }
+
+    @Test
+    fun `skipToday does nothing on an already resolved day`() = runTest {
+        every { getTodaySessionUseCase() } returns flowOf(skippedTodaySession())
+        every { getActiveSessionUseCase() } returns flowOf(null)
+
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        viewModel.skipToday()
+        advanceUntilIdle()
+
+        coVerify(exactly = 0) { skipTodayUseCase() }
+    }
+
+    @Test
+    fun `undoSkipToday gives the day back its session`() = runTest {
+        every { getTodaySessionUseCase() } returns flowOf(skippedTodaySession())
+        every { getActiveSessionUseCase() } returns flowOf(null)
+        coEvery { undoSkipTodayUseCase() } just runs
+
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        viewModel.undoSkipToday()
+        advanceUntilIdle()
+
+        coVerify { undoSkipTodayUseCase() }
+    }
+
     private fun createViewModel() = HomeViewModel(
         getTodaySessionUseCase = getTodaySessionUseCase,
         getActiveSessionUseCase = getActiveSessionUseCase,
@@ -199,6 +331,8 @@ class HomeViewModelTest {
         getReassignableRoutinesUseCase = getReassignableRoutinesUseCase,
         setTemporaryRoutineUseCase = setTemporaryRoutineUseCase,
         clearTemporaryRoutineUseCase = clearTemporaryRoutineUseCase,
+        skipTodayUseCase = skipTodayUseCase,
+        undoSkipTodayUseCase = undoSkipTodayUseCase,
     )
 
     private fun regularTodaySession() = TodaySession(
@@ -223,12 +357,33 @@ class HomeViewModelTest {
         overriddenFromWeekDay = WeekDay.TUESDAY,
     )
 
-    private fun activeSession() = ActiveSession(
+    private fun activeSession(registeredSets: Int = 4) = ActiveSession(
         sessionId = 9L,
         routineName = "Push — Foco Tríceps",
         versionNumber = 1,
         completedExercises = 1,
         totalExercises = 5,
+        registeredSets = registeredSets,
+    )
+
+    private fun trainedTodaySession() = TodaySession(
+        weekDay = WeekDay.THURSDAY,
+        dayOutcome = DayOutcome.TRAINED,
+        upcoming = UpcomingSession(
+            weekDay = WeekDay.FRIDAY,
+            routineName = "Pull — Foco Trapecios y Espalda Media",
+            versionNumber = 1,
+        ),
+    )
+
+    private fun skippedTodaySession() = TodaySession(
+        weekDay = WeekDay.THURSDAY,
+        dayOutcome = DayOutcome.SKIPPED,
+        upcoming = UpcomingSession(
+            weekDay = WeekDay.FRIDAY,
+            routineName = "Pull — Foco Trapecios y Espalda Media",
+            versionNumber = 1,
+        ),
     )
 
     private fun reassignOptions() = listOf(

@@ -5,6 +5,7 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.estebancoloradogonzalez.tension.data.local.dao.AlertDao
 import com.estebancoloradogonzalez.tension.data.local.dao.DailyRoutineOverrideDao
+import com.estebancoloradogonzalez.tension.data.local.dao.DaySkipDao
 import com.estebancoloradogonzalez.tension.data.local.dao.DeloadDao
 import com.estebancoloradogonzalez.tension.data.local.dao.DeloadFrozenVersionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.EquipmentTypeDao
@@ -24,6 +25,7 @@ import com.estebancoloradogonzalez.tension.data.local.dao.WeekDayDao
 import com.estebancoloradogonzalez.tension.data.local.dao.WeightRecordDao
 import com.estebancoloradogonzalez.tension.data.local.entity.AlertEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.DailyRoutineOverrideEntity
+import com.estebancoloradogonzalez.tension.data.local.entity.DaySkipEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.DeloadEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.DeloadFrozenVersionEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.EquipmentTypeEntity
@@ -53,6 +55,7 @@ import com.estebancoloradogonzalez.tension.data.local.entity.WeightRecordEntity
         RoutineCurrentVersionEntity::class,
         WeekDayEntity::class,
         DailyRoutineOverrideEntity::class,
+        DaySkipEntity::class,
         MuscleZoneEntity::class,
         EquipmentTypeEntity::class,
         ExerciseEntity::class,
@@ -66,7 +69,7 @@ import com.estebancoloradogonzalez.tension.data.local.entity.WeightRecordEntity
         DeloadEntity::class,
         DeloadFrozenVersionEntity::class,
     ],
-    version = 17,
+    version = 18,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -79,6 +82,7 @@ abstract class TensionDatabase : RoomDatabase() {
     abstract fun routineCurrentVersionDao(): RoutineCurrentVersionDao
     abstract fun weekDayDao(): WeekDayDao
     abstract fun dailyRoutineOverrideDao(): DailyRoutineOverrideDao
+    abstract fun daySkipDao(): DaySkipDao
     abstract fun muscleZoneDao(): MuscleZoneDao
     abstract fun equipmentTypeDao(): EquipmentTypeDao
     abstract fun exerciseDao(): ExerciseDao

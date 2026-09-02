@@ -3,6 +3,7 @@ package com.estebancoloradogonzalez.tension.data.repository
 import androidx.room.withTransaction
 import com.estebancoloradogonzalez.tension.data.local.dao.AlertDao
 import com.estebancoloradogonzalez.tension.data.local.dao.DailyRoutineOverrideDao
+import com.estebancoloradogonzalez.tension.data.local.dao.DaySkipDao
 import com.estebancoloradogonzalez.tension.data.local.dao.DeloadDao
 import com.estebancoloradogonzalez.tension.data.local.dao.DeloadFrozenVersionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.ExerciseDao
@@ -19,6 +20,8 @@ import com.estebancoloradogonzalez.tension.data.local.dao.SessionExerciseDao
 import com.estebancoloradogonzalez.tension.data.local.dao.WeekDayDao
 import com.estebancoloradogonzalez.tension.data.local.database.TensionDatabase
 import com.estebancoloradogonzalez.tension.data.local.entity.AlertEntity
+import com.estebancoloradogonzalez.tension.data.local.entity.DailyRoutineOverrideEntity
+import com.estebancoloradogonzalez.tension.data.local.entity.DaySkipEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.DeloadEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.DeloadFrozenVersionEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.ExerciseProgressionEntity
@@ -29,6 +32,7 @@ import com.estebancoloradogonzalez.tension.data.local.entity.WeekDayEntity
 import com.estebancoloradogonzalez.tension.data.repository.model.SessionSummaryData
 import com.estebancoloradogonzalez.tension.domain.model.ActiveSession
 import com.estebancoloradogonzalez.tension.domain.model.DailyRoutineOverride
+import com.estebancoloradogonzalez.tension.domain.model.DayOutcome
 import com.estebancoloradogonzalez.tension.domain.model.DeloadState
 import com.estebancoloradogonzalez.tension.domain.model.ExerciseHistoryData
 import com.estebancoloradogonzalez.tension.domain.model.ExerciseHistoryEntry
@@ -48,6 +52,7 @@ import com.estebancoloradogonzalez.tension.domain.model.SessionPreviewExercise
 import com.estebancoloradogonzalez.tension.domain.model.SetData
 import com.estebancoloradogonzalez.tension.domain.model.SetForTonnage
 import com.estebancoloradogonzalez.tension.domain.model.TodaySession
+import com.estebancoloradogonzalez.tension.domain.model.UpcomingSession
 import com.estebancoloradogonzalez.tension.domain.model.WeekDay
 import com.estebancoloradogonzalez.tension.domain.model.ProgressionDifficulty
 import com.estebancoloradogonzalez.tension.domain.model.WeightUnit
@@ -57,8 +62,10 @@ import com.estebancoloradogonzalez.tension.domain.rules.AlertNarrativeRule
 import com.estebancoloradogonzalez.tension.domain.rules.AlertThresholdRule
 import com.estebancoloradogonzalez.tension.domain.rules.AvgRirRule
 import com.estebancoloradogonzalez.tension.domain.rules.DailyRoutineRule
+import com.estebancoloradogonzalez.tension.domain.rules.DayResolutionRule
 import com.estebancoloradogonzalez.tension.domain.rules.DeloadLoadRule
 import com.estebancoloradogonzalez.tension.domain.rules.DeloadNeedRule
+import com.estebancoloradogonzalez.tension.domain.rules.NextTrainingDayRule
 import com.estebancoloradogonzalez.tension.domain.rules.DoubleThresholdRule
 import com.estebancoloradogonzalez.tension.domain.rules.LoadIncrementResolver
 import com.estebancoloradogonzalez.tension.domain.rules.PrefilledLoadRule
@@ -67,19 +74,16 @@ import com.estebancoloradogonzalez.tension.domain.rules.PlateauThresholdRule
 import com.estebancoloradogonzalez.tension.domain.rules.ProgressionClassificationRule
 import com.estebancoloradogonzalez.tension.domain.rules.ProgressionRateRule
 import com.estebancoloradogonzalez.tension.domain.rules.TonnageRule
+import com.estebancoloradogonzalez.tension.domain.util.CurrentDateProvider
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import java.time.DayOfWeek
-import java.time.Duration
 import java.time.LocalDate
-import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 import javax.inject.Inject
 
@@ -94,6 +98,7 @@ class SessionRepositoryImpl @Inject constructor(
     private val routineCurrentVersionDao: RoutineCurrentVersionDao,
     private val weekDayDao: WeekDayDao,
     private val dailyRoutineOverrideDao: DailyRoutineOverrideDao,
+    private val daySkipDao: DaySkipDao,
     private val deloadFrozenVersionDao: DeloadFrozenVersionDao,
     private val exerciseSetDao: ExerciseSetDao,
     private val exerciseProgressionDao: ExerciseProgressionDao,
@@ -102,6 +107,7 @@ class SessionRepositoryImpl @Inject constructor(
     private val deloadDao: DeloadDao,
     private val exerciseDao: ExerciseDao,
     private val profileDao: ProfileDao,
+    private val currentDateProvider: CurrentDateProvider,
 ) : SessionRepository {
 
     /**
@@ -115,26 +121,91 @@ class SessionRepositoryImpl @Inject constructor(
      */
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun getTodaySession(): Flow<TodaySession> {
-        return currentDate().flatMapLatest { today ->
+        return currentDateProvider.dateFlow().flatMapLatest { today ->
             val weekDay = WeekDay.fromIso(today.dayOfWeek.value)
 
             combine(
                 weekDayDao.getByIdFlow(weekDay.isoNumber),
                 dailyRoutineOverrideDao.getOverride(),
                 weekDayDao.getAll(),
-            ) { todayEntity, overrideEntity, allWeekDays ->
-                Triple(todayEntity, overrideEntity, allWeekDays)
-            }.flatMapLatest { (todayEntity, overrideEntity, allWeekDays) ->
-                resolveTodaySession(
-                    today = today,
-                    weekDay = weekDay,
-                    permanentRoutineId = todayEntity?.routineId,
-                    override = overrideEntity?.let {
-                        DailyRoutineOverride(date = it.date, routineId = it.routineId)
-                    },
-                    allWeekDays = allWeekDays,
+                sessionDao.hasClosedSessionOn(today.toString()),
+                daySkipDao.getSkip(),
+            ) { todayEntity, overrideEntity, allWeekDays, trainedToday, skip ->
+                DayInputs(todayEntity?.routineId, overrideEntity, allWeekDays, trainedToday, skip?.date)
+            }.flatMapLatest { inputs ->
+                val outcome = DayResolutionRule.resolve(
+                    today = today.toString(),
+                    hasClosedSessionToday = inputs.trainedToday,
+                    skippedDate = inputs.skippedDate,
                 )
+                if (outcome != null) {
+                    resolveResolvedDay(weekDay, outcome, inputs.allWeekDays)
+                } else {
+                    resolveTodaySession(
+                        today = today,
+                        weekDay = weekDay,
+                        permanentRoutineId = inputs.permanentRoutineId,
+                        override = inputs.override?.let {
+                            DailyRoutineOverride(date = it.date, routineId = it.routineId)
+                        },
+                        allWeekDays = inputs.allWeekDays,
+                    )
+                }
             }
+        }
+    }
+
+    private data class DayInputs(
+        val permanentRoutineId: Long?,
+        val override: DailyRoutineOverrideEntity?,
+        val allWeekDays: List<WeekDayEntity>,
+        val trainedToday: Boolean,
+        val skippedDate: String?,
+    )
+
+    /**
+     * El día ya se resolvió: se informa qué toca después y no se ofrece nada iniciable.
+     *
+     * La propuesta del siguiente día salta los días de descanso y **no lleva
+     * `routineVersionId`**: no es iniciable, y la versión vigente puede rotar antes de que ese
+     * día llegue.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private fun resolveResolvedDay(
+        weekDay: WeekDay,
+        outcome: DayOutcome,
+        allWeekDays: List<WeekDayEntity>,
+    ): Flow<TodaySession> {
+        val routineByWeekDay = allWeekDays.mapNotNull { entity ->
+            val routineId = entity.routineId ?: return@mapNotNull null
+            val day = WeekDay.fromCode(entity.code) ?: return@mapNotNull null
+            day to routineId
+        }.toMap()
+
+        val nextDay = NextTrainingDayRule.resolve(weekDay, routineByWeekDay.keys)
+            ?: return flowOf(TodaySession(weekDay = weekDay, dayOutcome = outcome))
+        val nextRoutineId = routineByWeekDay.getValue(nextDay)
+
+        return combine(
+            routineDao.getAll(),
+            routineCurrentVersionDao.getAll(),
+        ) { routines, currentVersions ->
+            val routine = routines.find { it.id == nextRoutineId }
+            val versionNumber = currentVersions.find { it.routineId == nextRoutineId }
+                ?.currentVersionNumber
+            TodaySession(
+                weekDay = weekDay,
+                dayOutcome = outcome,
+                upcoming = if (routine != null && versionNumber != null) {
+                    UpcomingSession(
+                        weekDay = nextDay,
+                        routineName = routine.name,
+                        versionNumber = versionNumber,
+                    )
+                } else {
+                    null
+                },
+            )
         }
     }
 
@@ -195,26 +266,6 @@ class SessionRepositoryImpl @Inject constructor(
         }
     }
 
-    /**
-     * La fecha de hoy, reemitida al cruzar la medianoche local.
-     *
-     * La determinación depende del calendario, y leer `LocalDate.now()` una sola vez al
-     * construir el flujo dejaría la propuesta congelada en el día en que la pantalla se abrió
-     * — la reversión automática de la reasignación no llegaría a ocurrir con la app abierta.
-     * No es un sondeo: espera exactamente hasta el siguiente cambio de día y se cancela con
-     * el alcance de quien recolecta.
-     */
-    private fun currentDate(): Flow<LocalDate> = flow {
-        while (true) {
-            val today = LocalDate.now()
-            emit(today)
-            val millisToMidnight = Duration.between(
-                LocalDateTime.now(),
-                today.plusDays(1).atStartOfDay(),
-            ).toMillis()
-            delay(millisToMidnight.coerceAtLeast(MIN_DAY_TICK_MILLIS))
-        }
-    }
 
     /**
      * Traduce una rutina y su número de versión a la propuesta del día. Devuelve una sesión
@@ -321,6 +372,7 @@ class SessionRepositoryImpl @Inject constructor(
                     versionNumber = it.versionNumber,
                     totalExercises = it.totalExercises,
                     completedExercises = it.completedExercises,
+                    registeredSets = it.registeredSets,
                 )
             }
         }
@@ -517,6 +569,15 @@ class SessionRepositoryImpl @Inject constructor(
                 ?: throw IllegalStateException("No active session found")
             if (sessionInfo.sessionId != sessionId) {
                 throw IllegalStateException("Session $sessionId is not the active session")
+            }
+
+            // Cerrar es dar por terminado lo entrenado, y sin ninguna serie no hay nada que
+            // terminar: persistirla como INCOMPLETE la haría aparecer en el historial, contar
+            // como adherencia y silenciar la alerta de inactividad de su rutina. La sesión se
+            // queda en curso y el ejecutante resuelve el día con "Hoy no entreno". La interfaz
+            // deshabilita el cierre en ese estado; esta guarda cubre la ruta de datos.
+            if (exerciseSetDao.countSetsInSession(sessionId) == 0) {
+                throw IllegalStateException("Cannot close a session without any registered set")
             }
 
             val status = if (sessionInfo.completedExercises == sessionInfo.totalExercises) {
@@ -940,6 +1001,37 @@ class SessionRepositoryImpl @Inject constructor(
         return DeloadState.NoDeloadNeeded
     }
 
+    /**
+     * Una sesión en curso sin series se descarta al omitir el día: se abrió y no se entrenó
+     * nada, así que dejarla viva bloquearía el inicio de las siguientes. Con series registradas
+     * no se llega aquí — el caso de uso lo rechaza antes.
+     */
+    override suspend fun skipToday() {
+        database.withTransaction {
+            val activeSession = sessionDao.getActiveSession().first()
+            if (activeSession != null && exerciseSetDao.countSetsInSession(activeSession.id) == 0) {
+                sessionDao.delete(activeSession.id)
+            }
+            daySkipDao.upsert(DaySkipEntity(date = LocalDate.now().toString()))
+        }
+    }
+
+    override suspend fun hasSetsInActiveSession(): Boolean {
+        val activeSession = sessionDao.getActiveSession().first() ?: return false
+        return exerciseSetDao.countSetsInSession(activeSession.id) > 0
+    }
+
+    override suspend fun getStaleActiveSessionId(): Long? =
+        sessionDao.getStaleActiveSessionId(currentDateProvider.today().toString())
+
+    override suspend fun discardSession(sessionId: Long) {
+        sessionDao.delete(sessionId)
+    }
+
+    override suspend fun undoSkipToday() {
+        daySkipDao.clear()
+    }
+
     override suspend fun hasActiveSession(): Boolean =
         sessionDao.getActiveSession().first() != null
 
@@ -1340,8 +1432,5 @@ class SessionRepositoryImpl @Inject constructor(
 
     private companion object {
         const val DAYS_PER_WEEK = 7
-
-        /** Cota inferior del tick de cambio de dia, por si el calculo diera <= 0. */
-        const val MIN_DAY_TICK_MILLIS = 1_000L
     }
 }

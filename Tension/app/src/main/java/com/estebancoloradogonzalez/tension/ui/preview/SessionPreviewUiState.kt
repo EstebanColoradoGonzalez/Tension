@@ -14,6 +14,8 @@ data class SessionPreviewUiState(
     val deloadSessionsRemaining: Int = 0,
     val isTemporaryOverride: Boolean = false,
     val canReassign: Boolean = false,
+    /** El día ya se resolvió: la sesión no puede iniciarse desde aquí tampoco. */
+    val isDayResolved: Boolean = false,
     val reassignOptions: List<ReassignableRoutine> = emptyList(),
     val isReassignDialogOpen: Boolean = false,
     val errorMessage: String? = null,

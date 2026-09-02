@@ -18,6 +18,9 @@ data class ActiveSessionUiState(
     val progress: Float get() = if (totalCount > 0) completedCount.toFloat() / totalCount else 0f
     val incompleteCount: Int get() = totalCount - completedCount
     val isAllCompleted: Boolean get() = completedCount == totalCount && totalCount > 0
+
+    /** Si no hay ninguna serie, cerrar descarta la sesión en lugar de guardarla. */
+    val hasAnySetRegistered: Boolean get() = exercises.any { it.completedSets > 0 }
 }
 
 data class AlternativeSelectionUiState(

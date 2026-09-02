@@ -42,6 +42,24 @@ interface SessionRepository {
     suspend fun getExerciseHistory(exerciseId: Long): ExerciseHistoryData
     fun getSessionPreviewExercises(routineVersionId: Long): Flow<List<SessionPreviewExercise>>
     suspend fun hasActiveDeload(): Boolean
+    /**
+     * Declara que hoy no se entrena. Resuelve el día sin dejar sesión alguna: si había una en
+     * curso sin series, se descarta.
+     */
+    suspend fun skipToday()
+
+    /** Si la sesión en curso, de haberla, ya tiene alguna serie registrada. */
+    suspend fun hasSetsInActiveSession(): Boolean
+
+    /** La sesión en curso que quedó de un día anterior, si la hay. */
+    suspend fun getStaleActiveSessionId(): Long?
+
+    /** Borra la sesión sin registrarla. Solo para sesiones sin ninguna serie. */
+    suspend fun discardSession(sessionId: Long)
+
+    /** Revierte la omisión de hoy y devuelve el día a su propuesta. */
+    suspend fun undoSkipToday()
+
     suspend fun hasActiveSession(): Boolean
     suspend fun hasActiveSessionForVersion(routineVersionId: Long): Boolean
 }

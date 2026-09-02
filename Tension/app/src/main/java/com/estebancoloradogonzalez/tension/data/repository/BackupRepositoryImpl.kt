@@ -28,7 +28,7 @@ class BackupRepositoryImpl @Inject constructor(
 ) : BackupRepository {
 
     companion object {
-        const val SCHEMA_VERSION = 10
+        const val SCHEMA_VERSION = 11
         private const val LEGACY_SCHEMA_VERSION = 8
         const val APP_VERSION = "1.0"
 
@@ -46,6 +46,7 @@ class BackupRepositoryImpl @Inject constructor(
             // y nada la repondria.
             "week_day",
             "daily_routine_override",
+            "day_skip",
             "muscle_zone",
             "equipment_type",
             "deload",
@@ -492,6 +493,7 @@ class BackupRepositoryImpl @Inject constructor(
         // dias sin rutina disponible quedan como dias de descanso, que es su estado valido.
         result.put("week_day", buildLegacyWeekDays(routines))
         result.put("daily_routine_override", JSONArray())
+        result.put("day_skip", JSONArray())
 
         return result
     }

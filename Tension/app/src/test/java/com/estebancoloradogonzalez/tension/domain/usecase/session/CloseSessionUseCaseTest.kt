@@ -30,4 +30,14 @@ class CloseSessionUseCaseTest {
 
         useCase(999L)
     }
+
+    // Una sesión sin ninguna serie no se cierra: se cancela el día desde Inicio.
+
+    @Test(expected = IllegalStateException::class)
+    fun `invoke propagates IllegalStateException when the session has no sets`() = runTest {
+        coEvery { repository.closeSession(any()) } throws
+            IllegalStateException("Cannot close a session without any registered set")
+
+        useCase(42L)
+    }
 }

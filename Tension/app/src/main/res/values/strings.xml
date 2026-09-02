@@ -59,6 +59,15 @@
     <string name="reassign_dialog_cancel">Cancelar</string>
     <string name="reassign_dialog_empty">No hay rutinas con ejercicios disponibles.</string>
     <string name="plan_rest_day_row">— descanso</string>
+    <string name="home_skip_today">Hoy no entreno</string>
+    <string name="home_skip_blocked">Ya registraste series. Reanuda la sesi\u00f3n y ci\u00e9rrala como incompleta.</string>
+    <string name="home_skip_undo">Sí voy a entrenar</string>
+    <string name="home_day_trained_title">Hoy ya entrenaste</string>
+    <string name="home_day_skipped_title">Hoy no entrenas</string>
+    <string name="home_day_skipped_body">Marcaste el día como no entrenado. No cuenta como sesión.</string>
+    <string name="home_upcoming_label">Siguiente sesión</string>
+    <string name="home_upcoming_available">Disponible el %1$s</string>
+    <string name="home_upcoming_none">Tu plan no tiene ninguna rutina asignada a un día.</string>
     <string name="routine_week_days_action">Días de la semana</string>
     <string name="routine_week_days_title">Días de la semana</string>
     <string name="routine_week_days_subtitle">Marca los días que ejecutan esta rutina. Los días sin rutina quedan de descanso.</string>
@@ -84,6 +93,7 @@
     <string name="session_close_confirm_complete">Cerrar ✓</string>
     <string name="session_close_confirm_incomplete">Cerrar ⚠️</string>
     <string name="session_close_cancel">Cancelar</string>
+    <string name="session_close_needs_sets">Sin series registradas no hay nada que cerrar. Si hoy no vas a entrenar, cancela el d\u00eda desde el inicio con \u00abHoy no entreno\u00bb.</string>
 
     <!-- Session Summary E5 -->
     <string name="session_summary_title">Resumen de Sesión</string>

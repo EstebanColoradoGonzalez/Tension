@@ -87,6 +87,7 @@ fun ActiveSessionScreen(
         }
     }
 
+
     BackHandler {
         viewModel.onCloseSessionRequested()
     }
@@ -151,6 +152,7 @@ fun ActiveSessionScreen(
             CloseSessionDialog(
                 isAllCompleted = uiState.isAllCompleted,
                 incompleteCount = uiState.incompleteCount,
+                canClose = uiState.hasAnySetRegistered,
                 isClosing = uiState.isClosing,
                 onConfirm = { viewModel.onCloseSessionConfirmed() },
                 onDismiss = { viewModel.onCloseDialogDismissed() },
@@ -619,6 +621,7 @@ private fun LoadText(exercise: ExerciseUiItem, isDeloadSession: Boolean = false)
 private fun CloseSessionDialog(
     isAllCompleted: Boolean,
     incompleteCount: Int,
+    canClose: Boolean,
     isClosing: Boolean,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
@@ -640,17 +643,20 @@ private fun CloseSessionDialog(
         title = { Text(text = stringResource(R.string.session_close_title)) },
         text = {
             Text(
-                text = if (isAllCompleted) {
-                    stringResource(R.string.session_close_complete_message)
-                } else {
-                    stringResource(R.string.session_close_incomplete_message, incompleteCount)
+                text = when {
+                    !canClose -> stringResource(R.string.session_close_needs_sets)
+                    isAllCompleted -> stringResource(R.string.session_close_complete_message)
+                    else -> stringResource(
+                        R.string.session_close_incomplete_message,
+                        incompleteCount,
+                    )
                 },
             )
         },
         confirmButton = {
             Button(
                 onClick = onConfirm,
-                enabled = !isClosing,
+                enabled = !isClosing && canClose,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = if (isAllCompleted) {
                         MaterialTheme.colorScheme.primary

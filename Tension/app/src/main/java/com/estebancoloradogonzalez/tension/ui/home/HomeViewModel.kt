@@ -11,7 +11,9 @@ import com.estebancoloradogonzalez.tension.domain.usecase.session.GetMicrocycleC
 import com.estebancoloradogonzalez.tension.domain.usecase.session.GetReassignableRoutinesUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.session.GetTodaySessionUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.session.SetTemporaryRoutineUseCase
+import com.estebancoloradogonzalez.tension.domain.usecase.session.SkipTodayUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.session.StartSessionUseCase
+import com.estebancoloradogonzalez.tension.domain.usecase.session.UndoSkipTodayUseCase
 import com.estebancoloradogonzalez.tension.domain.model.DeloadState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -36,6 +38,8 @@ class HomeViewModel @Inject constructor(
     private val getReassignableRoutinesUseCase: GetReassignableRoutinesUseCase,
     private val setTemporaryRoutineUseCase: SetTemporaryRoutineUseCase,
     private val clearTemporaryRoutineUseCase: ClearTemporaryRoutineUseCase,
+    private val skipTodayUseCase: SkipTodayUseCase,
+    private val undoSkipTodayUseCase: UndoSkipTodayUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -132,6 +136,28 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 setTemporaryRoutineUseCase(routineId)
+            } catch (e: Exception) {
+                _uiState.update { it.copy(errorMessage = e.message) }
+            }
+        }
+    }
+
+    /** Declara que hoy no se entrena. No crea sesión: el día queda resuelto sin entrenar. */
+    fun skipToday() {
+        if (!_uiState.value.canSkipToday) return
+        viewModelScope.launch {
+            try {
+                skipTodayUseCase()
+            } catch (e: Exception) {
+                _uiState.update { it.copy(errorMessage = e.message) }
+            }
+        }
+    }
+
+    fun undoSkipToday() {
+        viewModelScope.launch {
+            try {
+                undoSkipTodayUseCase()
             } catch (e: Exception) {
                 _uiState.update { it.copy(errorMessage = e.message) }
             }

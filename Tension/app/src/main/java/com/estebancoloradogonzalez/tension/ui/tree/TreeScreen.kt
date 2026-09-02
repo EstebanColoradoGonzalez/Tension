@@ -1,5 +1,8 @@
 package com.estebancoloradogonzalez.tension.ui.tree
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -20,9 +23,15 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -38,6 +47,9 @@ private val TREE_AREA_SIZE = 180.dp
 private const val HEALTH_HIGH_MIN = 67
 private const val HEALTH_MEDIUM_MIN = 34
 private const val HEALTH_LOW_MIN = 1
+
+/** Duración del fundido con el que el modelo 3D sustituye al ícono nativo. */
+private const val RENDER_FADE_MS = 220
 
 private const val DAYS_TODAY = 0
 private const val DAYS_YESTERDAY = 1
@@ -158,11 +170,20 @@ fun TreeScreen(
 }
 
 /**
- * El área del árbol, de tamaño fijo y con una única responsabilidad: pintar la representación.
+ * El área del árbol, de tamaño fijo y con una única responsabilidad: elegir la representación.
  *
- * Es la costura que HU-38 sustituye. Ningún otro elemento del layout depende de lo que haya
- * dentro —solo de que ocupe [TREE_AREA_SIZE]—, de modo que cambiar el ícono por un modelo 3D
- * no obliga a reorganizar la pantalla.
+ * La representación por defecto es el **modelo tridimensional** de [Tree3DView]. La nativa de
+ * HU-37 no desaparece: es el fallback, y se conserva de forma permanente porque garantiza que
+ * ningún ejecutante se quede sin árbol por culpa de su dispositivo (CA-38.05).
+ *
+ * El ícono no espera a que el 3D falle para aparecer: **está desde el primer instante** y el
+ * WebView se compone encima con opacidad cero, apareciendo con un fundido cuando reporta su
+ * primer fotograma. De ahí que el área nunca quede vacía y que un fallo, temprano o tardío, se
+ * vea como un árbol que simplemente no cambió de forma. No hay mensaje de error porque no hay
+ * nada que el ejecutante deba hacer.
+ *
+ * Ningún otro elemento del layout depende de lo que haya aquí dentro, solo de que ocupe
+ * [TREE_AREA_SIZE]: la pantalla no se reorganiza (CA-38.01).
  */
 @Composable
 private fun TreeVisual(
@@ -170,16 +191,54 @@ private fun TreeVisual(
     healthScore: Int,
     hasHistory: Boolean,
 ) {
+    // El soporte se resuelve una sola vez: no cambia mientras la pantalla vive, y consultarlo
+    // en cada recomposición sería preguntarle al PackageManager lo mismo una y otra vez.
+    val supports3D = remember { isTree3DSupported() }
+
+    // Se reutiliza la descripción de accesibilidad de HU-37: esta historia no añade ninguna
+    // cadena nueva, y lo que el área presenta sigue siendo el mismo árbol.
+    val treeDescription = stringResource(R.string.tree_icon_description)
+
+    var ready by remember { mutableStateOf(false) }
+    var failed by remember { mutableStateOf(false) }
+
+    val showNativeIcon = !supports3D || failed || !ready
+    val renderAlpha by animateFloatAsState(
+        targetValue = if (ready && !failed) 1f else 0f,
+        animationSpec = tween(durationMillis = RENDER_FADE_MS),
+        label = "treeRenderAlpha",
+    )
+
     Box(
-        modifier = Modifier.size(TREE_AREA_SIZE),
+        modifier = Modifier
+            .size(TREE_AREA_SIZE)
+            .semantics { contentDescription = treeDescription },
         contentAlignment = Alignment.Center,
     ) {
-        TreeIcon(
-            stage = stage,
-            healthScore = healthScore,
-            hasHistory = hasHistory,
-            size = TREE_AREA_SIZE,
-        )
+        if (showNativeIcon) {
+            TreeIcon(
+                stage = stage,
+                healthScore = healthScore,
+                hasHistory = hasHistory,
+                size = TREE_AREA_SIZE,
+            )
+        }
+
+        if (supports3D && !failed) {
+            Tree3DView(
+                healthScore = healthScore,
+                stage = stage,
+                isDarkTheme = isSystemInDarkTheme(),
+                onReady = { ready = true },
+                onFailure = {
+                    failed = true
+                    ready = false
+                },
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer { alpha = renderAlpha },
+            )
+        }
     }
 }
 

@@ -12,7 +12,8 @@
 
 - **Canal Principal:** `Sistema de Input táctil de Android (gestos de toque, deslizamiento y selección sobre la interfaz de usuario compuesta con Jetpack Compose). El sistema opera exclusivamente en modo retrato (portrait). No existen canales de red, API REST, WebSockets ni CLI.`
 - **Formato de Intercambio Base:** `UI Events + StateFlow. El ejecutante emite acciones discretas (Intent / UIEvent) desde la capa de presentación; el ViewModel las procesa y emite nuevo estado (UIState) como flujo reactivo hacia la capa de composición. El formato de persistencia interna es SQLite (Room). El formato de exportación/importación de datos es JSON con metadatos de versión.`
-- **Autenticación y Autorización:** `Ninguna. La aplicación es de uso personal y opera en modo completamente local (100% offline). No existe autenticación de usuario, sesión de red, ni modelo de permisos de acceso a datos. El único permiso del sistema operativo requerido es almacenamiento externo (para backup/restore).`
+- **Canal Interno Nativo ↔ Web (HU-38):** `Único canal no-Compose del sistema. La pantalla del arbol (N1) aloja un WebView que renderiza el arbol en 3D desde un asset local empaquetado. La direccion nativo -> web usa WebView.evaluateJavascript e invoca window.tensionTree.setState(healthScore, stageCode) con exactamente dos parametros. La direccion web -> nativo usa un objeto @JavascriptInterface llamado TreeBridge con onReady() y onFailure(reason), y no transporta ningun dato de dominio. No es un canal de red: son dos motores dentro del mismo proceso sobre un archivo local, y la aplicacion no declara el permiso INTERNET.`
+- **Autenticación y Autorización:** `Ninguna. La aplicación es de uso personal y opera en modo completamente local (100% offline). No existe autenticación de usuario, sesión de red, ni modelo de permisos de acceso a datos. El único permiso del sistema operativo requerido es almacenamiento externo (para backup/restore). En particular **no se declara el permiso `INTERNET`**, lo que hace imposible por sistema operativo que el WebView de N1 cargue contenido remoto.`
 
 ---
 
@@ -1431,7 +1432,7 @@ Los valores viven en un único punto del código, `AlertThresholdRule`. Esta tab
 
 ### 2.11. Módulo: `Flujo N — Árbol de Entrenamiento`
 
-*Flujo de una sola pantalla, alcanzable exclusivamente desde `B1-T8`. **No produce efectos sobre ningún otro contenedor:** no altera la determinación de sesión, no genera alertas, no modifica ningún KPI y ningún componente del motor de decisión lee su estado. Es la excepción de alcance declarada en ADR-020 — puramente visual y de dependencia unidireccional.*
+*Flujo de una sola pantalla, alcanzable exclusivamente desde `B1-T8`. **No produce efectos sobre ningún otro contenedor:** no altera la determinación de sesión, no genera alertas, no modifica ningún KPI y ningún componente del motor de decisión lee su estado. Es la excepción de alcance declarada en ADR-020 — puramente visual y de dependencia unidireccional. **Desde HU-38** la pantalla presenta el árbol como modelo tridimensional con una representación nativa de respaldo, y gana la única interacción de cámara del sistema (`N1-T3`); ninguna de las dos cosas amplía la frontera: el estado que se presenta y su origen no cambiaron (ver ADR-021).*
 
 ---
 
@@ -1444,6 +1445,19 @@ Los valores viven en un único punto del código, `AlertThresholdRule`. Esta tab
 - **Qué cuenta como entrenamiento:** sesiones `COMPLETED` e `INCOMPLETE`; **no** las `IN_PROGRESS`. Los días registrados en `day_skip` **no protegen al árbol** — omitir un día lo marchita igual que no abrir la aplicación. Una sesión reasignada temporalmente (`B1-T3`) cuenta como cualquier otra: al árbol le da igual **qué** rutina se entrenó.
 - **Sin historial:** la etapa es Semilla y **no se presenta conteo de días** — no hay referencia contra la cual contar, y la salud se muestra en 100 para no castigar a quien todavía no ha tenido oportunidad de entrenar.
 - **Modo de fallo:** *best-effort*. Si el recálculo falla, se presenta lo último persistido, que sigue siendo una lectura válida del historial; la pantalla nunca queda vacía y el fallo no interrumpe el cierre de sesión ni el arranque. El cálculo no bloquea la interfaz (RNF01).
+- **Dos representaciones del mismo estado (HU-38):** El estado que este trigger produce **no cambió**. Lo que cambió es que la pantalla lo dibuja de dos formas posibles, y la elección no la hace el ejecutante ni el dominio:
+  - **Modelo 3D** (por defecto) — WebView con Three.js empaquetado, rotable, con interpolación continua entre estados de salud.
+  - **Ícono vectorial nativo** (fallback **permanente**) — la representación de HU-37, cuando el WebView no está disponible, su versión es anterior a la mínima soportada o el render falla.
+
+  La sustitución es **silenciosa y sin mensaje de error**: el ícono está presente desde el primer instante y el modelo 3D aparece encima con un fundido cuando reporta su primer fotograma. La pantalla nunca queda en blanco y el puntaje, los días y el mensaje contextual se presentan igual en ambos casos. **La tarjeta de Inicio (`B1-T8`) es siempre nativa** — nunca aloja un WebView (RNF01).
+- **Contrato del puente nativo ↔ web (HU-38):**
+
+  | Dirección | Mecanismo | Firma | Comportamiento ante fallo |
+  | --- | --- | --- | --- |
+  | Nativo → Web | `WebView.evaluateJavascript` | `window.tensionTree.setState(healthScore: Int 0-100, stageCode: 'SEED'\|'SPROUT'\|'YOUNG'\|'MATURE')` | Un código de etapa desconocido cae en `SEED`, igual que `TreeGrowthStage.fromCode`. Una excepción dentro del render se reporta como `onFailure`. |
+  | Web → Nativo | Objeto `@JavascriptInterface` `TreeBridge` | `onReady()` · `onFailure(reason: String)` | `onReady` habilita el modelo 3D. `onFailure` — incluso después de `onReady`, si muere el proceso de render — devuelve la pantalla al ícono nativo. `reason` es diagnóstico y **no se presenta al ejecutante**. |
+
+  El puente **no transporta datos de dominio** en dirección web → nativo: el código web no devuelve información al sistema, solo dos señales sobre la disponibilidad del render. La calidad de render y el tema claro/oscuro **no** viajan por `setState`: entran como *query string* al cargar el asset, porque son propiedades del dispositivo y del sistema y se fijan una vez. Si `onReady` no llega dentro del margen previsto, el fallback se activa por timeout — es la última red, para los fallos que ni el WebView ni el JavaScript alcanzaron a reportar.
 
 **Payload / Parámetros (Input):**
 
@@ -1486,6 +1500,36 @@ Los valores viven en un único punto del código, `AlertThresholdRule`. Esta tab
   "navigation": "B1"
 }
 ```
+
+#### `N1-T3`: Rotar la Cámara del Árbol
+
+- **Tipo de Trigger (Entrada):** `Acción del ejecutante: arrastre de un dedo o pinza de dos dedos sobre el área del árbol en N1. Solo disponible con el modelo 3D presente — con el fallback nativo el área no es interactiva.`
+- **Descripción:** Mueve la cámara alrededor del árbol. **No produce ningún efecto de estado**: no escribe, no navega y no altera lo que la pantalla presenta. Es la única interacción nueva que HU-38 introduce en todo el sistema.
+  - **Arrastre horizontal:** órbita alrededor del eje del árbol, **sin límite** — girar en redondo no pierde nada de vista.
+  - **Arrastre vertical:** elevación, **acotada** entre −10° y +55°. Ni por debajo del suelo ni cenital.
+  - **Pinza:** zoom, **acotado** a una banda proporcional al encuadre de la etapa. El extremo cercano queda muy por encima del radio de la copa, de modo que **la cámara no puede atravesar el árbol**.
+  - **Paneo:** **no existe.** El objetivo de la cámara es fijo en el eje del árbol. Un paneo acotado y un paneo ausente son indistinguibles para el ejecutante, y el ausente no puede tener un defecto de límites.
+- **Aislamiento del gesto:** El arrastre **no propaga scroll** ni al documento web —barras ocultas, scroll bloqueado— ni a la pantalla nativa, que además no tiene contenedor desplazable.
+- **Persistencia de la cámara:** **ninguna, por construcción.** El estado de la cámara vive en el WebView, el WebView se destruye al salir de la pantalla y al volver se crea uno nuevo. **Al reentrar, la cámara está en su posición inicial** porque no hay nada que sobreviva, no porque se reinicie.
+
+**Payload / Parámetros (Input):**
+
+```json
+{}
+```
+
+**Respuesta / Salida (Output Esperado):**
+
+- **Estado de Éxito:** `La cámara se desplaza dentro de sus límites. Ningún cambio de estado del sistema, ninguna navegación, ninguna escritura.`
+
+```json
+{
+  "navigation": "ninguna",
+  "state_change": "ninguno"
+}
+```
+
+---
 
 ---
 
@@ -1543,5 +1587,9 @@ Los valores viven en un único punto del código, `AlertThresholdRule`. Esta tab
 - **Restricción de navegación durante sesión activa:** `Cuando el flujo E (Sesión Activa) está en curso, la barra de navegación global (Bottom Navigation) se oculta completamente. El único canal de salida del flujo de sesión es E4 (Confirmación de Cierre). No existe ningún trigger que permita abandonar la sesión sin cerrarla formalmente.`
 - **Restricción de orientación:** `La interfaz opera exclusivamente en orientación vertical (portrait). El sistema no soporta modo horizontal (landscape). Si el dispositivo se rota, la vista se mantiene en portrait (RNF-07).`
 - **El árbol no decide nada:** `N1 es de solo lectura y su estado no alimenta ninguna decision del sistema. Ningun componente del motor de decision —prescripcion de carga, Doble Umbral, meseta, regresion, fatiga, protocolo de descarga, rotacion ciclica— lee el puntaje ni la etapa; el arbol no genera alertas ni modifica ROUTINE_INACTIVITY o LOW_ADHERENCE, y la adherencia semanal se calcula exactamente igual. La dependencia es unidireccional: el arbol lee del historial y nada del sistema lee del arbol (ADR-020).`
+- **El WebView del árbol no sale de su archivo local:** `El WebView de N1 carga exclusivamente assets/tree/tree.html, empaquetado en el APK. Toda navegacion se rechaza en shouldOverrideUrlLoading y las cargas de red estan bloqueadas, pero la garantia de fondo no es esa: la aplicacion no declara el permiso INTERNET, de modo que la imposibilidad de alcanzar contenido remoto la impone el sistema operativo y no la configuracion. Three.js y el HTML viajan dentro del APK, sin CDN ni descarga en tiempo de ejecucion (RNF-09, ADR-021).`
+- **La tarjeta de Inicio nunca aloja un WebView:** `B1-T8 presenta el arbol como icono vectorial nativo de forma permanente, tambien despues de HU-38. Es una restriccion de rendimiento (RNF-01), no una limitacion provisional: el WebView vive exclusivamente dentro de N1.`
+- **El presupuesto de render manda sobre la fidelidad visual:** `Si el dispositivo no completa la carga y el render inicial del arbol 3D en menos de 1 segundo, o no sostiene la fluidez del gesto, el sistema degrada los graficos por codigo -sombras, luego esferas de la copa, luego segmentos del tronco, luego poligonos por primitiva- hasta cumplirlo. La degradacion es automatica y no se ofrece como ajuste al ejecutante. Ante conflicto entre fluidez y fidelidad, gana la fluidez (CA-38.06).`
+- **La representación nativa del árbol no se elimina:** `El icono vectorial de HU-37 se conserva en el codigo de forma permanente como fallback de N1. Un dispositivo sin WebView, con WebView desactualizado o incapaz de renderizar contenido 3D presenta el icono sin mensaje de error, sin pantalla en blanco y sin perder ninguna informacion de la pantalla (CA-38.05, RNF-20).`
 - **El árbol no tiene pestaña propia:** `N1 es una ruta nueva alcanzable solo desde la tarjeta de B1 (B1-T8). No se añade a la barra de navegacion inferior, que permanece visible durante la pantalla.`
 - **Idioma único:** `Toda la interfaz opera exclusivamente en español. No existe selector de idioma ni soporte para internacionalización (RNF-08).`

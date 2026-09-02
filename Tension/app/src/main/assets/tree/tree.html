@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<!--
+  Árbol de entrenamiento en 3D (HU-38).
+
+  Shell mínimo del render. No contiene ningún texto visible: la única fuente de texto de la
+  aplicación es res/values/strings.xml (ADR-017), y la historia declara que no se añade
+  ninguna cadena nueva.
+
+  El fondo es transparente en los tres niveles —html, body y canvas— para que el fondo nativo
+  de la aplicación se vea a través del WebView en modo claro y oscuro (CA-38.04, RNF23).
+
+  Los dos scripts son clásicos y su orden importa: three.min.js define el global THREE que
+  tree.js consume. Se cargan desde el propio directorio de assets, sin red (RNF09).
+-->
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>tree</title>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;          /* sin barras de desplazamiento (CA-38.04) */
+            background: transparent;
+            /* El gesto de órbita no puede convertirse en scroll ni en zoom del documento. */
+            touch-action: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        #tree-canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            touch-action: none;
+        }
+    </style>
+</head>
+<body>
+<canvas id="tree-canvas"></canvas>
+<script src="three.min.js"></script>
+<script src="tree.js"></script>
+</body>
+</html>

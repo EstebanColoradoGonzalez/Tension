@@ -18,7 +18,7 @@ class GetAvgRirByRoutineUseCase @Inject constructor(
         return routines.map { routine ->
             val rirValues = metricsRepository.getRirValuesByRoutine(routine.id, sessionLimit)
             if (rirValues.isEmpty()) {
-                return@map RirByRoutine(routine.id, routine.name, null, null)
+                return@map RirByRoutine(routine.id, routine.name, null, null, 0)
             }
             val avg = AvgRirRule.calculate(rirValues)
             val interpretation = when {
@@ -26,7 +26,7 @@ class GetAvgRirByRoutineUseCase @Inject constructor(
                 avg > AlertThresholdRule.RIR_HIGH_THRESHOLD -> RirInterpretation.INSUFFICIENT_STIMULUS
                 else -> RirInterpretation.OPTIMAL
             }
-            RirByRoutine(routine.id, routine.name, avg, interpretation)
+            RirByRoutine(routine.id, routine.name, avg, interpretation, rirValues.size)
         }
     }
 }

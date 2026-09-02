@@ -8,10 +8,13 @@ import androidx.sqlite.db.SupportSQLiteOpenHelper
 import com.estebancoloradogonzalez.tension.data.local.database.TensionDatabase
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkConstructor
 import io.mockk.slot
+import io.mockk.unmockkConstructor
 import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import org.json.JSONObject
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -27,6 +30,21 @@ class BackupRepositoryImplTest {
     private lateinit var db: SupportSQLiteDatabase
     private lateinit var openHelper: SupportSQLiteOpenHelper
     private lateinit var repository: BackupRepositoryImpl
+
+    private val sessionExerciseV16Columns = listOf(
+        "id",
+        "session_id",
+        "exercise_id",
+        "progression_classification",
+        "is_finalized",
+        "pending_selection",
+        "slot",
+    )
+
+    @After
+    fun tearDown() {
+        unmockkConstructor(ContentValues::class)
+    }
 
     @Before
     fun setup() {
@@ -77,7 +95,7 @@ class BackupRepositoryImplTest {
     }
 
     @Test
-    fun `exportToJson produces valid JSON with metadata and all 16 tables`() = runTest {
+    fun `exportToJson produces valid JSON with metadata and all tables`() = runTest {
         // Return profile data for profile table, empty for everything else
         every { db.query("SELECT * FROM profile") } returns createProfileCursor()
         BackupRepositoryImpl.TABLE_ORDER_INSERT
@@ -93,7 +111,7 @@ class BackupRepositoryImplTest {
         assertTrue(parsed.has("data"))
 
         val metadata = parsed.getJSONObject("metadata")
-        assertEquals(9, metadata.getInt("schemaVersion"))
+        assertEquals(BackupRepositoryImpl.SCHEMA_VERSION, metadata.getInt("schemaVersion"))
         assertEquals("1.0", metadata.getString("appVersion"))
         assertTrue(metadata.has("exportDate"))
         assertTrue(metadata.has("recordCount"))
@@ -127,7 +145,7 @@ class BackupRepositoryImplTest {
 
         assertTrue(result.isValid)
         assertNotNull(result.metadata)
-        assertEquals(9, result.metadata?.schemaVersion)
+        assertEquals(BackupRepositoryImpl.SCHEMA_VERSION, result.metadata?.schemaVersion)
         assertEquals(5, result.sessionCount)
         assertNull(result.errorMessage)
     }
@@ -179,7 +197,7 @@ class BackupRepositoryImplTest {
             })
             put("data", JSONObject().apply {
                 put("profile", org.json.JSONArray())
-                // Missing other 15 tables
+                // Missing every other table
             })
         }.toString()
 
@@ -271,11 +289,130 @@ class BackupRepositoryImplTest {
     // Helpers
     // =========================================================================
 
+    // region Column filtering on import (HU-34)
+
+    private fun createColumnsCursor(names: List<String>): Cursor {
+        val cursor = mockk<Cursor>()
+        var index = -1
+        every { cursor.getColumnIndex("name") } returns 0
+        every { cursor.moveToNext() } answers {
+            index++
+            index < names.size
+        }
+        every { cursor.getString(0) } answers { names[index] }
+        every { cursor.close() } returns Unit
+        return cursor
+    }
+
+    private fun stubTableInfo(columnsByTable: Map<String, List<String>>) {
+        every { db.query(match<String> { it.startsWith("PRAGMA table_info") }) } answers {
+            val table = firstArg<String>()
+                .substringAfter("PRAGMA table_info(")
+                .substringBefore(")")
+            createColumnsCursor(columnsByTable[table].orEmpty())
+        }
+    }
+
+    private fun buildBackupWithSessionExerciseRow(row: Map<String, Int>): String {
+        val json = JSONObject()
+        json.put("metadata", JSONObject().apply {
+            put("appVersion", "1.0")
+            put("schemaVersion", BackupRepositoryImpl.SCHEMA_VERSION)
+            put("exportDate", "2026-02-20T14:00:00")
+            put("recordCount", 1)
+        })
+        val data = JSONObject()
+        for (table in BackupRepositoryImpl.TABLE_ORDER_INSERT) {
+            val rows = org.json.JSONArray()
+            if (table == "session_exercise") {
+                rows.put(JSONObject().apply { row.forEach { (k, v) -> put(k, v) } })
+            }
+            data.put(table, rows)
+        }
+        json.put("data", data)
+        return json.toString()
+    }
+
+    private fun recordPutKeys(): MutableList<String> {
+        val keys = mutableListOf<String>()
+        mockkConstructor(ContentValues::class)
+        every { anyConstructed<ContentValues>().put(any<String>(), any<Long>()) } answers {
+            keys.add(firstArg())
+            Unit
+        }
+        return keys
+    }
+
+    @Test
+    fun `importFromJson drops keys absent from the current schema`() = runTest {
+        stubTableInfo(mapOf("session_exercise" to sessionExerciseV16Columns))
+        val json = buildBackupWithSessionExerciseRow(
+            mapOf(
+                "id" to 1,
+                "session_id" to 1,
+                "exercise_id" to 7,
+                "original_exercise_id" to 3,
+                "slot" to 2,
+            ),
+        )
+        val putKeys = recordPutKeys()
+
+        repository.importFromJson(json)
+
+        assertFalse(
+            "the retired column must not reach insert()",
+            putKeys.contains("original_exercise_id"),
+        )
+        assertTrue(putKeys.contains("exercise_id"))
+    }
+
+    @Test
+    fun `importFromJson keeps every key the schema still declares`() = runTest {
+        stubTableInfo(mapOf("session_exercise" to sessionExerciseV16Columns))
+        val json = buildBackupWithSessionExerciseRow(
+            mapOf(
+                "id" to 1,
+                "session_id" to 1,
+                "exercise_id" to 7,
+                "original_exercise_id" to 3,
+                "slot" to 2,
+            ),
+        )
+        val putKeys = recordPutKeys()
+
+        repository.importFromJson(json)
+
+        assertEquals(
+            listOf("id", "session_id", "exercise_id", "slot").sorted(),
+            putKeys.sorted(),
+        )
+    }
+
+    @Test
+    fun `importFromJson restores a pre-v16 backup without failing`() = runTest {
+        stubTableInfo(mapOf("session_exercise" to sessionExerciseV16Columns))
+        val json = buildBackupWithSessionExerciseRow(
+            mapOf("id" to 1, "session_id" to 1, "exercise_id" to 7, "original_exercise_id" to 3),
+        )
+        val insertedTables = mutableListOf<String>()
+        every { db.insert(any(), any(), any()) } answers {
+            insertedTables.add(firstArg())
+            1L
+        }
+
+        repository.importFromJson(json)
+
+        assertTrue(insertedTables.contains("session_exercise"))
+        verify { db.setTransactionSuccessful() }
+    }
+
+    // endregion
+
     private fun buildValidBackupJson(sessionCount: Int = 0): String {
         val json = JSONObject()
         json.put("metadata", JSONObject().apply {
             put("appVersion", "1.0")
-            put("schemaVersion", 9)
+            put("schemaVersion", BackupRepositoryImpl.SCHEMA_VERSION)
             put("exportDate", "2026-02-20T14:00:00")
             put("recordCount", sessionCount)
         })

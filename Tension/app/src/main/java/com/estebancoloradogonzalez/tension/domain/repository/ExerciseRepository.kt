@@ -3,6 +3,7 @@ package com.estebancoloradogonzalez.tension.domain.repository
 import com.estebancoloradogonzalez.tension.domain.model.EquipmentType
 import com.estebancoloradogonzalez.tension.domain.model.Exercise
 import com.estebancoloradogonzalez.tension.domain.model.MuscleZone
+import com.estebancoloradogonzalez.tension.domain.model.ProgressionDifficulty
 import kotlinx.coroutines.flow.Flow
 
 interface ExerciseRepository {
@@ -20,8 +21,9 @@ interface ExerciseRepository {
         isIsometric: Boolean,
         isToTechnicalFailure: Boolean,
         mediaResource: String?,
+        progressionDifficulty: ProgressionDifficulty,
     ): Long
     suspend fun updateExerciseImage(exerciseId: Long, mediaResource: String?)
+    suspend fun updateProgressionDifficulty(exerciseId: Long, difficulty: ProgressionDifficulty)
     suspend fun exerciseExistsByNameAndEquipment(name: String, equipmentTypeId: Long): Boolean
-    fun getEligibleSubstitutes(sessionId: Long, muscleZoneIds: List<Long>): Flow<List<Exercise>>
 }

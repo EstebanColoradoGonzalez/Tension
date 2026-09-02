@@ -2,7 +2,7 @@
 story_number: 22
 title: 'Preview de sesión sin iniciar y cronómetro para ejercicios por tiempo'
 slug: 'preview-cronometro-sesion'
-estado: 'Done'
+estado: 'Completado'
 autor: 'Esteban Colorado González'
 fecha_creacion: '2026-03-05'
 es_resultado_slicing: false

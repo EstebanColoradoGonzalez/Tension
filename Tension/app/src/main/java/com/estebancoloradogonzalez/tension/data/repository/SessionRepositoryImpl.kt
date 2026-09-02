@@ -2,6 +2,7 @@ package com.estebancoloradogonzalez.tension.data.repository
 
 import androidx.room.withTransaction
 import com.estebancoloradogonzalez.tension.data.local.dao.AlertDao
+import com.estebancoloradogonzalez.tension.data.local.dao.DailyRoutineOverrideDao
 import com.estebancoloradogonzalez.tension.data.local.dao.DeloadDao
 import com.estebancoloradogonzalez.tension.data.local.dao.DeloadFrozenVersionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.ExerciseDao
@@ -15,6 +16,7 @@ import com.estebancoloradogonzalez.tension.data.local.dao.RoutineDao
 import com.estebancoloradogonzalez.tension.data.local.dao.RoutineVersionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.SessionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.SessionExerciseDao
+import com.estebancoloradogonzalez.tension.data.local.dao.WeekDayDao
 import com.estebancoloradogonzalez.tension.data.local.database.TensionDatabase
 import com.estebancoloradogonzalez.tension.data.local.entity.AlertEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.DeloadEntity
@@ -23,8 +25,10 @@ import com.estebancoloradogonzalez.tension.data.local.entity.ExerciseProgression
 import com.estebancoloradogonzalez.tension.data.local.entity.ExerciseSetEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.SessionEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.SessionExerciseEntity
+import com.estebancoloradogonzalez.tension.data.local.entity.WeekDayEntity
 import com.estebancoloradogonzalez.tension.data.repository.model.SessionSummaryData
 import com.estebancoloradogonzalez.tension.domain.model.ActiveSession
+import com.estebancoloradogonzalez.tension.domain.model.DailyRoutineOverride
 import com.estebancoloradogonzalez.tension.domain.model.DeloadState
 import com.estebancoloradogonzalez.tension.domain.model.ExerciseHistoryData
 import com.estebancoloradogonzalez.tension.domain.model.ExerciseHistoryEntry
@@ -43,27 +47,39 @@ import com.estebancoloradogonzalez.tension.domain.model.SessionHistoryItem
 import com.estebancoloradogonzalez.tension.domain.model.SessionPreviewExercise
 import com.estebancoloradogonzalez.tension.domain.model.SetData
 import com.estebancoloradogonzalez.tension.domain.model.SetForTonnage
-import com.estebancoloradogonzalez.tension.domain.model.SubstituteExerciseInfo
+import com.estebancoloradogonzalez.tension.domain.model.TodaySession
+import com.estebancoloradogonzalez.tension.domain.model.WeekDay
+import com.estebancoloradogonzalez.tension.domain.model.ProgressionDifficulty
+import com.estebancoloradogonzalez.tension.domain.model.WeightUnit
 import com.estebancoloradogonzalez.tension.domain.repository.SessionRepository
 import com.estebancoloradogonzalez.tension.domain.rules.AdherenceRule
+import com.estebancoloradogonzalez.tension.domain.rules.AlertNarrativeRule
 import com.estebancoloradogonzalez.tension.domain.rules.AlertThresholdRule
 import com.estebancoloradogonzalez.tension.domain.rules.AvgRirRule
+import com.estebancoloradogonzalez.tension.domain.rules.DailyRoutineRule
 import com.estebancoloradogonzalez.tension.domain.rules.DeloadLoadRule
 import com.estebancoloradogonzalez.tension.domain.rules.DeloadNeedRule
 import com.estebancoloradogonzalez.tension.domain.rules.DoubleThresholdRule
 import com.estebancoloradogonzalez.tension.domain.rules.LoadIncrementResolver
+import com.estebancoloradogonzalez.tension.domain.rules.PrefilledLoadRule
 import com.estebancoloradogonzalez.tension.domain.rules.RoutineFatigueRule
+import com.estebancoloradogonzalez.tension.domain.rules.PlateauThresholdRule
 import com.estebancoloradogonzalez.tension.domain.rules.ProgressionClassificationRule
 import com.estebancoloradogonzalez.tension.domain.rules.ProgressionRateRule
 import com.estebancoloradogonzalez.tension.domain.rules.TonnageRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import java.time.DayOfWeek
+import java.time.Duration
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 import javax.inject.Inject
 
@@ -76,6 +92,8 @@ class SessionRepositoryImpl @Inject constructor(
     private val routineDao: RoutineDao,
     private val routineVersionDao: RoutineVersionDao,
     private val routineCurrentVersionDao: RoutineCurrentVersionDao,
+    private val weekDayDao: WeekDayDao,
+    private val dailyRoutineOverrideDao: DailyRoutineOverrideDao,
     private val deloadFrozenVersionDao: DeloadFrozenVersionDao,
     private val exerciseSetDao: ExerciseSetDao,
     private val exerciseProgressionDao: ExerciseProgressionDao,
@@ -86,84 +104,151 @@ class SessionRepositoryImpl @Inject constructor(
     private val profileDao: ProfileDao,
 ) : SessionRepository {
 
+    /**
+     * Resuelve la sesión de hoy: el día de la semana decide la rutina, y la reasignación
+     * temporal la sustituye si hay una vigente para hoy (HU-36).
+     *
+     * `rotation_state` no participa. Conserva íntegro su rol de avanzar la posición y contar
+     * microciclos al cerrar la sesión —de lo que dependen HU-14 y el protocolo de descarga—,
+     * pero deja de indexar la rutina. Esa separación es lo que hace que la reasignación no
+     * pueda alterar la rotación: no la toca en ningún punto de esta cadena.
+     */
     @OptIn(ExperimentalCoroutinesApi::class)
-    override fun getNextSessionInfo(): Flow<NextSession?> {
-        return rotationStateDao.getRotationState().flatMapLatest { rotationState ->
-            if (rotationState == null) {
-                flowOf(null)
-            } else {
-                deloadDao.getActiveDeload().flatMapLatest { deload ->
-                    routineDao.getAll().flatMapLatest { routines ->
-                        if (routines.isEmpty()) return@flatMapLatest flowOf(null)
+    override fun getTodaySession(): Flow<TodaySession> {
+        return currentDate().flatMapLatest { today ->
+            val weekDay = WeekDay.fromIso(today.dayOfWeek.value)
 
-                        if (deload != null) {
-                            val frozenVersions = deloadFrozenVersionDao.getByDeloadId(deload.id)
-                            if (frozenVersions.isEmpty()) return@flatMapLatest flowOf(null)
-                            val frozenCount = frozenVersions.size
-                            val frozenIndex = RotationResolver.resolveRoutineIndex(
-                                rotationState.microcyclePosition,
-                                frozenCount,
-                            )
-                            val routineSortMap = routines.associate { it.id to it.sortOrder }
-                            val sortedFrozen = frozenVersions.sortedBy { routineSortMap[it.routineId] ?: Int.MAX_VALUE }
-                            val frozenVersion = sortedFrozen[frozenIndex]
-                            val frozenRoutine = routines.find { it.id == frozenVersion.routineId }
-                                ?: return@flatMapLatest flowOf(null)
-                            val versionNumber = frozenVersion.frozenVersionNumber
-                            val rv = routineVersionDao.getByRoutineIdAndVersion(
-                                frozenRoutine.id,
-                                versionNumber,
-                            )
-                            val routineVersionId = rv?.id ?: return@flatMapLatest flowOf(null)
+            combine(
+                weekDayDao.getByIdFlow(weekDay.isoNumber),
+                dailyRoutineOverrideDao.getOverride(),
+                weekDayDao.getAll(),
+            ) { todayEntity, overrideEntity, allWeekDays ->
+                Triple(todayEntity, overrideEntity, allWeekDays)
+            }.flatMapLatest { (todayEntity, overrideEntity, allWeekDays) ->
+                resolveTodaySession(
+                    today = today,
+                    weekDay = weekDay,
+                    permanentRoutineId = todayEntity?.routineId,
+                    override = overrideEntity?.let {
+                        DailyRoutineOverride(date = it.date, routineId = it.routineId)
+                    },
+                    allWeekDays = allWeekDays,
+                )
+            }
+        }
+    }
 
-                            val hasExercises = planAssignmentDao
-                                .countExercisesForRoutineVersion(routineVersionId) > 0
-                            if (!hasExercises) return@flatMapLatest flowOf(null)
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private fun resolveTodaySession(
+        today: LocalDate,
+        weekDay: WeekDay,
+        permanentRoutineId: Long?,
+        override: DailyRoutineOverride?,
+        allWeekDays: List<WeekDayEntity>,
+    ): Flow<TodaySession> {
+        val resolution = DailyRoutineRule.resolve(
+            today = today.toString(),
+            permanentRoutineId = permanentRoutineId,
+            override = override,
+        )
+        val routineId = resolution.routineId
+            ?: return flowOf(TodaySession(weekDay = weekDay, isRestDay = true))
 
-                            flowOf(
-                                NextSession(
-                                    routineId = frozenRoutine.id,
-                                    routineName = frozenRoutine.name,
-                                    versionNumber = versionNumber,
-                                    routineVersionId = routineVersionId,
-                                ),
-                            )
-                        } else {
-                            routineCurrentVersionDao.getAll().flatMapLatest { currentVersions ->
-                                val routineCount = routines.size
-                                val routineIndex = RotationResolver.resolveRoutineIndex(
-                                    rotationState.microcyclePosition,
-                                    routineCount,
-                                )
-                                val sortedRoutines = routines.sortedBy { it.sortOrder }
-                                val routine = sortedRoutines[routineIndex]
-                                val cv = currentVersions.find { it.routineId == routine.id }
-                                    ?: return@flatMapLatest flowOf(null)
-                                val versionNumber = cv.currentVersionNumber
-                                val rv = routineVersionDao.getByRoutineIdAndVersion(
-                                    routine.id,
-                                    versionNumber,
-                                )
-                                val routineVersionId = rv?.id ?: return@flatMapLatest flowOf(null)
+        val sourceWeekDay = allWeekDays
+            .firstOrNull { it.routineId == routineId && it.id != weekDay.isoNumber }
+            ?.let { WeekDay.fromCode(it.code) }
 
-                                val hasExercises = planAssignmentDao
-                                    .countExercisesForRoutineVersion(routineVersionId) > 0
-                                if (!hasExercises) return@flatMapLatest flowOf(null)
+        return deloadDao.getActiveDeload().flatMapLatest { deload ->
+            routineDao.getAll().flatMapLatest { routines ->
+                val routine = routines.find { it.id == routineId }
+                    ?: return@flatMapLatest flowOf(TodaySession(weekDay = weekDay))
 
-                                flowOf(
-                                    NextSession(
-                                        routineId = routine.id,
-                                        routineName = routine.name,
-                                        versionNumber = versionNumber,
-                                        routineVersionId = routineVersionId,
-                                    ),
-                                )
-                            }
-                        }
+                val versionNumberFlow: Flow<Int?> = if (deload != null) {
+                    flowOf(
+                        deloadFrozenVersionDao.getByDeloadId(deload.id)
+                            .find { it.routineId == routineId }
+                            ?.frozenVersionNumber,
+                    )
+                } else {
+                    routineCurrentVersionDao.getAll().map { currentVersions ->
+                        currentVersions
+                            .find { it.routineId == routineId }
+                            ?.currentVersionNumber
+                    }
+                }
+
+                versionNumberFlow.map { versionNumber ->
+                    if (versionNumber == null) {
+                        TodaySession(weekDay = weekDay)
+                    } else {
+                        buildTodaySession(
+                            weekDay = weekDay,
+                            routineId = routineId,
+                            routineName = routine.name,
+                            versionNumber = versionNumber,
+                            isOverridden = resolution.isOverridden,
+                            sourceWeekDay = sourceWeekDay,
+                        )
                     }
                 }
             }
         }
+    }
+
+    /**
+     * La fecha de hoy, reemitida al cruzar la medianoche local.
+     *
+     * La determinación depende del calendario, y leer `LocalDate.now()` una sola vez al
+     * construir el flujo dejaría la propuesta congelada en el día en que la pantalla se abrió
+     * — la reversión automática de la reasignación no llegaría a ocurrir con la app abierta.
+     * No es un sondeo: espera exactamente hasta el siguiente cambio de día y se cancela con
+     * el alcance de quien recolecta.
+     */
+    private fun currentDate(): Flow<LocalDate> = flow {
+        while (true) {
+            val today = LocalDate.now()
+            emit(today)
+            val millisToMidnight = Duration.between(
+                LocalDateTime.now(),
+                today.plusDays(1).atStartOfDay(),
+            ).toMillis()
+            delay(millisToMidnight.coerceAtLeast(MIN_DAY_TICK_MILLIS))
+        }
+    }
+
+    /**
+     * Traduce una rutina y su número de versión a la propuesta del día. Devuelve una sesión
+     * sin propuesta cuando la versión no existe o está vacía: una versión sin ejercicios no
+     * puede iniciarse, y presentarla sería ofrecer un botón que falla.
+     */
+    private suspend fun buildTodaySession(
+        weekDay: WeekDay,
+        routineId: Long,
+        routineName: String,
+        versionNumber: Int,
+        isOverridden: Boolean,
+        sourceWeekDay: WeekDay?,
+    ): TodaySession {
+        val routineVersionId = routineVersionDao
+            .getByRoutineIdAndVersion(routineId, versionNumber)
+            ?.id
+            ?: return TodaySession(weekDay = weekDay)
+
+        if (planAssignmentDao.countExercisesForRoutineVersion(routineVersionId) == 0) {
+            return TodaySession(weekDay = weekDay)
+        }
+
+        return TodaySession(
+            weekDay = weekDay,
+            session = NextSession(
+                routineId = routineId,
+                routineName = routineName,
+                versionNumber = versionNumber,
+                routineVersionId = routineVersionId,
+            ),
+            isTemporaryOverride = isOverridden,
+            overriddenFromWeekDay = sourceWeekDay.takeIf { isOverridden },
+        )
     }
 
     override suspend fun startSession(routineVersionId: Long): Long {
@@ -216,7 +301,6 @@ class SessionRepositoryImpl @Inject constructor(
                     SessionExerciseEntity(
                         sessionId = sessionId,
                         exerciseId = alternatives.first().exerciseId,
-                        originalExerciseId = null,
                         progressionClassification = null,
                         pendingSelection = 0,
                         slot = slot,
@@ -315,10 +399,27 @@ class SessionRepositoryImpl @Inject constructor(
 
         val isDeload = info.deloadId != null
 
-        val lastWeightKg = if (info.isBodyweight == 1 || info.isIsometric == 1) {
+        val hasExternalLoad = info.isBodyweight == 0 && info.isIsometric == 0
+
+        // Memory of the last handled weight, resolved on the exercise actually executed:
+        // swapping a slot for its alternative must not inherit the primary's history.
+        val lastWeightInSessionKg = if (hasExternalLoad) {
+            exerciseSetDao.getLastWeightForSessionExercise(sessionExerciseId)
+        } else {
+            null
+        }
+        val lastWeightInPreviousSessionKg = if (hasExternalLoad) {
+            exerciseSetDao.getLastWeightInPreviousSession(info.exerciseId, info.sessionId)
+        } else {
+            null
+        }
+
+        val lastWeightKg = if (!hasExternalLoad) {
             0.0
         } else if (isDeload) {
-            val progressionExerciseId = info.originalExerciseId ?: info.exerciseId
+            // The deload protocol computes its own load and that decision prevails over
+            // the memory of the last handled weight.
+            val progressionExerciseId = info.exerciseId
             val progression = exerciseProgressionDao
                 .getByExerciseId(progressionExerciseId).first()
             val prescribedLoad = progression?.prescribedLoadKg
@@ -328,14 +429,27 @@ class SessionRepositoryImpl @Inject constructor(
                 val increment = LoadIncrementResolver.resolve(muscleGroup)
                 DeloadLoadRule.calculateDeloadLoad(prescribedLoad, increment)
             } else {
-                exerciseSetDao.getLastWeightForExercise(progressionExerciseId)
+                lastWeightInSessionKg ?: lastWeightInPreviousSessionKg
             }
         } else {
-            val progressionExerciseId = info.originalExerciseId ?: info.exerciseId
+            // Both the prescription and the memory resolve on the executed exercise.
+            // exercise_progression is a per-slot table and the slot is the exercise the
+            // session holds: muscle-group substitution was the only way for the two to
+            // diverge, and it no longer exists (HU-34).
+            val progressionExerciseId = info.exerciseId
             val progression = exerciseProgressionDao
                 .getByExerciseId(progressionExerciseId).first()
-            val prescribedLoad = progression?.prescribedLoadKg?.takeIf { it > 0.0 }
-            prescribedLoad ?: exerciseSetDao.getLastWeightForExercise(progressionExerciseId)
+            PrefilledLoadRule.resolve(
+                prescribedLoadKg = progression?.prescribedLoadKg,
+                lastWeightInSessionKg = lastWeightInSessionKg,
+                lastWeightInPreviousSessionKg = lastWeightInPreviousSessionKg,
+            )
+        }
+
+        val captureUnit = if (hasExternalLoad) {
+            WeightUnit.fromCode(exerciseSetDao.getLastCaptureUnitForExercise(info.exerciseId))
+        } else {
+            WeightUnit.KG
         }
 
         return RegisterSetInfo(
@@ -349,6 +463,7 @@ class SessionRepositoryImpl @Inject constructor(
             isIsometric = info.isIsometric == 1,
             isToTechnicalFailure = info.isToTechnicalFailure == 1,
             prescribedReps = info.reps,
+            captureUnit = captureUnit,
         )
     }
 
@@ -357,11 +472,17 @@ class SessionRepositoryImpl @Inject constructor(
         weightKg: Double,
         reps: Int,
         rir: Int,
+        captureUnit: WeightUnit,
     ) {
         database.withTransaction {
             val nextSetNumber = exerciseSetDao.getNextSetNumber(sessionExerciseId)
             val info = sessionExerciseDao.getExerciseInfoForSet(sessionExerciseId)
                 ?: throw IllegalStateException("Session exercise not found")
+
+            // Exercises without external load have no unit to choose: they are always
+            // registered at zero kilograms.
+            val hasExternalLoad = info.isBodyweight == 0 && info.isIsometric == 0
+            val persistedUnit = if (hasExternalLoad) captureUnit else WeightUnit.KG
 
             exerciseSetDao.insert(
                 ExerciseSetEntity(
@@ -370,68 +491,13 @@ class SessionRepositoryImpl @Inject constructor(
                     weightKg = weightKg,
                     reps = reps,
                     rir = rir,
+                    captureUnit = persistedUnit.name,
                 ),
             )
 
-            val progressionExerciseId = info.originalExerciseId ?: info.exerciseId
+            val progressionExerciseId = info.exerciseId
             exerciseProgressionDao.insertIfNotExists(
                 ExerciseProgressionEntity(exerciseId = progressionExerciseId),
-            )
-        }
-    }
-
-    override suspend fun getSubstituteExerciseInfo(
-        sessionExerciseId: Long,
-    ): SubstituteExerciseInfo? {
-        val info = sessionExerciseDao.getSessionExerciseForSubstitution(sessionExerciseId)
-            ?: return null
-        if (info.completedSets > 0) return null
-        val referenceExerciseId = info.originalExerciseId ?: info.exerciseId
-        val muscleZoneIds = exerciseDao.getMuscleZoneIdsByExerciseId(referenceExerciseId)
-        return SubstituteExerciseInfo(
-            sessionExerciseId = sessionExerciseId,
-            currentExerciseId = info.exerciseId,
-            currentExerciseName = info.exerciseName,
-            sessionId = info.sessionId,
-            muscleZoneIds = muscleZoneIds,
-        )
-    }
-
-    override suspend fun substituteExercise(
-        sessionExerciseId: Long,
-        newExerciseId: Long,
-    ) {
-        database.withTransaction {
-            val info = sessionExerciseDao.getSessionExerciseForSubstitution(sessionExerciseId)
-                ?: throw IllegalStateException("Session exercise not found")
-
-            if (info.completedSets > 0) {
-                throw IllegalStateException("Cannot substitute exercise with registered sets")
-            }
-
-            if (info.exerciseId == newExerciseId) {
-                throw IllegalArgumentException("Cannot substitute with the same exercise")
-            }
-
-            val referenceExerciseId = info.originalExerciseId ?: info.exerciseId
-            val originalZones = exerciseDao.getMuscleZoneIdsByExerciseId(referenceExerciseId)
-            val newZones = exerciseDao.getMuscleZoneIdsByExerciseId(newExerciseId)
-            if (originalZones.intersect(newZones.toSet()).isEmpty()) {
-                throw IllegalArgumentException("Substitute must share at least one muscle zone")
-            }
-
-            val existsInSession = sessionExerciseDao.getBySessionId(info.sessionId).first()
-                .any { it.exerciseId == newExerciseId && it.id != sessionExerciseId }
-            if (existsInSession) {
-                throw IllegalArgumentException("Exercise is already in this session")
-            }
-
-            val originalExerciseId = info.originalExerciseId ?: info.exerciseId
-
-            sessionExerciseDao.updateExerciseId(
-                sessionExerciseId,
-                newExerciseId,
-                originalExerciseId,
             )
         }
     }
@@ -591,6 +657,11 @@ class SessionRepositoryImpl @Inject constructor(
         val exercises = sessionExerciseDao.getSessionExercisesForProgression(sessionId)
         val today = LocalDate.now().toString()
 
+        // Plateau base threshold is a single executant-level parameter: read once, not
+        // once per exercise. It is absent until onboarding completes, hence the default.
+        val plateauBaseThreshold = profileDao.getProfile().first()?.plateauBaseThreshold
+            ?: PlateauThresholdRule.DEFAULT_BASE_THRESHOLD
+
         var regressionCount = 0
         var exercisesWithRecords = 0
 
@@ -655,6 +726,14 @@ class SessionRepositoryImpl @Inject constructor(
 
             if (currentProgression == null) continue
 
+            // Effective threshold = base (the person's pace) x difficulty (the
+            // exercise's capacity to progress). The accumulated counter is never reset
+            // by a difficulty change: only the number it is compared against moves.
+            val effectivePlateauThreshold = PlateauThresholdRule.effectiveThreshold(
+                plateauBaseThreshold,
+                ProgressionDifficulty.fromCode(exercise.progressionDifficulty),
+            )
+
             val (newStatus, newCounter) =
                 ProgressionClassificationRule.resolveNewProgressionState(
                     currentStatus = currentProgression.status,
@@ -662,6 +741,7 @@ class SessionRepositoryImpl @Inject constructor(
                     classification = classification,
                     isIsometric = isIsometric,
                     isMastered = isMastered,
+                    plateauThreshold = effectivePlateauThreshold,
                 )
 
             val prescribedLoadKg = if (isBodyweight || isIsometric) {
@@ -693,7 +773,10 @@ class SessionRepositoryImpl @Inject constructor(
                                 level = "HIGH_ALERT",
                                 exerciseId = exercise.exerciseId,
                                 routineId = routineId,
-                                message = "3 sesiones sin progresión",
+                                message = AlertNarrativeRule.plateauHeadline(
+                                    exercise.exerciseName,
+                                    effectivePlateauThreshold,
+                                ),
                                 isActive = 1,
                                 createdAt = today,
                             ),
@@ -737,12 +820,13 @@ class SessionRepositoryImpl @Inject constructor(
 
         if (deloadNeeded) {
             if (!alertDao.existsActiveByRoutine(routineId, "ROUTINE_REQUIRES_DELOAD")) {
+                val routineName = routineDao.getById(routineId)?.name ?: ""
                 alertDao.insert(
                     AlertEntity(
                         type = "ROUTINE_REQUIRES_DELOAD",
                         level = "HIGH_ALERT",
                         routineId = routineId,
-                        message = "≥50% ejercicios en meseta/regresión",
+                        message = AlertNarrativeRule.deloadHeadline(routineName),
                         isActive = 1,
                         createdAt = today,
                     ),
@@ -856,6 +940,9 @@ class SessionRepositoryImpl @Inject constructor(
         return DeloadState.NoDeloadNeeded
     }
 
+    override suspend fun hasActiveSession(): Boolean =
+        sessionDao.getActiveSession().first() != null
+
     override suspend fun hasActiveDeload(): Boolean =
         deloadDao.getActiveDeloadOnce() != null
 
@@ -906,13 +993,17 @@ class SessionRepositoryImpl @Inject constructor(
 
         val exercises = exerciseDtos.map { dto ->
             val sets = exerciseSetDao.getSetsForSessionExercise(dto.sessionExerciseId).map { set ->
-                SetData(weightKg = set.weightKg, reps = set.reps, rir = set.rir)
+                SetData(
+                    weightKg = set.weightKg,
+                    reps = set.reps,
+                    rir = set.rir,
+                    captureUnit = WeightUnit.fromCode(set.captureUnit),
+                )
             }
             SessionDetailExercise(
                 exerciseId = dto.exerciseId,
                 exerciseName = dto.exerciseName,
                 classification = dto.classification?.let { parseClassification(it) },
-                originalExerciseName = dto.originalExerciseName,
                 sets = sets,
                 isDeload = dto.isDeload,
             )
@@ -968,81 +1059,85 @@ class SessionRepositoryImpl @Inject constructor(
     }
 
     private suspend fun evaluateLowProgressionRate(today: String) {
-        val startDate = LocalDate.now().minusWeeks(4).toString()
+        val startDate = LocalDate.now()
+            .minusWeeks(AlertThresholdRule.PROGRESSION_WINDOW_WEEKS)
+            .toString()
         val counts = sessionExerciseDao.getClassificationCountsByPeriod(startDate)
 
         for (exerciseCount in counts) {
+            val exerciseId = exerciseCount.exerciseId
+
+            // An incomplete window emits nothing at all, not even a notice of missing
+            // data: a ratio over one or two sessions is a coin toss, not a rate.
+            if (exerciseCount.totalCount < AlertThresholdRule.PROGRESSION_MIN_OBSERVATIONS) {
+                continue
+            }
+
             val rate = ProgressionRateRule.calculate(
                 exerciseCount.positiveCount,
                 exerciseCount.totalCount,
             )
-            val level = AlertThresholdRule.progressionLevel(rate)
-            val exerciseId = exerciseCount.exerciseId
+            val difficulty = ProgressionDifficulty.fromCode(
+                exerciseCount.progressionDifficulty,
+            )
+            val level = AlertThresholdRule.progressionLevel(rate, difficulty)
 
+            alertDao.resolveByExerciseAndType(exerciseId, "LOW_PROGRESSION_RATE", today)
             if (level != null) {
-                alertDao.resolveByExerciseAndType(
-                    exerciseId,
-                    "LOW_PROGRESSION_RATE",
-                    today,
-                )
                 alertDao.insert(
                     AlertEntity(
                         type = "LOW_PROGRESSION_RATE",
                         level = level,
                         exerciseId = exerciseId,
-                        message = "Tasa: ${rate.toInt()}%",
+                        message = AlertNarrativeRule.progressionRateHeadline(
+                            exerciseCount.exerciseName,
+                            rate.toInt(),
+                            AlertThresholdRule.PROGRESSION_WINDOW_WEEKS,
+                        ),
                         isActive = 1,
                         createdAt = today,
                     ),
-                )
-            } else {
-                alertDao.resolveByExerciseAndType(
-                    exerciseId,
-                    "LOW_PROGRESSION_RATE",
-                    today,
                 )
             }
         }
     }
 
     private suspend fun evaluateRirOutOfRange(today: String) {
+        val window = AlertThresholdRule.RIR_SUSTAINED_SESSIONS
         val routines = routineDao.getAllOnce()
         for (routine in routines) {
-            val sessionIds = sessionDao.getSessionIdsByRoutineInRange(routine.id, 2)
-            if (sessionIds.size < 2) continue
+            val sessionIds = sessionDao.getSessionIdsByRoutineInRange(routine.id, window)
+            if (sessionIds.size < window) continue
 
-            val firstRirValues = exerciseSetDao.getRirValuesBySessionIds(
-                listOf(sessionIds[0]),
-            )
-            val secondRirValues = exerciseSetDao.getRirValuesBySessionIds(
-                listOf(sessionIds[1]),
-            )
-            if (firstRirValues.isEmpty() || secondRirValues.isEmpty()) continue
+            val rirValuesPerSession = sessionIds.map { sessionId ->
+                exerciseSetDao.getRirValuesBySessionIds(listOf(sessionId))
+            }
+            if (rirValuesPerSession.any { it.isEmpty() }) continue
 
-            val firstAvg = AvgRirRule.calculate(firstRirValues)
-            val secondAvg = AvgRirRule.calculate(secondRirValues)
+            val averages = rirValuesPerSession.map { AvgRirRule.calculate(it) }
+            val allLow = averages.all { AlertThresholdRule.isRirLow(it) }
+            val allHigh = averages.all { AlertThresholdRule.isRirHigh(it) }
 
-            val bothLow = AlertThresholdRule.isRirLow(firstAvg) &&
-                AlertThresholdRule.isRirLow(secondAvg)
-            val bothHigh = AlertThresholdRule.isRirHigh(firstAvg) &&
-                AlertThresholdRule.isRirHigh(secondAvg)
-
-            if (bothLow || bothHigh) {
+            if (allLow || allHigh) {
                 alertDao.resolveByRoutineAndType(routine.id, "RIR_OUT_OF_RANGE", today)
                 alertDao.insert(
                     AlertEntity(
                         type = "RIR_OUT_OF_RANGE",
                         level = "MEDIUM_ALERT",
                         routineId = routine.id,
-                        message = if (bothLow) "RIR <0.5 sostenido" else "RIR >1.8 sostenido",
+                        message = AlertNarrativeRule.rirHeadline(
+                            routine.name,
+                            AvgRirRule.calculate(rirValuesPerSession.flatten()),
+                            allLow,
+                            window,
+                        ),
                         isActive = 1,
                         createdAt = today,
                     ),
                 )
             } else {
-                val bothOptimal = !AlertThresholdRule.isRirOutOfRange(firstAvg) &&
-                    !AlertThresholdRule.isRirOutOfRange(secondAvg)
-                if (bothOptimal) {
+                val allOptimal = averages.none { AlertThresholdRule.isRirOutOfRange(it) }
+                if (allOptimal) {
                     alertDao.resolveByRoutineAndType(
                         routine.id,
                         "RIR_OUT_OF_RANGE",
@@ -1074,49 +1169,46 @@ class SessionRepositoryImpl @Inject constructor(
     private suspend fun evaluateLowAdherence(today: String) {
         val firstSessionDate = sessionDao.getFirstSessionDate() ?: return
         val todayDate = LocalDate.now()
+        // Two consecutive weeks is the shortest window that tells a drop in adherence
+        // apart from one bad week, so nothing is evaluated with less history than that.
+        val minHistoryDays = AlertThresholdRule.ADHERENCE_ALERT_WEEKS * DAYS_PER_WEEK.toLong()
         if (ChronoUnit.DAYS.between(
                 LocalDate.parse(firstSessionDate), todayDate,
-            ) < 7
+            ) < minHistoryDays
         ) return
 
         val profile = profileDao.getProfile().first() ?: return
         val weeklyFrequency = profile.weeklyFrequency
 
-        val prevWeekStart = todayDate.minusWeeks(1).with(DayOfWeek.MONDAY).toString()
-        val prevWeekEnd = todayDate.minusWeeks(1).with(DayOfWeek.SUNDAY).toString()
-        val prevWeekSessions = sessionDao.countSessionsInWeek(prevWeekStart, prevWeekEnd)
-        val prevAdherence = AdherenceRule.calculate(prevWeekSessions, weeklyFrequency)
-
-        if (AlertThresholdRule.isAdherenceLow(prevAdherence)) {
-            val twoWeeksAgoStart = todayDate.minusWeeks(2).with(DayOfWeek.MONDAY).toString()
-            val twoWeeksAgoEnd = todayDate.minusWeeks(2).with(DayOfWeek.SUNDAY).toString()
-            val twoWeeksAgoSessions = sessionDao.countSessionsInWeek(
-                twoWeeksAgoStart,
-                twoWeeksAgoEnd,
-            )
-            val twoWeeksAgoAdherence = AdherenceRule.calculate(
-                twoWeeksAgoSessions,
+        // Index 0 is last week, and the list walks backwards from there.
+        val weeklyAdherence = (1..AlertThresholdRule.ADHERENCE_LOOKBACK_WEEKS).map { weeksAgo ->
+            val weekDate = todayDate.minusWeeks(weeksAgo.toLong())
+            val weekStart = weekDate.with(DayOfWeek.MONDAY).toString()
+            val weekEnd = weekDate.with(DayOfWeek.SUNDAY).toString()
+            AdherenceRule.calculate(
+                sessionDao.countSessionsInWeek(weekStart, weekEnd),
                 weeklyFrequency,
             )
+        }
+        val consecutiveLowWeeks = weeklyAdherence
+            .takeWhile { AlertThresholdRule.isAdherenceLow(it) }
+            .size
+        val level = AlertThresholdRule.adherenceLevel(consecutiveLowWeeks)
 
-            val level = if (AlertThresholdRule.isAdherenceLow(twoWeeksAgoAdherence)) {
-                "CRISIS"
-            } else {
-                "MEDIUM_ALERT"
-            }
-
-            alertDao.resolveAllByType("LOW_ADHERENCE", today)
+        alertDao.resolveAllByType("LOW_ADHERENCE", today)
+        if (level != null) {
             alertDao.insert(
                 AlertEntity(
                     type = "LOW_ADHERENCE",
                     level = level,
-                    message = "Adherencia: ${prevAdherence.toInt()}%",
+                    message = AlertNarrativeRule.adherenceHeadline(
+                        weeklyAdherence.first().toInt(),
+                        consecutiveLowWeeks,
+                    ),
                     isActive = 1,
                     createdAt = today,
                 ),
             )
-        } else {
-            alertDao.resolveAllByType("LOW_ADHERENCE", today)
         }
     }
 
@@ -1160,7 +1252,11 @@ class SessionRepositoryImpl @Inject constructor(
 
             if (level != null) {
                 alertDao.resolveByMuscleGroupAndType(muscleGroup, "TONNAGE_DROP", today)
-                val message = "Caída de tonelaje −${dropPercentage.toInt()}%"
+                val message = AlertNarrativeRule.tonnageHeadline(
+                    muscleGroup,
+                    dropPercentage.toInt(),
+                    AlertThresholdRule.TONNAGE_MICROCYCLES,
+                )
                 alertDao.insert(
                     AlertEntity(
                         type = "TONNAGE_DROP",
@@ -1198,18 +1294,15 @@ class SessionRepositoryImpl @Inject constructor(
 
             if (level != null) {
                 alertDao.resolveByRoutineAndType(routine.id, "ROUTINE_INACTIVITY", today)
-                val muscleZones = planAssignmentDao.getMuscleZoneNamesByRoutineId(routine.id)
-                val zonesText = if (muscleZones.isNotEmpty()) {
-                    " (${muscleZones.joinToString(", ")})"
-                } else {
-                    ""
-                }
                 alertDao.insert(
                     AlertEntity(
                         type = "ROUTINE_INACTIVITY",
                         level = level,
                         routineId = routine.id,
-                        message = "Rutina ${routine.name}: $daysSince días sin sesión$zonesText",
+                        message = AlertNarrativeRule.inactivityHeadline(
+                            routine.name,
+                            daysSince,
+                        ),
                         isActive = 1,
                         createdAt = today,
                     ),
@@ -1243,5 +1336,12 @@ class SessionRepositoryImpl @Inject constructor(
                 )
             }
         }
+    }
+
+    private companion object {
+        const val DAYS_PER_WEEK = 7
+
+        /** Cota inferior del tick de cambio de dia, por si el calculo diera <= 0. */
+        const val MIN_DAY_TICK_MILLIS = 1_000L
     }
 }

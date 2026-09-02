@@ -2,7 +2,7 @@
 story_number: 10
 title: 'Evaluar y clasificar progresión post-sesión'
 slug: 'evaluar-clasificar-progresion-post-sesion'
-estado: 'Done'
+estado: 'Completado'
 autor: 'Esteban Colorado González'
 fecha_creacion: '2026-02-15'
 es_resultado_slicing: false

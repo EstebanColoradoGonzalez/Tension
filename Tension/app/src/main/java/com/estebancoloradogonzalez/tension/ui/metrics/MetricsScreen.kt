@@ -1,29 +1,21 @@
 package com.estebancoloradogonzalez.tension.ui.metrics
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.Scaffold
@@ -39,9 +31,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -51,6 +41,16 @@ import com.estebancoloradogonzalez.tension.domain.model.ExerciseLoadVelocity
 import com.estebancoloradogonzalez.tension.domain.model.ExerciseProgressionRate
 import com.estebancoloradogonzalez.tension.domain.model.RirByRoutine
 import com.estebancoloradogonzalez.tension.domain.model.RirInterpretation
+import com.estebancoloradogonzalez.tension.ui.components.MetricCard
+import com.estebancoloradogonzalez.tension.ui.components.MetricCardPair
+import com.estebancoloradogonzalez.tension.ui.components.MetricEntityRow
+import com.estebancoloradogonzalez.tension.ui.components.MetricInsufficientBlock
+import com.estebancoloradogonzalez.tension.ui.components.MetricListCard
+import com.estebancoloradogonzalez.tension.ui.components.MetricRequirement
+import com.estebancoloradogonzalez.tension.ui.components.MetricRequirementKind
+import com.estebancoloradogonzalez.tension.ui.components.MetricSectionHeader
+import com.estebancoloradogonzalez.tension.ui.components.MetricSufficiencyRules
+import com.estebancoloradogonzalez.tension.ui.theme.TensionThemeExtended
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -133,54 +133,45 @@ private fun MetricsContent(
         item { Spacer(modifier = Modifier.height(4.dp)) }
 
         // Section 1 — Adherence
-        item {
-            AdherenceCard(adherence = state.adherence)
-        }
+        item { MetricSectionHeader(title = stringResource(R.string.metrics_section_adherence)) }
+        item { AdherenceSection(adherence = state.adherence) }
 
-        // Section 2 — RIR by Module
+        // Section 2 — Intensity
         item {
-            RirByRoutineCard(
+            MetricSectionHeader(
+                title = stringResource(R.string.metrics_section_intensity),
+                modifier = Modifier.padding(top = 8.dp),
+            )
+        }
+        item {
+            RirCard(
                 rirByRoutine = state.rirByRoutine,
+                sessionLimit = state.rirSessionLimit,
                 onChangeRirPeriod = onChangeRirPeriod,
             )
         }
 
-        // Divider 2↔3
+        // Section 3 — Progression
         item {
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            MetricSectionHeader(
+                title = stringResource(R.string.metrics_section_progression),
+                modifier = Modifier.padding(top = 8.dp),
+            )
         }
-
-        // Section 3 — Progression Rate
         item {
-            ProgressionRateSection(
+            ProgressionRateCard(
                 rates = state.progressionRates,
+                weeks = state.progressionWeeks,
                 onChangePeriod = onChangeProgressionPeriod,
                 onExerciseClick = onNavigateToExerciseHistory,
             )
         }
-
-        // Divider 3↔4
         item {
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-        }
-
-        // Section 4 — Load Velocity
-        item {
-            Text(
-                text = stringResource(R.string.metrics_load_velocity_title),
-                style = MaterialTheme.typography.titleMedium,
+            LoadVelocityCard(
+                velocities = state.loadVelocities,
+                weeks = state.progressionWeeks,
+                onExerciseClick = onNavigateToExerciseHistory,
             )
-        }
-        items(state.loadVelocities) { velocity ->
-            LoadVelocityRow(
-                velocity = velocity,
-                onClick = { onNavigateToExerciseHistory(velocity.exerciseId) },
-            )
-        }
-
-        // Divider 4↔quick links
-        item {
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         }
 
         // Quick links
@@ -215,44 +206,31 @@ private fun MetricsContent(
 }
 
 @Composable
-private fun AdherenceCard(adherence: AdherenceData) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color(0xFFF0E0E0),
-        ),
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = stringResource(R.string.metrics_adherence_title),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSecondaryContainer,
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "${"%.0f".format(adherence.percentage)}%",
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = stringResource(
-                    R.string.metrics_adherence_detail,
+private fun AdherenceSection(adherence: AdherenceData) {
+    MetricCardPair(
+        left = { cardModifier ->
+            MetricCard(
+                label = stringResource(R.string.metrics_adherence_title),
+                value = MetricSufficiencyRules.adherence(
+                    percentage = adherence.percentage,
+                    plannedSessions = adherence.plannedSessions,
+                ),
+                description = stringResource(
+                    R.string.metrics_adherence_description,
                     adherence.completedSessions,
                     adherence.plannedSessions,
                 ),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                period = stringResource(R.string.metrics_period_current_week),
+                modifier = cardModifier,
             )
-        }
-    }
+        },
+    )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun RirByRoutineCard(
+private fun RirCard(
     rirByRoutine: List<RirByRoutine>,
+    sessionLimit: Int,
     onChangeRirPeriod: (Int) -> Unit,
 ) {
     val options = listOf(
@@ -260,60 +238,43 @@ private fun RirByRoutineCard(
         4 to stringResource(R.string.metrics_rir_4_sessions),
         6 to stringResource(R.string.metrics_rir_6_sessions),
     )
-    var expanded by remember { mutableStateOf(false) }
-    var selectedOption by remember { mutableStateOf(options.first()) }
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-        ),
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = stringResource(R.string.metrics_rir_title),
-                style = MaterialTheme.typography.titleMedium,
+    MetricListCard(
+        label = stringResource(R.string.metrics_rir_title),
+        description = stringResource(R.string.metrics_rir_description),
+        period = stringResource(R.string.metrics_period_last_sessions, sessionLimit),
+        header = {
+            PeriodSelector(
+                options = options,
+                selected = sessionLimit,
+                onSelect = onChangeRirPeriod,
             )
-            Spacer(modifier = Modifier.height(8.dp))
-
-            ExposedDropdownMenuBox(
-                expanded = expanded,
-                onExpandedChange = { expanded = it },
-            ) {
-                TextField(
-                    value = selectedOption.second,
-                    onValueChange = {},
-                    readOnly = true,
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                    modifier = Modifier
-                        .menuAnchor(MenuAnchorType.PrimaryNotEditable)
-                        .fillMaxWidth(),
-                )
-                ExposedDropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false },
-                ) {
-                    options.forEach { option ->
-                        DropdownMenuItem(
-                            text = { Text(option.second) },
-                            onClick = {
-                                selectedOption = option
-                                expanded = false
-                                onChangeRirPeriod(option.first)
-                            },
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
+        },
+    ) {
+        if (rirByRoutine.isEmpty()) {
+            MetricInsufficientBlock(
+                requirement = MetricRequirement(
+                    kind = MetricRequirementKind.ROUTINE_SETS,
+                    available = 0,
+                    needed = MetricSufficiencyRules.MIN_RIR_SETS,
+                ),
+            )
+        } else {
             rirByRoutine.forEach { routine ->
-                RirRoutineRow(routine = routine)
-                Spacer(modifier = Modifier.height(8.dp))
+                MetricEntityRow(
+                    name = routine.routineName,
+                    value = MetricSufficiencyRules.averageRir(
+                        averageRir = routine.averageRir,
+                        recordedSets = routine.recordedSets,
+                    ),
+                    trailing = if (routine.interpretation != null) {
+                        { RirInterpretationBadge(routine.interpretation) }
+                    } else {
+                        null
+                    },
+                )
             }
-
+            Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = stringResource(R.string.metrics_rir_reference),
                 style = MaterialTheme.typography.bodySmall,
@@ -324,64 +285,42 @@ private fun RirByRoutineCard(
 }
 
 @Composable
-private fun RirRoutineRow(routine: RirByRoutine) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
+private fun RirInterpretationBadge(interpretation: RirInterpretation) {
+    val semanticColors = TensionThemeExtended.semanticColors
+    val (badgeColor, badgeLabelColor, badgeText) = when (interpretation) {
+        RirInterpretation.OPTIMAL -> Triple(
+            semanticColors.exerciseRowCompletedBg,
+            semanticColors.progressionPositive,
+            stringResource(R.string.metrics_rir_optimal),
+        )
+        RirInterpretation.RISK_TOO_CLOSE -> Triple(
+            semanticColors.alertCrisisBg,
+            semanticColors.alertCrisis,
+            stringResource(R.string.metrics_rir_risk),
+        )
+        RirInterpretation.INSUFFICIENT_STIMULUS -> Triple(
+            semanticColors.alertMediumBg,
+            semanticColors.alertMedium,
+            stringResource(R.string.metrics_rir_insufficient),
+        )
+    }
+    Surface(
+        shape = RoundedCornerShape(4.dp),
+        color = badgeColor,
     ) {
         Text(
-            text = routine.routineName,
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.weight(1f),
+            text = badgeText,
+            style = MaterialTheme.typography.labelSmall,
+            color = badgeLabelColor,
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
         )
-        if (routine.averageRir == null || routine.interpretation == null) {
-            Text(
-                text = stringResource(R.string.metrics_no_data),
-                style = MaterialTheme.typography.bodyMedium.copy(fontStyle = FontStyle.Italic),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        } else {
-            val (badgeColor, badgeLabelColor, badgeText) = when (routine.interpretation) {
-                RirInterpretation.OPTIMAL -> Triple(
-                    Color(0xFFE8F5E9),
-                    Color(0xFF1B5E20),
-                    stringResource(R.string.metrics_rir_optimal),
-                )
-                RirInterpretation.RISK_TOO_CLOSE -> Triple(
-                    Color(0xFFFFDAD6),
-                    Color(0xFF410002),
-                    stringResource(R.string.metrics_rir_risk),
-                )
-                RirInterpretation.INSUFFICIENT_STIMULUS -> Triple(
-                    Color(0xFFFFF8E1),
-                    Color(0xFF5D4200),
-                    stringResource(R.string.metrics_rir_insufficient),
-                )
-            }
-            Text(
-                text = "${"%.1f".format(routine.averageRir)}",
-                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Surface(
-                shape = RoundedCornerShape(4.dp),
-                color = badgeColor,
-            ) {
-                Text(
-                    text = badgeText,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = badgeLabelColor,
-                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                )
-            }
-        }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ProgressionRateSection(
+private fun ProgressionRateCard(
     rates: List<ExerciseProgressionRate>,
+    weeks: Int,
     onChangePeriod: (Int) -> Unit,
     onExerciseClick: (Long) -> Unit,
 ) {
@@ -390,21 +329,113 @@ private fun ProgressionRateSection(
         8 to stringResource(R.string.metrics_period_8_weeks),
         12 to stringResource(R.string.metrics_period_12_weeks),
     )
-    var expanded by remember { mutableStateOf(false) }
-    var selectedOption by remember { mutableStateOf(options.first()) }
 
+    MetricListCard(
+        label = stringResource(R.string.metrics_progression_title),
+        description = stringResource(R.string.metrics_progression_description),
+        period = stringResource(R.string.metrics_period_last_weeks, weeks),
+        header = {
+            PeriodSelector(
+                options = options,
+                selected = weeks,
+                onSelect = onChangePeriod,
+            )
+        },
+    ) {
+        if (rates.isEmpty()) {
+            MetricInsufficientBlock(
+                requirement = MetricRequirement(
+                    kind = MetricRequirementKind.EXERCISE_OBSERVATIONS,
+                    available = 0,
+                    needed = MetricSufficiencyRules.MIN_PROGRESSION_OBSERVATIONS,
+                ),
+            )
+        } else {
+            rates.forEach { rate ->
+                MetricEntityRow(
+                    name = rate.exerciseName,
+                    value = MetricSufficiencyRules.progressionRate(
+                        rate = rate.rate,
+                        observations = rate.observations,
+                    ),
+                    modifier = Modifier.clickable { onExerciseClick(rate.exerciseId) },
+                    trailing = if (rate.observations >= MetricSufficiencyRules.MIN_PROGRESSION_OBSERVATIONS) {
+                        { ProgressionTrendIcon(rate.rate) }
+                    } else {
+                        null
+                    },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProgressionTrendIcon(rate: Double) {
+    val semanticColors = TensionThemeExtended.semanticColors
+    val (trendIcon, trendColor) = when {
+        rate >= PROGRESSION_ASCENDING_THRESHOLD -> "↑" to semanticColors.progressionPositive
+        rate >= PROGRESSION_STABLE_THRESHOLD -> "=" to semanticColors.maintenance
+        else -> "↓" to semanticColors.regression
+    }
     Text(
-        text = stringResource(R.string.metrics_progression_title),
-        style = MaterialTheme.typography.titleMedium,
+        text = trendIcon,
+        color = trendColor,
+        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
     )
-    Spacer(modifier = Modifier.height(8.dp))
+}
+
+@Composable
+private fun LoadVelocityCard(
+    velocities: List<ExerciseLoadVelocity>,
+    weeks: Int,
+    onExerciseClick: (Long) -> Unit,
+) {
+    MetricListCard(
+        label = stringResource(R.string.metrics_load_velocity_title),
+        description = stringResource(R.string.metrics_load_velocity_description),
+        period = stringResource(R.string.metrics_period_last_weeks, weeks),
+    ) {
+        if (velocities.isEmpty()) {
+            MetricInsufficientBlock(
+                requirement = MetricRequirement(
+                    kind = MetricRequirementKind.EXERCISE_SESSIONS,
+                    available = 0,
+                    needed = MetricSufficiencyRules.MIN_LOAD_VELOCITY_SESSIONS,
+                ),
+            )
+        } else {
+            velocities.forEach { velocity ->
+                MetricEntityRow(
+                    name = velocity.exerciseName,
+                    value = MetricSufficiencyRules.loadVelocity(
+                        velocity = velocity.velocity,
+                        sessionCount = velocity.sessionCount,
+                        isBodyweight = velocity.isBodyweight,
+                    ),
+                    modifier = Modifier.clickable { onExerciseClick(velocity.exerciseId) },
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PeriodSelector(
+    options: List<Pair<Int, String>>,
+    selected: Int,
+    onSelect: (Int) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val selectedLabel = options.firstOrNull { it.first == selected }?.second.orEmpty()
 
     ExposedDropdownMenuBox(
         expanded = expanded,
         onExpandedChange = { expanded = it },
     ) {
         TextField(
-            value = selectedOption.second,
+            value = selectedLabel,
             onValueChange = {},
             readOnly = true,
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
@@ -420,106 +451,14 @@ private fun ProgressionRateSection(
                 DropdownMenuItem(
                     text = { Text(option.second) },
                     onClick = {
-                        selectedOption = option
                         expanded = false
-                        onChangePeriod(option.first)
+                        onSelect(option.first)
                     },
                 )
             }
         }
     }
-
-    Spacer(modifier = Modifier.height(8.dp))
-
-    rates.forEachIndexed { index, rate ->
-        ProgressionRateRow(
-            rate = rate,
-            onClick = { onExerciseClick(rate.exerciseId) },
-        )
-        if (index < rates.lastIndex) {
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-        }
-    }
-
-    if (rates.isEmpty()) {
-        Text(
-            text = stringResource(R.string.metrics_no_data),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
 }
 
-@Composable
-private fun ProgressionRateRow(
-    rate: ExerciseProgressionRate,
-    onClick: () -> Unit,
-) {
-    val isDark = isSystemInDarkTheme()
-    val (trendIcon, trendColor) = when {
-        rate.rate >= 60 -> "↑" to if (isDark) Color(0xFF81C784) else Color(0xFF2E7D32)
-        rate.rate >= 40 -> "=" to if (isDark) Color(0xFFFFD54F) else Color(0xFF8D6E00)
-        else -> "↓" to if (isDark) Color(0xFFEF9A9A) else Color(0xFFC62828)
-    }
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = rate.exerciseName,
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.weight(1f),
-        )
-        Text(
-            text = "${"%.0f".format(rate.rate)}%",
-            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
-        )
-        Spacer(modifier = Modifier.width(4.dp))
-        Text(
-            text = trendIcon,
-            color = trendColor,
-            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-        )
-    }
-}
-
-@Composable
-private fun LoadVelocityRow(
-    velocity: ExerciseLoadVelocity,
-    onClick: () -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = velocity.exerciseName,
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.weight(1f),
-        )
-        if (velocity.isBodyweight) {
-            Text(
-                text = stringResource(R.string.metrics_load_velocity_na),
-                style = MaterialTheme.typography.bodyMedium.copy(fontStyle = FontStyle.Italic),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        } else {
-            val formattedVelocity = when {
-                velocity.velocity > 0 -> "+${"%.1f".format(velocity.velocity)} Kg/sesión"
-                velocity.velocity < 0 -> "${"%.1f".format(velocity.velocity)} Kg/sesión"
-                else -> "0 Kg/sesión"
-            }
-            Text(
-                text = formattedVelocity,
-                style = MaterialTheme.typography.bodyMedium,
-            )
-        }
-    }
-}
+private const val PROGRESSION_ASCENDING_THRESHOLD = 60.0
+private const val PROGRESSION_STABLE_THRESHOLD = 40.0

@@ -11,4 +11,5 @@ data class RegisterSetInfo(
     val isIsometric: Boolean,
     val isToTechnicalFailure: Boolean,
     val prescribedReps: String,
+    val captureUnit: WeightUnit,
 )

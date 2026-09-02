@@ -2,7 +2,7 @@
 story_number: 7
 title: 'Sustituir ejercicio puntualmente en sesión activa'
 slug: 'sustituir-ejercicio-sesion-activa'
-estado: 'Done'
+estado: 'Descartada'
 autor: 'Esteban Colorado González'
 fecha_creacion: '2026-02-14'
 es_resultado_slicing: false

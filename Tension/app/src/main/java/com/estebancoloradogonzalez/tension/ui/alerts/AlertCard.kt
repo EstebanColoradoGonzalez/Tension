@@ -79,14 +79,3 @@ fun AlertCard(
         }
     }
 }
-
-private fun alertTypeDisplayName(type: String): String = when (type) {
-    "PLATEAU" -> "Meseta detectada"
-    "LOW_PROGRESSION_RATE" -> "Tasa de progresión baja"
-    "RIR_OUT_OF_RANGE" -> "RIR fuera de rango"
-    "LOW_ADHERENCE" -> "Adherencia baja"
-    "TONNAGE_DROP" -> "Caída de tonelaje"
-    "ROUTINE_INACTIVITY" -> "Inactividad por rutina"
-    "ROUTINE_REQUIRES_DELOAD" -> "Rutina requiere descarga"
-    else -> type
-}

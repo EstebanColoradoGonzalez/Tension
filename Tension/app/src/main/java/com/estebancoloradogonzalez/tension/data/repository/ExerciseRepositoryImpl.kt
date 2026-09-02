@@ -8,6 +8,7 @@ import com.estebancoloradogonzalez.tension.data.local.entity.ExerciseMuscleZoneE
 import com.estebancoloradogonzalez.tension.domain.model.EquipmentType
 import com.estebancoloradogonzalez.tension.domain.model.Exercise
 import com.estebancoloradogonzalez.tension.domain.model.MuscleZone
+import com.estebancoloradogonzalez.tension.domain.model.ProgressionDifficulty
 import com.estebancoloradogonzalez.tension.domain.repository.ExerciseRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -77,6 +78,7 @@ class ExerciseRepositoryImpl @Inject constructor(
         isIsometric: Boolean,
         isToTechnicalFailure: Boolean,
         mediaResource: String?,
+        progressionDifficulty: ProgressionDifficulty,
     ): Long {
         val entity = ExerciseEntity(
             name = name,
@@ -86,6 +88,7 @@ class ExerciseRepositoryImpl @Inject constructor(
             isToTechnicalFailure = if (isToTechnicalFailure) 1 else 0,
             isCustom = 1,
             mediaResource = mediaResource,
+            progressionDifficulty = progressionDifficulty.name,
         )
         return exerciseDao.insertExerciseWithMuscleZones(
             entity,
@@ -99,26 +102,17 @@ class ExerciseRepositoryImpl @Inject constructor(
         exerciseDao.updateMediaResource(exerciseId, mediaResource)
     }
 
+    override suspend fun updateProgressionDifficulty(
+        exerciseId: Long,
+        difficulty: ProgressionDifficulty,
+    ) {
+        exerciseDao.updateProgressionDifficulty(exerciseId, difficulty.name)
+    }
+
     override suspend fun exerciseExistsByNameAndEquipment(
         name: String,
         equipmentTypeId: Long,
     ): Boolean = exerciseDao.countByNameAndEquipment(name, equipmentTypeId) > 0
-
-    override fun getEligibleSubstitutes(
-        sessionId: Long,
-        muscleZoneIds: List<Long>,
-    ): Flow<List<Exercise>> =
-        exerciseDao.getEligibleSubstitutesForSession(sessionId).map { list ->
-            val filtered = if (muscleZoneIds.isNotEmpty()) {
-                list.filter { exercise ->
-                    val exerciseZoneIds = exerciseDao.getMuscleZoneIdsByExerciseId(exercise.id)
-                    exerciseZoneIds.any { it in muscleZoneIds }
-                }
-            } else {
-                list
-            }
-            filtered.map { it.toDomainModel() }
-        }
 
     private fun com.estebancoloradogonzalez.tension.data.local.dao.ExerciseWithDetails.toDomainModel() =
         Exercise(
@@ -132,5 +126,6 @@ class ExerciseRepositoryImpl @Inject constructor(
             isToTechnicalFailure = isToTechnicalFailure == 1,
             isCustom = isCustom == 1,
             mediaResource = mediaResource,
+            progressionDifficulty = ProgressionDifficulty.fromCode(progressionDifficulty),
         )
 }

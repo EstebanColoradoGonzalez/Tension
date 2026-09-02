@@ -4,6 +4,7 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.estebancoloradogonzalez.tension.data.local.dao.AlertDao
+import com.estebancoloradogonzalez.tension.data.local.dao.DailyRoutineOverrideDao
 import com.estebancoloradogonzalez.tension.data.local.dao.DeloadDao
 import com.estebancoloradogonzalez.tension.data.local.dao.DeloadFrozenVersionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.EquipmentTypeDao
@@ -19,8 +20,10 @@ import com.estebancoloradogonzalez.tension.data.local.dao.RoutineDao
 import com.estebancoloradogonzalez.tension.data.local.dao.RoutineVersionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.SessionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.SessionExerciseDao
+import com.estebancoloradogonzalez.tension.data.local.dao.WeekDayDao
 import com.estebancoloradogonzalez.tension.data.local.dao.WeightRecordDao
 import com.estebancoloradogonzalez.tension.data.local.entity.AlertEntity
+import com.estebancoloradogonzalez.tension.data.local.entity.DailyRoutineOverrideEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.DeloadEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.DeloadFrozenVersionEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.EquipmentTypeEntity
@@ -37,6 +40,7 @@ import com.estebancoloradogonzalez.tension.data.local.entity.RoutineEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.RoutineVersionEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.SessionEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.SessionExerciseEntity
+import com.estebancoloradogonzalez.tension.data.local.entity.WeekDayEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.WeightRecordEntity
 
 @Database(
@@ -47,6 +51,8 @@ import com.estebancoloradogonzalez.tension.data.local.entity.WeightRecordEntity
         RoutineEntity::class,
         RoutineVersionEntity::class,
         RoutineCurrentVersionEntity::class,
+        WeekDayEntity::class,
+        DailyRoutineOverrideEntity::class,
         MuscleZoneEntity::class,
         EquipmentTypeEntity::class,
         ExerciseEntity::class,
@@ -60,7 +66,7 @@ import com.estebancoloradogonzalez.tension.data.local.entity.WeightRecordEntity
         DeloadEntity::class,
         DeloadFrozenVersionEntity::class,
     ],
-    version = 13,
+    version = 17,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -71,6 +77,8 @@ abstract class TensionDatabase : RoomDatabase() {
     abstract fun routineDao(): RoutineDao
     abstract fun routineVersionDao(): RoutineVersionDao
     abstract fun routineCurrentVersionDao(): RoutineCurrentVersionDao
+    abstract fun weekDayDao(): WeekDayDao
+    abstract fun dailyRoutineOverrideDao(): DailyRoutineOverrideDao
     abstract fun muscleZoneDao(): MuscleZoneDao
     abstract fun equipmentTypeDao(): EquipmentTypeDao
     abstract fun exerciseDao(): ExerciseDao

@@ -52,7 +52,6 @@ import com.estebancoloradogonzalez.tension.ui.profile.WeightHistoryScreen
 import com.estebancoloradogonzalez.tension.ui.session.ActiveSessionScreen
 import com.estebancoloradogonzalez.tension.ui.session.RegisterSetScreen
 import com.estebancoloradogonzalez.tension.ui.session.SessionSummaryScreen
-import com.estebancoloradogonzalez.tension.ui.session.SubstituteExerciseScreen
 import com.estebancoloradogonzalez.tension.ui.settings.ExportBackupScreen
 import com.estebancoloradogonzalez.tension.ui.settings.ImportBackupScreen
 import com.estebancoloradogonzalez.tension.ui.settings.SettingsScreen
@@ -95,7 +94,6 @@ fun TensionNavHost(
                 currentRoute != NavigationRoutes.REGISTER &&
                 !currentRoute.startsWith("active-session") &&
                 !currentRoute.startsWith("register-set") &&
-                !currentRoute.startsWith("substitute-exercise") &&
                 !currentRoute.startsWith("session-summary") &&
                 !(currentRoute.startsWith("exercise-detail") &&
                     navController.previousBackStackEntry?.destination?.route
@@ -377,11 +375,6 @@ fun TensionNavHost(
                                     NavigationRoutes.registerSetRoute(sessionExerciseId),
                                 )
                             },
-                            onNavigateToSubstitute = { sessionExerciseId ->
-                                navController.navigate(
-                                    NavigationRoutes.substituteExerciseRoute(sessionExerciseId),
-                                )
-                            },
                             onNavigateToExerciseDetail = { exerciseId ->
                                 navController.navigate(
                                     NavigationRoutes.exerciseDetailRoute(exerciseId),
@@ -409,17 +402,6 @@ fun TensionNavHost(
                         ),
                     ) {
                         RegisterSetScreen(
-                            onNavigateBack = { navController.popBackStack() },
-                        )
-                    }
-
-                    composable(
-                        route = NavigationRoutes.SUBSTITUTE_EXERCISE,
-                        arguments = listOf(
-                            navArgument("sessionExerciseId") { type = NavType.LongType },
-                        ),
-                    ) {
-                        SubstituteExerciseScreen(
                             onNavigateBack = { navController.popBackStack() },
                         )
                     }
@@ -476,6 +458,9 @@ fun TensionNavHost(
                             },
                             onNavigateToDeloadManagement = {
                                 navController.navigate(NavigationRoutes.DELOAD_MANAGEMENT)
+                            },
+                            onNavigateToTrainingPlan = {
+                                navController.navigate(NavigationRoutes.TRAINING_PLAN)
                             },
                         )
                     }

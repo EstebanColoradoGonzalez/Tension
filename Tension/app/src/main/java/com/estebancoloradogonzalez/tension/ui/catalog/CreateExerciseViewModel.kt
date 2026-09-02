@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.estebancoloradogonzalez.tension.data.local.storage.ImageStorageHelper
+import com.estebancoloradogonzalez.tension.domain.model.ProgressionDifficulty
 import com.estebancoloradogonzalez.tension.domain.usecase.catalog.CreateExerciseUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.catalog.GetAllFilterOptionsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -70,6 +71,10 @@ class CreateExerciseViewModel @Inject constructor(
         _uiState.update { it.copy(isToTechnicalFailure = value) }
     }
 
+    fun onProgressionDifficultyChanged(difficulty: ProgressionDifficulty) {
+        _uiState.update { it.copy(progressionDifficulty = difficulty) }
+    }
+
     fun onImageSelected(uri: Uri?) {
         if (uri == null) return
         viewModelScope.launch {
@@ -111,6 +116,7 @@ class CreateExerciseViewModel @Inject constructor(
                     isIsometric = state.isIsometric,
                     isToTechnicalFailure = state.isToTechnicalFailure,
                     mediaResource = state.imageUri,
+                    progressionDifficulty = state.progressionDifficulty,
                 )
                 _uiState.update { it.copy(isSaving = false, saveSuccess = true) }
             } catch (e: IllegalArgumentException) {

@@ -1,0 +1,148 @@
+╔══════════════════════════════════════════════════════════════╗
+║  ⚠️  PROTOTIPO — PROPUESTA PENDIENTE DE VALIDACIÓN CON DISEÑO  ║
+╚══════════════════════════════════════════════════════════════╝
+
+HU #34 — Eliminación de la sustitución por grupo muscular
+Plataforma: mobile / portrait (390 px) · Material 3 · targets ≥ 48 dp
+
+
+────────────────────────────────────────────────────────────────
+ ANTES  ·  dos mecanismos conviviendo
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+| ←  Lunes — Push                          |
++──────────────────────────────────────────+
+|  +────────────────────────────────────+  |
+|  | Elevación Lateral       Serie 1 de 4| |
+|  |                               ⇄  ⇅  | |
+|  |   [  🖼  120×120  ]                 | |   ⇄ alternativa de slot
+|  +────────────────────────────────────+  |   ⇅ sustituir por zona
+|                                          |     muscular  ← SE VA
+|  +────────────────────────────────────+  |
+|  | Press de Banca Plano    Serie 1 de 3| |
+|  |                                  ⇅  | |   ← slot simple, pero
+|  |   [  🖼  120×120  ]                 | |     mostraba ⇅ igual
+|  +────────────────────────────────────+  |
++──────────────────────────────────────────+
+
+  Al pulsar ⇅ se abría:
+
++──────────────────────────────────────────+
+| ←  Sustituir ejercicio                   |
++──────────────────────────────────────────+
+|  Ejercicios de la zona: Hombro           |
+|  ─────────────────────────────────────   |
+|  [🖼] Remo al Mentón                     |   ✗ es Espalda Alta,
+|  [🖼] Vuelos Posteriores                 |     mal catalogado
+|  [🖼] Press Militar                      |   ✗ deltoides posterior,
+|  ─────────────────────────────────────   |     no lateral
+|                                          |   ✗ compuesto vs
+|  ⓘ Solo 3 opciones disponibles           |     aislamiento
++──────────────────────────────────────────+
+                                              PANTALLA ELIMINADA
+
+
+────────────────────────────────────────────────────────────────
+ DESPUÉS  ·  un único mecanismo (CA-34.01 / CA-34.02)
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+| ←  Lunes — Push                          |
+|    Foco Deltoides Lateral y Medio        |
++──────────────────────────────────────────+
+|  +────────────────────────────────────+  |
+|  | Elevación Lateral       Serie 1 de 4| |
+|  |                                     | |   sin controles:
+|  |   [  🖼  120×120  ]                 | |   slot simple
+|  |   4 series · 8-12 reps              | |
+|  +────────────────────────────────────+  |
+|                                          |
+|  +────────────────────────────────────+  |
+|  | Press de Banca          Serie 1 de 3| |
+|  | Inclinado                        ⇄  | |   ⇄ ÚNICO control:
+|  |                                     | |   alternativa de slot
+|  |   [  🖼  120×120  ]                 | |   declarada en el plan
+|  |   3 series · 8-12 reps              | |   (Press Militar)
+|  +────────────────────────────────────+  |
+|                                          |
+|  +────────────────────────────────────+  |
+|  | Press de Banca Plano    Serie 1 de 3| |
+|  |                                     | |
+|  |   [  🖼  120×120  ]                 | |
+|  +────────────────────────────────────+  |
+|                                          |
+|  +────────────────────────────────────+  |
+|  | Aperturas               Serie 1 de 3| |
+|  |                                     | |
+|  |   [  🖼  120×120  ]                 | |
+|  +────────────────────────────────────+  |
++──────────────────────────────────────────+
+
+  El espacio del control ⇅ eliminado no deja hueco ni desalinea
+  la tarjeta (CA-34.03).
+
+
+────────────────────────────────────────────────────────────────
+ INTERCAMBIO DE ALTERNATIVA  ·  conservado sin regresión
+────────────────────────────────────────────────────────────────
+
+  Pulsar ⇄  ──►  intercambio directo, sin pantalla intermedia
+
++────────────────────────────────────+       +────────────────────────────────────+
+| Press de Banca          Serie 1 de 3|      | Press Militar           Serie 1 de 3|
+| Inclinado                        ⇄  |  ──► |                                  ⇄  |
+|   [  🖼  ]                          |      |   [  🖼  ]                          |
++────────────────────────────────────+       +────────────────────────────────────+
+
+  Disponible SOLO antes de registrar la 1ª serie (CA-26.10).
+
+
+────────────────────────────────────────────────────────────────
+ NO AFECTADO  ·  personalización del plan (CA-34.04)
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+| ←  Lunes — Push · v2                     |
++──────────────────────────────────────────+
+|  slot 1  Elevación Lateral        ✎  🗑  |
+|  slot 2  Press de Banca Inclinado ✎  🗑  |
+|          + Press Militar                 |
+|  slot 3  Press de Banca Plano     ✎  🗑  |
+|  slot 4  Aperturas                ✎  🗑  |
+|                                          |
+|        [  + Agregar ejercicio  ]         |
+|        [  + Agregar alternativa ]        |
++──────────────────────────────────────────+
+
+  Cambiar un ejercicio de forma PERMANENTE sigue siendo posible
+  aquí. Esta historia solo retira el cambio puntual por zona.
+
+
+────────────────────────────────────────────────────────────────
+ RUTA ELIMINADA
+────────────────────────────────────────────────────────────────
+
+  Sesión activa ──✗──► Sustituir ejercicio (por zona muscular)
+                       └── pantalla, ViewModel, caso de uso y
+                           consultas exclusivas: eliminados
+
+  Se CONSERVAN las consultas por zona muscular que usan:
+    · Métricas de volumen por grupo muscular (HU-15)
+    · Alerta de caída de tonelaje por grupo muscular (HU-33)
+
+
+────────────────────────────────────────────────────────────────
+ CORRECCIÓN DEL MAPA DE HISTORIAS  ·  CA-34.05
+────────────────────────────────────────────────────────────────
+
+  [x] HU-27 ....... incorporada al índice (hoy ausente)
+  [x] HU-18 ....... estado corregido: Todo → Done
+  [x] HU-20 ....... Cancelada — superada por HU-34
+  [x] HU-07 ....... anotada como funcionalidad retirada
+  [x] RF16 ........ reasignado de HU-07 a HU-26
+  [x] EPIC-08 ..... las nueve historias mapeadas
+
+╔══════════════════════════════════════════════════════════════╗
+║  ⚠️  PROTOTIPO — PROPUESTA PENDIENTE DE VALIDACIÓN CON DISEÑO  ║
+╚══════════════════════════════════════════════════════════════╝

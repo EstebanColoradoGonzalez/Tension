@@ -1,6 +1,7 @@
 package com.estebancoloradogonzalez.tension.domain.usecase.catalog
 
 import com.estebancoloradogonzalez.tension.domain.model.Exercise
+import com.estebancoloradogonzalez.tension.domain.model.ProgressionDifficulty
 import com.estebancoloradogonzalez.tension.domain.repository.ExerciseRepository
 import io.mockk.every
 import io.mockk.mockk
@@ -59,5 +60,6 @@ class GetExercisesUseCaseTest {
         isToTechnicalFailure = false,
         isCustom = false,
         mediaResource = "test",
+        progressionDifficulty = ProgressionDifficulty.MEDIUM,
     )
 }

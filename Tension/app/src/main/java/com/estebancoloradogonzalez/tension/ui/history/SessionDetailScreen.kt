@@ -34,7 +34,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -43,6 +43,9 @@ import com.estebancoloradogonzalez.tension.domain.model.ProgressionClassificatio
 import com.estebancoloradogonzalez.tension.domain.model.SessionDetail
 import com.estebancoloradogonzalez.tension.domain.model.SessionDetailExercise
 import com.estebancoloradogonzalez.tension.domain.model.SetData
+import com.estebancoloradogonzalez.tension.domain.model.WeightUnit
+import com.estebancoloradogonzalez.tension.domain.util.WeightConverter
+import com.estebancoloradogonzalez.tension.ui.components.EntityNameText
 import com.estebancoloradogonzalez.tension.ui.components.ProgressionIndicator
 import java.text.NumberFormat
 import java.time.LocalDate
@@ -78,15 +81,17 @@ fun SessionDetailScreen(
                     }
 
                     CenterAlignedTopAppBar(
+                        expandedHeight = 96.dp,
                         title = {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(
+                                EntityNameText(
                                     text = stringResource(
                                         R.string.session_routine_version_format,
                                         detail.routineName,
                                         detail.versionNumber,
                                     ),
                                     style = MaterialTheme.typography.titleLarge,
+                                    textAlign = TextAlign.Center,
                                 )
                                 Text(
                                     text = "$formattedDate \u00b7 $statusLabel",
@@ -242,7 +247,7 @@ private fun ExerciseDetailCard(
             .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 12.dp),
     ) {
-        Text(
+        EntityNameText(
             text = exercise.exerciseName,
             style = MaterialTheme.typography.titleMedium,
         )
@@ -267,19 +272,6 @@ private fun ExerciseDetailCard(
             }
         }
 
-        if (exercise.originalExerciseName != null) {
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = stringResource(
-                    R.string.session_detail_substituted,
-                    exercise.originalExerciseName,
-                ),
-                style = MaterialTheme.typography.bodySmall,
-                fontStyle = FontStyle.Italic,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-
         Spacer(modifier = Modifier.height(8.dp))
 
         exercise.sets.forEachIndexed { index, set ->
@@ -294,18 +286,32 @@ private fun SetRow(
     set: SetData,
     numberFormat: NumberFormat,
 ) {
-    Text(
-        text = stringResource(
-            R.string.session_detail_set_format,
-            setNumber,
-            numberFormat.format(set.weightKg),
-            set.reps,
-            set.rir,
-        ),
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(start = 16.dp, top = 2.dp),
-    )
+    Column(modifier = Modifier.padding(start = 16.dp, top = 2.dp)) {
+        Text(
+            text = stringResource(
+                R.string.session_detail_set_format,
+                setNumber,
+                numberFormat.format(set.weightKg),
+                set.reps,
+                set.rir,
+            ),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        // Only place in the app where the capture unit surfaces: every aggregate
+        // stays in kilograms.
+        if (set.captureUnit == WeightUnit.LB) {
+            Text(
+                text = stringResource(
+                    R.string.session_detail_set_capture_unit_format,
+                    numberFormat.format(WeightConverter.fromKg(set.weightKg, WeightUnit.LB)),
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
 }
 
 @Composable

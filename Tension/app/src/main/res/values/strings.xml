@@ -21,7 +21,6 @@
 
     <!-- Home B1 -->
     <string name="home_title">Tension</string>
-    <string name="home_next_session_label">Tu próxima sesión</string>
     <string name="home_next_session_format">%1$s \u2014 Versión %2$d</string>
     <string name="home_start_session">Iniciar Sesión</string>
     <string name="home_resume_title">Tienes una sesión activa sin cerrar</string>
@@ -29,6 +28,42 @@
     <string name="home_resume_session">Reanudar Sesión</string>
     <string name="home_microcycles_label">microciclos</string>
     <string name="home_alert_badge_description">Alertas activas</string>
+
+    <!-- Week days and temporary reassignment B1 (HU-36) -->
+    <string name="week_day_monday">Lunes</string>
+    <string name="week_day_tuesday">Martes</string>
+    <string name="week_day_wednesday">Miércoles</string>
+    <string name="week_day_thursday">Jueves</string>
+    <string name="week_day_friday">Viernes</string>
+    <string name="week_day_saturday">Sábado</string>
+    <string name="week_day_sunday">Domingo</string>
+    <string name="week_day_short_monday">LUN</string>
+    <string name="week_day_short_tuesday">MAR</string>
+    <string name="week_day_short_wednesday">MIÉ</string>
+    <string name="week_day_short_thursday">JUE</string>
+    <string name="week_day_short_friday">VIE</string>
+    <string name="week_day_short_saturday">SÁB</string>
+    <string name="week_day_short_sunday">DOM</string>
+    <string name="session_day_routine_format">%1$s — %2$s</string>
+    <string name="home_today_label">Hoy te toca</string>
+    <string name="home_reassign_action">Hacer otra rutina hoy</string>
+    <string name="home_reassign_undo">Deshacer</string>
+    <string name="home_reassign_notice">Solo por hoy. Mañana vuelve tu plan normal.</string>
+    <string name="home_rest_day_title">Día de descanso</string>
+    <string name="home_rest_day_body">Tu plan no tiene rutina asignada al %1$s.</string>
+    <string name="home_rest_day_action">Entrenar de todas formas</string>
+    <string name="reassign_dialog_title">Hacer otra rutina hoy</string>
+    <string name="reassign_dialog_subtitle">Solo para la sesión de hoy. Tu plan no cambia.</string>
+    <string name="reassign_dialog_current">actual</string>
+    <string name="reassign_dialog_confirm">Confirmar</string>
+    <string name="reassign_dialog_cancel">Cancelar</string>
+    <string name="reassign_dialog_empty">No hay rutinas con ejercicios disponibles.</string>
+    <string name="plan_rest_day_row">— descanso</string>
+    <string name="routine_week_days_action">Días de la semana</string>
+    <string name="routine_week_days_title">Días de la semana</string>
+    <string name="routine_week_days_subtitle">Marca los días que ejecutan esta rutina. Los días sin rutina quedan de descanso.</string>
+    <string name="routine_week_days_current_owner">Hoy en «%1$s»</string>
+    <string name="routine_week_days_taken">Se moverá desde «%1$s»</string>
 
     <!-- Active Session E1 -->
     <string name="session_active_label">Sesión activa</string>
@@ -38,7 +73,6 @@
     <string name="session_register_set">Registrar</string>
     <string name="session_extra_set">Serie extra</string>
     <string name="session_finalize">Finalizar</string>
-    <string name="session_substitute">Sustituir</string>
     <string name="session_close">Cerrar Sesión</string>
 
     <!-- Close Session Dialog E4 -->
@@ -62,10 +96,20 @@
     <!-- Register Set E2 -->
     <string name="register_set_title_format">Serie %1$d de %2$d</string>
     <string name="register_set_extra_title_format">Serie extra %1$d</string>
-    <string name="register_set_weight_label">Peso (Kg)</string>
+    <string name="register_set_weight_label_format">Peso (%1$s)</string>
     <string name="register_set_weight_bodyweight_label">Peso (Kg) (Peso corporal)</string>
     <string name="register_set_weight_isometric_label">Peso (Kg) (Isométrico)</string>
     <string name="register_set_weight_suffix">Kg</string>
+    <string name="register_set_unit_kg">Kg</string>
+    <string name="register_set_unit_lb">Lb</string>
+    <string name="register_set_unit_kg_description">Unidad kilogramos</string>
+    <string name="register_set_unit_lb_description">Unidad libras</string>
+    <string name="register_set_weight_decrease">Disminuir peso</string>
+    <string name="register_set_weight_increase">Aumentar peso</string>
+    <string name="register_set_increment_hint_format">Incremento %1$s</string>
+    <string name="register_set_increment_kg">0,5 Kg</string>
+    <string name="register_set_increment_lb">1 lb</string>
+    <string name="register_set_converted_hint_format">Se guardará como %1$s Kg</string>
     <string name="register_set_reps_label">Repeticiones</string>
     <string name="register_set_reps_suffix">reps</string>
     <string name="register_set_seconds_label">Segundos sostenidos</string>
@@ -74,21 +118,12 @@
     <string name="register_set_rir_label">RIR</string>
     <string name="register_set_confirm">Confirmar</string>
     <string name="register_set_cancel">Cancelar</string>
-    <string name="error_weight_negative">El peso debe ser \u2265 0 Kg</string>
+    <string name="error_weight_negative">El peso no puede ser negativo</string>
+    <string name="error_weight_not_numeric">Ingresa un valor numérico válido</string>
+    <string name="error_weight_max_kg">El peso máximo permitido es 500 Kg</string>
+    <string name="error_weight_max_lb_format">El peso máximo permitido es 500 Kg (%1$s lb)</string>
     <string name="error_reps_min">Las repeticiones deben ser \u2265 1</string>
     <string name="error_seconds_min">La duración debe ser \u2265 1 segundo</string>
-
-    <!-- Substitute Exercise E3 -->
-    <string name="substitute_exercise_title">Sustituir ejercicio</string>
-    <string name="substitute_exercise_subtitle_format">Reemplazar: %1$s</string>
-    <string name="substitute_exercise_info_line1">Selecciona un ejercicio de la misma zona muscular
-        como
-        reemplazo.</string>
-    <string name="substitute_exercise_info_line2">La sustitución es puntual y no modifica el Plan.</string>
-    <string name="substitute_exercise_dialog_title_format">¿Sustituir %1$s por %2$s?</string>
-    <string name="substitute_exercise_dialog_text">Esta sustitución es solo para esta sesión.</string>
-    <string name="substitute_exercise_confirm">Confirmar</string>
-    <string name="substitute_exercise_cancel">Cancelar</string>
 
     <!-- Settings J1 -->
     <string name="settings_title">Ajustes</string>
@@ -153,7 +188,7 @@
     <string name="session_detail_tonnage">Tonelaje: %1$s Kg</string>
     <string name="session_detail_exercises">Ejercicios: %1$d/%2$d</string>
     <string name="session_detail_set_format">Serie %1$d: %2$s Kg × %3$d · RIR %4$d</string>
-    <string name="session_detail_substituted">Sustituyó a: %1$s</string>
+    <string name="session_detail_set_capture_unit_format">capturado como %1$s lb</string>
 
     <!-- Exercise History F3 -->
     <string name="exercise_history_subtitle">Historial completo</string>
@@ -246,11 +281,36 @@
     <!-- Active Session Deload Badge -->
     <string name="session_deload_badge">Descarga \u00B7 Sesión %1$s</string>
 
+    <!-- Analytics shared presentation (G1, G2, G3) -->
+    <string name="metric_unit_kg">kg</string>
+    <string name="metric_unit_kg_per_session">kg/sesión</string>
+    <string name="metric_unit_percentage">%</string>
+    <string name="metric_unit_rir">RIR</string>
+    <string name="metric_not_applicable">No aplica</string>
+    <string name="metric_insufficient_marker">──</string>
+    <string name="metric_insufficient_exercise_observations">Necesitas registrar este ejercicio al
+        menos una vez en el período</string>
+    <string name="metric_insufficient_exercise_sessions">Necesitas %1$d sesión más con
+        este ejercicio para calcularla</string>
+    <string name="metric_insufficient_routine_sets">Necesitas registrar series de este módulo
+        para calcularlo</string>
+    <string name="metric_insufficient_weekly_target">Define tu objetivo semanal de sesiones en
+        Ajustes</string>
+    <string name="metric_insufficient_microcycle_sessions">Este microciclo no tiene sesiones
+        registradas</string>
+    <string name="metric_insufficient_complete_microcycles">Necesitas %1$d microciclos completos
+        más</string>
+
     <!-- Metrics G1 -->
     <string name="metrics_title">Métricas</string>
+    <string name="metrics_section_adherence">ADHERENCIA</string>
+    <string name="metrics_section_intensity">INTENSIDAD</string>
+    <string name="metrics_section_progression">PROGRESIÓN</string>
     <string name="metrics_adherence_title">Adherencia semanal</string>
-    <string name="metrics_adherence_detail">%1$d de %2$d sesiones esta semana</string>
-    <string name="metrics_rir_title">RIR promedio por rutina</string>
+    <string name="metrics_adherence_description">%1$d de %2$d sesiones completadas</string>
+    <string name="metrics_rir_title">RIR promedio por módulo</string>
+    <string name="metrics_rir_description">Repeticiones que te quedaban en reserva al terminar cada
+        serie</string>
     <string name="metrics_rir_2_sessions">2 últimas sesiones</string>
     <string name="metrics_rir_4_sessions">4 últimas sesiones</string>
     <string name="metrics_rir_6_sessions">6 últimas sesiones</string>
@@ -260,33 +320,52 @@
     <string name="metrics_rir_risk">Riesgo</string>
     <string name="metrics_rir_insufficient">Insuficiente</string>
     <string name="metrics_progression_title">Tasa de progresión</string>
+    <string name="metrics_progression_description">Sesiones en las que subiste carga</string>
     <string name="metrics_period_4_weeks">4 semanas</string>
     <string name="metrics_period_8_weeks">8 semanas</string>
     <string name="metrics_period_12_weeks">12 semanas</string>
+    <string name="metrics_period_current_week">semana actual</string>
+    <string name="metrics_period_last_sessions">últimas %1$d sesiones</string>
+    <string name="metrics_period_last_weeks">últimas %1$d semanas</string>
     <string name="metrics_load_velocity_title">Velocidad de carga</string>
-    <string name="metrics_load_velocity_na">N/A</string>
-    <string name="metrics_no_data">Sin datos</string>
-    <string name="metrics_link_volume">Volumen por Grupo Muscular \u2192</string>
-    <string name="metrics_link_trend">Tendencia de Progresión \u2192</string>
+    <string name="metrics_load_velocity_description">Carga que sumas de media en cada
+        sesión</string>
+    <string name="metrics_link_volume">Volumen por Grupo Muscular →</string>
+    <string name="metrics_link_trend">Tendencia de Progresión →</string>
 
     <!-- Volume G2 -->
     <string name="volume_title">Volumen por Grupo Muscular</string>
     <string name="volume_microcycle_label">Microciclo %1$d</string>
-    <string name="volume_tonnage_format">%1$,.0f Kg</string>
+    <string name="volume_section_tonnage">TONELAJE</string>
+    <string name="volume_section_distribution">DISTRIBUCIÓN</string>
+    <string name="volume_section_evolution">EVOLUCIÓN</string>
+    <string name="volume_tonnage_title">Tonelaje por grupo muscular</string>
+    <string name="volume_tonnage_description">Peso total que levantaste en cada grupo</string>
     <string name="volume_distribution_title">Distribución de volumen</string>
+    <string name="volume_distribution_description">Reparto de tus series entre las zonas de cada
+        grupo</string>
+    <string name="volume_evolution_title">Evolución del tonelaje</string>
+    <string name="volume_evolution_description">Peso total levantado en cada microciclo</string>
     <string name="volume_routine_header">%1$s</string>
-    <string name="volume_evolution_title">Evolución temporal</string>
-    <string name="volume_insufficient">Se necesitan al menos 2 microciclos para mostrar evolución
-        comparativa.</string>
+    <string name="volume_period_microcycle">microciclo %1$d</string>
+    <string name="volume_period_all_microcycles">todos los microciclos</string>
 
     <!-- Trend G3 -->
     <string name="trend_title">Tendencia de Progresión</string>
-    <string name="trend_evaluation_period">Evaluación: últimos 4\u20136 microciclos</string>
+    <string name="trend_section_muscle_groups">GRUPOS MUSCULARES</string>
+    <string name="trend_muscle_group_title">Tendencia por grupo muscular</string>
+    <string name="trend_description">Hacia dónde va tu tonelaje y tu progresión en cada
+        grupo</string>
+    <string name="trend_period_microcycles">últimos %1$d microciclos completos</string>
     <string name="trend_ascending">Ascendente</string>
     <string name="trend_stable">Estable</string>
     <string name="trend_declining">En declive</string>
-    <string name="trend_insufficient">Se necesitan al menos 4 microciclos completados. Faltan %1$d
-        microciclos.</string>
+
+    <!-- Analytics charts (G2) -->
+    <string name="chart_axis_y_tonnage">kg</string>
+    <string name="chart_axis_x_microcycle">microciclo</string>
+    <string name="chart_microcycle_short_label">mc%1$d</string>
+    <string name="chart_legend_note">Cada punto es un microciclo completo</string>
 
     <!-- Alert Center H1 -->
     <string name="alert_center_title">Alertas</string>
@@ -297,18 +376,19 @@
 
     <!-- Alert Detail H2 -->
     <string name="alert_detail_title">Detalle de Alerta</string>
-    <string name="alert_detail_recommendations_title">Recomendaciones</string>
-    <string name="alert_detail_view_history">Ver historial del ejercicio \u2192</string>
-    <string name="alert_detail_manage_deload">Gestionar descarga \u2192</string>
+    <string name="alert_detail_suggested_action_title">Qué puedes hacer</string>
+    <string name="alert_action_go_to_exercise">Ver ejercicio \u2192</string>
+    <string name="alert_action_go_to_plan">Ir al plan \u2192</string>
+    <string name="alert_action_manage_deload">Gestionar descarga \u2192</string>
 
     <!-- Alert Types -->
-    <string name="alert_type_plateau">Meseta detectada</string>
-    <string name="alert_type_low_progression">Tasa de progresión baja</string>
-    <string name="alert_type_rir_out_of_range">RIR fuera de rango</string>
-    <string name="alert_type_low_adherence">Adherencia baja</string>
-    <string name="alert_type_tonnage_drop">Caída de tonelaje</string>
-    <string name="alert_type_routine_inactivity">Inactividad por rutina</string>
-    <string name="alert_type_routine_requires_deload">Rutina requiere descarga</string>
+    <string name="alert_type_plateau">Llevas tiempo sin avanzar</string>
+    <string name="alert_type_low_progression">Progresión muy lenta</string>
+    <string name="alert_type_rir_out_of_range">Intensidad fuera de tu rango</string>
+    <string name="alert_type_low_adherence">Estás entrenando poco</string>
+    <string name="alert_type_tonnage_drop">Tu volumen bajó</string>
+    <string name="alert_type_routine_inactivity">Módulo sin entrenar</string>
+    <string name="alert_type_routine_requires_deload">Toca bajar el ritmo</string>
 
     <!-- Settings J1 — Datos -->
     <string name="settings_section_data">Datos</string>
@@ -406,4 +486,34 @@
         de sesiones</string>
     <string name="routine_version_exercise_count">%1$d ejercicios</string>
     <string name="routine_version_exercise_count_singular">1 ejercicio</string>
+
+    <!-- Progression Difficulty (HU-32) -->
+    <string name="exercise_field_progression_difficulty">Dificultad de progresión</string>
+    <string name="exercise_difficulty_low">Baja</string>
+    <string name="exercise_difficulty_medium">Media</string>
+    <string name="exercise_difficulty_high">Alta</string>
+    <string name="exercise_difficulty_low_description">Dificultad de progresión baja</string>
+    <string name="exercise_difficulty_medium_description">Dificultad de progresión media</string>
+    <string name="exercise_difficulty_high_description">Dificultad de progresión alta</string>
+    <string name="exercise_effective_plateau_threshold">Se considerará estancado tras %1$d sesiones
+        sin progresar</string>
+    <string name="exercise_progression_difficulty_hint">Los ejercicios de aislamiento progresan más
+        lento que los compuestos. Ajusta este valor para que el sistema no te marque un
+        estancamiento antes de tiempo.</string>
+    <string name="create_exercise_difficulty_hint">Puedes cambiarlo después</string>
+
+    <!-- Settings: plateau base threshold (HU-32) -->
+    <string name="settings_section_training">Entrenamiento</string>
+    <string name="settings_plateau_threshold_label">Umbral base de estancamiento</string>
+    <string name="settings_plateau_threshold_unit">sesiones</string>
+    <string name="settings_plateau_threshold_decrease_description">Disminuir el umbral base de
+        estancamiento</string>
+    <string name="settings_plateau_threshold_increase_description">Aumentar el umbral base de
+        estancamiento</string>
+    <string name="settings_plateau_threshold_explanation">Sesiones seguidas sin progresar antes de
+        que el sistema marque estancamiento. Se multiplica por la dificultad de cada
+        ejercicio.</string>
+    <string name="settings_plateau_threshold_breakdown">Baja → %1$d · Media → %2$d · Alta →
+        %3$d</string>
+    <string name="settings_plateau_threshold_range">Rango permitido: %1$d a %2$d</string>
 </resources>

@@ -12,14 +12,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -40,6 +37,15 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.estebancoloradogonzalez.tension.R
 import com.estebancoloradogonzalez.tension.domain.model.MuscleGroupTonnage
+import com.estebancoloradogonzalez.tension.domain.model.TonnageSnapshot
+import com.estebancoloradogonzalez.tension.ui.components.MetricInsufficientBlock
+import com.estebancoloradogonzalez.tension.ui.components.MetricListCard
+import com.estebancoloradogonzalez.tension.ui.components.MetricRequirement
+import com.estebancoloradogonzalez.tension.ui.components.MetricRequirementKind
+import com.estebancoloradogonzalez.tension.ui.components.MetricSectionHeader
+import com.estebancoloradogonzalez.tension.ui.components.MetricSufficiencyRules
+import com.estebancoloradogonzalez.tension.ui.components.MetricValue
+import com.estebancoloradogonzalez.tension.ui.components.MetricValueText
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -111,6 +117,8 @@ private fun VolumeContent(
     onSelectMicrocycle: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val microcyclePeriod = stringResource(R.string.volume_period_microcycle, state.selectedMicrocycle)
+
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
@@ -119,7 +127,6 @@ private fun VolumeContent(
     ) {
         item { Spacer(modifier = Modifier.height(4.dp)) }
 
-        // Section 1 — Microcycle selector
         item {
             MicrocycleSelector(
                 selected = state.selectedMicrocycle,
@@ -128,20 +135,42 @@ private fun VolumeContent(
             )
         }
 
-        // Section 2 — Tonnage by muscle group
+        // Section 1 — Tonnage by muscle group
+        item { MetricSectionHeader(title = stringResource(R.string.volume_section_tonnage)) }
         item {
-            TonnageByGroupCard(tonnageByGroup = state.tonnageByGroup)
+            TonnageByGroupCard(
+                tonnageByGroup = state.tonnageByGroup,
+                sessionsInMicrocycle = state.sessionsInSelectedMicrocycle,
+                period = microcyclePeriod,
+            )
         }
 
-        // Section 3 — Volume distribution by muscle group
+        // Section 2 — Volume distribution by muscle zone
         item {
-            VolumeDistributionCard(distributionByMuscleGroup = state.distributionByMuscleGroup)
+            MetricSectionHeader(
+                title = stringResource(R.string.volume_section_distribution),
+                modifier = Modifier.padding(top = 8.dp),
+            )
+        }
+        item {
+            VolumeDistributionCard(
+                distributionByMuscleGroup = state.distributionByMuscleGroup,
+                sessionsInMicrocycle = state.sessionsInSelectedMicrocycle,
+                period = microcyclePeriod,
+            )
         }
 
-        // Section 4 — Evolution
+        // Section 3 — Tonnage evolution
         item {
-            EvolutionSection(
+            MetricSectionHeader(
+                title = stringResource(R.string.volume_section_evolution),
+                modifier = Modifier.padding(top = 8.dp),
+            )
+        }
+        item {
+            EvolutionCard(
                 evolution = state.evolution,
+                totalMicrocycles = state.totalMicrocycles,
                 insufficientEvolution = state.insufficientEvolution,
             )
         }
@@ -197,22 +226,33 @@ private fun MicrocycleSelector(
 }
 
 @Composable
-private fun TonnageByGroupCard(tonnageByGroup: List<MuscleGroupTonnage>) {
+private fun TonnageByGroupCard(
+    tonnageByGroup: List<MuscleGroupTonnage>,
+    sessionsInMicrocycle: Int,
+    period: String,
+) {
     val maxTonnage = tonnageByGroup.maxOfOrNull { it.tonnageKg }?.coerceAtLeast(1.0) ?: 1.0
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer,
-        ),
+    MetricListCard(
+        label = stringResource(R.string.volume_tonnage_title),
+        description = stringResource(R.string.volume_tonnage_description),
+        period = period,
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        if (sessionsInMicrocycle < MetricSufficiencyRules.MIN_MICROCYCLE_SESSIONS) {
+            MetricInsufficientBlock(
+                requirement = MetricRequirement(
+                    kind = MetricRequirementKind.MICROCYCLE_SESSIONS,
+                    available = sessionsInMicrocycle,
+                    needed = MetricSufficiencyRules.MIN_MICROCYCLE_SESSIONS,
+                ),
+            )
+        } else {
             tonnageByGroup.forEach { item ->
-                TonnageBarRow(
+                MetricBarRow(
                     label = item.muscleGroup,
-                    tonnage = item.tonnageKg,
-                    maxTonnage = maxTonnage,
+                    fraction = (item.tonnageKg / maxTonnage).toFloat(),
+                    value = MetricSufficiencyRules.tonnage(item.tonnageKg, sessionsInMicrocycle),
+                    barColor = MaterialTheme.colorScheme.primary,
                 )
                 Spacer(modifier = Modifier.height(8.dp))
             }
@@ -221,63 +261,27 @@ private fun TonnageByGroupCard(tonnageByGroup: List<MuscleGroupTonnage>) {
 }
 
 @Composable
-private fun TonnageBarRow(
-    label: String,
-    tonnage: Double,
-    maxTonnage: Double,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.width(120.dp),
-        )
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .height(16.dp)
-                .clip(RoundedCornerShape(4.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant),
-        ) {
-            val fraction = (tonnage / maxTonnage).toFloat().coerceIn(0f, 1f)
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth(fraction)
-                    .height(16.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(MaterialTheme.colorScheme.primary),
-            )
-        }
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = stringResource(R.string.volume_tonnage_format, tonnage),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
-}
-
-@Composable
 private fun VolumeDistributionCard(
     distributionByMuscleGroup: Map<String, Map<String, Double>>,
+    sessionsInMicrocycle: Int,
+    period: String,
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer,
-        ),
+    MetricListCard(
+        label = stringResource(R.string.volume_distribution_title),
+        description = stringResource(R.string.volume_distribution_description),
+        period = period,
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = stringResource(R.string.volume_distribution_title),
-                style = MaterialTheme.typography.titleMedium,
+        if (sessionsInMicrocycle < MetricSufficiencyRules.MIN_MICROCYCLE_SESSIONS ||
+            distributionByMuscleGroup.isEmpty()
+        ) {
+            MetricInsufficientBlock(
+                requirement = MetricRequirement(
+                    kind = MetricRequirementKind.MICROCYCLE_SESSIONS,
+                    available = sessionsInMicrocycle,
+                    needed = MetricSufficiencyRules.MIN_MICROCYCLE_SESSIONS,
+                ),
             )
-            Spacer(modifier = Modifier.height(12.dp))
-
+        } else {
             distributionByMuscleGroup.toSortedMap().forEach { (muscleGroup, zones) ->
                 Text(
                     text = stringResource(R.string.volume_routine_header, muscleGroup),
@@ -286,77 +290,80 @@ private fun VolumeDistributionCard(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 zones.toSortedMap().forEach { (zoneName, percentage) ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 2.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            text = zoneName,
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.width(120.dp),
-                        )
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(16.dp)
-                                .clip(RoundedCornerShape(4.dp))
-                                .background(MaterialTheme.colorScheme.surfaceVariant),
-                        ) {
-                            val fraction = (percentage / 100.0).toFloat().coerceIn(0f, 1f)
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth(fraction)
-                                    .height(16.dp)
-                                    .clip(RoundedCornerShape(4.dp))
-                                    .background(Color(0xFF6B4F4F)),
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "${"%.0f".format(percentage)}%",
-                            style = MaterialTheme.typography.bodyMedium,
-                        )
-                    }
+                    MetricBarRow(
+                        label = zoneName,
+                        fraction = (percentage / 100.0).toFloat(),
+                        value = MetricSufficiencyRules.distribution(percentage, sessionsInMicrocycle),
+                        barColor = MaterialTheme.colorScheme.secondary,
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
                 }
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(8.dp))
             }
         }
     }
 }
 
 @Composable
-private fun EvolutionSection(
-    evolution: List<com.estebancoloradogonzalez.tension.domain.model.TonnageSnapshot>,
+private fun MetricBarRow(
+    label: String,
+    fraction: Float,
+    value: MetricValue,
+    barColor: Color,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.width(110.dp),
+        )
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .height(16.dp)
+                .clip(RoundedCornerShape(4.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(fraction.coerceIn(0f, 1f))
+                    .height(16.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(barColor),
+            )
+        }
+        Spacer(modifier = Modifier.width(8.dp))
+        MetricValueText(
+            value = value,
+            valueStyle = MaterialTheme.typography.bodyMedium,
+            unitStyle = MaterialTheme.typography.labelSmall,
+            showRequirement = false,
+        )
+    }
+}
+
+@Composable
+private fun EvolutionCard(
+    evolution: List<TonnageSnapshot>,
+    totalMicrocycles: Int,
     insufficientEvolution: Boolean,
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer,
-        ),
+    MetricListCard(
+        label = stringResource(R.string.volume_evolution_title),
+        description = stringResource(R.string.volume_evolution_description),
+        period = stringResource(R.string.volume_period_all_microcycles),
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = stringResource(R.string.volume_evolution_title),
-                style = MaterialTheme.typography.titleMedium,
+        val requirement = MetricSufficiencyRules.evolution(totalMicrocycles)
+        if (insufficientEvolution && requirement != null) {
+            MetricInsufficientBlock(requirement = requirement)
+        } else {
+            TonnageChartComposable(
+                snapshots = evolution,
+                modifier = Modifier.fillMaxWidth(),
             )
-            Spacer(modifier = Modifier.height(12.dp))
-
-            if (insufficientEvolution) {
-                Text(
-                    text = stringResource(R.string.volume_insufficient),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            } else {
-                TonnageChartComposable(
-                    snapshots = evolution,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
         }
     }
 }

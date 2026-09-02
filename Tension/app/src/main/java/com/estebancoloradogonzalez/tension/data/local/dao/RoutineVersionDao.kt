@@ -10,6 +10,15 @@ data class RoutineVersionWithCount(
     val id: Long,
     val routineId: Long,
     val versionNumber: Int,
+    /**
+     * Ejercicios que la versión prescribe, contados **por slot**.
+     *
+     * Un slot dual —dos ejercicios que se alternan— es un solo ejercicio de la sesión: o se
+     * hace uno o se hace el otro, nunca los dos. Contar asignaciones inflaba la cifra. El
+     * resto del sistema ya usaba el slot como unidad: el preview agrupa por slot,
+     * `startSession` crea un `session_exercise` por slot y el protocolo de descarga cuenta
+     * `COUNT(DISTINCT pa.slot)`.
+     */
     val exerciseCount: Int,
 )
 
@@ -49,7 +58,7 @@ interface RoutineVersionDao {
             rv.id,
             rv.routine_id AS routineId,
             rv.version_number AS versionNumber,
-            COUNT(pa.exercise_id) AS exerciseCount
+            COUNT(DISTINCT pa.slot) AS exerciseCount
         FROM routine_version rv
         LEFT JOIN plan_assignment pa ON rv.id = pa.routine_version_id
         GROUP BY rv.id
@@ -64,7 +73,7 @@ interface RoutineVersionDao {
             rv.id,
             rv.routine_id AS routineId,
             rv.version_number AS versionNumber,
-            COUNT(pa.exercise_id) AS exerciseCount
+            COUNT(DISTINCT pa.slot) AS exerciseCount
         FROM routine_version rv
         LEFT JOIN plan_assignment pa ON rv.id = pa.routine_version_id
         WHERE rv.routine_id = :routineId

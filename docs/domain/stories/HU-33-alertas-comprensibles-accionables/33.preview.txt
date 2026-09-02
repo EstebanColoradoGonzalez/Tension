@@ -1,0 +1,177 @@
+╔══════════════════════════════════════════════════════════════╗
+║  ⚠️  PROTOTIPO — PROPUESTA PENDIENTE DE VALIDACIÓN CON DISEÑO  ║
+╚══════════════════════════════════════════════════════════════╝
+
+HU #33 — Alertas comprensibles y accionables
+Plataforma: mobile / portrait (390 px) · Material 3 · targets ≥ 48 dp
+
+
+────────────────────────────────────────────────────────────────
+ ANTES  ·  texto en términos del motor
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+|  ⚠  Tasa de progresión baja              |
+|     exercise_id=10 · rate=18% · PLATEAU  |
+|     Umbral de alerta: 40% / crisis: 20%  |
++──────────────────────────────────────────+
+       ✗ identificadores internos
+       ✗ no dice sobre qué ejercicio
+       ✗ no dice qué hacer
+
+
+────────────────────────────────────────────────────────────────
+ CENTRO DE ALERTAS  ·  después
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+| ←  Alertas                          (3)  |
+|  [ Activas ]  [ Resueltas ]              |
++──────────────────────────────────────────+
+|                                          |
+|  +────────────────────────────────────+  |
+|  | ▓▓ CRISIS                          |  |  severidad conservada
+|  | ⛔ Elevación Lateral lleva 10      |  |  (color + iconografía,
+|  |    sesiones sin subir carga        |  |   HU-18 sin regresión)
+|  |    hace 2 días                  >  |  |
+|  +────────────────────────────────────+  |
+|                                          |
+|  +────────────────────────────────────+  |
+|  | ▒▒ ALERTA                          |  |
+|  | ⚠  No has entrenado Pull desde     |  |
+|  |    hace 16 días                    |  |
+|  |    hace 1 día                   >  |  |
+|  +────────────────────────────────────+  |
+|                                          |
+|  +────────────────────────────────────+  |
+|  | ▒▒ ALERTA                          |  |
+|  | ⚠  Tu tonelaje de Espalda bajó 18% |  |
+|  |    en los últimos 2 microciclos    |  |
+|  |    hace 3 días                  >  |  |
+|  +────────────────────────────────────+  |
+|                                          |
++──────────────────────────────────────────+
+
+
+────────────────────────────────────────────────────────────────
+ DETALLE DE ALERTA  ·  acción navegable (CA-33.02)
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+| ←  Detalle de alerta                     |
++──────────────────────────────────────────+
+|                                          |
+|  ▓▓ CRISIS                               |
+|  ⛔  Progresión muy lenta                |
+|                                          |
+|  Elevación Lateral lleva 10 sesiones     |  QUÉ se detectó
+|  sin subir carga. Sigues en 12.5 kg      |  SOBRE QUÉ
+|  desde el 14 de julio.                   |
+|                                          |
+|  Es un ejercicio de progresión difícil,  |  por qué el umbral
+|  por eso el sistema esperó 10 sesiones   |  es el que es
+|  antes de avisarte.                      |
+|                                          |
+|  +── Qué puedes hacer ────────────────+  |  ← BLOQUE NUEVO
+|  |                                    |  |
+|  |  Prueba subir a 13.5 kg aunque     |  |
+|  |  bajes un par de repeticiones.     |  |
+|  |  Si no hay salto disponible en las |  |
+|  |  mancuernas, añade una repetición  |  |
+|  |  por serie antes de subir peso.    |  |
+|  |                                    |  |
+|  |     [  Ver ejercicio  →  ]         |  |  ← acceso directo,
+|  |                                    |  |     48 dp, reutiliza
+|  +────────────────────────────────────+  |     ruta existente
+|                                          |
+|  Detectada el 28 de agosto               |
+|                                          |
++──────────────────────────────────────────+
+
+
+────────────────────────────────────────────────────────────────
+ DETALLE DE ALERTA  ·  acción NO navegable (CA-33.02)
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+|  ▒▒ ALERTA                               |
+|  ⚠  Estás entrenando demasiado cerca     |
+|     del fallo                            |
+|                                          |
+|  En Push tu RIR promedio fue 1.2 durante |
+|  las últimas 3 sesiones. El rango que    |
+|  configuraste es 1 a 3.                  |
+|                                          |
+|  +── Qué puedes hacer ────────────────+  |
+|  |                                    |  |
+|  |  Deja 2 repeticiones en reserva en |  |
+|  |  las primeras series. Entrenar     |  |
+|  |  siempre al fallo acumula fatiga   |  |
+|  |  más rápido de lo que te recuperas.|  |
+|  |                                    |  |
+|  +────────────────────────────────────+  |  ← solo texto, sin
+|                                          |     acceso directo
++──────────────────────────────────────────+
+
+
+────────────────────────────────────────────────────────────────
+ UMBRALES  ·  antes → después (CA-33.03)
+────────────────────────────────────────────────────────────────
+
+  FAMILIA                 ANTES              DESPUÉS
+  ─────────────────────────────────────────────────────────────
+  Tasa de progresión      <40/<20 · 4 sem    ponderado · 6 sem
+  RIR fuera de rango      sostenido 2 ses.   sostenido 3 ses.
+  Adherencia semanal      <60% · 1 sem       <60% · 2 sem
+                          crisis 2 sem       crisis 3+ sem
+  Caída de tonelaje       >10% / >20%        >15% / >25%
+                                             2 microciclos
+  Inactividad por módulo  >10 d / >14 d      >14 d / >21 d
+
+
+  Ponderación de tasa de progresión por dificultad (CA-33.04):
+
+    Dificultad   Alerta    Crisis
+    ─────────────────────────────
+    Baja         < 40%     < 20%
+    Media        < 35%     < 15%
+    Alta         < 25%     < 10%
+
+
+────────────────────────────────────────────────────────────────
+ NO BLOQUEANTE  ·  CA-33.05 (sin regresión respecto a HU-18)
+────────────────────────────────────────────────────────────────
+
+  Con 3 alertas activas, incluida 1 de crisis:
+
+    [ Iniciar sesión ]     ✓ disponible
+    [ Registrar serie ]    ✓ disponible
+    [ Cerrar sesión ]      ✓ disponible
+
+  Ninguna alerta muestra modal, interstitial ni confirmación.
+  El acceso al Centro de Alertas es siempre voluntario.
+
+
+────────────────────────────────────────────────────────────────
+ ESTADO VACÍO
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+| ←  Alertas                          (0)  |
++──────────────────────────────────────────+
+|                                          |
+|              [  ✓  ]                     |
+|                                          |
+|      No hay alertas activas              |
+|                                          |
+|   Tu entrenamiento va en buen camino.    |
+|                                          |
++──────────────────────────────────────────+
+
+  Nota: cuando falta historial para completar la ventana de una
+  familia, esa familia simplemente no evalúa. NO se genera una
+  alerta de "datos insuficientes" (CA-33.09).
+
+╔══════════════════════════════════════════════════════════════╗
+║  ⚠️  PROTOTIPO — PROPUESTA PENDIENTE DE VALIDACIÓN CON DISEÑO  ║
+╚══════════════════════════════════════════════════════════════╝

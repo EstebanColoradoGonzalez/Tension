@@ -1,177 +1,203 @@
 package com.estebancoloradogonzalez.tension.domain.rules
 
+import com.estebancoloradogonzalez.tension.domain.model.ProgressionDifficulty
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class AlertThresholdRuleTest {
 
-    // Progression Alert
+    // Progression rate — weighted by the difficulty of the exercise (CA-33.04)
 
     @Test
-    fun `isProgressionAlert returns true for rate below 40`() {
-        assertTrue(AlertThresholdRule.isProgressionAlert(39.9))
+    fun `given a low difficulty exercise at 39 percent, when evaluated, then it alerts`() {
+        assertEquals(
+            "MEDIUM_ALERT",
+            AlertThresholdRule.progressionLevel(39.9, ProgressionDifficulty.LOW),
+        )
     }
 
     @Test
-    fun `isProgressionAlert returns false for rate at 40`() {
-        assertFalse(AlertThresholdRule.isProgressionAlert(40.0))
+    fun `given a low difficulty exercise at 40 percent, when evaluated, then nothing is raised`() {
+        assertNull(AlertThresholdRule.progressionLevel(40.0, ProgressionDifficulty.LOW))
     }
 
     @Test
-    fun `isProgressionCrisis returns true for rate below 20`() {
-        assertTrue(AlertThresholdRule.isProgressionCrisis(19.9))
+    fun `given a low difficulty exercise at 19 percent, when evaluated, then it is a crisis`() {
+        assertEquals(
+            "CRISIS",
+            AlertThresholdRule.progressionLevel(19.9, ProgressionDifficulty.LOW),
+        )
     }
 
     @Test
-    fun `isProgressionCrisis returns false for rate at 20`() {
-        assertFalse(AlertThresholdRule.isProgressionCrisis(20.0))
-    }
-
-    // RIR
-
-    @Test
-    fun `isRirLow returns true for avgRir below 0_5`() {
-        assertTrue(AlertThresholdRule.isRirLow(0.4))
+    fun `given a medium difficulty exercise at 34 percent, when evaluated, then it alerts`() {
+        assertEquals(
+            "MEDIUM_ALERT",
+            AlertThresholdRule.progressionLevel(34.9, ProgressionDifficulty.MEDIUM),
+        )
     }
 
     @Test
-    fun `isRirLow returns false for avgRir at 0_5`() {
-        assertFalse(AlertThresholdRule.isRirLow(0.5))
+    fun `given a medium difficulty exercise at 38 percent, when evaluated, then nothing is raised`() {
+        assertNull(AlertThresholdRule.progressionLevel(38.0, ProgressionDifficulty.MEDIUM))
     }
 
     @Test
-    fun `isRirHigh returns true for avgRir above 1_8`() {
-        assertTrue(AlertThresholdRule.isRirHigh(1.9))
+    fun `given a medium difficulty exercise at 14 percent, when evaluated, then it is a crisis`() {
+        assertEquals(
+            "CRISIS",
+            AlertThresholdRule.progressionLevel(14.9, ProgressionDifficulty.MEDIUM),
+        )
     }
 
     @Test
-    fun `isRirHigh returns false for avgRir at 1_8`() {
-        assertFalse(AlertThresholdRule.isRirHigh(1.8))
+    fun `given a high difficulty exercise at 24 percent, when evaluated, then it alerts`() {
+        assertEquals(
+            "MEDIUM_ALERT",
+            AlertThresholdRule.progressionLevel(24.9, ProgressionDifficulty.HIGH),
+        )
     }
 
     @Test
-    fun `isRirOutOfRange returns true when low or high`() {
-        assertTrue(AlertThresholdRule.isRirOutOfRange(0.3))
-        assertTrue(AlertThresholdRule.isRirOutOfRange(2.0))
+    fun `given a high difficulty exercise at 30 percent, when evaluated, then nothing is raised`() {
+        assertNull(AlertThresholdRule.progressionLevel(30.0, ProgressionDifficulty.HIGH))
     }
 
     @Test
-    fun `isRirOutOfRange returns false when in optimal range`() {
-        assertFalse(AlertThresholdRule.isRirOutOfRange(1.0))
-    }
-
-    // Adherence
-
-    @Test
-    fun `isAdherenceLow returns true for percentage below 60`() {
-        assertTrue(AlertThresholdRule.isAdherenceLow(59.9))
+    fun `given a high difficulty exercise at 9 percent, when evaluated, then it is a crisis`() {
+        assertEquals(
+            "CRISIS",
+            AlertThresholdRule.progressionLevel(9.9, ProgressionDifficulty.HIGH),
+        )
     }
 
     @Test
-    fun `isAdherenceLow returns false for percentage at 60`() {
-        assertFalse(AlertThresholdRule.isAdherenceLow(60.0))
+    fun `given the same 30 percent rate, when difficulty differs, then only the easy one alerts`() {
+        assertEquals(
+            "MEDIUM_ALERT",
+            AlertThresholdRule.progressionLevel(30.0, ProgressionDifficulty.LOW),
+        )
+        assertNull(AlertThresholdRule.progressionLevel(30.0, ProgressionDifficulty.HIGH))
+    }
+
+    @Test
+    fun `given the progression family, when its window is read, then it spans six weeks`() {
+        assertEquals(6L, AlertThresholdRule.PROGRESSION_WINDOW_WEEKS)
+    }
+
+    @Test
+    fun `given the progression family, when its minimum is read, then it needs three sessions`() {
+        assertEquals(3, AlertThresholdRule.PROGRESSION_MIN_OBSERVATIONS)
+    }
+
+    // RIR — thresholds stay on the 0..2 scale, only the window widens
+
+    @Test
+    fun `given the rir family, when its window is read, then it spans three sessions`() {
+        assertEquals(3, AlertThresholdRule.RIR_SUSTAINED_SESSIONS)
+    }
+
+    @Test
+    fun `given the rir family, when its bounds are read, then they match the captured scale`() {
+        assertEquals(0.5, AlertThresholdRule.RIR_LOW_THRESHOLD, 0.0)
+        assertEquals(1.8, AlertThresholdRule.RIR_HIGH_THRESHOLD, 0.0)
+    }
+
+    @Test
+    fun `given an average rir of 0 point 4, when evaluated, then it is low`() {
+        assertEquals(true, AlertThresholdRule.isRirLow(0.4))
+        assertEquals(false, AlertThresholdRule.isRirLow(0.5))
+    }
+
+    @Test
+    fun `given an average rir of 1 point 9, when evaluated, then it is high`() {
+        assertEquals(true, AlertThresholdRule.isRirHigh(1.9))
+        assertEquals(false, AlertThresholdRule.isRirHigh(1.8))
+    }
+
+    @Test
+    fun `given an average rir of 1, when evaluated, then it is inside the range`() {
+        assertEquals(false, AlertThresholdRule.isRirOutOfRange(1.0))
+    }
+
+    // Adherence — consecutive weeks below the threshold
+
+    @Test
+    fun `given one week below the threshold, when evaluated, then nothing is raised`() {
+        assertNull(AlertThresholdRule.adherenceLevel(1))
+        assertNull(AlertThresholdRule.adherenceLevel(0))
+    }
+
+    @Test
+    fun `given two consecutive weeks below the threshold, when evaluated, then it alerts`() {
+        assertEquals("MEDIUM_ALERT", AlertThresholdRule.adherenceLevel(2))
+    }
+
+    @Test
+    fun `given three or more consecutive weeks, when evaluated, then it is a crisis`() {
+        assertEquals("CRISIS", AlertThresholdRule.adherenceLevel(3))
+        assertEquals("CRISIS", AlertThresholdRule.adherenceLevel(4))
+    }
+
+    @Test
+    fun `given a weekly percentage of 59, when evaluated, then adherence is low`() {
+        assertEquals(true, AlertThresholdRule.isAdherenceLow(59.9))
+        assertEquals(false, AlertThresholdRule.isAdherenceLow(60.0))
     }
 
     // Tonnage
 
     @Test
-    fun `isTonnageAlert returns true for drop above 10 percent`() {
-        assertTrue(AlertThresholdRule.isTonnageAlert(10.1))
+    fun `given a 12 percent drop, when evaluated, then nothing is raised`() {
+        assertNull(AlertThresholdRule.tonnageLevel(12.0, false))
     }
 
     @Test
-    fun `isTonnageAlert returns false for drop at 10 percent`() {
-        assertFalse(AlertThresholdRule.isTonnageAlert(10.0))
+    fun `given a 16 percent drop, when evaluated, then it alerts`() {
+        assertEquals("MEDIUM_ALERT", AlertThresholdRule.tonnageLevel(16.0, false))
     }
 
     @Test
-    fun `isTonnageCrisis returns true for drop above 20 percent`() {
-        assertTrue(AlertThresholdRule.isTonnageCrisis(20.1))
+    fun `given a 22 percent drop, when evaluated, then it is still not a crisis`() {
+        assertEquals("MEDIUM_ALERT", AlertThresholdRule.tonnageLevel(22.0, false))
     }
 
     @Test
-    fun `isTonnageCrisis returns false for drop at 20 percent`() {
-        assertFalse(AlertThresholdRule.isTonnageCrisis(20.0))
+    fun `given a 26 percent drop, when evaluated, then it is a crisis`() {
+        assertEquals("CRISIS", AlertThresholdRule.tonnageLevel(26.0, false))
+    }
+
+    @Test
+    fun `given a planned deload, when tonnage collapses, then nothing is raised`() {
+        assertNull(AlertThresholdRule.tonnageLevel(30.0, true))
+        assertNull(AlertThresholdRule.tonnageLevel(16.0, true))
+    }
+
+    @Test
+    fun `given the tonnage family, when its window is read, then it spans two microcycles`() {
+        assertEquals(2, AlertThresholdRule.TONNAGE_MICROCYCLES)
     }
 
     // Inactivity
 
     @Test
-    fun `isInactivityAlert returns true for days above 10`() {
-        assertTrue(AlertThresholdRule.isInactivityAlert(11))
+    fun `given 12 days without a session, when evaluated, then nothing is raised`() {
+        assertNull(AlertThresholdRule.inactivityLevel(12L))
     }
 
     @Test
-    fun `isInactivityAlert returns false for days at 10`() {
-        assertFalse(AlertThresholdRule.isInactivityAlert(10))
+    fun `given 15 days without a session, when evaluated, then it alerts`() {
+        assertEquals("MEDIUM_ALERT", AlertThresholdRule.inactivityLevel(15L))
     }
 
     @Test
-    fun `isInactivityCrisis returns true for days above 14`() {
-        assertTrue(AlertThresholdRule.isInactivityCrisis(15))
+    fun `given 20 days without a session, when evaluated, then it is still not a crisis`() {
+        assertEquals("MEDIUM_ALERT", AlertThresholdRule.inactivityLevel(20L))
     }
 
     @Test
-    fun `isInactivityCrisis returns false for days at 14`() {
-        assertFalse(AlertThresholdRule.isInactivityCrisis(14))
-    }
-
-    // Composite Level Functions
-
-    @Test
-    fun `progressionLevel returns CRISIS for rate below 20`() {
-        assertEquals("CRISIS", AlertThresholdRule.progressionLevel(15.0))
-    }
-
-    @Test
-    fun `progressionLevel returns MEDIUM_ALERT for rate between 20 and 40`() {
-        assertEquals("MEDIUM_ALERT", AlertThresholdRule.progressionLevel(30.0))
-    }
-
-    @Test
-    fun `progressionLevel returns null for rate at 40 or above`() {
-        assertNull(AlertThresholdRule.progressionLevel(40.0))
-        assertNull(AlertThresholdRule.progressionLevel(80.0))
-    }
-
-    @Test
-    fun `tonnageLevel with deload always returns MEDIUM_ALERT never CRISIS`() {
-        assertEquals("MEDIUM_ALERT", AlertThresholdRule.tonnageLevel(25.0, true))
-        assertEquals("MEDIUM_ALERT", AlertThresholdRule.tonnageLevel(15.0, true))
-    }
-
-    @Test
-    fun `tonnageLevel without deload returns CRISIS for drop above 20`() {
-        assertEquals("CRISIS", AlertThresholdRule.tonnageLevel(25.0, false))
-    }
-
-    @Test
-    fun `tonnageLevel without deload returns MEDIUM_ALERT for drop between 10 and 20`() {
-        assertEquals("MEDIUM_ALERT", AlertThresholdRule.tonnageLevel(15.0, false))
-    }
-
-    @Test
-    fun `tonnageLevel returns null for drop at 10 or below`() {
-        assertNull(AlertThresholdRule.tonnageLevel(10.0, false))
-        assertNull(AlertThresholdRule.tonnageLevel(5.0, true))
-    }
-
-    @Test
-    fun `inactivityLevel returns CRISIS for days above 14`() {
-        assertEquals("CRISIS", AlertThresholdRule.inactivityLevel(15))
-    }
-
-    @Test
-    fun `inactivityLevel returns MEDIUM_ALERT for days between 10 and 14`() {
-        assertEquals("MEDIUM_ALERT", AlertThresholdRule.inactivityLevel(12))
-    }
-
-    @Test
-    fun `inactivityLevel returns null for days at 10 or below`() {
-        assertNull(AlertThresholdRule.inactivityLevel(10))
-        assertNull(AlertThresholdRule.inactivityLevel(5))
+    fun `given 22 days without a session, when evaluated, then it is a crisis`() {
+        assertEquals("CRISIS", AlertThresholdRule.inactivityLevel(22L))
     }
 }

@@ -33,6 +33,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -43,6 +44,7 @@ import com.estebancoloradogonzalez.tension.domain.model.ActionSignal
 import com.estebancoloradogonzalez.tension.domain.model.ExerciseSummaryItem
 import com.estebancoloradogonzalez.tension.domain.model.ProgressionClassification
 import com.estebancoloradogonzalez.tension.domain.model.SessionSummary
+import com.estebancoloradogonzalez.tension.ui.components.EntityNameText
 import com.estebancoloradogonzalez.tension.ui.components.ProgressionIndicator
 import com.estebancoloradogonzalez.tension.ui.theme.LocalTensionSemanticColors
 import java.text.NumberFormat
@@ -60,6 +62,7 @@ fun SessionSummaryScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
+                expandedHeight = 96.dp,
                 title = {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
@@ -68,7 +71,7 @@ fun SessionSummaryScreen(
                         )
                         if (uiState is SessionSummaryUiState.Success) {
                             val summary = (uiState as SessionSummaryUiState.Success).summary
-                            Text(
+                            EntityNameText(
                                 text = stringResource(
                                     R.string.session_routine_version_format,
                                     summary.routineName,
@@ -76,6 +79,7 @@ fun SessionSummaryScreen(
                                 ),
                                 style = MaterialTheme.typography.titleSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center,
                             )
                         }
                     }
@@ -252,11 +256,9 @@ private fun ExerciseSummaryRow(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Text(
+                EntityNameText(
                     text = item.name,
                     style = MaterialTheme.typography.titleMedium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
                     modifier = if (item.isMastered) Modifier.weight(1f, fill = false) else Modifier,
                 )
                 if (item.isMastered) {
@@ -348,13 +350,13 @@ private fun formatActionSignal(
 ): String {
     return when (signal) {
         is ActionSignal.IncreaseLoad ->
-            "Subir carga → %.1f Kg".format(signal.targetKg)
+            "Sube a %.1f Kg la próxima vez".format(signal.targetKg)
         is ActionSignal.ProgressInReps ->
-            "Progresar en reps (misma carga)"
+            "Suma repeticiones antes de subir peso"
         is ActionSignal.MaintainLoad ->
             signal.message
         is ActionSignal.ConsiderDeload ->
-            "Considerar descarga"
+            "Toca bajar el ritmo: activa la descarga"
         is ActionSignal.BodyweightSignal -> {
             val diffText = when {
                 signal.diff == null -> ""
@@ -376,8 +378,8 @@ private fun formatActionSignal(
         is ActionSignal.IsometricMastered ->
             "4×45s — \uD83C\uDFC6 Dominado"
         is ActionSignal.FirstSession ->
-            "Primera sesión — sin referencia"
+            "Primera vez: aún no hay con qué comparar"
         is ActionSignal.DeloadSession ->
-            "Sesión de descarga"
+            "Sesión de descarga: bajar es lo previsto"
     }
 }

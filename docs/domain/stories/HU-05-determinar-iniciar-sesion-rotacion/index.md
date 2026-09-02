@@ -2,7 +2,7 @@
 story_number: 5
 title: 'Determinar e Iniciar Sesión según Rotación Cíclica'
 slug: 'determinar-iniciar-sesion-rotacion'
-estado: 'Done'
+estado: 'Completado'
 autor: 'Esteban Colorado González'
 fecha_creacion: '2026-02-13'
 es_resultado_slicing: false

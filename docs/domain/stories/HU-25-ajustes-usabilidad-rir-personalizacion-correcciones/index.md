@@ -2,7 +2,7 @@
 story_number: 25
 title: 'Ajustes de usabilidad, rango de RIR, personalización de series/repeticiones y correcciones de datos'
 slug: 'ajustes-usabilidad-rir-personalizacion-correcciones'
-estado: 'Pendiente'
+estado: 'Completado'
 autor: 'Esteban Colorado González'
 fecha_creacion: '2026-05-08'
 es_resultado_slicing: false

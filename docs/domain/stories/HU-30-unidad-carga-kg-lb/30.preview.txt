@@ -1,0 +1,143 @@
+╔══════════════════════════════════════════════════════════════╗
+║  ⚠️  PROTOTIPO — PROPUESTA PENDIENTE DE VALIDACIÓN CON DISEÑO  ║
+╚══════════════════════════════════════════════════════════════╝
+
+HU #30 — Captura de carga en la unidad real del implemento
+Plataforma: mobile / portrait (390 px) · Material 3 · targets ≥ 48 dp
+
+
+────────────────────────────────────────────────────────────────
+ REGISTRAR SERIE  ·  unidad Kg (por defecto, CA-30.03)
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+| ←  Registrar serie                       |
++──────────────────────────────────────────+
+|                                          |
+|  Press de Banca Plano                    |
+|  Serie 2 de 3 · 8-12 reps                |
+|                                          |
+|  Peso (*)                                |
+|  +──────────────+   +────────┬────────+  |
+|  |    40.0      |   |  (●)Kg │ (○)Lb |  |  selector segmentado
+|  +──────────────+   +────────┴────────+  |  48 dp de alto
+|                                          |
+|    [   −   ]   [   +   ]                 |  48×48 dp
+|    incremento 0.5 kg                     |  hint Gray500
+|  ┌ espacio reservado para error ───────┐ |
+|  └──────────────────────────────────────┘ |
+|                                          |
+|  Repeticiones (*)      RIR (*)           |
+|  +────────────+        +────────────+    |
+|  |     10     |        |     2      |    |
+|  +────────────+        +────────────+    |
+|                                          |
+|         [    Registrar serie    ]        |  CTA primario
+|                                          |
++──────────────────────────────────────────+
+
+
+────────────────────────────────────────────────────────────────
+ REGISTRAR SERIE  ·  unidad Lb (CA-30.01 / CA-30.04)
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+| ←  Registrar serie                       |
++──────────────────────────────────────────+
+|                                          |
+|  Press de Banca Plano                    |
+|  Serie 2 de 3 · 8-12 reps                |
+|                                          |
+|  Peso (*)                                |
+|  +──────────────+   +────────┬────────+  |
+|  |    45.0      |   |  (○)Kg │ (●)Lb |  |
+|  +──────────────+   +────────┴────────+  |
+|                                          |
+|    [   −   ]   [   +   ]                 |
+|    incremento 1 lb                       |  el hint cambia con
+|                                          |  la unidad activa
+|  ⓘ se guardará como 20.41 kg             |  (opcional, a validar
+|                                          |   con diseño)
+|                                          |
+|         [    Registrar serie    ]        |
+|                                          |
++──────────────────────────────────────────+
+
+
+────────────────────────────────────────────────────────────────
+ ESTADO ERROR  ·  validación sobre el valor convertido (CA-30.05)
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+|  Peso (*)                                |
+|  +──────────────+   +────────┬────────+  |
+|  |   1200.0     |   |  (○)Kg │ (●)Lb |  |  borde de error
+|  +══════════════+   +────────┴────────+  |  Gray600 2px
+|  ⚠ El peso máximo permitido es 500 kg    |
+|    (1102.3 lb)                           |
+|                                          |
+|         [    Registrar serie    ]        |  deshabilitado
+|              ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒            |  Gray200 / Gray500
++──────────────────────────────────────────+
+
+  Otros mensajes:
+    ⚠ El peso no puede ser negativo
+    ⚠ Ingresa un valor numérico válido
+
+
+────────────────────────────────────────────────────────────────
+ EJERCICIO SIN CARGA EXTERNA  ·  selector oculto (CA-30.06)
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+|  Dominadas                               |
+|  Serie 1 de 4 · peso corporal            |
+|                                          |
+|  Peso                                    |
+|  +──────────────+                        |  sin selector
+|  |     ▒▒0▒▒    |  no editable           |  campo Gray200
+|  +──────────────+                        |
+|                                          |
+|  Repeticiones (*)      RIR (*)           |
+|  +────────────+        +────────────+    |
+|  |      8     |        |     1      |    |
+|  +────────────+        +────────────+    |
++──────────────────────────────────────────+
+
+
+────────────────────────────────────────────────────────────────
+ DETALLE DE SERIE EN HISTORIAL  ·  unidad de captura visible
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+| ←  Sesión del 12 ago · Lunes — Push      |
++──────────────────────────────────────────+
+|  Press de Banca Plano                    |
+|  ─────────────────────────────────────   |
+|  Serie 1    20.4 kg   ·  10 reps · RIR 2 |
+|             capturado como 45 lb         |  ← única ubicación
+|  ─────────────────────────────────────   |    donde aparece la
+|  Serie 2    20.4 kg   ·   9 reps · RIR 1 |    unidad de captura
+|             capturado como 45 lb         |
+|  ─────────────────────────────────────   |
+|  Serie 3    22.7 kg   ·   8 reps · RIR 1 |
+|             capturado como 50 lb         |
+|  ─────────────────────────────────────   |
+|  Tonelaje del ejercicio       617.5 kg   |  ← siempre en kg
++──────────────────────────────────────────+
+
+
+────────────────────────────────────────────────────────────────
+ REGLA DE CONVERSIÓN
+────────────────────────────────────────────────────────────────
+
+  captura     ──────────────►  persistencia  ──────────►  agregados
+  45.0 lb        × 0.45359237     20.41 kg       suma       kg
+
+  · 2 decimales de precisión
+  · NO se redondea al múltiplo de 0.5 kg
+  · El incremento (0.5 kg / 1 lb) rige los controles, no el dato
+
+╔══════════════════════════════════════════════════════════════╗
+║  ⚠️  PROTOTIPO — PROPUESTA PENDIENTE DE VALIDACIÓN CON DISEÑO  ║
+╚══════════════════════════════════════════════════════════════╝

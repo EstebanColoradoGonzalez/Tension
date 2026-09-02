@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
@@ -31,6 +32,11 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.estebancoloradogonzalez.tension.R
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.width
+import com.estebancoloradogonzalez.tension.ui.components.EntityNameText
+import com.estebancoloradogonzalez.tension.ui.components.weekDayShortName
+import com.estebancoloradogonzalez.tension.ui.components.weekDaysShortLabel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -118,11 +124,19 @@ fun TrainingPlanScreen(
                                     bottom = 4.dp,
                                 ),
                             ) {
-                                Text(
-                                    text = routine.routineName,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                )
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        text = weekDaysShortLabel(routine.weekDays),
+                                        style = MaterialTheme.typography.labelLarge,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.width(44.dp),
+                                    )
+                                    EntityNameText(
+                                        text = routine.routineName,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                    )
+                                }
                             }
                         }
                         itemsIndexed(
@@ -165,6 +179,42 @@ fun TrainingPlanScreen(
                                     color = MaterialTheme.colorScheme.outlineVariant,
                                 )
                                 Spacer(modifier = Modifier.height(12.dp))
+                            }
+                        }
+                    }
+
+                    // Los dias sin rutina cierran la lista. El descanso se presenta como
+                    // parte del plan, no como dia ausente.
+                    if (uiState.restDays.isNotEmpty()) {
+                        item(key = "rest_days_divider") {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            HorizontalDivider(
+                                thickness = 1.dp,
+                                color = MaterialTheme.colorScheme.outlineVariant,
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                        }
+                        items(
+                            items = uiState.restDays,
+                            key = { day -> "rest_day_${day.name}" },
+                        ) { day ->
+                            Row(
+                                modifier = Modifier
+                                    .padding(horizontal = 16.dp)
+                                    .height(56.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(
+                                    text = weekDayShortName(day),
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.width(44.dp),
+                                )
+                                Text(
+                                    text = stringResource(R.string.plan_rest_day_row),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
                             }
                         }
                     }

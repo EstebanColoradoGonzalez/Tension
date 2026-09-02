@@ -93,4 +93,31 @@ class RotationResolverTest {
     fun `advanceRotation with zero routineCount throws`() {
         RotationResolver.advanceRotation(RotationState(1, 0), routineCount = 0)
     }
+
+    // CA-36.03 — La rotación no se altera por una reasignación temporal
+
+    @Test
+    fun `advanceRotation depends only on the rotation state and the routine count`() {
+        // La firma es el contrato: no hay parámetro por el que la rutina ejecutada pueda
+        // entrar. Una sesión reasignada y una sesión normal avanzan la rotación desde el
+        // mismo estado al mismo estado.
+        val current = RotationState(microcyclePosition = 4, microcycleCount = 14)
+
+        val afterRegularSession = RotationResolver.advanceRotation(current, routineCount = 6)
+        val afterReassignedSession = RotationResolver.advanceRotation(current, routineCount = 6)
+
+        assertEquals(afterRegularSession, afterReassignedSession)
+        assertEquals(5, afterReassignedSession.microcyclePosition)
+        assertEquals(14, afterReassignedSession.microcycleCount)
+    }
+
+    @Test
+    fun `advanceRotation closes the microcycle at the last position regardless of the routine executed`() {
+        val current = RotationState(microcyclePosition = 6, microcycleCount = 14)
+
+        val result = RotationResolver.advanceRotation(current, routineCount = 6)
+
+        assertEquals(1, result.microcyclePosition)
+        assertEquals(15, result.microcycleCount)
+    }
 }

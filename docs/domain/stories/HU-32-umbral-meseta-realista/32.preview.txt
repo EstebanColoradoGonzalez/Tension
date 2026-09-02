@@ -1,0 +1,156 @@
+╔══════════════════════════════════════════════════════════════╗
+║  ⚠️  PROTOTIPO — PROPUESTA PENDIENTE DE VALIDACIÓN CON DISEÑO  ║
+╚══════════════════════════════════════════════════════════════╝
+
+HU #32 — Umbral de meseta realista por ejercicio
+Plataforma: mobile / portrait (390 px) · Material 3 · targets ≥ 48 dp
+
+
+────────────────────────────────────────────────────────────────
+ DETALLE DE EJERCICIO  ·  nuevo atributo (CA-32.02)
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+| ←  Elevación Lateral                     |
++──────────────────────────────────────────+
+|                                          |
+|        [   🖼   240×180   ]              |
+|                                          |
+|  Equipamiento                            |
+|  Mancuernas                              |
+|  ─────────────────────────────────────   |
+|  Zonas musculares                        |
+|  Hombro                                  |
+|  ─────────────────────────────────────   |
+|  Dificultad de progresión           ⓘ    |  ← NUEVO
+|  +──────────┬──────────┬──────────+      |
+|  |  (○)Baja │ (○)Media │ (●)Alta  |      |  segmentado, 48 dp
+|  +──────────┴──────────┴──────────+      |
+|                                          |
+|  Se considerará estancado tras            |
+|  10 sesiones sin progresar               |  ← cálculo en vivo:
+|                                          |     5 (base) × 2 (Alta)
+|  ─────────────────────────────────────   |
+|  Tipo de ejercicio                       |
+|  [ ] Peso corporal   [ ] Isométrico      |
+|                                          |
+|         [    Guardar cambios    ]        |
++──────────────────────────────────────────+
+
+  ⓘ tooltip / hint:
+    "Los ejercicios de aislamiento progresan más lento que los
+     compuestos. Ajusta este valor para que el sistema no te
+     marque un estancamiento antes de tiempo."
+
+
+────────────────────────────────────────────────────────────────
+ CREAR EJERCICIO  ·  valor por defecto (CA-32.05)
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+| ←  Nuevo ejercicio                       |
++──────────────────────────────────────────+
+|  Nombre (*)                              |
+|  +──────────────────────────────────+    |
+|  | Curl de Muñeca                   |    |
+|  +──────────────────────────────────+    |
+|                                          |
+|  Equipamiento (*)                        |
+|  [▼ Mancuernas                      ]    |
+|                                          |
+|  Zonas musculares (*)                    |
+|  [▼ Antebrazo                       ]    |
+|                                          |
+|  Dificultad de progresión                |
+|  +──────────┬──────────┬──────────+      |
+|  |  (○)Baja │ (●)Media │ (○)Alta  |      |  ← Media por defecto
+|  +──────────┴──────────┴──────────+      |
+|  Puedes cambiarlo después                |
+|                                          |
+|            [    Crear    ]               |
++──────────────────────────────────────────+
+
+
+────────────────────────────────────────────────────────────────
+ AJUSTES  ·  umbral base configurable (CA-32.04)
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+| ←  Ajustes                               |
++──────────────────────────────────────────+
+|  ENTRENAMIENTO                           |
+|  ─────────────────────────────────────   |
+|  Rango de RIR objetivo            1 – 3  |
+|  ─────────────────────────────────────   |
+|  Umbral base de estancamiento       ⓘ    |  ← NUEVO
+|                                          |
+|      [   −   ]     5     [   +   ]       |  48×48 dp
+|                sesiones                  |
+|                                          |
+|  Sesiones seguidas sin progresar antes   |
+|  de que el sistema marque estancamiento. |
+|  Se multiplica por la dificultad de cada |
+|  ejercicio.                              |
+|                                          |
+|  Baja ×1 → 5    Media ×1.5 → 8           |
+|  Alta ×2 → 10                            |  ← se actualiza en vivo
+|                                          |
+|  Rango permitido: 3 a 15                 |
+|  ─────────────────────────────────────   |
+|  Protocolo de descarga         Activado  |
++──────────────────────────────────────────+
+
+
+────────────────────────────────────────────────────────────────
+ ESTADO ERROR  ·  fuera de rango
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+|      [   −   ]     2     [   +   ]       |
+|                sesiones                  |
+|  ⚠ El umbral debe estar entre 3 y 15     |
+|                                          |
+|  El control [ − ] se deshabilita en 3    |
+|  y [ + ] en 15                           |
++──────────────────────────────────────────+
+
+
+────────────────────────────────────────────────────────────────
+ CLASIFICACIÓN SEED SUGERIDA  ·  CA-32.06
+────────────────────────────────────────────────────────────────
+
+  ALTA  (×2 → 10 sesiones)   aislamiento de zonas pequeñas
+    Elevación Lateral · Curl Martillo · Curl de Predicador
+    Curl Bayesian en Banco Inclinado · Curl de Concentración
+    Curl de Martillo Cruzado · Extensión de Tríceps (ambas)
+    Rompecráneos · Face Pull · Vuelos Posteriores
+    Aperturas · Cruce de Polea Alta
+
+  BAJA  (×1 → 5 sesiones)    compuestos multiarticulares pesados
+    Prensa Inclinada · Sentadilla Hack · Peso Muerto Rumano
+    Press de Banca Plano · Press de Banca Inclinado
+    Press Militar · Remo T Inclinado · Hip Thrust
+
+  MEDIA (×1.5 → 8 sesiones)  el resto del catálogo
+    Jalón al Pecho · Dominadas · Remo Horizontal · Pull-Over
+    Remo Unilateral (alta y baja) · Extensión de Cuádriceps
+    Curl de Isquiotibiales · Sentadilla Búlgara · Aductores
+    Elevación de Pantorrilla · Crunch Abdominal · Press Pallof
+    Zancadas · Sentadilla de Zumo · Remo al Mentón
+
+  Lista propuesta por el PO. A confirmar en análisis arquitectónico.
+
+
+────────────────────────────────────────────────────────────────
+ EFECTO  ·  antes / después
+────────────────────────────────────────────────────────────────
+
+  Elevación Lateral, 12.5 kg mantenidos:
+
+    ANTES     s1 s2 s3 ──► ⚠ MESETA        3 sesiones, irreal
+    DESPUÉS   s1 s2 s3 s4 s5 s6 s7 s8 s9 s10 ──► ⚠ MESETA
+                                              10 sesiones (Alta)
+
+╔══════════════════════════════════════════════════════════════╗
+║  ⚠️  PROTOTIPO — PROPUESTA PENDIENTE DE VALIDACIÓN CON DISEÑO  ║
+╚══════════════════════════════════════════════════════════════╝

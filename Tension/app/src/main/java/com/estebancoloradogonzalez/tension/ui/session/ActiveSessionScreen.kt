@@ -58,13 +58,13 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.estebancoloradogonzalez.tension.R
+import com.estebancoloradogonzalez.tension.ui.components.EntityNameText
 import com.estebancoloradogonzalez.tension.domain.model.ExerciseSessionStatus
 import com.estebancoloradogonzalez.tension.ui.theme.LocalTensionSemanticColors
 
 @Composable
 fun ActiveSessionScreen(
     onNavigateToRegisterSet: (Long) -> Unit,
-    onNavigateToSubstitute: (Long) -> Unit,
     onNavigateToExerciseDetail: (Long) -> Unit,
     onNavigateToSessionSummary: (Long) -> Unit,
     onNavigateToHome: () -> Unit,
@@ -119,7 +119,6 @@ fun ActiveSessionScreen(
                         exercise = exercise,
                         isDeloadSession = uiState.isDeloadSession,
                         onRegister = { onNavigateToRegisterSet(exercise.sessionExerciseId) },
-                        onSubstitute = { onNavigateToSubstitute(exercise.sessionExerciseId) },
                         onViewDetail = { exercise.exerciseId?.let { onNavigateToExerciseDetail(it) } },
                         onFinalize = { viewModel.onFinalizeExercise(exercise.sessionExerciseId) },
                         onSelectAlternative = { viewModel.onSelectAlternative(exercise) },
@@ -187,7 +186,7 @@ private fun SessionTopBar(
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 12.dp),
     ) {
-        Text(
+        EntityNameText(
             text = stringResource(R.string.session_routine_version_format, routineName, versionNumber),
             style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.onSurface,
@@ -270,7 +269,6 @@ private fun ExerciseRow(
     exercise: ExerciseUiItem,
     isDeloadSession: Boolean,
     onRegister: () -> Unit,
-    onSubstitute: () -> Unit,
     onViewDetail: () -> Unit,
     onFinalize: () -> Unit,
     onSelectAlternative: () -> Unit,
@@ -281,7 +279,6 @@ private fun ExerciseRow(
             exercise = exercise,
             isDeloadSession = isDeloadSession,
             onRegister = onRegister,
-            onSubstitute = onSubstitute,
             onViewDetail = onViewDetail,
             onSelectAlternative = onSelectAlternative,
         )
@@ -307,7 +304,6 @@ private fun NotStartedExerciseRow(
     exercise: ExerciseUiItem,
     isDeloadSession: Boolean,
     onRegister: () -> Unit,
-    onSubstitute: () -> Unit,
     onViewDetail: () -> Unit,
     onSelectAlternative: () -> Unit,
 ) {
@@ -327,7 +323,7 @@ private fun NotStartedExerciseRow(
             Spacer(modifier = Modifier.width(12.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                Text(
+                EntityNameText(
                     text = exercise.name,
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface,
@@ -372,32 +368,7 @@ private fun NotStartedExerciseRow(
                             style = MaterialTheme.typography.labelLarge,
                         )
                     }
-                    OutlinedButton(
-                        onClick = onSubstitute,
-                        modifier = Modifier.defaultMinSize(minHeight = 48.dp),
-                    ) {
-                        Text(
-                            text = stringResource(R.string.session_substitute),
-                            style = MaterialTheme.typography.labelLarge,
-                        )
-                    }
-                    if (!exercise.hasAlternatives) {
-                        IconButton(
-                            onClick = onViewDetail,
-                            modifier = Modifier.size(48.dp),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.PhotoCamera,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(24.dp),
-                            )
-                        }
-                    }
-                }
-                if (exercise.hasAlternatives) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (exercise.hasAlternatives) {
                         IconButton(
                             onClick = onSelectAlternative,
                             modifier = Modifier.size(48.dp),
@@ -409,17 +380,17 @@ private fun NotStartedExerciseRow(
                                 modifier = Modifier.size(24.dp),
                             )
                         }
-                        IconButton(
-                            onClick = onViewDetail,
-                            modifier = Modifier.size(48.dp),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.PhotoCamera,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(24.dp),
-                            )
-                        }
+                    }
+                    IconButton(
+                        onClick = onViewDetail,
+                        modifier = Modifier.size(48.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.PhotoCamera,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(24.dp),
+                        )
                     }
                 }
             }
@@ -453,7 +424,7 @@ private fun InProgressExerciseRow(
             Spacer(modifier = Modifier.width(12.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                Text(
+                EntityNameText(
                     text = exercise.name,
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface,
@@ -555,7 +526,7 @@ private fun CompletedExerciseRow(
             Spacer(modifier = Modifier.width(12.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                Text(
+                EntityNameText(
                     text = exercise.name,
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface,

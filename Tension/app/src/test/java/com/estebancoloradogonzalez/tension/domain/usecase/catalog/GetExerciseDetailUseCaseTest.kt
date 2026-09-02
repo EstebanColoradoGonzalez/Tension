@@ -1,6 +1,7 @@
 package com.estebancoloradogonzalez.tension.domain.usecase.catalog
 
 import com.estebancoloradogonzalez.tension.domain.model.Exercise
+import com.estebancoloradogonzalez.tension.domain.model.ProgressionDifficulty
 import com.estebancoloradogonzalez.tension.domain.repository.ExerciseRepository
 import io.mockk.every
 import io.mockk.mockk
@@ -37,6 +38,7 @@ class GetExerciseDetailUseCaseTest {
             isToTechnicalFailure = false,
             isCustom = false,
             mediaResource = "press_de_banca_maquina",
+            progressionDifficulty = ProgressionDifficulty.MEDIUM,
         )
         every { exerciseRepository.getExerciseById(1L) } returns flowOf(exercise)
 

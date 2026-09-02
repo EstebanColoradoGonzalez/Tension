@@ -24,8 +24,8 @@ class MetricsViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<MetricsUiState>(MetricsUiState.Loading)
     val uiState: StateFlow<MetricsUiState> = _uiState.asStateFlow()
 
-    private var progressionWeeks = 4
-    private var rirSessionLimit = 2
+    private var progressionWeeks = DEFAULT_PROGRESSION_WEEKS
+    private var rirSessionLimit = DEFAULT_RIR_SESSION_LIMIT
 
     init {
         loadMetrics()
@@ -38,7 +38,14 @@ class MetricsViewModel @Inject constructor(
                 val rir = getAvgRirByRoutineUseCase(rirSessionLimit)
                 val rates = getProgressionRateUseCase(progressionWeeks)
                 val velocities = getLoadVelocityUseCase(progressionWeeks)
-                _uiState.value = MetricsUiState.Content(adherence, rir, rates, velocities)
+                _uiState.value = MetricsUiState.Content(
+                    adherence = adherence,
+                    rirByRoutine = rir,
+                    progressionRates = rates,
+                    loadVelocities = velocities,
+                    progressionWeeks = progressionWeeks,
+                    rirSessionLimit = rirSessionLimit,
+                )
             } catch (e: Exception) {
                 _uiState.value = MetricsUiState.Error(
                     e.message ?: "Error al cargar métricas",
@@ -55,5 +62,10 @@ class MetricsViewModel @Inject constructor(
     fun changeRirPeriod(sessionLimit: Int) {
         rirSessionLimit = sessionLimit
         loadMetrics()
+    }
+
+    companion object {
+        const val DEFAULT_PROGRESSION_WEEKS = 4
+        const val DEFAULT_RIR_SESSION_LIMIT = 2
     }
 }

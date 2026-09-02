@@ -2,7 +2,7 @@
 story_number: 14
 title: 'Protocolo de Descarga y Conteo de Microciclos'
 slug: 'protocolo-descarga-conteo-microciclos'
-estado: 'Done'
+estado: 'Completado'
 autor: 'Esteban Colorado González'
 fecha_creacion: '2026-02-17'
 es_resultado_slicing: true

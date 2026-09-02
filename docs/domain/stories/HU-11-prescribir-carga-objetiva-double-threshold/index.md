@@ -2,7 +2,7 @@
 story_number: 11
 title: 'Prescribir carga objetivo según Regla de Doble Umbral'
 slug: 'prescribir-carga-objetiva-double-threshold'
-estado: 'Done'
+estado: 'Completado'
 autor: 'Esteban Colorado González'
 fecha_creacion: '2026-02-12'
 es_resultado_slicing: false

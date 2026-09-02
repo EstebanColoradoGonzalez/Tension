@@ -1,5 +1,7 @@
 package com.estebancoloradogonzalez.tension.ui.session
 
+import com.estebancoloradogonzalez.tension.domain.model.WeightUnit
+
 enum class TimerState {
     IDLE,
     RUNNING,
@@ -11,7 +13,11 @@ data class RegisterSetUiState(
     val exerciseName: String = "",
     val currentSetNumber: Int = 1,
     val totalSets: Int = 4,
-    val weightKg: String = "",
+    /** Weight as typed by the executant, expressed in [captureUnit]. */
+    val weightInput: String = "",
+    val captureUnit: WeightUnit = WeightUnit.KG,
+    /** Canonical value that would be persisted, or null when the input is not usable. */
+    val convertedWeightKg: Double? = null,
     val reps: String = "",
     val selectedRir: Int? = null,
     val isWeightEditable: Boolean = true,
@@ -26,10 +32,14 @@ data class RegisterSetUiState(
     val minSeconds: Int? = null,
     val maxSeconds: Int? = null,
 ) {
+    /** Exercises without external load have no unit to choose. */
+    val isUnitSelectorVisible: Boolean
+        get() = !isBodyweight && !isIsometric
+
     val isConfirmEnabled: Boolean
         get() = !isLoading &&
             selectedRir != null &&
-            weightKg.isNotBlank() &&
+            weightInput.isNotBlank() &&
             weightError == null &&
             repsError == null &&
             !isSaving &&

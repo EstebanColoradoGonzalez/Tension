@@ -1,0 +1,180 @@
+╔══════════════════════════════════════════════════════════════╗
+║  ⚠️  PROTOTIPO — PROPUESTA PENDIENTE DE VALIDACIÓN CON DISEÑO  ║
+╚══════════════════════════════════════════════════════════════╝
+
+HU #35 — Métricas que se explican solas
+Plataforma: mobile / portrait (390 px) · Material 3 · targets ≥ 48 dp
+
+
+────────────────────────────────────────────────────────────────
+ ANATOMÍA DE LA TARJETA  ·  CA-35.02
+────────────────────────────────────────────────────────────────
+
+  +──────────────────+
+  | Total semanal    |  ← ETIQUETA        Gray800, tamaño estándar
+  |                  |
+  |    12 480 kg     |  ← VALOR + UNIDAD  Gray900, DOMINANTE
+  |                  |
+  | Peso movido en   |  ← DESCRIPCIÓN     Gray700, tamaño menor
+  | los últimos 7 d  |
+  | ················ |
+  | últimos 7 días   |  ← PERÍODO (pie)   Gray500, small
+  +──────────────────+
+
+
+────────────────────────────────────────────────────────────────
+ MÉTRICAS  ·  agrupación por sección
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+| ←  Métricas                              |
++──────────────────────────────────────────+
+|                                          |
+|  TONELAJE                                |  ← encabezado de
+|  ─────────────────────────────────────   |    sección
+|  +─────────────────+ +─────────────────+ |
+|  | Total semanal   | | Por sesión      | |
+|  |                 | |                 | |
+|  |    12 480 kg    | |    2 080 kg     | |
+|  |                 | |                 | |
+|  | Peso total que  | | Promedio de tus | |
+|  | levantaste      | | sesiones        | |
+|  | ··············· | | ··············· | |
+|  | últimos 7 días  | | últimos 30 días | |
+|  +─────────────────+ +─────────────────+ |
+|                                          |
+|  PROGRESIÓN                              |
+|  ─────────────────────────────────────   |
+|  +─────────────────+ +─────────────────+ |
+|  | Tasa de         | | En meseta       | |
+|  | progresión      | |                 | |
+|  |      64 %       | |      2          | |
+|  |                 | |                 | |
+|  | Ejercicios en   | | Ejercicios sin  | |
+|  | los que subiste | | avanzar         | |
+|  | carga           | |                 | |
+|  | ··············· | | ··············· | |
+|  | últimas 6 sem   | | ahora           | |
+|  +─────────────────+ +─────────────────+ |
+|                                          |
+|  ADHERENCIA                              |
+|  ─────────────────────────────────────   |
+|  +─────────────────+ +─────────────────+ |
+|  | Esta semana     | | Microciclos     | |
+|  |                 | |                 | |
+|  |     83 %        | |      14         | |
+|  |                 | |                 | |
+|  | 5 de 6 sesiones | | Ciclos completos| |
+|  | completadas     | | desde el inicio | |
+|  | ··············· | | ··············· | |
+|  | semana actual   | | histórico       | |
+|  +─────────────────+ +─────────────────+ |
+|                                          |
++──────────────────────────────────────────+
+
+
+────────────────────────────────────────────────────────────────
+ VOLUMEN  ·  por grupo muscular
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+| ←  Volumen                               |
+|  [ 7 días ] [ 30 días ] [ 90 días ]      |
++──────────────────────────────────────────+
+|                                          |
+|  VOLUMEN POR GRUPO MUSCULAR              |
+|  Series efectivas · últimos 30 días      |  ← unidad + período
+|  ─────────────────────────────────────   |    de la sección
+|                                          |
+|  Espalda        ████████████████  48     |
+|  Pecho          ███████████       33     |
+|  Cuádriceps     ██████████        30     |
+|  Hombro         ████████          24     |
+|  Bíceps         ███████           21     |
+|  Tríceps        ███████           21     |
+|  Isquiotibiales █████             15     |
+|  Glúteos        ████              12     |
+|  Abdomen        ███                9     |
+|  Gemelos        ███                9     |
+|                                          |
+|  ⓘ Una serie efectiva es toda serie      |
+|    registrada con RIR ≤ 4                |
+|                                          |
++──────────────────────────────────────────+
+
+
+────────────────────────────────────────────────────────────────
+ TENDENCIA  ·  gráfica con ejes explicados (CA-35.06)
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+| ←  Tendencia                             |
++──────────────────────────────────────────+
+|                                          |
+|  EVOLUCIÓN DEL TONELAJE                  |
+|  Peso total levantado por microciclo     |
+|  ─────────────────────────────────────   |
+|                                          |
+|  kg                                      |  ← eje Y con unidad
+|  14k ┤                          ╭──      |
+|      │                     ╭────╯        |
+|  12k ┤                ╭────╯             |
+|      │           ╭────╯                  |
+|  10k ┤      ╭────╯                       |
+|      │ ╭────╯                            |
+|   8k ┼─┴───┬─────┬─────┬─────┬─────┬──   |
+|       mc9  mc10  mc11  mc12  mc13  mc14  |  ← eje X etiquetado
+|                                          |
+|              microciclo                  |
+|                                          |
+|  ⓘ Cada punto es un microciclo completo  |
+|    de 6 sesiones                         |
+|                                          |
++──────────────────────────────────────────+
+
+
+────────────────────────────────────────────────────────────────
+ DATOS INSUFICIENTES  ·  CA-35.04 (NO mostrar cero)
+────────────────────────────────────────────────────────────────
+
+  +─────────────────+
+  | Tasa de         |
+  | progresión      |
+  |                 |
+  |      [ ── ]     |  ← ícono neutro Gray400
+  |                 |
+  | Necesitas 4     |  ← QUÉ FALTA, explícito
+  | sesiones más    |
+  | para calcularla |
+  | ··············· |
+  | 2 de 6 sesiones |
+  +─────────────────+
+
+
+────────────────────────────────────────────────────────────────
+ CERO LEGÍTIMO  ·  CA-35.07 (distinguible del anterior)
+────────────────────────────────────────────────────────────────
+
+  +─────────────────+
+  | En meseta       |
+  |                 |
+  |       0         |  ← valor real, tipografía dominante normal
+  |                 |
+  | Ningún ejercicio|
+  | estancado       |
+  | ··············· |
+  | ahora           |
+  +─────────────────+
+
+
+────────────────────────────────────────────────────────────────
+ RESTRICCIÓN DE ALCANCE
+────────────────────────────────────────────────────────────────
+
+  Esta historia NO modifica ningún cálculo (CA-35.05).
+  Los valores de este prototipo son ilustrativos.
+  Cualquier discrepancia numérica tras el cambio es un defecto.
+
+╔══════════════════════════════════════════════════════════════╗
+║  ⚠️  PROTOTIPO — PROPUESTA PENDIENTE DE VALIDACIÓN CON DISEÑO  ║
+╚══════════════════════════════════════════════════════════════╝

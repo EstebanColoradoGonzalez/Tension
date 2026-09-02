@@ -5,6 +5,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import com.estebancoloradogonzalez.tension.domain.model.WeightUnit
 
 @Entity(
     tableName = "exercise_set",
@@ -40,4 +41,8 @@ data class ExerciseSetEntity(
 
     @ColumnInfo(name = "rir")
     val rir: Int,
+
+    /** Unit the executant typed the weight in. Presentation only — weightKg is canonical. */
+    @ColumnInfo(name = "capture_unit", defaultValue = "KG")
+    val captureUnit: String = WeightUnit.KG.name,
 )

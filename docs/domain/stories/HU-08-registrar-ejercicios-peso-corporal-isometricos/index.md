@@ -2,7 +2,7 @@
 story_number: 8
 title: 'Registrar ejercicios de peso corporal e isométricos'
 slug: 'registrar-ejercicios-peso-corporal-isometricos'
-estado: 'Done'
+estado: 'Completado'
 autor: 'Esteban Colorado González'
 fecha_creacion: '2026-02-12'
 es_resultado_slicing: false

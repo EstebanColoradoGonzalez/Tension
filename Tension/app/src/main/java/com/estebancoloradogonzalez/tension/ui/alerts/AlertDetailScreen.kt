@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -25,7 +24,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -46,6 +44,7 @@ fun AlertDetailScreen(
     onNavigateBack: () -> Unit,
     onNavigateToExerciseHistory: (Long) -> Unit,
     onNavigateToDeloadManagement: () -> Unit,
+    onNavigateToTrainingPlan: () -> Unit,
     viewModel: AlertDetailViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -86,6 +85,7 @@ fun AlertDetailScreen(
                     detail = state.detail,
                     onNavigateToExerciseHistory = onNavigateToExerciseHistory,
                     onNavigateToDeloadManagement = onNavigateToDeloadManagement,
+                    onNavigateToTrainingPlan = onNavigateToTrainingPlan,
                     modifier = Modifier.padding(innerPadding),
                 )
             }
@@ -98,6 +98,7 @@ private fun AlertDetailContent(
     detail: AlertDetail,
     onNavigateToExerciseHistory: (Long) -> Unit,
     onNavigateToDeloadManagement: () -> Unit,
+    onNavigateToTrainingPlan: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val isDark = isSystemInDarkTheme()
@@ -185,64 +186,14 @@ private fun AlertDetailContent(
             )
         }
 
-        if (detail.recommendations.isNotEmpty()) {
-            item { HorizontalDivider() }
-
-            item {
-                Text(
-                    text = stringResource(R.string.alert_detail_recommendations_title),
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-            }
-
-            items(detail.recommendations) { recommendation ->
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.padding(vertical = 4.dp),
-                ) {
-                    Text(
-                        text = "▸",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                    Text(
-                        text = recommendation,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                }
-            }
-        }
-
-        if (detail.showExerciseHistoryLink || detail.showDeloadLink) {
-            item { HorizontalDivider() }
-        }
-
-        if (detail.showExerciseHistoryLink && detail.exerciseId != null) {
-            item {
-                TextButton(
-                    onClick = { onNavigateToExerciseHistory(detail.exerciseId) },
-                ) {
-                    Text(
-                        text = stringResource(R.string.alert_detail_view_history),
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                }
-            }
-        }
-
-        if (detail.showDeloadLink) {
-            item {
-                TextButton(
-                    onClick = { onNavigateToDeloadManagement() },
-                ) {
-                    Text(
-                        text = stringResource(R.string.alert_detail_manage_deload),
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                }
-            }
+        // Every alert carries an action, so this block is unconditional.
+        item {
+            SuggestedActionCard(
+                action = detail.suggestedAction,
+                onNavigateToExerciseHistory = onNavigateToExerciseHistory,
+                onNavigateToDeloadManagement = onNavigateToDeloadManagement,
+                onNavigateToTrainingPlan = onNavigateToTrainingPlan,
+            )
         }
     }
 }
@@ -347,15 +298,4 @@ private fun TriggerDataContent(triggerData: AlertTriggerData) {
             }
         }
     }
-}
-
-private fun alertTypeDisplayName(type: String): String = when (type) {
-    "PLATEAU" -> "Meseta detectada"
-    "LOW_PROGRESSION_RATE" -> "Tasa de progresión baja"
-    "RIR_OUT_OF_RANGE" -> "RIR fuera de rango"
-    "LOW_ADHERENCE" -> "Adherencia baja"
-    "TONNAGE_DROP" -> "Caída de tonelaje"
-    "ROUTINE_INACTIVITY" -> "Inactividad por rutina"
-    "ROUTINE_REQUIRES_DELOAD" -> "Rutina requiere descarga"
-    else -> type
 }

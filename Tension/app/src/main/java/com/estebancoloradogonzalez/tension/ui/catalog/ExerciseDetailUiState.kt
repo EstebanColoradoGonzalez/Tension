@@ -1,5 +1,7 @@
 package com.estebancoloradogonzalez.tension.ui.catalog
 
+import com.estebancoloradogonzalez.tension.domain.model.ProgressionDifficulty
+
 sealed interface ExerciseDetailUiState {
     data object Loading : ExerciseDetailUiState
     data class Success(val exercise: ExerciseDetailItem) : ExerciseDetailUiState
@@ -13,4 +15,6 @@ data class ExerciseDetailItem(
     val muscleZones: String,
     val isCustom: Boolean,
     val mediaResource: String?,
+    val progressionDifficulty: ProgressionDifficulty,
+    val effectiveThresholdSessions: Int,
 )

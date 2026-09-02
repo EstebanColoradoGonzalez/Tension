@@ -1,5 +1,6 @@
 package com.estebancoloradogonzalez.tension.domain.usecase.catalog
 
+import com.estebancoloradogonzalez.tension.domain.model.ProgressionDifficulty
 import com.estebancoloradogonzalez.tension.domain.repository.ExerciseRepository
 import javax.inject.Inject
 
@@ -14,6 +15,7 @@ class CreateExerciseUseCase @Inject constructor(
         isIsometric: Boolean,
         isToTechnicalFailure: Boolean,
         mediaResource: String?,
+        progressionDifficulty: ProgressionDifficulty = ProgressionDifficulty.MEDIUM,
     ): Long {
         require(name.isNotBlank()) { "Exercise name must not be blank" }
         require(muscleZoneIds.isNotEmpty()) { "At least one muscle zone must be selected" }
@@ -29,6 +31,7 @@ class CreateExerciseUseCase @Inject constructor(
             isIsometric = isIsometric,
             isToTechnicalFailure = isToTechnicalFailure,
             mediaResource = mediaResource,
+            progressionDifficulty = progressionDifficulty,
         )
     }
 }

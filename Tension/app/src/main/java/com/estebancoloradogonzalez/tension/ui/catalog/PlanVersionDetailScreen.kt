@@ -53,11 +53,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.estebancoloradogonzalez.tension.R
+import com.estebancoloradogonzalez.tension.ui.components.EntityNameText
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -87,7 +89,7 @@ fun PlanVersionDetailScreen(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
-                    Text(
+                    EntityNameText(
                         text = if (uiState.routineName.isNotBlank()) {
                             stringResource(
                                 R.string.plan_version_title_format,
@@ -98,6 +100,7 @@ fun PlanVersionDetailScreen(
                             ""
                         },
                         style = MaterialTheme.typography.titleLarge,
+                        textAlign = TextAlign.Center,
                     )
                 },
                 navigationIcon = {
@@ -409,11 +412,9 @@ private fun AssignExerciseSheet(
                         itemsIndexed(sheetState.availableExercises) { index, exercise ->
                             ListItem(
                                 headlineContent = {
-                                    Text(
+                                    EntityNameText(
                                         text = exercise.name,
                                         style = MaterialTheme.typography.titleMedium,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
                                     )
                                 },
                                 supportingContent = {
@@ -444,7 +445,7 @@ private fun AssignExerciseSheet(
                     }
 
                     selectedExercise?.let { exercise ->
-                        Text(
+                        EntityNameText(
                             text = exercise.name,
                             style = MaterialTheme.typography.titleMedium,
                             modifier = Modifier.padding(bottom = 16.dp),
@@ -520,7 +521,7 @@ private fun EditPlanAssignmentDialog(
         title = { Text(stringResource(R.string.edit_assignment_title)) },
         text = {
             Column {
-                Text(
+                EntityNameText(
                     text = state.exerciseName,
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(bottom = 16.dp),

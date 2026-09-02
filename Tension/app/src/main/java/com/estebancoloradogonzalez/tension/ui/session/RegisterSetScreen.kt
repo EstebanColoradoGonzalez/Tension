@@ -12,12 +12,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -25,6 +28,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Scaffold
@@ -45,7 +49,12 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.estebancoloradogonzalez.tension.R
+import com.estebancoloradogonzalez.tension.domain.model.WeightUnit
+import com.estebancoloradogonzalez.tension.ui.components.CounterText
+import com.estebancoloradogonzalez.tension.ui.components.EntityNameText
 import com.estebancoloradogonzalez.tension.ui.session.components.IsometricChronometer
+import com.estebancoloradogonzalez.tension.ui.session.components.WeightUnitSelector
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -74,13 +83,21 @@ fun RegisterSetScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
+                expandedHeight = 96.dp,
                 title = {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
+                    // The set counter is measured first (no weight), so it always keeps
+                    // the space it needs; the exercise name is the one that yields.
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        EntityNameText(
                             text = uiState.exerciseName,
-                            style = MaterialTheme.typography.titleLarge,
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.weight(1f),
                         )
-                        Text(
+                        Spacer(modifier = Modifier.width(8.dp))
+                        CounterText(
                             text = if (uiState.currentSetNumber > uiState.totalSets) {
                                 stringResource(
                                     R.string.register_set_extra_title_format,
@@ -119,7 +136,12 @@ fun RegisterSetScreen(
         ) {
             Spacer(modifier = Modifier.height(16.dp))
 
-            WeightField(uiState = uiState, onValueChange = viewModel::onWeightChanged)
+            WeightSection(
+                uiState = uiState,
+                onValueChange = viewModel::onWeightChanged,
+                onUnitSelected = viewModel::onUnitSelected,
+                onWeightStep = viewModel::onWeightStep,
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -173,38 +195,152 @@ fun RegisterSetScreen(
     }
 }
 
+private fun unitLabelRes(unit: WeightUnit): Int = when (unit) {
+    WeightUnit.KG -> R.string.register_set_unit_kg
+    WeightUnit.LB -> R.string.register_set_unit_lb
+}
+
+@Composable
+private fun WeightSection(
+    uiState: RegisterSetUiState,
+    onValueChange: (String) -> Unit,
+    onUnitSelected: (WeightUnit) -> Unit,
+    onWeightStep: (Boolean) -> Unit,
+) {
+    Column {
+        Row(verticalAlignment = Alignment.Top) {
+            WeightField(
+                uiState = uiState,
+                onValueChange = onValueChange,
+                modifier = Modifier.weight(1f),
+            )
+
+            if (uiState.isUnitSelectorVisible) {
+                Spacer(modifier = Modifier.width(8.dp))
+                WeightUnitSelector(
+                    selectedUnit = uiState.captureUnit,
+                    onUnitSelected = onUnitSelected,
+                    modifier = Modifier.padding(top = 8.dp),
+                )
+            }
+        }
+
+        if (uiState.isWeightEditable) {
+            Spacer(modifier = Modifier.height(8.dp))
+            WeightStepControls(unit = uiState.captureUnit, onWeightStep = onWeightStep)
+        }
+    }
+}
+
+@Composable
+private fun WeightStepControls(
+    unit: WeightUnit,
+    onWeightStep: (Boolean) -> Unit,
+) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        OutlinedIconButton(
+            onClick = { onWeightStep(false) },
+            modifier = Modifier.size(48.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Default.Remove,
+                contentDescription = stringResource(R.string.register_set_weight_decrease),
+            )
+        }
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        OutlinedIconButton(
+            onClick = { onWeightStep(true) },
+            modifier = Modifier.size(48.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = stringResource(R.string.register_set_weight_increase),
+            )
+        }
+
+        Spacer(modifier = Modifier.width(16.dp))
+
+        Text(
+            text = stringResource(
+                R.string.register_set_increment_hint_format,
+                stringResource(
+                    if (unit == WeightUnit.LB) {
+                        R.string.register_set_increment_lb
+                    } else {
+                        R.string.register_set_increment_kg
+                    },
+                ),
+            ),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
 @Composable
 private fun WeightField(
     uiState: RegisterSetUiState,
     onValueChange: (String) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val label = when {
         uiState.isIsometric -> stringResource(R.string.register_set_weight_isometric_label)
         uiState.isBodyweight -> stringResource(R.string.register_set_weight_bodyweight_label)
-        else -> stringResource(R.string.register_set_weight_label)
+        else -> stringResource(
+            R.string.register_set_weight_label_format,
+            stringResource(unitLabelRes(uiState.captureUnit)),
+        )
     }
 
-    OutlinedTextField(
-        value = uiState.weightKg,
-        onValueChange = onValueChange,
-        label = { Text(label) },
-        trailingIcon = {
+    // With the selector on screen the unit is already visible; the in-field suffix is
+    // only needed for exercises without external load, where there is no selector.
+    val trailingIcon: @Composable (() -> Unit)? = if (uiState.isUnitSelectorVisible) {
+        null
+    } else {
+        {
             Text(
                 text = stringResource(R.string.register_set_weight_suffix),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-        },
-        isError = uiState.weightError != null,
-        supportingText = if (uiState.weightError != null) {
+        }
+    }
+
+    val convertedHint = uiState.convertedWeightKg
+        ?.takeIf { uiState.captureUnit == WeightUnit.LB }
+
+    val supportingText: @Composable (() -> Unit)? = when {
+        uiState.weightError != null -> {
             { Text(uiState.weightError, color = MaterialTheme.colorScheme.error) }
-        } else {
-            null
-        },
+        }
+        convertedHint != null -> {
+            {
+                Text(
+                    text = stringResource(
+                        R.string.register_set_converted_hint_format,
+                        String.format(Locale("es"), "%.2f", convertedHint),
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        else -> null
+    }
+
+    OutlinedTextField(
+        value = uiState.weightInput,
+        onValueChange = onValueChange,
+        label = { Text(label) },
+        trailingIcon = trailingIcon,
+        isError = uiState.weightError != null,
+        supportingText = supportingText,
         enabled = uiState.isWeightEditable,
         singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         colors = if (!uiState.isWeightEditable) {
             OutlinedTextFieldDefaults.colors(
                 disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest

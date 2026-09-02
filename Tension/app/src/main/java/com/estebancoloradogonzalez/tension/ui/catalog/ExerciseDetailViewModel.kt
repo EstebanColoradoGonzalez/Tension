@@ -5,12 +5,17 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.estebancoloradogonzalez.tension.data.local.storage.ImageStorageHelper
+import com.estebancoloradogonzalez.tension.domain.model.ProgressionDifficulty
+import com.estebancoloradogonzalez.tension.domain.rules.PlateauThresholdRule
 import com.estebancoloradogonzalez.tension.domain.usecase.catalog.GetExerciseDetailUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.catalog.UpdateExerciseImageUseCase
+import com.estebancoloradogonzalez.tension.domain.usecase.catalog.UpdateExerciseProgressionDifficultyUseCase
+import com.estebancoloradogonzalez.tension.domain.usecase.profile.GetProfileUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -18,7 +23,9 @@ import javax.inject.Inject
 class ExerciseDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val getExerciseDetailUseCase: GetExerciseDetailUseCase,
+    private val getProfileUseCase: GetProfileUseCase,
     private val updateExerciseImageUseCase: UpdateExerciseImageUseCase,
+    private val updateExerciseProgressionDifficultyUseCase: UpdateExerciseProgressionDifficultyUseCase,
     private val imageStorageHelper: ImageStorageHelper,
 ) : ViewModel() {
 
@@ -33,7 +40,14 @@ class ExerciseDetailViewModel @Inject constructor(
 
     private fun loadExerciseDetail() {
         viewModelScope.launch {
-            getExerciseDetailUseCase(exerciseId).collect { exercise ->
+            combine(
+                getExerciseDetailUseCase(exerciseId),
+                getProfileUseCase(),
+            ) { exercise, profile ->
+                val baseThreshold = profile?.plateauBaseThreshold
+                    ?: PlateauThresholdRule.DEFAULT_BASE_THRESHOLD
+                exercise to baseThreshold
+            }.collect { (exercise, baseThreshold) ->
                 _uiState.value = if (exercise != null) {
                     ExerciseDetailUiState.Success(
                         exercise = ExerciseDetailItem(
@@ -43,6 +57,11 @@ class ExerciseDetailViewModel @Inject constructor(
                             muscleZones = exercise.muscleZones.joinToString(", "),
                             isCustom = exercise.isCustom,
                             mediaResource = exercise.mediaResource,
+                            progressionDifficulty = exercise.progressionDifficulty,
+                            effectiveThresholdSessions = PlateauThresholdRule.effectiveThreshold(
+                                baseThreshold,
+                                exercise.progressionDifficulty,
+                            ),
                         ),
                     )
                 } else {
@@ -63,6 +82,16 @@ class ExerciseDetailViewModel @Inject constructor(
                 }
                 updateExerciseImageUseCase(exerciseId, savedPath)
             }
+        }
+    }
+
+    /**
+     * Persists the difficulty immediately, following the same pattern as the exercise
+     * image: this screen has no save button, and the Room flow re-emits the detail.
+     */
+    fun onProgressionDifficultySelected(difficulty: ProgressionDifficulty) {
+        viewModelScope.launch {
+            updateExerciseProgressionDifficultyUseCase(exerciseId, difficulty)
         }
     }
 }

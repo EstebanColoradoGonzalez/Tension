@@ -1,0 +1,220 @@
+╔══════════════════════════════════════════════════════════════╗
+║  ⚠️  PROTOTIPO — PROPUESTA PENDIENTE DE VALIDACIÓN CON DISEÑO  ║
+╚══════════════════════════════════════════════════════════════╝
+
+HU #36 — Días de la semana como entidad reasignable
+Plataforma: mobile / portrait (390 px) · Material 3 · targets ≥ 48 dp
+
+
+────────────────────────────────────────────────────────────────
+ INICIO  ·  flujo normal, sin reasignación (CA-36.05)
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+|  Tension                                 |
++──────────────────────────────────────────+
+|                                          |
+|  Jueves 3 de septiembre                  |
+|                                          |
+|  +────────────────────────────────────+  |
+|  |  Hoy te toca                       |  |
+|  |                                    |  |
+|  |  Jueves — Push                     |  |
+|  |  Foco Tríceps                      |  |
+|  |                                    |  |
+|  |  5 ejercicios · ~55 min            |  |
+|  |                                    |  |
+|  |    [   Iniciar sesión   ]          |  |
+|  |                                    |  |
+|  |    Ver antes de iniciar  >         |  |
+|  |    Hacer otra rutina hoy >         |  |  ← ACCIÓN NUEVA
+|  +────────────────────────────────────+  |     discreta, fuera
+|                                          |     del flujo principal
+|  Microciclo 14 · posición 4 de 6         |
+|                                          |
++──────────────────────────────────────────+
+
+
+────────────────────────────────────────────────────────────────
+ SELECTOR DE REASIGNACIÓN  ·  CA-36.02
+────────────────────────────────────────────────────────────────
+
+  Al pulsar "Hacer otra rutina hoy":
+
++──────────────────────────────────────────+
+|              ▒▒▒ overlay ▒▒▒             |
+|  +────────────────────────────────────+  |
+|  |  Hacer otra rutina hoy             |  |
+|  |                                    |  |
+|  |  Solo para la sesión de hoy.       |  |
+|  |  Tu plan no cambia.                |  |
+|  |  ──────────────────────────────    |  |
+|  |  (○) Lunes — Push                  |  |
+|  |      Foco Deltoides Lateral y Medio|  |
+|  |  ──────────────────────────────    |  |
+|  |  (●) Martes — Pull                 |  |
+|  |      Foco Dorsal Ancho             |  |
+|  |  ──────────────────────────────    |  |
+|  |  (○) Miércoles — Lower             |  |
+|  |      Foco Cuádriceps               |  |
+|  |  ──────────────────────────────    |  |
+|  |  (○) Jueves — Push          actual |  |
+|  |      Foco Tríceps                  |  |
+|  |  ──────────────────────────────    |  |
+|  |  (○) Viernes — Pull                |  |
+|  |      Foco Trapecios y Espalda Media|  |
+|  |  ──────────────────────────────    |  |
+|  |  (○) Sábado — Lower                |  |
+|  |      Foco Isquiotibiales y Glúteo  |  |
+|  |                                    |  |
+|  |  [ Cancelar ]   [   Confirmar   ]  |  |
+|  +────────────────────────────────────+  |
++──────────────────────────────────────────+
+
+  Se resuelve sobre la pantalla actual. Sin ruta nueva.
+
+
+────────────────────────────────────────────────────────────────
+ INICIO  ·  con reasignación activa
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+|  Jueves 3 de septiembre                  |
+|                                          |
+|  +────────────────────────────────────+  |
+|  |  Hoy te toca                       |  |
+|  |                                    |  |
+|  |  Martes — Pull                     |  |
+|  |  Foco Dorsal Ancho                 |  |
+|  |                                    |  |
+|  |  ⓘ Solo por hoy. Mañana vuelve tu  |  |  ← indicación clara
+|  |    plan normal.                    |  |     del carácter
+|  |                                    |  |     temporal
+|  |  6 ejercicios · ~65 min            |  |
+|  |                                    |  |
+|  |    [   Iniciar sesión   ]          |  |
+|  |                                    |  |
+|  |    Deshacer  >                     |  |
+|  +────────────────────────────────────+  |
+|                                          |
+|  Microciclo 14 · posición 4 de 6         |  ← NO cambia
+|                                          |
++──────────────────────────────────────────+
+
+
+────────────────────────────────────────────────────────────────
+ LA ROTACIÓN NO SE ALTERA  ·  CA-36.03 (riesgo principal)
+────────────────────────────────────────────────────────────────
+
+  SIN reasignación:
+    posición 4  ──[cerrar sesión]──►  posición 5
+
+  CON reasignación (jueves ejecuta la rutina del martes):
+    posición 4  ──[cerrar sesión]──►  posición 5     ← IDÉNTICO
+
+  El conteo de microciclos y el protocolo de descarga (HU-14)
+  se comportan exactamente igual en ambos casos.
+
+
+────────────────────────────────────────────────────────────────
+ REVERSIÓN AUTOMÁTICA  ·  CA-36.04
+────────────────────────────────────────────────────────────────
+
+  Jue 3 sep   reasignado → Martes/Pull      ejecuta Pull
+  Vie 4 sep   sin reasignar                 propone Viernes/Pull
+                                            (relación permanente)
+
+  La reasignación no persiste como configuración.
+
+
+────────────────────────────────────────────────────────────────
+ SESIÓN YA INICIADA  ·  acción no disponible (CA-36.06)
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+| ←  Martes — Pull                         |
+|    Foco Dorsal Ancho · en curso          |
++──────────────────────────────────────────+
+|  +────────────────────────────────────+  |
+|  | Jalón al Pecho          Serie 1 de 4| |
+|  |                                  ⇄  | |
+|  +────────────────────────────────────+  |
+|                                          |
+|  ⓘ Sin acción de reasignación: la rutina |
+|    queda fijada al iniciar la sesión     |
++──────────────────────────────────────────+
+
+
+────────────────────────────────────────────────────────────────
+ DOMINGO  ·  día sin rutina asignada (CA-36.01 / CA-36.07)
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+|  Domingo 6 de septiembre                 |
+|                                          |
+|  +────────────────────────────────────+  |
+|  |            [  ☾  ]                 |  |
+|  |                                    |  |
+|  |         Día de descanso            |  |
+|  |                                    |  |
+|  |  Tu plan no tiene rutina asignada  |  |
+|  |  al domingo.                       |  |
+|  |                                    |  |
+|  |    Entrenar de todas formas  >     |  |  ← abre el mismo
+|  +────────────────────────────────────+  |     selector
+|                                          |
++──────────────────────────────────────────+
+
+  El domingo conserva su condición de día sin rutina aunque se
+  entrene en él por reasignación.
+
+
+────────────────────────────────────────────────────────────────
+ PESTAÑA PLAN  ·  relación día → rutina explícita (CA-36.01)
+────────────────────────────────────────────────────────────────
+
+  ANTES — el día vive dentro del nombre:
+
+    "Martes: Espalda, Bíceps y Abdomen (Pull - Foco Dorsal Ancho)"
+     └──┬──┘
+       dato embebido en texto
+
+  DESPUÉS — el día es una relación:
+
++──────────────────────────────────────────+
+| ←  Plan de Entrenamiento                 |
++──────────────────────────────────────────+
+|  LUN   Push · Foco Deltoides Lat. y Med. |
+|  MAR   Pull · Foco Dorsal Ancho          |
+|  MIÉ   Lower · Foco Cuádriceps           |
+|  JUE   Push · Foco Tríceps               |
+|  VIE   Pull · Foco Trapecios y Esp. Media|
+|  SÁB   Lower · Foco Isquiotibiales y Glút|
+|  DOM   — descanso                        |
++──────────────────────────────────────────+
+
+
+────────────────────────────────────────────────────────────────
+ HISTORIAL  ·  se registra lo ejecutado (CA-36.09)
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+| ←  Historial de sesiones                 |
++──────────────────────────────────────────+
+|  jue 3 sep   Martes — Pull               |  ← la rutina EJECUTADA,
+|              6 ejercicios · 4 120 kg     |     no la del día
+|  ─────────────────────────────────────   |
+|  mié 2 sep   Miércoles — Lower           |
+|              5 ejercicios · 8 340 kg     |
++──────────────────────────────────────────+
+
+
+RIESGO DECLARADO
+  Historia de mayor incertidumbre arquitectónica del conjunto.
+  La frontera entre la relación permanente día→rutina, el override
+  temporal y el estado de rotación debe definirse en el análisis
+  arquitectónico antes de estimar.
+
+╔══════════════════════════════════════════════════════════════╗
+║  ⚠️  PROTOTIPO — PROPUESTA PENDIENTE DE VALIDACIÓN CON DISEÑO  ║
+╚══════════════════════════════════════════════════════════════╝

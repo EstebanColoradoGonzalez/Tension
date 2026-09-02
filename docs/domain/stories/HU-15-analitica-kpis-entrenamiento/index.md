@@ -2,7 +2,7 @@
 story_number: 15
 title: 'Analítica y KPIs del Entrenamiento'
 slug: 'analitica-kpis-entrenamiento'
-estado: 'Done'
+estado: 'Completado'
 autor: 'Esteban Colorado González'
 fecha_creacion: '2026-02-18'
 es_resultado_slicing: true

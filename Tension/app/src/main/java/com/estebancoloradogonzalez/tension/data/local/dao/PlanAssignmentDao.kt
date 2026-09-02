@@ -164,7 +164,7 @@ interface PlanAssignmentDao {
         LEFT JOIN exercise_progression ep ON pa.exercise_id = ep.exercise_id
         LEFT JOIN session_exercise se ON (
             se.session_id = :sessionId
-            AND (se.exercise_id = pa.exercise_id OR se.original_exercise_id = pa.exercise_id)
+            AND se.exercise_id = pa.exercise_id
         )
         WHERE pa.routine_version_id = :routineVersionId
         AND (ep.status = 'IN_PLATEAU' OR se.progression_classification = 'REGRESSION')
@@ -205,4 +205,23 @@ interface PlanAssignmentDao {
 
     @Query("SELECT slot FROM plan_assignment WHERE routine_version_id = :routineVersionId AND exercise_id = :exerciseId")
     suspend fun getSlotForExercise(routineVersionId: Long, exerciseId: Long): Int?
+
+    /**
+     * Whether the slot this exercise occupies holds at least one other exercise, i.e.
+     * whether swapping it for the alternative of its slot is something the executant can
+     * actually do. An alert never proposes an action that is not available.
+     */
+    @Query(
+        """
+        SELECT EXISTS(
+            SELECT 1 FROM plan_assignment other
+            INNER JOIN plan_assignment own
+                ON own.routine_version_id = other.routine_version_id
+                AND own.slot = other.slot
+            WHERE own.exercise_id = :exerciseId
+              AND other.exercise_id != :exerciseId
+        )
+        """,
+    )
+    suspend fun hasSlotAlternative(exerciseId: Long): Boolean
 }

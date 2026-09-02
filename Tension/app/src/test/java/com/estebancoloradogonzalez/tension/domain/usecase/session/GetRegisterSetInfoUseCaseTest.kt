@@ -1,6 +1,7 @@
 package com.estebancoloradogonzalez.tension.domain.usecase.session
 
 import com.estebancoloradogonzalez.tension.domain.model.RegisterSetInfo
+import com.estebancoloradogonzalez.tension.domain.model.WeightUnit
 import com.estebancoloradogonzalez.tension.domain.repository.SessionRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -28,6 +29,7 @@ class GetRegisterSetInfoUseCaseTest {
             isIsometric = false,
             isToTechnicalFailure = false,
             prescribedReps = "8-12",
+            captureUnit = WeightUnit.KG,
         )
         coEvery { repository.getRegisterSetInfo(1L) } returns expected
 

@@ -2,7 +2,7 @@
 story_number: 2
 title: 'Consultar historial de peso corporal'
 slug: 'consultar-historial-peso-corporal'
-estado: 'Done'
+estado: 'Completado'
 autor: 'Esteban Colorado González'
 fecha_creacion: '2026-02-12'
 es_resultado_slicing: false

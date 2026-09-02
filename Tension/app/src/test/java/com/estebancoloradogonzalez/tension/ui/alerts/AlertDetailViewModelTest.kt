@@ -3,6 +3,9 @@ package com.estebancoloradogonzalez.tension.ui.alerts
 import androidx.lifecycle.SavedStateHandle
 import com.estebancoloradogonzalez.tension.domain.model.AlertDetail
 import com.estebancoloradogonzalez.tension.domain.model.AlertTriggerData
+import com.estebancoloradogonzalez.tension.domain.model.SuggestedAction
+import com.estebancoloradogonzalez.tension.domain.model.SuggestedActionKind
+import com.estebancoloradogonzalez.tension.domain.model.SuggestedActionTarget
 import com.estebancoloradogonzalez.tension.domain.usecase.alerts.GetAlertDetailUseCase
 import io.mockk.coEvery
 import io.mockk.mockk
@@ -46,9 +49,11 @@ class AlertDetailViewModelTest {
             createdAt = "2026-02-15",
             triggerData = AlertTriggerData.PlateauTrigger(emptyList()),
             causalAnalysis = "Análisis",
-            recommendations = listOf("Rec 1"),
-            showExerciseHistoryLink = true,
-            showDeloadLink = false,
+            suggestedAction = SuggestedAction(
+                kind = SuggestedActionKind.EXTEND_REPS_BEFORE_LOAD,
+                text = "Añade una repetición por serie antes de subir peso",
+                target = SuggestedActionTarget.ExerciseHistory(10L),
+            ),
             exerciseId = 10L,
         )
         coEvery { getAlertDetailUseCase(5L) } returns detail

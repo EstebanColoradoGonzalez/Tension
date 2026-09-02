@@ -2,7 +2,7 @@
 story_number: 6
 title: 'Registrar series de ejercicios en sesión activa'
 slug: 'registrar-series-ejercicio-sesion-activa'
-estado: 'Done'
+estado: 'Completado'
 autor: 'Esteban Colorado González'
 fecha_creacion: '2026-02-12'
 es_resultado_slicing: false

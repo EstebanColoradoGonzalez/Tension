@@ -100,6 +100,8 @@ data class TensionSemanticColors(
     val sessionCompleted: Color = Color.Unspecified,
     val sessionIncomplete: Color = Color.Unspecified,
     val deloadActive: Color = Color.Unspecified,
+    val chartSeries: List<Color> = emptyList(),
+    val metricInsufficient: Color = Color.Unspecified,
 )
 
 private val LightSemanticColors = TensionSemanticColors(
@@ -123,6 +125,8 @@ private val LightSemanticColors = TensionSemanticColors(
     sessionCompleted = SessionCompletedLight,
     sessionIncomplete = SessionIncompleteLight,
     deloadActive = DeloadActiveLight,
+    chartSeries = ChartSeriesLight,
+    metricInsufficient = MetricInsufficientLight,
 )
 
 private val DarkSemanticColors = TensionSemanticColors(
@@ -146,6 +150,8 @@ private val DarkSemanticColors = TensionSemanticColors(
     sessionCompleted = SessionCompletedDark,
     sessionIncomplete = SessionIncompleteDark,
     deloadActive = DeloadActiveDark,
+    chartSeries = ChartSeriesDark,
+    metricInsufficient = MetricInsufficientDark,
 )
 
 val LocalTensionSemanticColors = staticCompositionLocalOf { TensionSemanticColors() }

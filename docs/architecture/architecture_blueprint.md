@@ -38,7 +38,7 @@
 
 - **Contenedor `UI-01`: Capa de Presentación (UI Layer)**
   - **Naturaleza Técnica:** Kotlin 2.0.21 + Jetpack Compose (vía BOM) + Compose Material 3 + Navigation Compose. Ejecutado en el hilo principal de Android (Main Dispatcher). Tecnología de compilación: AGP 8.9.1, Gradle con Kotlin DSL, Version Catalog (`libs.versions.toml`).
-  - **Responsabilidad Central:** Renderizar la interfaz de usuario en las 27 vistas del sistema (Flujos A-J del Mapa de Navegación) y capturar las interacciones táctiles del ejecutante. No contiene lógica de negocio ni acceso a datos. Recibe estado inmutable desde el ViewModel y delega acciones hacia arriba mediante lambdas o eventos.
+  - **Responsabilidad Central:** Renderizar la interfaz de usuario en las 26 vistas del sistema (Flujos A-J del Mapa de Navegación) y capturar las interacciones táctiles del ejecutante. No contiene lógica de negocio ni acceso a datos. Recibe estado inmutable desde el ViewModel y delega acciones hacia arriba mediante lambdas o eventos.
   - **Mapeo de Persistencia:** No aplica. Esta capa no persiste datos; solo renderiza el estado entregado por `UI-02`.
   - **Dependencias clave:** Jetpack Compose BOM, Compose Material 3, Material Symbols / Icons Extended, Navigation Compose, Lifecycle Runtime Compose (`collectAsStateWithLifecycle`).
 
@@ -58,9 +58,9 @@
   - **Mapeo de Persistencia:** Resguarda físicamente la totalidad del modelo de dominio definido en `domain_and_state_model.md`: las 18 entidades (routine, muscle_zone, equipment_type, exercise, exercise_muscle_zone, routine_version, plan_assignment, profile, weight_record, session, session_exercise, exercise_set, exercise_progression, rotation_state, routine_current_version, deload, deload_frozen_version, alert) y sus relaciones.
 
 - **Contenedor `DB-01`: Base de Datos Local (SQLite via Room)**
-  - **Naturaleza Técnica:** SQLite nativo de Android, accedido exclusivamente a través de Room ORM. Versión de esquema actual: 13 (migraciones registradas v1→v2…v12→v13). Archivo único en el directorio interno de la app: `filesDir/databases/tension.db`. Sin cifrado (ADR-15).
+  - **Naturaleza Técnica:** SQLite nativo de Android, accedido exclusivamente a través de Room ORM. Versión de esquema actual: 14 (migraciones registradas v1→v2…v13→v14). Archivo único en el directorio interno de la app: `filesDir/databases/tension.db`. Sin cifrado (ADR-15).
   - **Responsabilidad Central:** Persistir de forma durable todos los datos del sistema: histórico de sesiones y series (inmutables una vez registradas), plan de entrenamiento del ejecutante, catálogo de ejercicios, estados de progresión, rotación cíclica, ciclos de descarga y alertas. Garantiza integridad referencial mediante ForeignKeys y consistencia mediante transacciones atómicas.
-  - **Mapeo de Persistencia:** 18 tablas que mapean 1:1 el esquema definido en `domain_and_state_model.md`. Datos semilla en `muscle_zone` (20 filas), `equipment_type` (23 filas), `exercise` (33 filas) y `exercise_muscle_zone` (38 filas) — precargados en `onCreate()`.
+  - **Mapeo de Persistencia:** 18 tablas que mapean 1:1 el esquema definido en `domain_and_state_model.md`. Datos semilla en `muscle_zone` (20 filas), `equipment_type` (23 filas), `exercise` (37 filas) y `exercise_muscle_zone` (41 filas) — precargados en `onCreate()`.
 
 - **Contenedor `DI-01`: Módulo de Inyección de Dependencias (Hilt)**
   - **Naturaleza Técnica:** Hilt Android + Hilt Navigation Compose. Framework basado en Dagger con verificación del grafo de dependencias en tiempo de compilación. Anotaciones: `@HiltAndroidApp`, `@AndroidEntryPoint`, `@HiltViewModel`, `@Inject`, `@Singleton`.
@@ -93,10 +93,10 @@
   - **Estructuras Atómicas Clave:** `Color.kt` (30 roles de color claro + oscuro + colores semánticos), `Type.kt` (15 estilos tipográficos M3), `Theme.kt` (composable `TensionTheme`).
 
 - **Módulo / Componente:** `NavHost + Routes` (ui.navigation)
-  - **Responsabilidad (SRP):** Definir el grafo de navegación completo (27 destinos en 10 nested graphs), gestionar el back stack, mapear rutas a Screens y gestionar la visibilidad condicional del Bottom Navigation Bar.
+  - **Responsabilidad (SRP):** Definir el grafo de navegación completo (26 destinos en 10 nested graphs), gestionar el back stack, mapear rutas a Screens y gestionar la visibilidad condicional del Bottom Navigation Bar.
   - **Interfaces Expuestas:** `TensionNavHost(navController, startDestination)` — el punto de entrada de navegación de la aplicación.
   - **Dependencias Internas:** Consume todos los Screen Composables de los 10 paquetes de feature. Depende de `NavController` de Navigation Compose.
-  - **Estructuras Atómicas Clave:** `Screen` (sealed class con las 25 rutas tipadas), `TensionNavHost` (función Composable), `BottomNavItem` (data class para los 5 ítems del Bottom Nav).
+  - **Estructuras Atómicas Clave:** `Screen` (sealed class con las 24 rutas tipadas), `TensionNavHost` (función Composable), `BottomNavItem` (data class para los 5 ítems del Bottom Nav).
 
 - **Módulo / Componente:** Screens por flujo funcional (ui.onboarding, ui.home, ui.session, etc.)
   - **Responsabilidad (SRP):** Cada Screen renderiza exactamente una vista del sistema y captura las interacciones del ejecutante para esa vista. No contiene lógica de negocio.
@@ -106,8 +106,9 @@
 
 - **Módulo / Componente:** Componentes reutilizables (ui.components)
   - **Responsabilidad (SRP):** Proveer bloques de UI compartidos entre múltiples Screens para evitar duplicación.
-  - **Interfaces Expuestas:** `ProgressionIndicator`, `RirSelector`, `ExerciseListItem`, `SessionExerciseCard`, `LoadingIndicator`, `EmptyStateMessage`, `TensionTopBar`, `TensionBottomBar`.
+  - **Interfaces Expuestas:** `ProgressionIndicator`, `RirSelector`, `ExerciseListItem`, `SessionExerciseCard`, `LoadingIndicator`, `EmptyStateMessage`, `TensionTopBar`, `TensionBottomBar`, `ReassignRoutineDialog`, `weekDayName` / `weekDayShortName`.
   - **Dependencias Internas:** Solo dependen de `TensionTheme` y de parámetros inmutables recibidos como argumentos Composable.
+  - **Nota (HU-36):** `ReassignRoutineDialog` es el selector de reasignación temporal de la rutina de hoy, compartido por Inicio y por el preview de sesión — la reasignación se resuelve sobre la pantalla actual y no añade ruta al `NavHost`. `WeekDayLabel` es la única traducción de `WeekDay` a etiqueta legible, para que Inicio, el selector y la pestaña Plan no puedan divergir.
 
 ---
 
@@ -128,16 +129,17 @@
   - **Interfaces Expuestas:** Funciones puras invocables por los Use Cases: `DoubleThresholdRule`, `ProgressionClassificationRule`, `PlateauDetectionRule`, `RegressionDetectionRule`, `AccumulatedFatigueRule`, `BodyweightProgressionRule`, `IsometricProgressionRule`.
   - **Dependencias Internas:** Cero dependencias externas — solo reciben tipos primitivos y modelos de dominio (data classes Kotlin puras) como entrada.
   - **Estructuras Atómicas Clave:** Una clase por regla (ej: `DoubleThresholdRule`) con `operator fun invoke(sets: List<SetData>): ProgressionSignal`. Los datos de entrada son modelos de dominio definidos en `domain.model`.
+  - **Nota (HU-36):** `DailyRoutineRule.resolve(today, permanentRoutineId, override)` resuelve qué rutina corresponde hoy: la relación permanente del día, sustituida por la reasignación temporal cuando su fecha es hoy. Su firma es el contrato de la frontera con la rotación — no recibe posición ni conteo de microciclo, de modo que ninguna reasignación puede alcanzar `rotation_state`. `WeekDayAssignmentRule.resolveRoutineFor` decide, al editar los días de una rutina, qué rutina queda en cada día: las tres transiciones posibles —tomar, liberar, no tocar— se derivan de que el día apunte a una sola rutina.
 
 - **Módulo / Componente:** Use Cases (domain.usecase)
   - **Responsabilidad (SRP):** Encapsular una operación de negocio atómica. Cada Use Case orquesta: acceso a datos (via Repository interfaces), invocación de reglas del motor, y retorno de resultado.
-  - **Interfaces Expuestas:** `operator fun invoke(params)`: función de invocación única por Use Case. Ejemplos: `StartSessionUseCase`, `RegisterSetUseCase`, `CloseSessionUseCase`, `DetectPlateauUseCase`, `ActivateDeloadUseCase`, `GetExerciseHistoryUseCase`, `ExportBackupUseCase`.
+  - **Interfaces Expuestas:** `operator fun invoke(params)`: función de invocación única por Use Case. Ejemplos: `StartSessionUseCase`, `RegisterSetUseCase`, `CloseSessionUseCase`, `DetectPlateauUseCase`, `ActivateDeloadUseCase`, `GetExerciseHistoryUseCase`, `ExportBackupUseCase`. HU-36 añade `GetTodaySessionUseCase` (reemplaza `GetNextSessionInfoUseCase`), `GetReassignableRoutinesUseCase`, `SetTemporaryRoutineUseCase`, `ClearTemporaryRoutineUseCase`, `GetWeekDayPlanUseCase` y `UpdateRoutineWeekDaysUseCase` — este último es la edición **permanente** de la relación día → rutina, distinta de la reasignación temporal de una sesión.
   - **Dependencias Internas:** Consume interfaces de Repository (contratos definidos en `domain.repository`). Invoca reglas del Motor según necesidad. Sin dependencias de Android.
   - **Estructuras Atómicas Clave:** `{Accion}{Entidad}UseCase` — clase con `operator fun invoke` suspendido o que retorna `Flow<T>`. Retorna `Result<T>` (sealed class Success/Error) para que el ViewModel gestione el estado de UI.
 
 - **Módulo / Componente:** Interfaces de Repository (domain.repository)
   - **Responsabilidad (SRP):** Definir los contratos de acceso a datos que la capa Domain necesita, sin acoplarse a la implementación concreta (Room). Inversión de dependencia.
-  - **Interfaces Expuestas:** Interfaces Kotlin: `SessionRepository`, `ExerciseRepository`, `PlanRepository`, `ProfileRepository`, `ProgressionRepository`, `AlertRepository`, `DeloadRepository`, `RotationRepository`, `BackupRepository`.
+  - **Interfaces Expuestas:** Interfaces Kotlin: `SessionRepository`, `ExerciseRepository`, `PlanRepository`, `ProfileRepository`, `ProgressionRepository`, `AlertRepository`, `DeloadRepository`, `RotationRepository`, `BackupRepository`, `WeekDayRepository`.
   - **Dependencias Internas:** Solo dependen de modelos de dominio (`domain.model`). Sin imports de Room ni Android.
 
 ---
@@ -148,24 +150,25 @@
   - **Responsabilidad (SRP):** Implementar las interfaces de Repository definidas en `DOM-01`. Traducir entre modelos de dominio y entities de Room. Gestionar transacciones atómicas para operaciones multi-tabla.
   - **Interfaces Expuestas:** Implementa las interfaces de `domain.repository`. Inyectadas por Hilt mediante `@Binds` en `RepositoryModule`.
   - **Dependencias Internas:** Inyecta DAOs de Room. Usa `Dispatchers.IO` para operaciones de IO.
-  - **Estructuras Atómicas Clave:** `SessionRepositoryImpl`, `ExerciseRepositoryImpl`, `PlanRepositoryImpl`, etc. Cada implementación encapsula los DAOs que necesita.
+  - **Estructuras Atómicas Clave:** `SessionRepositoryImpl`, `ExerciseRepositoryImpl`, `PlanRepositoryImpl`, `WeekDayRepositoryImpl`, etc. Cada implementación encapsula los DAOs que necesita.
+  - **Nota (HU-36):** `WeekDayRepositoryImpl` expone la relación permanente día → rutina (pestaña Plan), el listado de rutinas ejecutables hoy y la escritura de la reasignación temporal. `SessionRepositoryImpl.getTodaySession()` es quien resuelve la propuesta del día combinando `week_day`, `daily_routine_override` y `DailyRoutineRule`; su flujo de fecha reemite al cruzar la medianoche local, para que la reversión automática de la reasignación ocurra con la app abierta.
 
 - **Módulo / Componente:** DAOs (data.local.dao)
   - **Responsabilidad (SRP):** Proveer operaciones de base de datos tipadas y verificadas en tiempo de compilación para cada entidad o grupo de entidades relacionadas.
-  - **Interfaces Expuestas:** Interfaces `@Dao` de Room: `SessionDao`, `SessionExerciseDao`, `ExerciseSetDao`, `ExerciseDao`, `PlanAssignmentDao`, `ProfileDao`, `WeightRecordDao`, `ExerciseProgressionDao`, `RotationStateDao`, `DeloadDao`, `AlertDao`, `RoutineDao`, `RoutineVersionDao`, `MuscleZoneDao`, `EquipmentTypeDao`.
+  - **Interfaces Expuestas:** Interfaces `@Dao` de Room: `SessionDao`, `SessionExerciseDao`, `ExerciseSetDao`, `ExerciseDao`, `PlanAssignmentDao`, `ProfileDao`, `WeightRecordDao`, `ExerciseProgressionDao`, `RotationStateDao`, `DeloadDao`, `AlertDao`, `RoutineDao`, `RoutineVersionDao`, `MuscleZoneDao`, `EquipmentTypeDao`, `WeekDayDao`, `DailyRoutineOverrideDao`.
   - **Dependencias Internas:** Consumen Entities de Room. Generadas automáticamente por el compilador KSP de Room.
   - **Estructuras Atómicas Clave:** Métodos `suspend fun insert/update/delete` para escritura. Métodos `fun getAll/getById: Flow<T>` para lectura reactiva. `@Transaction` para operaciones multi-tabla atómicas.
 
 - **Módulo / Componente:** Entities de Room (data.local.entity)
   - **Responsabilidad (SRP):** Representar la estructura de cada tabla de la base de datos como data class Kotlin verificable en compilación.
-  - **Interfaces Expuestas:** 18 data classes con anotaciones Room: `@Entity`, `@PrimaryKey`, `@ForeignKey`, `@Index`, `@ColumnInfo`.
-  - **Estructuras Atómicas Clave:** `RoutineEntity`, `MuscleZoneEntity`, `EquipmentTypeEntity`, `ExerciseEntity`, `ExerciseMuscleZoneEntity`, `RoutineVersionEntity`, `PlanAssignmentEntity`, `ProfileEntity`, `WeightRecordEntity`, `SessionEntity`, `SessionExerciseEntity`, `ExerciseSetEntity`, `ExerciseProgressionEntity`, `RotationStateEntity`, `RoutineCurrentVersionEntity`, `DeloadEntity`, `DeloadFrozenVersionEntity`, `AlertEntity`.
+  - **Interfaces Expuestas:** 20 data classes con anotaciones Room: `@Entity`, `@PrimaryKey`, `@ForeignKey`, `@Index`, `@ColumnInfo`.
+  - **Estructuras Atómicas Clave:** `RoutineEntity`, `MuscleZoneEntity`, `EquipmentTypeEntity`, `ExerciseEntity`, `ExerciseMuscleZoneEntity`, `RoutineVersionEntity`, `PlanAssignmentEntity`, `ProfileEntity`, `WeightRecordEntity`, `SessionEntity`, `SessionExerciseEntity`, `ExerciseSetEntity`, `ExerciseProgressionEntity`, `RotationStateEntity`, `RoutineCurrentVersionEntity`, `WeekDayEntity`, `DailyRoutineOverrideEntity`, `DeloadEntity`, `DeloadFrozenVersionEntity`, `AlertEntity`.
 
 - **Módulo / Componente:** Seed Data (data.local.seed)
   - **Responsabilidad (SRP):** Prepoblar la base de datos con los datos de inicialización en el primer uso de la app mediante `RoomDatabase.Callback.onCreate()`.
   - **Interfaces Expuestas:** `PrepopulateFacade` — coordina la inserción de todos los datos semilla invocando Seeders temáticos.
-  - **Dependencias Internas:** `ExerciseSeeder` (33 ejercicios base), `MuscleZoneSeeder` (20 zonas), `EquipmentTypeSeeder` (23 tipos), `ExerciseMuscleZoneSeeder` (38 relaciones ejercicio-zona).
-  - **Estructuras Atómicas Clave:** Cada Seeder encapsula inserciones de sus entidades con datos literales en español.
+  - **Dependencias Internas:** `ExerciseSeeder` (37 ejercicios base y 41 relaciones ejercicio-zona), `BaseDataSeeder` (20 zonas musculares y 23 tipos de equipamiento), `PlanSeeder` (6 rutinas, 6 versiones y 35 asignaciones del plan predeterminado), `WeekDaySeeder` (7 días y su relación con la rutina que les corresponde). `WeekDaySeeder` se ejecuta **después** de `PlanSeeder`: la clave foránea a `routine` exige que las rutinas existan.
+  - **Estructuras Atómicas Clave:** Los datos residen en estructuras Kotlin puras — `ExerciseCatalog` (`List<SeedExercise>`), `DefaultPlan` (`List<SeedRoutine>` + `List<SeedAssignment>`) y `DefaultWeekDays` (`List<SeedWeekDay>`) — y cada Seeder se limita a mapearlas a `ContentValues`. Sin dependencia de Android, los datos semilla son verificables por tests JVM.
 
 ---
 
@@ -176,8 +179,8 @@
 - **`RF-01, RF-02, RF-03` (Perfil del Ejecutante):** Lógica de negocio en `CreateProfileUseCase` / `UpdateProfileUseCase`. Persistencia en `ProfileRepositoryImpl` → `ProfileDao` / `WeightRecordDao`. Presentación en `RegisterProfileScreen` / `ProfileScreen` con `ProfileViewModel`.
 - **`RF-04, RF-07, RF-61, RF-62` (Diccionario de Ejercicios):** Catálogo base en `ExerciseSeeder` (seed). Creación personalizada en `CreateExerciseUseCase`. Filtros en `GetExercisesFilteredUseCase`. Presentación en `ExerciseDictionaryScreen` / `ExerciseDetailScreen` con `CatalogViewModel`.
 - **`RF-05, RF-06, RF-08, RF-63, RF-64, RF-65` (Plan de Entrenamiento):** Gestión del plan en `PlanRepositoryImpl` → `PlanAssignmentDao` / `RoutineVersionDao`. Use Cases: `GetPlanVersionDetailUseCase`, `AssignExerciseToPlanUseCase`, `RemoveExerciseFromPlanUseCase`. Presentación en `TrainingPlanScreen` / `PlanVersionDetailScreen` con `CatalogViewModel`.
-- **`RF-09, RF-10, RF-11` (Rotación Cíclica):** Motor de rotación en `GetNextSessionUseCase` → `RotationRepositoryImpl` → `RotationStateDao`. La posición persiste indefinidamente en `rotation_state`. Presentación en `HomeScreen` con `HomeViewModel`.
-- **`RF-12, RF-13, RF-14, RF-15, RF-16, RF-17` (Registro de Sesión):** Inicio en `StartSessionUseCase`. Registro de series en `RegisterSetUseCase`. Sustituciones en `SubstituteExerciseUseCase`. Persistencia en `SessionRepositoryImpl` → `SessionDao`, `SessionExerciseDao`, `ExerciseSetDao`. Presentación en `ActiveSessionScreen`, `RegisterSetScreen`, `SubstituteExerciseScreen` con `ActiveSessionViewModel`.
+- **`RF-09, RF-10, RF-11` (Determinación de sesión y microciclo):** Desde HU-36 la rutina propuesta la determina el **día de la semana**: `GetTodaySessionUseCase` → `SessionRepositoryImpl.getTodaySession` → `WeekDayDao` + `DailyRoutineOverrideDao` + `DailyRoutineRule`. `rotation_state` conserva íntegro su rol de avanzar posición y contar microciclos al cerrar sesión (`CloseSessionUseCase` → `RotationResolver.advanceRotation`), pero deja de indexar la rutina; la posición sigue persistiendo indefinidamente e inmune a ausencias. Reasignación temporal en `SetTemporaryRoutineUseCase` / `ClearTemporaryRoutineUseCase` → `WeekDayRepositoryImpl`. Presentación en `HomeScreen` y `SessionPreviewScreen` con `ReassignRoutineDialog`.
+- **`RF-12, RF-13, RF-14, RF-15, RF-16, RF-17` (Registro de Sesión):** Inicio en `StartSessionUseCase`. Registro de series en `RegisterSetUseCase`. Cambio de ejercicio en sesión mediante la alternativa declarada en el slot del plan (`RF-16`, HU-26): `SessionRepositoryImpl.switchAlternativeInSession` → `SessionExerciseDao.switchAlternativeExercise`. Persistencia en `SessionRepositoryImpl` → `SessionDao`, `SessionExerciseDao`, `ExerciseSetDao`. Presentación en `ActiveSessionScreen`, `RegisterSetScreen` con `ActiveSessionViewModel`.
 - **`RF-18, RF-19, RF-20, RF-21, RF-59` (Cierre de Sesión):** Protocolo de cierre en `CloseSessionUseCase` — orquesta: `DoubleThresholdRule`, `ProgressionClassificationRule`, `PlateauDetectionRule`, `AccumulatedFatigueRule`, cálculo de tonelaje, actualización de `exercise_progression`, generación de alertas y avance de `rotation_state`. Presentación en `SessionSummaryScreen` con `SessionSummaryViewModel`.
 - **`RF-23, RF-24, RF-25, RF-26, RF-27, RF-28, RF-29, RF-30, RF-31, RF-32, RF-33` (Motor de Progresión):** Implementado en `DOM-01 domain.rules`: `DoubleThresholdRule` (RF-25/26), `ProgressionClassificationRule` (RF-23/24), `RegressionDetectionRule` (RF-29), `AccumulatedFatigueRule` (RF-30), `BodyweightProgressionRule` (RF-31), `IsometricProgressionRule` (RF-32/33). Invocados por `CloseSessionUseCase`.
 - **`RF-34, RF-35, RF-36, RF-37` (Detección de Mesetas y Descarga):** `PlateauDetectionRule` (RF-34) y `DeloadRecommendationRule` (RF-37) en `DOM-01`. Alertas generadas por `GenerateAlertsUseCase` → `AlertRepositoryImpl` → `AlertDao`. Presentación en `AlertCenterScreen`, `AlertDetailScreen` con `AlertViewModel`.
@@ -206,7 +209,7 @@
 
 ### ADR-002: Jetpack Compose para la UI
 
-- **Contexto:** 27 vistas con estados complejos requieren un framework declarativo que minimice boilerplate y facilite renderizado basado en estado.
+- **Contexto:** 26 vistas con estados complejos requieren un framework declarativo que minimice boilerplate y facilite renderizado basado en estado.
 - **Decisión:** Jetpack Compose (vía BOM) + Compose Material 3 para toda la interfaz. No hay layouts XML, Fragments ni Views.
 - **Consecuencias:** UI como funciones `@Composable`. Estado fluye unidireccionalmente: `StateFlow<UiState>` → recomposición automática. Navigation Compose reemplaza Navigation Component XML. Testing con Compose UI Test JUnit4.
 
@@ -246,9 +249,9 @@
 
 ### ADR-007: Single Activity con Navigation Compose
 
-- **Contexto:** 27 vistas, 10 flujos funcionales, 58 conexiones de navegación, navegación por tabs con preservación de estado, start destination dinámica (A1 vs B1), flujo contenido de sesión activa (E1-E5 sin escape al Bottom Nav).
+- **Contexto:** 26 vistas, 10 flujos funcionales, navegación por tabs con preservación de estado, start destination dinámica (A1 vs B1), flujo contenido de sesión activa (E1-E5 sin escape al Bottom Nav).
 - **Decisión:** `MainActivity` única con `NavHost` de Navigation Compose. 10 nested graphs (uno por flujo). Bottom Navigation con `saveState`/`restoreState`.
-- **Consecuencias:** 25 rutas tipadas (E4 es `AlertDialog`, no ruta). Nested graphs aíslan back stack por tab. Transiciones especiales con `popUpTo` (A1→B1, E4→E5, J3→B1). Reglas de visibilidad del Bottom Nav evaluadas por ruta actual del `NavController`.
+- **Consecuencias:** 24 rutas tipadas (E4 es `AlertDialog`, no ruta; E3 retirada en HU-34). Nested graphs aíslan back stack por tab. Transiciones especiales con `popUpTo` (A1→B1, E4→E5, J3→B1). Reglas de visibilidad del Bottom Nav evaluadas por ruta actual del `NavController`.
 
 ---
 
@@ -340,14 +343,26 @@
 
 ---
 
+### ADR-019: Esquema v17 sin migración — reinicio a cargo del ejecutante
+
+- **Contexto:** HU-36 añade dos tablas (`week_day`, `daily_routine_override`) y renombra las seis rutinas del seed para quitarles el día. El renombrado no es migrable sin pisar un posible rename manual del ejecutante, y la historia declara la excepción: *"Beta sin migración: la base de datos se reinicia; los cambios de esquema se validan sobre instalación fresca."* El producto precisó el mecanismo: el reinicio lo hace el ejecutante desinstalando y reinstalando, y la aplicación debe comportarse como si fuera su primera salida a producción.
+- **Decisión:** `TensionDatabase.version` sube a 17 **sin** `MIGRATION_16_17` y **sin** `fallbackToDestructiveMigration()`. Las migraciones históricas `MIGRATION_6_7` … `MIGRATION_15_16` se conservan intactas: describen el esquema de su época. El formato de respaldo sube a `SCHEMA_VERSION = 10` porque gana tablas con clave foránea a `routine` — omitirlas perdería la relación día → rutina en cada restauración.
+- **Consecuencias:** Excepción documentada a RNF19, limitada a esta historia. Una base en v16 falla al abrir con la excepción de Room, que es la señal de reinstalar; la app nunca borra datos por su cuenta. Los respaldos en formato 9 dejan de poder restaurarse — consistente con que no hay instalación previa que preservar. Ningún test ejerce el arranque en v17 porque no hay migración que probar; lo que se verifica es la semilla sobre instalación fresca (`DefaultWeekDaysTest` y validación manual).
+
+---
+
 ### Decisiones de Dominio con Impacto Técnico
 
 *Decisiones de modelado de dominio que influyen directamente en la implementación.*
 
 | ID | Decisión de Dominio | Impacto Técnico |
 |----|---------------------|-----------------|
-| D-01 | Rotación cíclica agnóstica al calendario | `rotation_state.microcycle_position` persiste indefinidamente. Sin lógica de fecha/calendario en la determinación de rutina. Posición inmune a ausencias del ejecutante. |
-| D-02 | Sustitución puntual solo con ejercicio "No Iniciado" (0 series) | El botón "Sustituir" en E1 se muestra/oculta según `session_exercise` sin series (`COUNT(exercise_set) = 0`). Validación en `SubstituteExerciseUseCase`. |
+| D-01 | Rotación cíclica agnóstica al calendario | `rotation_state.microcycle_position` persiste indefinidamente e inmune a ausencias del ejecutante. **Revisada en HU-36:** la rotación deja de determinar *qué rutina* toca y conserva solo el avance de posición y el conteo de microciclos. La determinación pasa a depender del calendario (ver D-09). |
+| D-09 | El día de la semana es una entidad relacionada con la rutina | Tabla `week_day` de 7 filas con `routine_id` anulable; el domingo queda registrado sin rutina. `LocalDate.now().dayOfWeek.value` indexa la fila directamente. El nombre de la rutina deja de llevar el día. |
+| D-11 | La relación permanente día → rutina es editable, y una rutina puede ocupar varios días | El día es el dueño de la relación (`week_day.routine_id`): apunta a una rutina o a ninguna. De ahí que la edición sea multi-selección de días sobre la rutina, y que asignar un día ocupado lo **mueva** en lugar de duplicarlo. `WeekDayAssignmentRule` concentra esa decisión; `UpdateRoutineWeekDaysUseCase` la rechaza durante una descarga activa, porque dejar sin días a una rutina congelada impediría que su sesión se propusiera y el ciclo no cerraría nunca. Resuelve la consecuencia que HU-36 dejó abierta: una rutina creada por el ejecutante ya puede tomar un día y proponerse sola. |
+| D-12 | El ejercicio de una versión se cuenta por slot, no por asignación | Un slot dual son dos asignaciones y **un** ejercicio de la sesión: o se hace uno o se hace el otro. `RoutineVersionDao` cuenta `COUNT(DISTINCT pa.slot)`. Alinea las cifras del plan con lo que el resto del sistema ya hacía: el preview agrupa por slot, `startSession` crea un `session_exercise` por slot y el protocolo de descarga mide `COUNT(DISTINCT pa.slot)`. |
+| D-10 | La reasignación de rutina es temporal y de un día | `daily_routine_override` de fila única con `date`. La reversión es semántica —la fila solo se honra cuando su fecha es hoy—, no un borrado programado: la reasignación caduca al cambiar el día aunque la app no se abra, y sobrevive a un segundo inicio de sesión el mismo día. La reasignación se agota en la determinación y nunca escribe en `rotation_state`. |
+| D-02 | Cambio de ejercicio en sesión solo con ejercicio "No Iniciado" (0 series) | El control de intercambio de alternativa en E1 se muestra/oculta según `session_exercise` sin series (`COUNT(exercise_set) = 0`). La sustitución por grupo muscular que originó esta decisión fue **retirada en HU-34**; la restricción sobrevive aplicada al único mecanismo vigente, las alternativas por slot de HU-26. |
 | D-03 | Sesiones cerradas son inmutables | Sin endpoints ni Use Cases de edición post-cierre. `session.status` = COMPLETED/INCOMPLETE congela todos los datos asociados. No se implementan funciones de update retroactivo en DAOs de sesión. |
 | D-04 | E4 es un diálogo, no una pantalla de navegación | `AlertDialog` Compose gestionado por estado del ViewModel (`showCloseDialog: Boolean`). No es una ruta en el `NavHost`. No entra al back stack. |
 | D-05 | Objetivo de frecuencia semanal con default 6 sesiones | `profile.weekly_frequency` inicializado en 6 (rango 4-6). No se solicita en onboarding (A1). Configurable en J1. Denominador del KPI de Adherencia (RF-47). |

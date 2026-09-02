@@ -26,6 +26,7 @@ class GetProfileUseCaseTest {
             heightM = 1.80,
             experienceLevel = ExperienceLevel.ADVANCED,
             weeklyFrequency = 6,
+            plateauBaseThreshold = 5,
             createdAt = LocalDate.of(2026, 1, 15),
         )
         every { repository.getProfile() } returns flowOf(profile)

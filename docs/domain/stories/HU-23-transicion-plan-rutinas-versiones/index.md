@@ -2,7 +2,7 @@
 story_number: 23
 title: 'Transición a plan, rutinas y versiones 100% definidas por el usuario'
 slug: 'transicion-plan-rutinas-versiones'
-estado: 'Pendiente'
+estado: 'Completado'
 autor: 'Esteban Colorado González'
 fecha_creacion: '2026-05-06'
 es_resultado_slicing: false

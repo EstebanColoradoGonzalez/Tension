@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.estebancoloradogonzalez.tension.R
+import com.estebancoloradogonzalez.tension.ui.components.EntityNameText
 import com.estebancoloradogonzalez.tension.domain.model.SessionHistoryItem
 import java.text.NumberFormat
 import java.time.LocalDate
@@ -137,7 +138,7 @@ private fun SessionHistoryRow(
         },
         headlineContent = {
             Column {
-                Text(
+                EntityNameText(
                     text = stringResource(
                         R.string.session_routine_version_format,
                         session.routineName,

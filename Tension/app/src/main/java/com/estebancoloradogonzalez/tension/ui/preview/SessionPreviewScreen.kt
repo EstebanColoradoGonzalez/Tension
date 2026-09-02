@@ -40,10 +40,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.estebancoloradogonzalez.tension.R
+import androidx.compose.material3.TextButton
+import com.estebancoloradogonzalez.tension.domain.model.WeekDay
+import com.estebancoloradogonzalez.tension.ui.components.EntityNameText
+import com.estebancoloradogonzalez.tension.ui.components.ReassignRoutineDialog
+import com.estebancoloradogonzalez.tension.ui.components.weekDayName
 import com.estebancoloradogonzalez.tension.ui.theme.LocalTensionSemanticColors
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -84,14 +90,15 @@ fun SessionPreviewScreen(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
-                    Text(
+                    EntityNameText(
                         text = stringResource(
                             R.string.preview_title_format,
-                            uiState.routineName,
+                            dayRoutineText(uiState.weekDay, uiState.routineName),
                             uiState.versionNumber,
                         ),
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onSurface,
+                        textAlign = TextAlign.Center,
                     )
                 },
                 navigationIcon = {
@@ -119,6 +126,17 @@ fun SessionPreviewScreen(
                 }
             }
 
+            if (uiState.isTemporaryOverride) {
+                item {
+                    Text(
+                        text = stringResource(R.string.home_reassign_notice),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+            }
+
             itemsIndexed(uiState.exercises) { index, exercise ->
                 PreviewExerciseCard(exercise = exercise)
                 if (index < uiState.exercises.lastIndex) {
@@ -136,9 +154,54 @@ fun SessionPreviewScreen(
                 ) {
                     Text(text = stringResource(R.string.preview_start_session))
                 }
+
+                if (uiState.canReassign) {
+                    TextButton(
+                        onClick = {
+                            if (uiState.isTemporaryOverride) {
+                                viewModel.undoReassign()
+                            } else {
+                                viewModel.openReassignDialog()
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp),
+                    ) {
+                        Text(
+                            text = if (uiState.isTemporaryOverride) {
+                                stringResource(R.string.home_reassign_undo)
+                            } else {
+                                stringResource(R.string.home_reassign_action)
+                            },
+                        )
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(16.dp))
             }
         }
+    }
+
+    if (uiState.isReassignDialogOpen) {
+        ReassignRoutineDialog(
+            options = uiState.reassignOptions,
+            onConfirm = { routineId -> viewModel.confirmReassign(routineId) },
+            onDismiss = { viewModel.dismissReassignDialog() },
+        )
+    }
+}
+
+/**
+ * Compone `Dia - Rutina` para el titulo del preview. Sin dia conocido, el nombre de la
+ * rutina se presenta solo.
+ */
+@Composable
+private fun dayRoutineText(weekDay: WeekDay?, routineName: String): String {
+    return if (weekDay == null) {
+        routineName
+    } else {
+        stringResource(R.string.session_day_routine_format, weekDayName(weekDay), routineName)
     }
 }
 
@@ -183,7 +246,7 @@ private fun PreviewExerciseCard(exercise: PreviewExerciseItem) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
+                EntityNameText(
                     text = exercise.name,
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onSurface,

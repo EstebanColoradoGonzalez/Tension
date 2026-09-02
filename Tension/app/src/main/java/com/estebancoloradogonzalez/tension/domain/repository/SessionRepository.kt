@@ -4,27 +4,31 @@ import com.estebancoloradogonzalez.tension.data.repository.model.SessionSummaryD
 import com.estebancoloradogonzalez.tension.domain.model.ActiveSession
 import com.estebancoloradogonzalez.tension.domain.model.DeloadState
 import com.estebancoloradogonzalez.tension.domain.model.ExerciseHistoryData
-import com.estebancoloradogonzalez.tension.domain.model.NextSession
 import com.estebancoloradogonzalez.tension.domain.model.RegisterSetInfo
 import com.estebancoloradogonzalez.tension.domain.model.RotationState
 import com.estebancoloradogonzalez.tension.domain.model.SessionDetail
 import com.estebancoloradogonzalez.tension.domain.model.SessionExerciseDetail
 import com.estebancoloradogonzalez.tension.domain.model.SessionHistoryItem
 import com.estebancoloradogonzalez.tension.domain.model.SessionPreviewExercise
-import com.estebancoloradogonzalez.tension.domain.model.SubstituteExerciseInfo
+import com.estebancoloradogonzalez.tension.domain.model.TodaySession
+import com.estebancoloradogonzalez.tension.domain.model.WeightUnit
 import kotlinx.coroutines.flow.Flow
 
 interface SessionRepository {
-    fun getNextSessionInfo(): Flow<NextSession?>
+    fun getTodaySession(): Flow<TodaySession>
     suspend fun startSession(routineVersionId: Long): Long
     fun getActiveSession(): Flow<ActiveSession?>
     fun getSessionExercises(sessionId: Long): Flow<List<SessionExerciseDetail>>
     fun getRotationState(): Flow<RotationState?>
     fun getSessionRoutineVersion(sessionId: Long): Flow<Pair<String, Int>?>
     suspend fun getRegisterSetInfo(sessionExerciseId: Long): RegisterSetInfo?
-    suspend fun registerSet(sessionExerciseId: Long, weightKg: Double, reps: Int, rir: Int)
-    suspend fun getSubstituteExerciseInfo(sessionExerciseId: Long): SubstituteExerciseInfo?
-    suspend fun substituteExercise(sessionExerciseId: Long, newExerciseId: Long)
+    suspend fun registerSet(
+        sessionExerciseId: Long,
+        weightKg: Double,
+        reps: Int,
+        rir: Int,
+        captureUnit: WeightUnit,
+    )
     suspend fun finalizeExercise(sessionExerciseId: Long)
     suspend fun switchAlternativeInSession(sessionExerciseId: Long, exerciseId: Long)
     suspend fun closeSession(sessionId: Long)
@@ -38,5 +42,6 @@ interface SessionRepository {
     suspend fun getExerciseHistory(exerciseId: Long): ExerciseHistoryData
     fun getSessionPreviewExercises(routineVersionId: Long): Flow<List<SessionPreviewExercise>>
     suspend fun hasActiveDeload(): Boolean
+    suspend fun hasActiveSession(): Boolean
     suspend fun hasActiveSessionForVersion(routineVersionId: Long): Boolean
 }

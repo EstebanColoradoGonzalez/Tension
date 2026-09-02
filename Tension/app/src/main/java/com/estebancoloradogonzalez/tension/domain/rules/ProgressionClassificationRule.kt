@@ -8,7 +8,6 @@ object ProgressionClassificationRule {
 
     const val RIR_SIGNIFICANT_RISE = 1.5
     const val ISOMETRIC_MASTERED_THRESHOLD = 45
-    const val PLATEAU_THRESHOLD = 3
     private const val WEIGHT_TOLERANCE = 0.01
 
     fun classify(
@@ -32,12 +31,25 @@ object ProgressionClassificationRule {
             current.sets.all { it.reps >= ISOMETRIC_MASTERED_THRESHOLD }
     }
 
+    /**
+     * Resolves the new progression status and counter after a session is closed.
+     *
+     * [plateauThreshold] is the effective threshold of the exercise, resolved by the
+     * caller through `PlateauThresholdRule` from the executant's base threshold and the
+     * exercise's progression difficulty. It is intentionally required: a default would
+     * let a new caller silently inherit an implicit threshold.
+     *
+     * The counter itself is threshold-agnostic — it always accumulates and only resets
+     * on positive progression — so changing an exercise's difficulty re-evaluates the
+     * condition without discarding what was already accumulated.
+     */
     fun resolveNewProgressionState(
         currentStatus: String,
         currentCounter: Int,
         classification: ProgressionClassification?,
         isIsometric: Boolean,
         isMastered: Boolean,
+        plateauThreshold: Int,
     ): Pair<String, Int> {
         if (isIsometric && isMastered) return "MASTERED" to 0
         if (classification == null) return currentStatus to currentCounter
@@ -51,7 +63,7 @@ object ProgressionClassificationRule {
             ProgressionClassification.REGRESSION -> {
                 val newCounter = currentCounter + 1
                 val newStatus = when {
-                    newCounter >= PLATEAU_THRESHOLD -> "IN_PLATEAU"
+                    newCounter >= plateauThreshold -> "IN_PLATEAU"
                     else -> currentStatus
                 }
                 newStatus to newCounter

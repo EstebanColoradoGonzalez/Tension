@@ -21,19 +21,70 @@ interface ExerciseSetDao {
     )
     suspend fun getNextSetNumber(sessionExerciseId: Long): Int
 
+    /**
+     * Weight of the previous set registered for this session exercise — level 2 of the
+     * prefilled load precedence (see PrefilledLoadRule).
+     */
+    @Query(
+        """
+        SELECT weight_kg
+        FROM exercise_set
+        WHERE session_exercise_id = :sessionExerciseId
+        ORDER BY set_number DESC
+        LIMIT 1
+        """,
+    )
+    suspend fun getLastWeightForSessionExercise(sessionExerciseId: Long): Double?
+
+    /**
+     * Weight of the last set registered for the exercise in its most recent closed
+     * session — level 3 of the prefilled load precedence (see PrefilledLoadRule).
+     *
+     * Matches on se.exercise_id, not on the slot: the memory belongs to the exercise
+     * actually executed, so swapping a slot for its alternative resolves the alternative's
+     * own history. Deload sessions are excluded because their load is deliberately
+     * reduced and must not become the new baseline.
+     */
     @Query(
         """
         SELECT es.weight_kg
         FROM exercise_set es
+        WHERE es.session_exercise_id = (
+            SELECT se.id
+            FROM session_exercise se
+            INNER JOIN session s ON se.session_id = s.id
+            WHERE se.exercise_id = :exerciseId
+              AND s.id != :currentSessionId
+              AND s.status IN ('COMPLETED', 'INCOMPLETE')
+              AND s.deload_id IS NULL
+            ORDER BY s.date DESC, s.id DESC
+            LIMIT 1
+        )
+        ORDER BY es.set_number DESC
+        LIMIT 1
+        """,
+    )
+    suspend fun getLastWeightInPreviousSession(exerciseId: Long, currentSessionId: Long): Double?
+
+    /**
+     * Capture unit of the last set registered for the exercise.
+     *
+     * Deload sessions are intentionally NOT excluded here: the unit reflects the label
+     * printed on the machine, which does not change with the microcycle. For the same
+     * reason it matches on se.exercise_id and not on the slot: an alternative exercise is
+     * a different implement, with its own label.
+     */
+    @Query(
+        """
+        SELECT es.capture_unit
+        FROM exercise_set es
         INNER JOIN session_exercise se ON es.session_exercise_id = se.id
-        INNER JOIN session s ON se.session_id = s.id
-        WHERE COALESCE(se.original_exercise_id, se.exercise_id) = :exerciseId
-          AND s.deload_id IS NULL
+        WHERE se.exercise_id = :exerciseId
         ORDER BY es.id DESC
         LIMIT 1
         """,
     )
-    suspend fun getLastWeightForExercise(exerciseId: Long): Double?
+    suspend fun getLastCaptureUnitForExercise(exerciseId: Long): String?
 
     @Query(
         """
@@ -43,7 +94,7 @@ interface ExerciseSetDao {
             SELECT se.id
             FROM session_exercise se
             INNER JOIN session s ON se.session_id = s.id
-            WHERE COALESCE(se.original_exercise_id, se.exercise_id) = :exerciseId
+            WHERE se.exercise_id = :exerciseId
               AND s.deload_id IS NULL
               AND s.date <= :activationDate
               AND s.status IN ('COMPLETED', 'INCOMPLETE')
@@ -56,7 +107,7 @@ interface ExerciseSetDao {
 
     @Query(
         """
-        SELECT weight_kg AS weightKg, reps, rir
+        SELECT weight_kg AS weightKg, reps, rir, capture_unit AS captureUnit
         FROM exercise_set
         WHERE session_exercise_id = :sessionExerciseId
         ORDER BY set_number
@@ -66,13 +117,13 @@ interface ExerciseSetDao {
 
     @Query(
         """
-        SELECT es.weight_kg AS weightKg, es.reps, es.rir
+        SELECT es.weight_kg AS weightKg, es.reps, es.rir, es.capture_unit AS captureUnit
         FROM exercise_set es
         WHERE es.session_exercise_id = (
             SELECT se2.id
             FROM session_exercise se2
             INNER JOIN session s2 ON se2.session_id = s2.id
-            WHERE COALESCE(se2.original_exercise_id, se2.exercise_id) = :exerciseId
+            WHERE se2.exercise_id = :exerciseId
               AND s2.id != :currentSessionId
               AND s2.status IN ('COMPLETED', 'INCOMPLETE')
               AND s2.deload_id IS NULL
@@ -89,7 +140,7 @@ interface ExerciseSetDao {
         SELECT es.weight_kg AS weightKg, es.reps, mz.muscle_group AS muscleGroup
         FROM exercise_set es
         INNER JOIN session_exercise se ON es.session_exercise_id = se.id
-        INNER JOIN exercise_muscle_zone emz ON COALESCE(se.original_exercise_id, se.exercise_id) = emz.exercise_id
+        INNER JOIN exercise_muscle_zone emz ON se.exercise_id = emz.exercise_id
         INNER JOIN muscle_zone mz ON emz.muscle_zone_id = mz.id
         WHERE se.session_id IN (:sessionIds)
         """,
@@ -110,7 +161,7 @@ interface ExerciseSetDao {
         SELECT AVG(es.weight_kg)
         FROM exercise_set es
         INNER JOIN session_exercise se ON es.session_exercise_id = se.id
-        WHERE COALESCE(se.original_exercise_id, se.exercise_id) = :exerciseId
+        WHERE se.exercise_id = :exerciseId
           AND se.session_id = :sessionId
         """,
     )
@@ -121,7 +172,7 @@ interface ExerciseSetDao {
         SELECT mz.name AS muscleZoneName, mz.muscle_group AS muscleGroup, COUNT(*) AS setCount
         FROM exercise_set es
         INNER JOIN session_exercise se ON es.session_exercise_id = se.id
-        INNER JOIN exercise_muscle_zone emz ON COALESCE(se.original_exercise_id, se.exercise_id) = emz.exercise_id
+        INNER JOIN exercise_muscle_zone emz ON se.exercise_id = emz.exercise_id
         INNER JOIN muscle_zone mz ON emz.muscle_zone_id = mz.id
         WHERE se.session_id IN (:sessionIds)
         GROUP BY mz.name, mz.muscle_group
@@ -134,4 +185,5 @@ data class ExerciseSetData(
     val weightKg: Double,
     val reps: Int,
     val rir: Int,
+    val captureUnit: String,
 )

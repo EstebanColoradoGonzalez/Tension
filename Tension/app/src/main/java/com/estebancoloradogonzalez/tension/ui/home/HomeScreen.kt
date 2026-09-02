@@ -44,7 +44,11 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.estebancoloradogonzalez.tension.R
+import com.estebancoloradogonzalez.tension.ui.components.EntityNameText
+import com.estebancoloradogonzalez.tension.ui.components.ReassignRoutineDialog
+import com.estebancoloradogonzalez.tension.ui.components.weekDayName
 import com.estebancoloradogonzalez.tension.domain.model.DeloadHomeState
+import com.estebancoloradogonzalez.tension.domain.model.WeekDay
 import com.estebancoloradogonzalez.tension.ui.theme.LocalTensionSemanticColors
 
 @Composable
@@ -104,10 +108,15 @@ fun HomeScreen(
                 item {
                     Spacer(modifier = Modifier.height(16.dp))
                     NextSessionCard(
+                        weekDay = uiState.todaySession?.weekDay,
                         routineName = uiState.nextSession?.routineName ?: "",
                         versionNumber = uiState.nextSession?.versionNumber ?: 0,
                         isLoading = uiState.isLoading,
+                        isTemporaryOverride = uiState.isTemporaryOverride,
+                        canReassign = uiState.canReassign,
                         onStartSession = { viewModel.startSession() },
+                        onReassign = { viewModel.openReassignDialog() },
+                        onUndoReassign = { viewModel.undoReassign() },
                         onCardClick = {
                             uiState.nextSession?.let {
                                 onNavigateToPreview(
@@ -117,6 +126,17 @@ fun HomeScreen(
                                 )
                             }
                         },
+                    )
+                }
+            }
+
+            if (uiState.showRestDayCard) {
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    RestDayCard(
+                        weekDay = uiState.todaySession?.weekDay,
+                        canReassign = uiState.canReassign,
+                        onReassign = { viewModel.openReassignDialog() },
                     )
                 }
             }
@@ -139,6 +159,14 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(16.dp))
             }
         }
+    }
+
+    if (uiState.isReassignDialogOpen) {
+        ReassignRoutineDialog(
+            options = uiState.reassignOptions,
+            onConfirm = { routineId -> viewModel.confirmReassign(routineId) },
+            onDismiss = { viewModel.dismissReassignDialog() },
+        )
     }
     }
 }
@@ -223,7 +251,7 @@ private fun ResumeSessionCard(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            Text(
+            EntityNameText(
                 text = stringResource(R.string.home_next_session_format, routineName, versionNumber),
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color(0xFF410002),
@@ -254,12 +282,25 @@ private fun ResumeSessionCard(
     }
 }
 
+/**
+ * Sesion propuesta para hoy. Conserva forma, color y jerarquia de la tarjeta anterior: el
+ * cambio de modelo no se traduce en un rediseno.
+ *
+ * El dia ya no viene embebido en el nombre de la rutina: se presenta como la relacion que
+ * es. La accion de reasignacion va bajo el boton principal, discreta y fuera del flujo, y no
+ * existe cuando hay una sesion en curso.
+ */
 @Composable
 private fun NextSessionCard(
+    weekDay: WeekDay?,
     routineName: String,
     versionNumber: Int,
     isLoading: Boolean,
+    isTemporaryOverride: Boolean,
+    canReassign: Boolean,
     onStartSession: () -> Unit,
+    onReassign: () -> Unit,
+    onUndoReassign: () -> Unit,
     onCardClick: () -> Unit,
 ) {
     Card(
@@ -273,7 +314,15 @@ private fun NextSessionCard(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = stringResource(R.string.home_next_session_format, routineName, versionNumber),
+                text = stringResource(R.string.home_today_label),
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color(0xFF5C0E0E),
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            EntityNameText(
+                text = dayRoutineText(weekDay, routineName),
                 style = MaterialTheme.typography.titleMedium,
                 color = Color(0xFF5C0E0E),
             )
@@ -281,10 +330,19 @@ private fun NextSessionCard(
             Spacer(modifier = Modifier.height(4.dp))
 
             Text(
-                text = stringResource(R.string.home_next_session_label),
-                style = MaterialTheme.typography.bodyMedium,
+                text = stringResource(R.string.version_label_format, versionNumber),
+                style = MaterialTheme.typography.bodySmall,
                 color = Color(0xFF5C0E0E),
             )
+
+            if (isTemporaryOverride) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.home_reassign_notice),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color(0xFF5C0E0E),
+                )
+            }
 
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -299,7 +357,88 @@ private fun NextSessionCard(
             ) {
                 Text(text = stringResource(R.string.home_start_session))
             }
+
+            if (canReassign) {
+                TextButton(
+                    onClick = if (isTemporaryOverride) onUndoReassign else onReassign,
+                    modifier = Modifier.height(48.dp),
+                ) {
+                    Text(
+                        text = if (isTemporaryOverride) {
+                            stringResource(R.string.home_reassign_undo)
+                        } else {
+                            stringResource(R.string.home_reassign_action)
+                        },
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            }
         }
+    }
+}
+
+/**
+ * Dia de descanso: el dia no tiene rutina asignada. El descanso se presenta como un estado
+ * del plan, no como pantalla vacia, y ofrece la misma reasignacion que el resto de los dias
+ * (entrenar un domingo es posible sin que el domingo deje de ser dia sin rutina).
+ */
+@Composable
+private fun RestDayCard(
+    weekDay: WeekDay?,
+    canReassign: Boolean,
+    onReassign: () -> Unit,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        ),
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = stringResource(R.string.home_rest_day_title),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = stringResource(
+                    R.string.home_rest_day_body,
+                    weekDay?.let { weekDayName(it) } ?: "",
+                ),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            if (canReassign) {
+                Spacer(modifier = Modifier.height(8.dp))
+                TextButton(
+                    onClick = onReassign,
+                    modifier = Modifier.height(48.dp),
+                ) {
+                    Text(
+                        text = stringResource(R.string.home_rest_day_action),
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Compone `Dia - Rutina`. Sin dia conocido, el nombre de la rutina se presenta solo: la
+ * ausencia de dia no debe dejar un separador huerfano en pantalla.
+ */
+@Composable
+private fun dayRoutineText(weekDay: WeekDay?, routineName: String): String {
+    return if (weekDay == null) {
+        routineName
+    } else {
+        stringResource(R.string.session_day_routine_format, weekDayName(weekDay), routineName)
     }
 }
 

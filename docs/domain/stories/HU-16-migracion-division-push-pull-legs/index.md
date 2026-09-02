@@ -2,7 +2,7 @@
 story_number: 16
 title: 'Migración a división Pull / Push / Legs'
 slug: 'migracion-division-push-pull-legs'
-estado: 'Done'
+estado: 'Completado'
 autor: 'Arquitecto'
 fecha_creacion: '2026-07-09'
 es_resultado_slicing: false

@@ -2,7 +2,7 @@
 story_number: 24
 title: 'Actualización del Diccionario de Ejercicios y Plan de Entrenamiento por defecto'
 slug: 'actualizacion-diccionario-ejercicios-plan-entrenamiento'
-estado: 'Pendiente'
+estado: 'Completado'
 autor: 'Esteban Colorado González'
 fecha_creacion: '2026-05-08'
 es_resultado_slicing: false

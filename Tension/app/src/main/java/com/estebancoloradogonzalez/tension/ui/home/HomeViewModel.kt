@@ -5,9 +5,12 @@ import androidx.lifecycle.viewModelScope
 import com.estebancoloradogonzalez.tension.domain.model.DeloadHomeState
 import com.estebancoloradogonzalez.tension.domain.usecase.alerts.GetActiveAlertCountUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.deload.GetDeloadStateUseCase
+import com.estebancoloradogonzalez.tension.domain.usecase.session.ClearTemporaryRoutineUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.session.GetActiveSessionUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.session.GetMicrocycleCountUseCase
-import com.estebancoloradogonzalez.tension.domain.usecase.session.GetNextSessionInfoUseCase
+import com.estebancoloradogonzalez.tension.domain.usecase.session.GetReassignableRoutinesUseCase
+import com.estebancoloradogonzalez.tension.domain.usecase.session.GetTodaySessionUseCase
+import com.estebancoloradogonzalez.tension.domain.usecase.session.SetTemporaryRoutineUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.session.StartSessionUseCase
 import com.estebancoloradogonzalez.tension.domain.model.DeloadState
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -24,12 +27,15 @@ import javax.inject.Inject
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val getNextSessionInfoUseCase: GetNextSessionInfoUseCase,
+    private val getTodaySessionUseCase: GetTodaySessionUseCase,
     private val getActiveSessionUseCase: GetActiveSessionUseCase,
     private val startSessionUseCase: StartSessionUseCase,
     private val getMicrocycleCountUseCase: GetMicrocycleCountUseCase,
     private val getDeloadStateUseCase: GetDeloadStateUseCase,
     private val getActiveAlertCountUseCase: GetActiveAlertCountUseCase,
+    private val getReassignableRoutinesUseCase: GetReassignableRoutinesUseCase,
+    private val setTemporaryRoutineUseCase: SetTemporaryRoutineUseCase,
+    private val clearTemporaryRoutineUseCase: ClearTemporaryRoutineUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -41,21 +47,26 @@ class HomeViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             combine(
-                getNextSessionInfoUseCase(),
+                getTodaySessionUseCase(),
                 getActiveSessionUseCase(),
                 getMicrocycleCountUseCase(),
                 getActiveAlertCountUseCase(),
-            ) { nextSession, activeSession, microcycleCount, alertCount ->
+                getReassignableRoutinesUseCase(),
+            ) { todaySession, activeSession, microcycleCount, alertCount, reassignOptions ->
                 HomeUiState(
                     isLoading = false,
-                    nextSession = if (activeSession != null) null else nextSession,
+                    todaySession = todaySession,
                     activeSession = activeSession,
                     microcycleCount = microcycleCount,
                     alertCount = alertCount,
+                    reassignOptions = reassignOptions,
                 )
             }.collect { newState ->
                 _uiState.update { current ->
-                    newState.copy(deloadState = current.deloadState)
+                    newState.copy(
+                        deloadState = current.deloadState,
+                        isReassignDialogOpen = current.isReassignDialogOpen,
+                    )
                 }
             }
         }
@@ -98,6 +109,41 @@ class HomeViewModel @Inject constructor(
                 _navigationEvent.emit(sessionId)
             } catch (e: Exception) {
                 _uiState.update { it.copy(isLoading = false, errorMessage = e.message) }
+            }
+        }
+    }
+
+    fun openReassignDialog() {
+        if (!_uiState.value.canReassign) return
+        _uiState.update { it.copy(isReassignDialogOpen = true) }
+    }
+
+    fun dismissReassignDialog() {
+        _uiState.update { it.copy(isReassignDialogOpen = false) }
+    }
+
+    /**
+     * Persiste la reasignación temporal. La propuesta se recompone por el flujo de
+     * `getTodaySessionUseCase`, no se escribe aquí: el estado de la pantalla sigue derivando
+     * de la base, y una reasignación rechazada no deja rastro en la interfaz.
+     */
+    fun confirmReassign(routineId: Long) {
+        _uiState.update { it.copy(isReassignDialogOpen = false) }
+        viewModelScope.launch {
+            try {
+                setTemporaryRoutineUseCase(routineId)
+            } catch (e: Exception) {
+                _uiState.update { it.copy(errorMessage = e.message) }
+            }
+        }
+    }
+
+    fun undoReassign() {
+        viewModelScope.launch {
+            try {
+                clearTemporaryRoutineUseCase()
+            } catch (e: Exception) {
+                _uiState.update { it.copy(errorMessage = e.message) }
             }
         }
     }

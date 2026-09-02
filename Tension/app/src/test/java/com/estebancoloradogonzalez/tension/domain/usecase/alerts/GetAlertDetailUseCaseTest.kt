@@ -2,6 +2,9 @@ package com.estebancoloradogonzalez.tension.domain.usecase.alerts
 
 import com.estebancoloradogonzalez.tension.domain.model.AlertDetail
 import com.estebancoloradogonzalez.tension.domain.model.AlertTriggerData
+import com.estebancoloradogonzalez.tension.domain.model.SuggestedAction
+import com.estebancoloradogonzalez.tension.domain.model.SuggestedActionKind
+import com.estebancoloradogonzalez.tension.domain.model.SuggestedActionTarget
 import com.estebancoloradogonzalez.tension.domain.repository.AlertRepository
 import io.mockk.coEvery
 import io.mockk.mockk
@@ -25,9 +28,11 @@ class GetAlertDetailUseCaseTest {
             createdAt = "2026-02-15",
             triggerData = AlertTriggerData.PlateauTrigger(emptyList()),
             causalAnalysis = "Análisis causal",
-            recommendations = listOf("Recomendación 1"),
-            showExerciseHistoryLink = true,
-            showDeloadLink = false,
+            suggestedAction = SuggestedAction(
+                kind = SuggestedActionKind.EXTEND_REPS_BEFORE_LOAD,
+                text = "Añade una repetición por serie antes de subir peso",
+                target = SuggestedActionTarget.ExerciseHistory(5L),
+            ),
             exerciseId = 5L,
         )
         coEvery { repository.getAlertDetail(1L) } returns detail
@@ -36,6 +41,6 @@ class GetAlertDetailUseCaseTest {
 
         assertEquals(1L, result.alertId)
         assertEquals("PLATEAU", result.type)
-        assertEquals(true, result.showExerciseHistoryLink)
+        assertEquals(SuggestedActionTarget.ExerciseHistory(5L), result.suggestedAction.target)
     }
 }

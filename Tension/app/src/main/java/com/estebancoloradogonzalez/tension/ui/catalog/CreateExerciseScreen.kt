@@ -53,6 +53,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.estebancoloradogonzalez.tension.R
+import com.estebancoloradogonzalez.tension.ui.catalog.components.ProgressionDifficultySelector
 import com.estebancoloradogonzalez.tension.ui.components.ExerciseImagePlaceholder
 import com.estebancoloradogonzalez.tension.ui.components.TensionTopAppBar
 
@@ -231,6 +232,22 @@ fun CreateExerciseScreen(
                             )
                         }
                     }
+
+                    // Progression difficulty — MEDIUM preselected
+                    Text(
+                        text = stringResource(R.string.exercise_field_progression_difficulty),
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                    ProgressionDifficultySelector(
+                        selectedDifficulty = uiState.progressionDifficulty,
+                        onDifficultySelected = viewModel::onProgressionDifficultyChanged,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Text(
+                        text = stringResource(R.string.create_exercise_difficulty_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
 
                     // Special condition checkboxes
                     Text(

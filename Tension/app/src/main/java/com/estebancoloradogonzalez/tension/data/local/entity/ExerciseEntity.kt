@@ -5,6 +5,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import com.estebancoloradogonzalez.tension.domain.model.ProgressionDifficulty
 
 @Entity(
     tableName = "exercise",
@@ -46,4 +47,7 @@ data class ExerciseEntity(
 
     @ColumnInfo(name = "media_resource")
     val mediaResource: String? = null,
+
+    @ColumnInfo(name = "progression_difficulty", defaultValue = "MEDIUM")
+    val progressionDifficulty: String = ProgressionDifficulty.MEDIUM.name,
 )

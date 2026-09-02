@@ -2,7 +2,7 @@
 story_number: 4
 title: 'Consultar y Gestionar Plan de Entrenamiento'
 slug: 'consultar-gestionar-plan-entrenamiento'
-estado: 'Done'
+estado: 'Completado'
 autor: 'Esteban Colorado González'
 fecha_creacion: '2026-01-01'
 es_resultado_slicing: false

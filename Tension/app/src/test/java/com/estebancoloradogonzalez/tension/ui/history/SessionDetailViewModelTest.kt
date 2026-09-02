@@ -53,7 +53,6 @@ class SessionDetailViewModelTest {
                     exerciseId = 10L,
                     exerciseName = "Press Banca",
                     classification = ProgressionClassification.POSITIVE_PROGRESSION,
-                    originalExerciseName = null,
                     sets = listOf(SetData(weightKg = 60.0, reps = 10, rir = 2)),
                 ),
             ),

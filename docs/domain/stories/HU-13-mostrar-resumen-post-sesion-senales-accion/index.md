@@ -2,7 +2,7 @@
 story_number: 13
 title: 'Mostrar resumen post-sesión con señales de acción'
 slug: 'mostrar-resumen-post-sesion-senales-accion'
-estado: 'Done'
+estado: 'Completado'
 autor: 'Esteban Colorado González'
 fecha_creacion: '2026-02-12'
 es_resultado_slicing: false

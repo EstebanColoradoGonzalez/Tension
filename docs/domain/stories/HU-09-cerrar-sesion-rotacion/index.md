@@ -2,7 +2,7 @@
 story_number: 9
 title: 'Cerrar sesión y avanzar rotación'
 slug: 'cerrar-sesion-rotacion'
-estado: 'Done'
+estado: 'Completado'
 autor: 'Esteban Colorado González'
 fecha_creacion: '2026-02-12'
 es_resultado_slicing: false

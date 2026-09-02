@@ -2,7 +2,7 @@
 story_number: 12
 title: 'Motor de Detección: Regresión, Meseta y Necesidad de Descarga'
 slug: 'motor-deteccion-regresion-meseta-necesidad-descarga'
-estado: 'Done'
+estado: 'Completado'
 autor: 'Esteban Colorado González'
 fecha_creacion: '2026-02-12'
 es_resultado_slicing: true

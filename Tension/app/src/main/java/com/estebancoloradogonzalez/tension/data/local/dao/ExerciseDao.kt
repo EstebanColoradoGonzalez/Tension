@@ -18,6 +18,7 @@ data class ExerciseWithDetails(
     val isToTechnicalFailure: Int,
     val isCustom: Int,
     val mediaResource: String?,
+    val progressionDifficulty: String,
     val muscleZones: String?,
     val muscleGroup: String?,
 )
@@ -36,6 +37,7 @@ interface ExerciseDao {
             e.is_to_technical_failure AS isToTechnicalFailure,
             e.is_custom AS isCustom,
             e.media_resource AS mediaResource,
+            e.progression_difficulty AS progressionDifficulty,
             GROUP_CONCAT(DISTINCT mz.name) AS muscleZones,
             (SELECT mz2.muscle_group FROM exercise_muscle_zone emz2
              INNER JOIN muscle_zone mz2 ON emz2.muscle_zone_id = mz2.id
@@ -61,6 +63,7 @@ interface ExerciseDao {
             e.is_to_technical_failure AS isToTechnicalFailure,
             e.is_custom AS isCustom,
             e.media_resource AS mediaResource,
+            e.progression_difficulty AS progressionDifficulty,
             GROUP_CONCAT(DISTINCT mz.name) AS muscleZones,
             (SELECT mz2.muscle_group FROM exercise_muscle_zone emz2
              INNER JOIN muscle_zone mz2 ON emz2.muscle_zone_id = mz2.id
@@ -89,6 +92,7 @@ interface ExerciseDao {
             e.is_to_technical_failure AS isToTechnicalFailure,
             e.is_custom AS isCustom,
             e.media_resource AS mediaResource,
+            e.progression_difficulty AS progressionDifficulty,
             GROUP_CONCAT(DISTINCT mz.name) AS muscleZones,
             (SELECT mz2.muscle_group FROM exercise_muscle_zone emz2
              INNER JOIN muscle_zone mz2 ON emz2.muscle_zone_id = mz2.id
@@ -106,34 +110,6 @@ interface ExerciseDao {
     )
     fun getNotInVersion(routineVersionId: Long): Flow<List<ExerciseWithDetails>>
 
-    @Query(
-        """
-        SELECT 
-            e.id,
-            e.name,
-            et.name AS equipmentTypeName,
-            e.is_bodyweight AS isBodyweight,
-            e.is_isometric AS isIsometric,
-            e.is_to_technical_failure AS isToTechnicalFailure,
-            e.is_custom AS isCustom,
-            e.media_resource AS mediaResource,
-            GROUP_CONCAT(DISTINCT mz.name) AS muscleZones,
-            (SELECT mz2.muscle_group FROM exercise_muscle_zone emz2
-             INNER JOIN muscle_zone mz2 ON emz2.muscle_zone_id = mz2.id
-             WHERE emz2.exercise_id = e.id LIMIT 1) AS muscleGroup
-        FROM exercise e
-        INNER JOIN equipment_type et ON e.equipment_type_id = et.id
-        LEFT JOIN exercise_muscle_zone emz ON e.id = emz.exercise_id
-        LEFT JOIN muscle_zone mz ON emz.muscle_zone_id = mz.id
-        WHERE e.id NOT IN (
-              SELECT se.exercise_id FROM session_exercise se WHERE se.session_id = :sessionId
-          )
-        GROUP BY e.id
-        ORDER BY e.name ASC
-        """,
-    )
-    fun getEligibleSubstitutesForSession(sessionId: Long): Flow<List<ExerciseWithDetails>>
-
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(exercises: List<ExerciseEntity>)
 
@@ -146,11 +122,11 @@ interface ExerciseDao {
     @Query("UPDATE exercise SET media_resource = :mediaResource WHERE id = :exerciseId")
     suspend fun updateMediaResource(exerciseId: Long, mediaResource: String?)
 
+    @Query("UPDATE exercise SET progression_difficulty = :difficulty WHERE id = :exerciseId")
+    suspend fun updateProgressionDifficulty(exerciseId: Long, difficulty: String)
+
     @Query("SELECT COUNT(*) FROM exercise WHERE name = :name AND equipment_type_id = :equipmentTypeId")
     suspend fun countByNameAndEquipment(name: String, equipmentTypeId: Long): Int
-
-    @Query("SELECT muscle_zone_id FROM exercise_muscle_zone WHERE exercise_id = :exerciseId")
-    suspend fun getMuscleZoneIdsByExerciseId(exerciseId: Long): List<Long>
 
     @Transaction
     suspend fun insertExerciseWithMuscleZones(

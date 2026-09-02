@@ -1,0 +1,96 @@
+╔══════════════════════════════════════════════════════════════╗
+║  ⚠️  PROTOTIPO — PROPUESTA PENDIENTE DE VALIDACIÓN CON DISEÑO  ║
+╚══════════════════════════════════════════════════════════════╝
+
+HU #28 — Legibilidad de nombres y títulos largos
+Plataforma: mobile / portrait (390 px) · Material 3 · targets ≥ 48 dp
+
+
+────────────────────────────────────────────────────────────────
+ ANTES  ·  comportamiento actual (defectuoso)
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+| ← Martes: Espalda, Bíceps y Abd...       |   título cortado
++──────────────────────────────────────────+
+|                                          |
+|  Extensión de Tríceps por en...  Serie   |   nombre cortado
+|                                          |   Y contador cortado
+|  +────────────────────────────────────+  |
+|  |   [  🖼  120×120  ]                |  |
+|  +────────────────────────────────────+  |
+|                                          |
++──────────────────────────────────────────+
+
+
+────────────────────────────────────────────────────────────────
+ DESPUÉS  ·  regla de 2 líneas + contador con prioridad
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+| ←  Martes: Espalda, Bíceps y Abdomen     |   título en 2 líneas
+|    (Pull — Foco Dorsal Ancho)            |
++──────────────────────────────────────────+
+|                                          |
+|  +────────────────────────────────────+  |
+|  | Extensión de Tríceps    Serie 2 de 3| |   contador SIEMPRE
+|  | por encima de la Cabeza             | |   completo; el nombre
+|  |                                     | |   cede espacio y usa
+|  |   [  🖼  120×120  ]                 | |   hasta 2 líneas
+|  |                                     | |
+|  |   3 series · 8-12 reps              | |
+|  +────────────────────────────────────+  |
+|                                          |
+|  +────────────────────────────────────+  |
+|  | Elevación Lateral       Serie 1 de 4| |   nombre corto:
+|  |                                     | |   1 línea, sin cambio
+|  |   [  🖼  120×120  ]                 | |
+|  +────────────────────────────────────+  |
+|                                          |
++──────────────────────────────────────────+
+
+
+────────────────────────────────────────────────────────────────
+ CASO EXTREMO  ·  nombre que excede 2 líneas (CA-28.05)
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+|  Elevación de Pantorrilla    Serie 3 de 3|
+|  en Máquina de Pie con Ba…               |   elipsis al final
+|                                          |   de la 2ª línea
+|  ⓘ Nombre completo visible en el         |
+|    detalle del ejercicio                 |
++──────────────────────────────────────────+
+
+
+────────────────────────────────────────────────────────────────
+ UBICACIONES AFECTADAS  ·  misma regla en las 7
+────────────────────────────────────────────────────────────────
+
+  [x] Sesión activa ............. nombre ejercicio + "Serie X de Y"
+  [x] Inicio .................... título de sesión propuesta
+  [x] Preview de sesión ......... título + nombres de ejercicio
+  [x] Resumen post-sesión ....... título + nombres de ejercicio
+  [x] Historial / detalle ....... título + nombres de ejercicio
+  [x] Diccionario de Ejercicios . nombres en lista y detalle
+  [x] Pestaña Plan .............. rutina, versión, ejercicio
+
+
+────────────────────────────────────────────────────────────────
+ PANTALLA MÍNIMA  ·  5" — RNF21 (CA-28.06)
+────────────────────────────────────────────────────────────────
+
++────────────────────────────────+
+| Extensión de Tríceps  Serie 2/3|   el contador puede abreviarse
+| por encima de la C…            |   pero NUNCA truncarse
++────────────────────────────────+
+
+
+NOTAS DE IMPLEMENTACIÓN
+  · La regla vive centralizada y reutilizable, no por pantalla.
+  · Sin controles nuevos. Sin rutas nuevas. Sin mensajes nuevos.
+  · Verificar en tema claro y oscuro (RNF23).
+
+╔══════════════════════════════════════════════════════════════╗
+║  ⚠️  PROTOTIPO — PROPUESTA PENDIENTE DE VALIDACIÓN CON DISEÑO  ║
+╚══════════════════════════════════════════════════════════════╝

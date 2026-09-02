@@ -1,0 +1,161 @@
+╔══════════════════════════════════════════════════════════════╗
+║  ⚠️  PROTOTIPO — PROPUESTA PENDIENTE DE VALIDACIÓN CON DISEÑO  ║
+╚══════════════════════════════════════════════════════════════╝
+
+HU #29 — Plan por defecto y catálogo de ejercicios actualizados
+Plataforma: mobile / portrait (390 px) · Material 3 · targets ≥ 48 dp
+
+  ⓘ Esta historia NO introduce cambios de interfaz. Las pantallas
+    existentes ya soportan todo lo que produce. El preview muestra
+    cómo se ve el RESULTADO del nuevo seed en las pantallas actuales.
+
+
+────────────────────────────────────────────────────────────────
+ PESTAÑA PLAN  ·  las 6 rutinas del nuevo plan por defecto
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+|  Plan de Entrenamiento                   |
++──────────────────────────────────────────+
+|                                          |
+|  +────────────────────────────────────+  |
+|  | 1 · Lunes — Push                   |  |
+|  |     Foco Deltoides Lateral y Medio |  |
+|  |     4 ejercicios · v1           >  |  |
+|  +────────────────────────────────────+  |
+|  +────────────────────────────────────+  |
+|  | 2 · Martes — Pull                  |  |
+|  |     Foco Dorsal Ancho              |  |
+|  |     6 ejercicios · v1           >  |  |
+|  +────────────────────────────────────+  |
+|  +────────────────────────────────────+  |
+|  | 3 · Miércoles — Lower              |  |
+|  |     Foco Cuádriceps                |  |
+|  |     5 ejercicios · v1           >  |  |
+|  +────────────────────────────────────+  |
+|  +────────────────────────────────────+  |
+|  | 4 · Jueves — Push                  |  |
+|  |     Foco Tríceps                   |  |
+|  |     5 ejercicios · v1           >  |  |
+|  +────────────────────────────────────+  |
+|  +────────────────────────────────────+  |
+|  | 5 · Viernes — Pull                 |  |
+|  |     Foco Trapecios y Espalda Media |  |
+|  |     6 ejercicios · v1           >  |  |
+|  +────────────────────────────────────+  |
+|  +────────────────────────────────────+  |
+|  | 6 · Sábado — Lower                 |  |
+|  |     Foco Isquiotibiales y Glúteo   |  |
+|  |     5 ejercicios · v1           >  |  |
+|  +────────────────────────────────────+  |
+|                                          |
++──────────────────────────────────────────+
+
+
+────────────────────────────────────────────────────────────────
+ DETALLE DE VERSIÓN  ·  Lunes — slot dual nuevo (CA-29.04)
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+| ←  Lunes — Push                          |
+|    Foco Deltoides Lateral y Medio · v1   |
++──────────────────────────────────────────+
+|                                          |
+|  slot 1  Elevación Lateral               |
+|          4 series · 8-12                 |
+|  ────────────────────────────────────    |
+|  slot 2  Press de Banca Inclinado     ⇄  |  ⇄ = slot dual
+|          4 Press Militar  (alternativa)  |
+|          3 series · 8-12                 |
+|  ────────────────────────────────────    |
+|  slot 3  Press de Banca Plano            |
+|          3 series · 8-12                 |
+|  ────────────────────────────────────    |
+|  slot 4  Aperturas                       |
+|          3 series · 8-12                 |
+|                                          |
+|  ⓘ Remo al Mentón sale del plan pero     |
+|    permanece en el Diccionario           |
+|                                          |
++──────────────────────────────────────────+
+
+
+────────────────────────────────────────────────────────────────
+ DICCIONARIO  ·  4 ejercicios nuevos + 1 renombrado
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+|  Diccionario de Ejercicios      37 items |
+|  [🔍 Buscar ejercicio________________]   |
++──────────────────────────────────────────+
+|  [  🖼  ]  Dominadas               NUEVO |
+|            Barra Fija · Dorsal Ancho     |
+|            peso corporal                 |
+|  ─────────────────────────────────────   |
+|  [  🖼  ]  Jalón al Pecho     RENOMBRADO |
+|            Polea · Dorsal Ancho          |
+|            ⓘ antes "Tirón de Dorsales"   |
+|  ─────────────────────────────────────   |
+|  [  🖼  ]  Press Militar           NUEVO |
+|            Barra o Mancuernas · Hombro   |
+|  ─────────────────────────────────────   |
+|  [  🖼  ]  Remo al Mentón   RECATALOGADO |
+|            Barra · Espalda Alta          |
+|            ⓘ antes Hombro + Trapecio     |
+|  ─────────────────────────────────────   |
+|  [  🖼  ]  Remo Unilateral en       NUEVO|
+|            Polea Alta                    |
+|            Polea · Espalda Alta          |
+|  ─────────────────────────────────────   |
+|  [  🖼  ]  Remo Unilateral en       NUEVO|
+|            Polea Baja                    |
+|            Polea · Espalda Media         |
+|  ─────────────────────────────────────   |
+|  [  🖼  ]  Zancadas                      |
+|            Mancuernas · Cuádriceps+Glút. |
+|            ⓘ fuera del plan, disponible  |
++──────────────────────────────────────────+
+
+  Los marcadores NUEVO / RENOMBRADO / RECATALOGADO son anotaciones
+  de este prototipo para trazabilidad. NO son elementos de la UI.
+
+
+────────────────────────────────────────────────────────────────
+ SESIÓN ACTIVA  ·  slot dual, sin cambios respecto a HU-26
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+|  +────────────────────────────────────+  |
+|  | Jalón al Pecho          Serie 1 de 4| |
+|  |                                  ⇄  | |  ⇄ intercambiar por
+|  |   [  🖼  120×120  ]                 | |    Dominadas (solo
+|  |                                     | |    antes de la 1ª
+|  |   4 series · 8-12 reps              | |    serie, CA-26.10)
+|  +────────────────────────────────────+  |
++──────────────────────────────────────────+
+
+
+────────────────────────────────────────────────────────────────
+ RECURSOS VISUALES  ·  ✅ resueltos el 2026-08-30
+────────────────────────────────────────────────────────────────
+
+  [x] press_militar_mancuernas.png                    6.85 MB
+  [x] dominadas_barra_fija.png                        3.63 MB
+  [x] remo_unilateral_en_polea_baja_polea.png         6.18 MB
+  [x] remo_unilateral_en_polea_alta_polea.png         6.78 MB
+
+  Aportados por El Ejecutante como JPEG; convertidos a PNG real y
+  renombrados a la convención <nombre_snake>_<equipamiento_snake>.
+
+  Jalón al Pecho reutiliza tiron_de_dorsales_polea.png (renombrado
+  lógico del ejercicio, no requiere asset nuevo).
+
+  assets/exercises  ──►  37 PNG  ·  1 por ejercicio del catálogo
+
+  ⓘ La resolución de assets compone la ruta como
+    "exercises/{media_resource}.png" — la extensión .png está
+    fijada en código, por eso los 4 archivos deben ser PNG.
+
+╔══════════════════════════════════════════════════════════════╗
+║  ⚠️  PROTOTIPO — PROPUESTA PENDIENTE DE VALIDACIÓN CON DISEÑO  ║
+╚══════════════════════════════════════════════════════════════╝

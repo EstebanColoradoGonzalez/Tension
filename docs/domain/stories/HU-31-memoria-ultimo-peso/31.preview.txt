@@ -1,0 +1,154 @@
+╔══════════════════════════════════════════════════════════════╗
+║  ⚠️  PROTOTIPO — PROPUESTA PENDIENTE DE VALIDACIÓN CON DISEÑO  ║
+╚══════════════════════════════════════════════════════════════╝
+
+HU #31 — Memoria del último peso manejado
+Plataforma: mobile / portrait (390 px) · Material 3 · targets ≥ 48 dp
+
+  ⓘ Sin controles nuevos. El cambio es INVISIBLE salvo por el valor
+    con el que aparece precargado el campo de peso.
+
+
+────────────────────────────────────────────────────────────────
+ ÁRBOL DE PRECEDENCIA  ·  CA-31.01
+────────────────────────────────────────────────────────────────
+
+   ¿Hay carga prescrita por el motor de Doble Umbral (> 0)?
+        │
+        ├── SÍ ──► precargar la CARGA PRESCRITA          [nivel 1]
+        │          (HU-11 conserva su prioridad)
+        │
+        └── NO
+             │
+             ¿Hay serie anterior de este ejercicio en ESTA sesión?
+                  │
+                  ├── SÍ ──► precargar PESO DE ESA SERIE  [nivel 2]
+                  │
+                  └── NO
+                       │
+                       ¿Hay series en la SESIÓN ANTERIOR?
+                            │
+                            ├── SÍ ──► precargar PESO DE  [nivel 3]
+                            │          LA ÚLTIMA SERIE
+                            │
+                            └── NO ──► CAMPO VACÍO        [nivel 4]
+
+   Excepción: en protocolo de descarga, la carga de descarga (HU-14)
+   conserva su prioridad sobre los niveles 2 y 3.
+
+
+────────────────────────────────────────────────────────────────
+ ANTES  ·  comportamiento actual (defectuoso)
+────────────────────────────────────────────────────────────────
+
+  Sesión del 5 ago   ── Press de Banca Plano ──
+     Serie 1: 40.0 kg     Serie 2: 42.5 kg     Serie 3: 42.5 kg
+
+  Sesión del 12 ago  ── Press de Banca Plano ──
+     Serie 1: precargado 40.0 kg   ✗  el primer valor registrado
+     Serie 2: precargado 40.0 kg   ✗  no avanza con la progresión
+     Serie 3: precargado 40.0 kg   ✗  hay que reescribirlo cada vez
+
+
+────────────────────────────────────────────────────────────────
+ DESPUÉS  ·  memoria progresiva
+────────────────────────────────────────────────────────────────
+
+  Sesión del 12 ago  ── Press de Banca Plano ──
+     Serie 1: precargado 42.5 kg   ✓  nivel 3 — última serie previa
+     Serie 2: precargado 42.5 kg   ✓  nivel 2 — serie anterior
+     Serie 3: precargado 45.0 kg   ✓  nivel 2 — si en la 2ª subió
+
+
+────────────────────────────────────────────────────────────────
+ NIVEL 2  ·  memoria dentro de la sesión (CA-31.02)
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+| ←  Registrar serie                       |
++──────────────────────────────────────────+
+|  Press de Banca Plano                    |
+|  Serie 2 de 3 · 8-12 reps                |
+|                                          |
+|  Peso (*)                                |
+|  +──────────────+   +────────┬────────+  |
+|  |    42.5      |   |  (●)Kg │ (○)Lb |  |  ← serie anterior
+|  +──────────────+   +────────┴────────+  |     de esta sesión
+|                                          |
+|    [   −   ]   [   +   ]                 |
+|    incremento 0.5 kg                     |
+|                                          |
+|  Repeticiones (*)      RIR (*)           |
+|  +────────────+        +────────────+    |
+|  |            |        |            |    |
+|  +────────────+        +────────────+    |
+|                                          |
+|         [    Registrar serie    ]        |
++──────────────────────────────────────────+
+
+
+────────────────────────────────────────────────────────────────
+ NIVEL 1  ·  la prescripción manda (CA-31.04)
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+|  Press de Banca Plano                    |
+|  Serie 1 de 3 · 8-12 reps                |
+|                                          |
+|  Peso (*)                                |
+|  +──────────────+   +────────┬────────+  |
+|  |    45.0      |   |  (●)Kg │ (○)Lb |  |  ← carga prescrita,
+|  +──────────────+   +────────┴────────+  |     NO los 42.5 kg de
+|                                          |     la sesión anterior
+|  ↑ Carga objetivo de esta sesión         |
+|                                          |
++──────────────────────────────────────────+
+
+  El indicador de carga objetivo ya existe (HU-11) y no cambia.
+
+
+────────────────────────────────────────────────────────────────
+ NIVEL 3 CON UNIDAD Lb  ·  coherencia de precarga (CA-31.05)
+────────────────────────────────────────────────────────────────
+
+  Persistido: 20.41 kg   ·   unidad del ejercicio: Lb
+
++──────────────────────────────────────────+
+|  Peso (*)                                |
+|  +──────────────+   +────────┬────────+  |
+|  |    45.0      |   |  (○)Kg │ (●)Lb |  |  ← se muestra el mismo
+|  +──────────────+   +────────┴────────+  |     número que capturó
+|                                          |     El Ejecutante
++──────────────────────────────────────────+
+
+
+────────────────────────────────────────────────────────────────
+ NIVEL 4  ·  sin historial (CA-31.07) — estado válido, no error
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+|  Remo Unilateral en Polea Alta           |
+|  Serie 1 de 3 · 8-12 reps                |
+|                                          |
+|  Peso (*)                                |
+|  +──────────────+   +────────┬────────+  |
+|  |              |   |  (●)Kg │ (○)Lb |  |  ← vacío. Sin mensaje
+|  +──────────────+   +────────┴────────+  |     de error, sin
+|                                          |     bloqueo del CTA
+|         [    Registrar serie    ]        |
++──────────────────────────────────────────+
+
+
+────────────────────────────────────────────────────────────────
+ CASO SLOT DUAL  ·  historial del ejercicio ejecutado (CA-31.08)
+────────────────────────────────────────────────────────────────
+
+  Slot: Face Pull  ⇄  Vuelos Posteriores
+
+  El Ejecutante intercambia a Vuelos Posteriores antes de la 1ª serie
+     └─► la precarga se resuelve con el historial de VUELOS POSTERIORES
+         no con el de Face Pull. Si no tiene historial → campo vacío.
+
+╔══════════════════════════════════════════════════════════════╗
+║  ⚠️  PROTOTIPO — PROPUESTA PENDIENTE DE VALIDACIÓN CON DISEÑO  ║
+╚══════════════════════════════════════════════════════════════╝

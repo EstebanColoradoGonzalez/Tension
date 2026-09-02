@@ -6,6 +6,7 @@ import com.estebancoloradogonzalez.tension.domain.usecase.metrics.GetMicrocycleM
 import com.estebancoloradogonzalez.tension.domain.usecase.metrics.GetTonnageByMuscleGroupUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.metrics.GetTonnageEvolutionUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.metrics.GetVolumeDistributionUseCase
+import com.estebancoloradogonzalez.tension.ui.components.MetricSufficiencyRules
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -46,7 +47,8 @@ class VolumeViewModel @Inject constructor(
                     evolution = evolution,
                     selectedMicrocycle = selectedMicrocycle,
                     totalMicrocycles = totalMicrocycles,
-                    insufficientEvolution = totalMicrocycles < 2,
+                    sessionsInSelectedMicrocycle = sessionIds.size,
+                    insufficientEvolution = MetricSufficiencyRules.evolution(totalMicrocycles) != null,
                 )
             } catch (e: Exception) {
                 _uiState.value = VolumeUiState.Error(
@@ -66,6 +68,7 @@ class VolumeViewModel @Inject constructor(
                 tonnageByGroup = tonnage,
                 distributionByMuscleGroup = distribution,
                 selectedMicrocycle = microcycleNumber,
+                sessionsInSelectedMicrocycle = sessionIds.size,
             )
         }
     }

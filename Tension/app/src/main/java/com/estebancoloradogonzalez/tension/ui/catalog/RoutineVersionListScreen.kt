@@ -34,10 +34,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.estebancoloradogonzalez.tension.R
+import com.estebancoloradogonzalez.tension.ui.components.EntityNameText
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -60,11 +62,12 @@ fun RoutineVersionListScreen(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
-                    Text(
+                    EntityNameText(
                         text = uiState.routineName.ifBlank {
                             stringResource(R.string.routine_versions_title)
                         },
                         style = MaterialTheme.typography.titleLarge,
+                        textAlign = TextAlign.Center,
                     )
                 },
                 navigationIcon = {

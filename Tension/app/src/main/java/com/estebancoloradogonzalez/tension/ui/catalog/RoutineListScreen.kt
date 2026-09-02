@@ -9,19 +9,27 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
@@ -48,11 +56,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.estebancoloradogonzalez.tension.R
+import com.estebancoloradogonzalez.tension.domain.model.WeekDay
+import com.estebancoloradogonzalez.tension.ui.components.EntityNameText
+import com.estebancoloradogonzalez.tension.ui.components.weekDayName
+import com.estebancoloradogonzalez.tension.ui.components.weekDayShortName
+import com.estebancoloradogonzalez.tension.ui.components.weekDaysShortLabel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -170,8 +184,20 @@ fun RoutineListScreen(
                         key = { _, routine -> routine.id },
                     ) { index, routine ->
                         ListItem(
-                            headlineContent = {
+                            leadingContent = {
                                 Text(
+                                    text = weekDaysShortLabel(routine.weekDays),
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = if (routine.weekDays.isEmpty()) {
+                                        MaterialTheme.colorScheme.onSurfaceVariant
+                                    } else {
+                                        MaterialTheme.colorScheme.primary
+                                    },
+                                    modifier = Modifier.widthIn(min = 44.dp),
+                                )
+                            },
+                            headlineContent = {
+                                EntityNameText(
                                     text = routine.name,
                                     style = MaterialTheme.typography.bodyLarge,
                                 )
@@ -214,6 +240,18 @@ fun RoutineListScreen(
                                         }
                                     }
                                     IconButton(
+                                        onClick = { viewModel.onShowWeekDaysDialog(routine) },
+                                        modifier = Modifier.size(36.dp),
+                                    ) {
+                                        Icon(
+                                            Icons.Filled.DateRange,
+                                            contentDescription = stringResource(
+                                                R.string.routine_week_days_action,
+                                            ),
+                                            modifier = Modifier.size(18.dp),
+                                        )
+                                    }
+                                    IconButton(
                                         onClick = { viewModel.onShowEditDialog(routine) },
                                         modifier = Modifier.size(36.dp),
                                     ) {
@@ -247,6 +285,39 @@ fun RoutineListScreen(
                             )
                         }
                     }
+
+                    // Los dias que ninguna rutina reclama cierran la lista. El descanso es
+                    // parte del plan, no un hueco.
+                    if (uiState.restDays.isNotEmpty()) {
+                        item(key = "rest_days_divider") {
+                            HorizontalDivider(
+                                thickness = 1.dp,
+                                color = MaterialTheme.colorScheme.outlineVariant,
+                            )
+                        }
+                        items(
+                            items = uiState.restDays,
+                            key = { day -> "rest_day_${day.name}" },
+                        ) { day ->
+                            ListItem(
+                                leadingContent = {
+                                    Text(
+                                        text = weekDayShortName(day),
+                                        style = MaterialTheme.typography.labelLarge,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.widthIn(min = 44.dp),
+                                    )
+                                },
+                                headlineContent = {
+                                    Text(
+                                        text = stringResource(R.string.plan_rest_day_row),
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                },
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -277,6 +348,118 @@ fun RoutineListScreen(
             onDismiss = viewModel::onDismissDeleteDialog,
         )
     }
+
+    uiState.weekDaysTarget?.let { target ->
+        RoutineWeekDaysDialog(
+            routineName = target.name,
+            selection = uiState.weekDaysSelection,
+            ownerByWeekDay = uiState.routines
+                .flatMap { routine -> routine.weekDays.map { it to routine } }
+                .toMap(),
+            targetRoutineId = target.id,
+            onToggle = viewModel::onToggleWeekDay,
+            onConfirm = viewModel::onConfirmWeekDays,
+            onDismiss = viewModel::onDismissWeekDaysDialog,
+        )
+    }
+}
+
+/**
+ * Asigna los dias de la semana que ejecutan una rutina.
+ *
+ * Es multi-seleccion porque una rutina puede ocupar mas de un dia. Un dia, en cambio, ocupa
+ * una sola rutina: cuando el dia marcado pertenece hoy a otra rutina se avisa de forma
+ * explicita, porque confirmar lo **mueve** y aquella rutina lo pierde.
+ */
+@Composable
+private fun RoutineWeekDaysDialog(
+    routineName: String,
+    selection: Set<WeekDay>,
+    ownerByWeekDay: Map<WeekDay, RoutineItem>,
+    targetRoutineId: Long,
+    onToggle: (WeekDay) -> Unit,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.routine_week_days_title)) },
+        text = {
+            Column {
+                EntityNameText(
+                    text = routineName,
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = stringResource(R.string.routine_week_days_subtitle),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Column(
+                    modifier = Modifier
+                        .heightIn(max = 360.dp)
+                        .verticalScroll(rememberScrollState()),
+                ) {
+                    WeekDay.entries.forEach { day ->
+                        val owner = ownerByWeekDay[day]
+                        val takenByAnother = owner != null && owner.id != targetRoutineId
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(min = 48.dp)
+                                .toggleable(
+                                    value = day in selection,
+                                    role = Role.Checkbox,
+                                    onValueChange = { onToggle(day) },
+                                ),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Checkbox(checked = day in selection, onCheckedChange = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = weekDayName(day),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                )
+                                if (takenByAnother && day in selection) {
+                                    Text(
+                                        text = stringResource(
+                                            R.string.routine_week_days_taken,
+                                            owner.name,
+                                        ),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.error,
+                                    )
+                                } else if (takenByAnother) {
+                                    Text(
+                                        text = stringResource(
+                                            R.string.routine_week_days_current_owner,
+                                            owner.name,
+                                        ),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text(stringResource(R.string.save_button))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel))
+            }
+        },
+    )
 }
 
 @Composable

@@ -63,6 +63,7 @@ class ProfileRepositoryImpl @Inject constructor(
                     heightM = profileEntity.heightM,
                     experienceLevel = ExperienceLevel.valueOf(profileEntity.experienceLevel),
                     weeklyFrequency = profileEntity.weeklyFrequency,
+                    plateauBaseThreshold = profileEntity.plateauBaseThreshold,
                     createdAt = LocalDate.parse(profileEntity.createdAt),
                 )
             } else {
@@ -82,6 +83,10 @@ class ProfileRepositoryImpl @Inject constructor(
                 experienceLevel = experienceLevel.name,
             ),
         )
+    }
+
+    override suspend fun updatePlateauBaseThreshold(value: Int) {
+        profileDao.updatePlateauBaseThreshold(value)
     }
 
     override suspend fun updateWeight(weightKg: Double) {

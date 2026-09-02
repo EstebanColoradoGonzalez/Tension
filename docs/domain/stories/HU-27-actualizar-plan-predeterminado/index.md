@@ -2,7 +2,7 @@
 story_number: 27
 title: 'Actualizar Plan de Entrenamiento Predeterminado'
 slug: 'actualizar-plan-predeterminado'
-estado: 'Lista para Revisión'
+estado: 'Completado'
 autor: 'Esteban Colorado González'
 fecha_creacion: '2026-07-05'
 es_resultado_slicing: false

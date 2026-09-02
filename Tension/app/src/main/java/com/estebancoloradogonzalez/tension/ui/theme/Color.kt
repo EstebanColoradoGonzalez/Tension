@@ -119,3 +119,37 @@ val SessionIncompleteDark = Color(0xFFFFB74D)
 // Semantic Domain Colors — Deload (B1, E1, I1)
 val DeloadActiveLight = Color(0xFF1565C0)
 val DeloadActiveDark = Color(0xFF64B5F6)
+
+// Semantic Domain Colors — Analytics Charts (G1, G2, G3)
+val ChartSeriesLight = listOf(
+    Color(0xFF8B1A1A),
+    Color(0xFF6B4F4F),
+    Color(0xFF5C6B4F),
+    Color(0xFF1A5C8B),
+    Color(0xFF8B6B1A),
+    Color(0xFF4F1A8B),
+    Color(0xFF1A8B6B),
+    Color(0xFF8B1A6B),
+    Color(0xFF4F8B1A),
+    Color(0xFF1A4F8B),
+    Color(0xFF8B4F1A),
+    Color(0xFF6B1A8B),
+)
+val ChartSeriesDark = listOf(
+    Color(0xFFEF9A9A),
+    Color(0xFFBCAAA4),
+    Color(0xFFC5D6AE),
+    Color(0xFF90CAF9),
+    Color(0xFFFFD54F),
+    Color(0xFFB39DDB),
+    Color(0xFF80CBC4),
+    Color(0xFFF48FB1),
+    Color(0xFFC5E1A5),
+    Color(0xFF9FA8DA),
+    Color(0xFFFFCC80),
+    Color(0xFFCE93D8),
+)
+
+// Semantic Domain Colors — Insufficient Metric Data (G1, G2, G3)
+val MetricInsufficientLight = Color(0xFF857370)
+val MetricInsufficientDark = Color(0xFFA08C88)

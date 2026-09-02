@@ -19,6 +19,7 @@ class GetProgressionRateUseCase @Inject constructor(
                 exerciseName = c.exerciseName,
                 rate = ProgressionRateRule.calculate(c.positiveCount, c.totalCount),
                 isBodyweight = c.isBodyweight == 1,
+                observations = c.totalCount,
             )
         }
     }

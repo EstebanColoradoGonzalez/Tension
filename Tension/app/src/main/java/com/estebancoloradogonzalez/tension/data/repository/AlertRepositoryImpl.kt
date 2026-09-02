@@ -13,16 +13,21 @@ import com.estebancoloradogonzalez.tension.data.local.entity.AlertEntity
 import com.estebancoloradogonzalez.tension.domain.model.AlertDetail
 import com.estebancoloradogonzalez.tension.domain.model.AlertItem
 import com.estebancoloradogonzalez.tension.domain.model.AlertTriggerData
-import com.estebancoloradogonzalez.tension.domain.model.CorrectiveAction
+import com.estebancoloradogonzalez.tension.domain.model.PlateauCause
+import com.estebancoloradogonzalez.tension.domain.model.ProgressionDifficulty
 import com.estebancoloradogonzalez.tension.domain.model.SetForTonnage
+import com.estebancoloradogonzalez.tension.domain.model.SuggestedAction
 import com.estebancoloradogonzalez.tension.domain.repository.AlertRepository
 import com.estebancoloradogonzalez.tension.domain.rules.AdherenceRule
+import com.estebancoloradogonzalez.tension.domain.rules.AlertNarrativeRule
 import com.estebancoloradogonzalez.tension.domain.rules.AlertThresholdRule
 import com.estebancoloradogonzalez.tension.domain.rules.AvgRirRule
-import com.estebancoloradogonzalez.tension.domain.rules.CorrectiveActionRule
 import com.estebancoloradogonzalez.tension.domain.rules.LoadIncrementResolver
 import com.estebancoloradogonzalez.tension.domain.rules.PlateauCausalAnalysisRule
+import com.estebancoloradogonzalez.tension.domain.rules.PlateauThresholdRule
 import com.estebancoloradogonzalez.tension.domain.rules.ProgressionRateRule
+import com.estebancoloradogonzalez.tension.domain.rules.SuggestedActionContext
+import com.estebancoloradogonzalez.tension.domain.rules.SuggestedActionRule
 import com.estebancoloradogonzalez.tension.domain.rules.TonnageRule
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -84,18 +89,6 @@ class AlertRepositoryImpl @Inject constructor(
             else -> ""
         }
 
-        val triggerData = buildTriggerData(alert)
-        val causalAnalysis = buildCausalAnalysis(alert)
-        val recommendations = buildRecommendations(alert)
-
-        val showExerciseHistoryLink = alert.type in listOf(
-            "PLATEAU",
-            "LOW_PROGRESSION_RATE",
-        ) && alert.exerciseId != null
-
-        val showDeloadLink = alert.type == "ROUTINE_REQUIRES_DELOAD" ||
-            (alert.type == "RIR_OUT_OF_RANGE" && isRirLowAlert(alert))
-
         return AlertDetail(
             alertId = alert.id,
             type = alert.type,
@@ -103,11 +96,9 @@ class AlertRepositoryImpl @Inject constructor(
             entityName = entityName,
             message = alert.message,
             createdAt = alert.createdAt,
-            triggerData = triggerData,
-            causalAnalysis = causalAnalysis,
-            recommendations = recommendations,
-            showExerciseHistoryLink = showExerciseHistoryLink,
-            showDeloadLink = showDeloadLink,
+            triggerData = buildTriggerData(alert),
+            causalAnalysis = buildCausalAnalysis(alert),
+            suggestedAction = buildSuggestedAction(alert),
             exerciseId = alert.exerciseId,
         )
     }
@@ -166,7 +157,9 @@ class AlertRepositoryImpl @Inject constructor(
         val exerciseId = alert.exerciseId
             ?: return AlertTriggerData.ProgressionRateTrigger(0.0, "")
         val exerciseName = exerciseDao.getByIdOnce(exerciseId)?.name ?: ""
-        val startDate = LocalDate.now().minusWeeks(4).toString()
+        val startDate = LocalDate.now()
+            .minusWeeks(AlertThresholdRule.PROGRESSION_WINDOW_WEEKS)
+            .toString()
         val counts = sessionExerciseDao.getClassificationCountsByPeriod(startDate)
         val exerciseCount = counts.find { it.exerciseId == exerciseId }
         val rate = if (exerciseCount != null) {
@@ -205,15 +198,7 @@ class AlertRepositoryImpl @Inject constructor(
         val completedSessions = sessionDao.countSessionsInWeek(prevWeekStart, prevWeekEnd)
         val percentage = AdherenceRule.calculate(completedSessions, weeklyFrequency)
 
-        val twoWeeksAgoStart = today.minusWeeks(2).with(DayOfWeek.MONDAY).toString()
-        val twoWeeksAgoEnd = today.minusWeeks(2).with(DayOfWeek.SUNDAY).toString()
-        val twoWeeksAgoSessions = sessionDao.countSessionsInWeek(
-            twoWeeksAgoStart,
-            twoWeeksAgoEnd,
-        )
-        val twoWeeksAgoPercentage = AdherenceRule.calculate(twoWeeksAgoSessions, weeklyFrequency)
-        val consecutiveWeeks =
-            if (AlertThresholdRule.isAdherenceLow(twoWeeksAgoPercentage)) 2 else 1
+        val consecutiveWeeks = countConsecutiveLowAdherenceWeeks(today, weeklyFrequency)
 
         return AlertTriggerData.AdherenceTrigger(
             percentage = percentage,
@@ -300,89 +285,73 @@ class AlertRepositoryImpl @Inject constructor(
         return when (alert.type) {
             "PLATEAU" -> buildPlateauCausalAnalysis(alert)
             "ROUTINE_REQUIRES_DELOAD" -> buildDeloadCausalAnalysis(alert)
-            "LOW_PROGRESSION_RATE" -> {
-                if (alert.level == "CRISIS") {
-                    "Tasa de progresión en estado crítico. El ejercicio muestra estancamiento " +
-                        "prolongado que compromete las adaptaciones."
-                } else {
-                    "Tasa de progresión por debajo del umbral de alerta. El ejercicio muestra " +
-                        "estancamiento sostenido."
-                }
-            }
-            "RIR_OUT_OF_RANGE" -> {
-                val routineId = alert.routineId ?: return "RIR fuera de rango sostenido."
-                val sessionIds = sessionDao.getSessionIdsByRoutineInRange(routineId, 2)
-                if (sessionIds.isNotEmpty()) {
-                    val rirValues = exerciseSetDao.getRirValuesBySessionIds(
-                        listOf(sessionIds.first()),
-                    )
-                    val avgRir = AvgRirRule.calculate(rirValues)
-                    if (AlertThresholdRule.isRirLow(avgRir)) {
-                        "El ejecutante está entrenando demasiado cerca del fallo técnico de " +
-                            "forma sostenida. Se recomienda prescribir una descarga para " +
-                            "permitir recuperación del SNC."
-                    } else {
-                        "El estímulo puede ser insuficiente para generar adaptación. Se " +
-                            "recomienda incrementar la carga de los ejercicios de la rutina."
-                    }
-                } else {
-                    "RIR fuera de rango sostenido en la rutina."
-                }
-            }
-            "LOW_ADHERENCE" -> {
-                if (alert.level == "CRISIS") {
-                    "Adherencia por debajo del 60% durante semanas consecutivas. Las " +
-                        "comparaciones entre sesiones pierden validez por el excesivo tiempo " +
-                        "entre ellas."
-                } else {
-                    "Adherencia por debajo del 60% esta semana. La baja frecuencia puede " +
-                        "afectar la resolución temporal de las señales del sistema."
-                }
-            }
-            "TONNAGE_DROP" -> {
-                val closedSessions = sessionDao.getClosedSessionsOrdered()
-                    .filter { it.deloadId == null }
-                val routineCount = routineDao.countRoutines()
-                val cycleSize = if (routineCount > 0) routineCount else 1
-                val microcycles = closedSessions.chunked(cycleSize)
-                val currentMicrocycleDates = if (microcycles.isNotEmpty()) {
-                    microcycles.last().map { it.date }.toSet()
-                } else {
-                    emptySet()
-                }
-                val allSessions = sessionDao.getClosedSessionsOrdered()
-                val isDeload = allSessions.any {
-                    it.deloadId != null && it.date in currentMicrocycleDates
-                }
-                if (isDeload) {
-                    "Descarga planificada — caída de tonelaje esperada y controlada."
-                } else {
-                    "Caída no intencional de tonelaje. Evaluar causas y considerar ajustar " +
-                        "el volumen de entrenamiento."
-                }
-            }
-            "ROUTINE_INACTIVITY" -> {
-                val routineId = alert.routineId ?: return ""
-                val routine = routineDao.getById(routineId)
-                val routineName = routine?.name ?: ""
-                val lastDate = sessionDao.getLastSessionDateByRoutine(routineId)
-                val referenceDate = lastDate ?: routine?.createdAt
-                val daysSince = if (referenceDate != null) {
-                    ChronoUnit.DAYS.between(LocalDate.parse(referenceDate), LocalDate.now())
-                } else {
-                    0L
-                }
-                val muscleGroups = planAssignmentDao.getMuscleZoneNamesByRoutineId(routineId)
-                    .joinToString(", ")
-                "Rutina $routineName lleva $daysSince días sin sesión. Los grupos musculares " +
-                    "asociados ($muscleGroups) pueden estar perdiendo adaptaciones."
-            }
+            "LOW_PROGRESSION_RATE" -> buildProgressionRateCausalAnalysis(alert)
+            "RIR_OUT_OF_RANGE" -> buildRirCausalAnalysis(alert)
+            "LOW_ADHERENCE" -> buildAdherenceCausalAnalysis()
+            "TONNAGE_DROP" -> buildTonnageCausalAnalysis(alert)
+            "ROUTINE_INACTIVITY" -> buildInactivityCausalAnalysis(alert)
             else -> ""
         }
     }
 
+    private suspend fun buildProgressionRateCausalAnalysis(alert: AlertEntity): String {
+        val trigger = buildProgressionRateTrigger(alert)
+        val difficulty = ProgressionDifficulty.fromCode(
+            alert.exerciseId?.let { exerciseDao.getByIdOnce(it)?.progressionDifficulty },
+        )
+        return AlertNarrativeRule.progressionRateExplanation(
+            exerciseName = trigger.exerciseName,
+            rate = trigger.rate.toInt(),
+            difficulty = difficulty,
+            isCritical = alert.level == "CRISIS",
+        )
+    }
+
+    private suspend fun buildRirCausalAnalysis(alert: AlertEntity): String {
+        val trigger = buildRirTrigger(alert)
+        return AlertNarrativeRule.rirExplanation(
+            routineName = trigger.routineName,
+            avgRir = trigger.avgRir,
+            isLow = trigger.isLow,
+        )
+    }
+
+    private suspend fun buildAdherenceCausalAnalysis(): String {
+        val trigger = buildAdherenceTrigger()
+        return AlertNarrativeRule.adherenceExplanation(
+            percentage = trigger.percentage.toInt(),
+            consecutiveWeeks = trigger.consecutiveWeeks,
+        )
+    }
+
+    private suspend fun buildTonnageCausalAnalysis(alert: AlertEntity): String {
+        val trigger = buildTonnageDropTrigger(alert)
+        return AlertNarrativeRule.tonnageExplanation(
+            muscleGroup = trigger.muscleGroup,
+            dropPercentage = trigger.dropPercentage.toInt(),
+            isDeload = trigger.isDeloadContextualized,
+        )
+    }
+
+    private suspend fun buildInactivityCausalAnalysis(alert: AlertEntity): String {
+        val trigger = buildInactivityTrigger(alert)
+        return AlertNarrativeRule.inactivityExplanation(
+            routineName = trigger.routineName,
+            days = trigger.daysSinceLastSession,
+            muscleGroups = trigger.muscleGroups,
+        )
+    }
+
     private suspend fun buildPlateauCausalAnalysis(alert: AlertEntity): String {
-        val exerciseId = alert.exerciseId ?: return "Meseta detectada."
+        val exerciseId = alert.exerciseId
+            ?: return AlertNarrativeRule.plateauExplanation(
+                exerciseName = "",
+                sessions = 0,
+                difficulty = ProgressionDifficulty.MEDIUM,
+                cause = PlateauCause.MIXED,
+            )
+        val exercise = exerciseDao.getByIdOnce(exerciseId)
+        val difficulty = ProgressionDifficulty.fromCode(exercise?.progressionDifficulty)
         val entries = sessionExerciseDao.getExerciseHistoryEntries(exerciseId)
         val lastRirs = entries.filter { !it.isDeload }.take(3).map { it.avgRir }
 
@@ -394,7 +363,7 @@ class AlertRepositoryImpl @Inject constructor(
                 val totalPositive = counts.sumOf { it.positiveCount }
                 val totalCount = counts.sumOf { it.totalCount }
                 val rate = ProgressionRateRule.calculate(totalPositive, totalCount)
-                rate < AlertThresholdRule.PROGRESSION_ALERT_THRESHOLD
+                AlertThresholdRule.isProgressionAlert(rate, difficulty)
             } else {
                 false
             }
@@ -402,94 +371,97 @@ class AlertRepositoryImpl @Inject constructor(
             false
         }
 
-        val cause = PlateauCausalAnalysisRule.analyze(lastRirs, isGroupStagnant)
-        return when (cause) {
-            com.estebancoloradogonzalez.tension.domain.model.PlateauCause.LOW_RIR_LIMIT ->
-                "Entrenando cerca del fallo técnico — posible límite de carga."
-            com.estebancoloradogonzalez.tension.domain.model.PlateauCause.HIGH_RIR_CONSERVATIVE ->
-                "Carga conservadora — margen para incrementar."
-            com.estebancoloradogonzalez.tension.domain.model.PlateauCause.GROUP_STAGNATION ->
-                "Fatiga sistémica del grupo muscular."
-            com.estebancoloradogonzalez.tension.domain.model.PlateauCause.MIXED ->
-                "Meseta detectada — evaluar causas posibles."
-        }
+        return AlertNarrativeRule.plateauExplanation(
+            exerciseName = exercise?.name ?: "",
+            sessions = resolvePlateauThreshold(exerciseId),
+            difficulty = difficulty,
+            cause = PlateauCausalAnalysisRule.analyze(lastRirs, isGroupStagnant),
+        )
     }
 
     private suspend fun buildDeloadCausalAnalysis(alert: AlertEntity): String {
         val routineId = alert.routineId
-            ?: return "Se detectó necesidad de descarga."
-        val routineName = routineDao.getById(routineId)?.name ?: "rutina"
+            ?: return AlertNarrativeRule.deloadExplanation("", 0)
+        val routineName = routineDao.getById(routineId)?.name ?: ""
         val sessionIds = sessionDao.getSessionIdsByRoutineInRange(routineId, 4)
         if (sessionIds.size < 2) {
-            return "Rutina $routineName muestra signos de fatiga acumulada."
+            return AlertNarrativeRule.deloadExplanation(routineName, 0)
         }
         val counts = sessionExerciseDao.getClassificationCountsForSessions(sessionIds)
         val totalNonPositive = counts.sumOf { it.totalCount - it.positiveCount }
         val totalCount = counts.sumOf { it.totalCount }
         val regressPct = if (totalCount > 0) (totalNonPositive * 100 / totalCount) else 0
-        return "Rutina $routineName presenta regresión o estancamiento en $regressPct% de ejercicios " +
-            "en sesiones recientes. Fatiga acumulada — se recomienda activar descarga."
+        return AlertNarrativeRule.deloadExplanation(routineName, regressPct)
     }
 
-    private suspend fun buildRecommendations(alert: AlertEntity): List<String> {
-        return when (alert.type) {
-            "PLATEAU" -> {
-                val exerciseId = alert.exerciseId
-                val progression = exerciseId?.let {
-                    exerciseProgressionDao.getByExerciseId(it).first()
-                }
-                val sessionsWithout = progression?.sessionsWithoutProgression ?: 0
-                val muscleGroup = exerciseId?.let {
-                    sessionExerciseDao.getPrimaryMuscleGroupByExercise(it)
-                }
-                val increment = LoadIncrementResolver.resolve(muscleGroup ?: "")
-                val incrementText = if (increment == 5.0) "+5.0 Kg" else "+2.5 Kg"
-                CorrectiveActionRule.recommend(sessionsWithout).map { action ->
-                    when (action) {
-                        CorrectiveAction.MICRO_INCREMENT_OR_EXTEND_REPS ->
-                            "Intentar microincremento ($incrementText) o extensión de reps"
-                        CorrectiveAction.ROTATE_VERSION -> {
-                            val routineId = alert.routineId
-                            val routineName = routineId?.let { routineDao.getById(it)?.name }
-                            if (routineName != null) {
-                                "Considerar rotar a otra versión de la rutina \"$routineName\""
-                            } else {
-                                "Considerar rotar versión de la rutina"
-                            }
-                        }
-                    }
-                }
-            }
-            "ROUTINE_REQUIRES_DELOAD" -> listOf(
-                "Activar protocolo de descarga para esta rutina",
-                "Reducir cargas al 60% durante el próximo microciclo",
-            )
-            "LOW_PROGRESSION_RATE" -> listOf(
-                "Evaluar si la carga o el volumen necesitan ajuste",
-                "Considerar variar el rango de repeticiones",
-            )
-            "RIR_OUT_OF_RANGE" -> {
-                val isLow = isRirLowAlert(alert)
-                if (isLow) {
-                    listOf("Considerar prescribir una descarga para permitir recuperación")
-                } else {
-                    listOf("Incrementar la carga de los ejercicios de la rutina")
-                }
-            }
-            "LOW_ADHERENCE" -> listOf(
-                "Incrementar la frecuencia de entrenamiento semanal",
-            )
-            "TONNAGE_DROP" -> listOf(
-                "Evaluar causas de la caída de tonelaje",
-                "Considerar ajustar el volumen de entrenamiento",
-            )
-            "ROUTINE_INACTIVITY" -> {
-                val routineName = alert.routineId?.let {
-                    routineDao.getById(it)?.name
-                } ?: "la rutina"
-                listOf("Priorizar la rutina $routineName en las próximas sesiones")
-            }
-            else -> emptyList()
+    /**
+     * The block of what the executant can do. Which action applies, and whether it can
+     * actually be carried out, is decided by [SuggestedActionRule]; this only gathers
+     * the context that rule needs and hands the chosen action to the narrative.
+     */
+    private suspend fun buildSuggestedAction(alert: AlertEntity): SuggestedAction {
+        val exercise = alert.exerciseId?.let { exerciseDao.getByIdOnce(it) }
+        val routineName = alert.routineId?.let { routineDao.getById(it)?.name } ?: ""
+        val sessionsWithoutProgression = alert.exerciseId?.let {
+            exerciseProgressionDao.getByExerciseId(it).first()?.sessionsWithoutProgression
+        } ?: 0
+
+        val context = SuggestedActionContext(
+            alertType = alert.type,
+            level = alert.level,
+            exerciseId = alert.exerciseId,
+            hasSlotAlternative = alert.exerciseId?.let {
+                planAssignmentDao.hasSlotAlternative(it)
+            } ?: false,
+            sessionsWithoutProgression = sessionsWithoutProgression,
+            plateauThreshold = alert.exerciseId?.let { resolvePlateauThreshold(it) }
+                ?: PlateauThresholdRule.DEFAULT_BASE_THRESHOLD,
+            isRirLow = alert.type == "RIR_OUT_OF_RANGE" && isRirLowAlert(alert),
+        )
+        val (kind, target) = SuggestedActionRule.resolve(context)
+
+        val muscleGroup = alert.exerciseId?.let {
+            sessionExerciseDao.getPrimaryMuscleGroupByExercise(it)
         }
+        return SuggestedAction(
+            kind = kind,
+            text = AlertNarrativeRule.suggestedActionText(
+                kind = kind,
+                exerciseName = exercise?.name ?: "",
+                routineName = routineName,
+                incrementKg = LoadIncrementResolver.resolve(muscleGroup),
+            ),
+            target = target,
+        )
+    }
+
+    /** Effective plateau threshold of an exercise: base threshold scaled by its difficulty. */
+    private suspend fun resolvePlateauThreshold(exerciseId: Long): Int {
+        val baseThreshold = profileDao.getProfile().first()?.plateauBaseThreshold
+            ?: PlateauThresholdRule.DEFAULT_BASE_THRESHOLD
+        val difficulty = ProgressionDifficulty.fromCode(
+            exerciseDao.getByIdOnce(exerciseId)?.progressionDifficulty,
+        )
+        return PlateauThresholdRule.effectiveThreshold(baseThreshold, difficulty)
+    }
+
+    /** Consecutive weeks below the adherence threshold, counting back from last week. */
+    private suspend fun countConsecutiveLowAdherenceWeeks(
+        today: LocalDate,
+        weeklyFrequency: Int,
+    ): Int {
+        return (1..AlertThresholdRule.ADHERENCE_LOOKBACK_WEEKS)
+            .map { weeksAgo ->
+                val weekDate = today.minusWeeks(weeksAgo.toLong())
+                AdherenceRule.calculate(
+                    sessionDao.countSessionsInWeek(
+                        weekDate.with(DayOfWeek.MONDAY).toString(),
+                        weekDate.with(DayOfWeek.SUNDAY).toString(),
+                    ),
+                    weeklyFrequency,
+                )
+            }
+            .takeWhile { AlertThresholdRule.isAdherenceLow(it) }
+            .size
     }
 }

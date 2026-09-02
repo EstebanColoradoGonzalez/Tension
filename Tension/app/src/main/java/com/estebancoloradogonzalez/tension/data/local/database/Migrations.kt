@@ -1021,4 +1021,77 @@ object Migrations {
             )
         }
     }
+
+    val MIGRATION_13_14 = object : Migration(13, 14) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            // Capture unit of the load (HU-30). Kilogram stays the canonical unit:
+            // every set registered before this migration was captured in kilograms.
+            db.execSQL(
+                "ALTER TABLE exercise_set ADD COLUMN capture_unit TEXT NOT NULL DEFAULT 'KG'",
+            )
+        }
+    }
+
+    val MIGRATION_14_15 = object : Migration(14, 15) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            // Realistic plateau threshold (HU-32). The threshold composes an
+            // exercise-level difficulty with an executant-level base threshold.
+            //
+            // The seed catalogue is intentionally NOT reclassified here: the seed
+            // classification applies to fresh installs, and rewriting the difficulty of
+            // existing rows would overwrite a manual edit by the executant. A migrated
+            // database keeps every exercise at MEDIUM, which is the correct default.
+            db.execSQL(
+                "ALTER TABLE exercise ADD COLUMN progression_difficulty TEXT NOT NULL DEFAULT 'MEDIUM'",
+            )
+            db.execSQL(
+                "ALTER TABLE profile ADD COLUMN plateau_base_threshold INTEGER NOT NULL DEFAULT 5",
+            )
+        }
+    }
+
+    val MIGRATION_15_16 = object : Migration(15, 16) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            // Muscle-group substitution removed (HU-34). original_exercise_id had a
+            // single writer -- the substitution itself -- and the slot-alternative switch
+            // always nulled it, so the column becomes unwritable once the feature is gone
+            // and every COALESCE(original_exercise_id, exercise_id) collapses to
+            // exercise_id.
+            //
+            // SQLite gained DROP COLUMN in 3.35 and minSdk 26 ships 3.19; the column also
+            // backs a foreign key and an index. The table is recreated instead.
+            //
+            // exercise_id is copied verbatim: the row keeps the exercise that was actually
+            // executed, which is the one its sets belong to.
+            db.execSQL(
+                """
+                CREATE TABLE session_exercise_new (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    session_id INTEGER NOT NULL,
+                    exercise_id INTEGER,
+                    progression_classification TEXT,
+                    is_finalized INTEGER NOT NULL DEFAULT 0,
+                    pending_selection INTEGER NOT NULL DEFAULT 0,
+                    slot INTEGER NOT NULL DEFAULT 0,
+                    FOREIGN KEY(session_id) REFERENCES session(id) ON DELETE CASCADE,
+                    FOREIGN KEY(exercise_id) REFERENCES exercise(id) ON DELETE RESTRICT
+                )
+                """,
+            )
+            db.execSQL(
+                """
+                INSERT INTO session_exercise_new (id, session_id, exercise_id,
+                    progression_classification, is_finalized, pending_selection, slot)
+                SELECT id, session_id, exercise_id,
+                    progression_classification, is_finalized, pending_selection, slot
+                FROM session_exercise
+                """,
+            )
+            db.execSQL("DROP TABLE session_exercise")
+            db.execSQL("ALTER TABLE session_exercise_new RENAME TO session_exercise")
+            db.execSQL("CREATE INDEX index_session_exercise_session_id ON session_exercise(session_id)")
+            db.execSQL("CREATE INDEX index_session_exercise_exercise_id ON session_exercise(exercise_id)")
+            db.execSQL("CREATE UNIQUE INDEX index_session_exercise_session_id_exercise_id ON session_exercise(session_id, exercise_id)")
+        }
+    }
 }

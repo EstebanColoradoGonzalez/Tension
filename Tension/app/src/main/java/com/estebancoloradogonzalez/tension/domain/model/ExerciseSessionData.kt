@@ -4,6 +4,7 @@ data class SetData(
     val weightKg: Double,
     val reps: Int,
     val rir: Int,
+    val captureUnit: WeightUnit = WeightUnit.KG,
 )
 
 data class ExerciseSessionData(

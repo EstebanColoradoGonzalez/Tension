@@ -18,4 +18,7 @@ interface ProfileDao {
 
     @Update
     suspend fun update(profile: ProfileEntity)
+
+    @Query("UPDATE profile SET plateau_base_threshold = :value WHERE id = 1")
+    suspend fun updatePlateauBaseThreshold(value: Int)
 }

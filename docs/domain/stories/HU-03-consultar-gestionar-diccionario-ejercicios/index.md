@@ -2,7 +2,7 @@
 story_number: 3
 title: 'Consultar y gestionar Diccionario de Ejercicios con media visual'
 slug: 'consultar-gestionar-diccionario-ejercicios'
-estado: 'Done'
+estado: 'Completado'
 autor: 'Esteban Colorado González'
 fecha_creacion: '2026-02-13'
 es_resultado_slicing: false

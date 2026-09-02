@@ -2,7 +2,7 @@
 story_number: 26
 title: 'Alternativas por puesto en el plan de entrenamiento'
 slug: 'alternativas-puesto-plan-entrenamiento'
-estado: 'Pendiente'
+estado: 'Completado'
 autor: 'Esteban Colorado González'
 fecha_creacion: '2026-05-08'
 es_resultado_slicing: false

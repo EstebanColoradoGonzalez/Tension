@@ -32,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -39,6 +40,7 @@ import com.estebancoloradogonzalez.tension.R
 import com.estebancoloradogonzalez.tension.domain.model.ExerciseHistoryData
 import com.estebancoloradogonzalez.tension.domain.model.ExerciseHistoryEntry
 import com.estebancoloradogonzalez.tension.domain.model.ProgressionClassification
+import com.estebancoloradogonzalez.tension.ui.components.EntityNameText
 import com.estebancoloradogonzalez.tension.ui.components.ProgressionIndicator
 import com.estebancoloradogonzalez.tension.ui.components.TrendChartComposable
 import com.estebancoloradogonzalez.tension.ui.components.TrendPoint
@@ -61,11 +63,13 @@ fun ExerciseHistoryScreen(
             when (val state = uiState) {
                 is ExerciseHistoryUiState.Loaded -> {
                     CenterAlignedTopAppBar(
+                        expandedHeight = 96.dp,
                         title = {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(
+                                EntityNameText(
                                     text = state.data.exerciseName,
                                     style = MaterialTheme.typography.titleLarge,
+                                    textAlign = TextAlign.Center,
                                 )
                                 Text(
                                     text = stringResource(R.string.exercise_history_subtitle),

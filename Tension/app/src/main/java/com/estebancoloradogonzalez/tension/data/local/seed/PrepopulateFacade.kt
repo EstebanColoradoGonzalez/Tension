@@ -10,6 +10,7 @@ object PrepopulateFacade {
             BaseDataSeeder.seed(db)
             ExerciseSeeder.seed(db)
             PlanSeeder.seed(db)
+            WeekDaySeeder.seed(db)
             db.setTransactionSuccessful()
         } finally {
             db.endTransaction()

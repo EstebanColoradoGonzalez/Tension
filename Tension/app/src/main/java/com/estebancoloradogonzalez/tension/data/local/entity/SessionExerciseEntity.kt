@@ -21,17 +21,10 @@ import androidx.room.PrimaryKey
             childColumns = ["exercise_id"],
             onDelete = ForeignKey.RESTRICT,
         ),
-        ForeignKey(
-            entity = ExerciseEntity::class,
-            parentColumns = ["id"],
-            childColumns = ["original_exercise_id"],
-            onDelete = ForeignKey.RESTRICT,
-        ),
     ],
     indices = [
         Index(value = ["session_id"]),
         Index(value = ["exercise_id"]),
-        Index(value = ["original_exercise_id"]),
         Index(value = ["session_id", "exercise_id"], unique = true),
     ],
 )
@@ -45,9 +38,6 @@ data class SessionExerciseEntity(
 
     @ColumnInfo(name = "exercise_id")
     val exerciseId: Long?,
-
-    @ColumnInfo(name = "original_exercise_id")
-    val originalExerciseId: Long? = null,
 
     @ColumnInfo(name = "progression_classification")
     val progressionClassification: String? = null,

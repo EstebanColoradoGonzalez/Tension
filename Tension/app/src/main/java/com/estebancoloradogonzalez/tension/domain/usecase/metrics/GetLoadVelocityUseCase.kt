@@ -20,6 +20,7 @@ class GetLoadVelocityUseCase @Inject constructor(
                     exerciseName = r.exerciseName,
                     velocity = 0.0,
                     isBodyweight = true,
+                    sessionCount = r.sessionCount,
                 )
             }
             val initialWeight = metricsRepository.getAvgWeightForExerciseInSession(
@@ -36,6 +37,7 @@ class GetLoadVelocityUseCase @Inject constructor(
                 exerciseName = r.exerciseName,
                 velocity = velocity,
                 isBodyweight = false,
+                sessionCount = r.sessionCount,
             )
         }
     }

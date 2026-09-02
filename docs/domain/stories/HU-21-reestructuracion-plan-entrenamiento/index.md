@@ -2,7 +2,7 @@
 story_number: 21
 title: 'Reestructuración del plan de entrenamiento y orden sugerido de ejecución'
 slug: 'reestructuracion-plan-entrenamiento'
-estado: 'Done'
+estado: 'Completado'
 autor: 'Esteban Colorado González'
 fecha_creacion: '2026-03-04'
 es_resultado_slicing: false

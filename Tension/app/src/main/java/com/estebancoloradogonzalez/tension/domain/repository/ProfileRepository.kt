@@ -19,6 +19,8 @@ interface ProfileRepository {
         experienceLevel: ExperienceLevel,
     )
 
+    suspend fun updatePlateauBaseThreshold(value: Int)
+
     suspend fun updateWeight(weightKg: Double)
 
     fun getAllWeightRecords(): Flow<List<WeightRecord>>

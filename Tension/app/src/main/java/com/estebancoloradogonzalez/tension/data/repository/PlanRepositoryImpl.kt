@@ -8,6 +8,7 @@ import com.estebancoloradogonzalez.tension.data.local.entity.PlanAssignmentEntit
 import com.estebancoloradogonzalez.tension.domain.model.Exercise
 import com.estebancoloradogonzalez.tension.domain.model.PlanExercise
 import com.estebancoloradogonzalez.tension.domain.model.PlanVersionDetail
+import com.estebancoloradogonzalez.tension.domain.model.ProgressionDifficulty
 import com.estebancoloradogonzalez.tension.domain.model.Routine
 import com.estebancoloradogonzalez.tension.domain.model.RoutineWithVersions
 import com.estebancoloradogonzalez.tension.domain.model.VersionSummary
@@ -192,5 +193,6 @@ class PlanRepositoryImpl @Inject constructor(
             isToTechnicalFailure = isToTechnicalFailure == 1,
             isCustom = isCustom == 1,
             mediaResource = mediaResource,
+            progressionDifficulty = ProgressionDifficulty.fromCode(progressionDifficulty),
         )
 }

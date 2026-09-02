@@ -2,7 +2,7 @@
 story_number: 19
 title: 'Backup y Restauración'
 slug: 'backup-restauracion'
-estado: 'Refinado'
+estado: 'Completado'
 autor: 'Esteban Colorado González'
 fecha_creacion: '2026-02-20'
 es_resultado_slicing: true

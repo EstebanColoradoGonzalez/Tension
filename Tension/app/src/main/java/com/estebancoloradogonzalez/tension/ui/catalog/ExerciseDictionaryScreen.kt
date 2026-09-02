@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -54,6 +54,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.estebancoloradogonzalez.tension.R
+import com.estebancoloradogonzalez.tension.ui.components.EntityNameText
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -286,12 +287,10 @@ private fun ExerciseList(
             ListItem(
                 headlineContent = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
+                        EntityNameText(
                             text = exercise.name,
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onSurface,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f, fill = false),
                         )
                         if (exercise.isCustom) {
@@ -325,7 +324,7 @@ private fun ExerciseList(
                 },
                 modifier = Modifier
                     .clickable { onExerciseClick(exercise.id) }
-                    .height(72.dp),
+                    .heightIn(min = 72.dp),
             )
             if (index < exercises.lastIndex) {
                 HorizontalDivider(

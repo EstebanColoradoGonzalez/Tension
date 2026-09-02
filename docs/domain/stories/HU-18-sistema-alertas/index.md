@@ -2,7 +2,7 @@
 story_number: 18
 title: 'Sistema de Alertas'
 slug: 'sistema-alertas'
-estado: 'Done'
+estado: 'Completado'
 autor: 'Esteban Colorado González'
 fecha_creacion: '2026-07-09'
 es_resultado_slicing: true

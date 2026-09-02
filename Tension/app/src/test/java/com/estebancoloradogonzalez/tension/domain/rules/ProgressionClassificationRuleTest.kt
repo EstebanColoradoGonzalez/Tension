@@ -498,6 +498,7 @@ class ProgressionClassificationRuleTest {
             classification = ProgressionClassification.POSITIVE_PROGRESSION,
             isIsometric = true,
             isMastered = true,
+            plateauThreshold = 3,
         )
         assertEquals("MASTERED", status)
         assertEquals(0, counter)
@@ -511,6 +512,7 @@ class ProgressionClassificationRuleTest {
             classification = null,
             isIsometric = false,
             isMastered = false,
+            plateauThreshold = 3,
         )
         assertEquals("NO_HISTORY", status)
         assertEquals(0, counter)
@@ -524,6 +526,7 @@ class ProgressionClassificationRuleTest {
             classification = ProgressionClassification.REGRESSION,
             isIsometric = false,
             isMastered = false,
+            plateauThreshold = 3,
         )
         assertEquals("IN_DELOAD", status)
         assertEquals(1, counter)
@@ -537,6 +540,7 @@ class ProgressionClassificationRuleTest {
             classification = ProgressionClassification.REGRESSION,
             isIsometric = true,
             isMastered = false,
+            plateauThreshold = 3,
         )
         assertEquals("MASTERED", status)
         assertEquals(0, counter)
@@ -550,6 +554,7 @@ class ProgressionClassificationRuleTest {
             classification = ProgressionClassification.POSITIVE_PROGRESSION,
             isIsometric = false,
             isMastered = false,
+            plateauThreshold = 3,
         )
         assertEquals("IN_PROGRESSION", status)
         assertEquals(0, counter)
@@ -563,6 +568,7 @@ class ProgressionClassificationRuleTest {
             classification = ProgressionClassification.MAINTENANCE,
             isIsometric = false,
             isMastered = false,
+            plateauThreshold = 3,
         )
         assertEquals("NO_HISTORY", status)
         assertEquals(1, counter)
@@ -576,6 +582,7 @@ class ProgressionClassificationRuleTest {
             classification = ProgressionClassification.MAINTENANCE,
             isIsometric = false,
             isMastered = false,
+            plateauThreshold = 3,
         )
         assertEquals("IN_PROGRESSION", status1)
         assertEquals(1, counter1)
@@ -586,6 +593,7 @@ class ProgressionClassificationRuleTest {
             classification = ProgressionClassification.MAINTENANCE,
             isIsometric = false,
             isMastered = false,
+            plateauThreshold = 3,
         )
         assertEquals("IN_PROGRESSION", status2)
         assertEquals(2, counter2)
@@ -604,6 +612,7 @@ class ProgressionClassificationRuleTest {
                     classification = ProgressionClassification.REGRESSION,
                     isIsometric = false,
                     isMastered = false,
+                    plateauThreshold = 3,
                 )
             status = newStatus
             counter = newCounter
@@ -621,6 +630,7 @@ class ProgressionClassificationRuleTest {
             classification = ProgressionClassification.POSITIVE_PROGRESSION,
             isIsometric = false,
             isMastered = false,
+            plateauThreshold = 3,
         )
         assertEquals("IN_PROGRESSION", status)
         assertEquals(0, counter)
@@ -637,9 +647,168 @@ class ProgressionClassificationRuleTest {
             classification = ProgressionClassification.MAINTENANCE,
             isIsometric = false,
             isMastered = false,
+            plateauThreshold = 3,
         )
 
         assertEquals("IN_PLATEAU", newStatus)
         assertEquals(4, newCounter)
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // Configurable plateau threshold (HU-32)
+    // ──────────────────────────────────────────────────────────────
+
+    private fun accumulate(
+        startStatus: String,
+        startCounter: Int,
+        times: Int,
+        plateauThreshold: Int,
+        classification: ProgressionClassification = ProgressionClassification.MAINTENANCE,
+    ): Pair<String, Int> {
+        var status = startStatus
+        var counter = startCounter
+        repeat(times) {
+            val (newStatus, newCounter) =
+                ProgressionClassificationRule.resolveNewProgressionState(
+                    currentStatus = status,
+                    currentCounter = counter,
+                    classification = classification,
+                    isIsometric = false,
+                    isMastered = false,
+                    plateauThreshold = plateauThreshold,
+                )
+            status = newStatus
+            counter = newCounter
+        }
+        return status to counter
+    }
+
+    @Test
+    fun `given base threshold 5, when four maintenance sessions accumulate, then no plateau is declared`() {
+        val (status, counter) = accumulate("IN_PROGRESSION", 0, times = 4, plateauThreshold = 5)
+
+        assertEquals("IN_PROGRESSION", status)
+        assertEquals(4, counter)
+    }
+
+    @Test
+    fun `given base threshold 5, when the fifth maintenance session closes, then the plateau is declared`() {
+        val (status, counter) = accumulate("IN_PROGRESSION", 0, times = 5, plateauThreshold = 5)
+
+        assertEquals("IN_PLATEAU", status)
+        assertEquals(5, counter)
+    }
+
+    @Test
+    fun `given a medium difficulty threshold of 8, when five sessions accumulate, then no plateau is declared`() {
+        val (status, counter) = accumulate("IN_PROGRESSION", 0, times = 5, plateauThreshold = 8)
+
+        assertEquals("IN_PROGRESSION", status)
+        assertEquals(5, counter)
+    }
+
+    @Test
+    fun `given a medium difficulty threshold of 8, when the eighth session closes, then the plateau is declared`() {
+        val (status, counter) = accumulate("IN_PROGRESSION", 0, times = 8, plateauThreshold = 8)
+
+        assertEquals("IN_PLATEAU", status)
+        assertEquals(8, counter)
+    }
+
+    @Test
+    fun `given a high difficulty threshold of 10, when nine sessions accumulate, then no plateau is declared`() {
+        val (status, counter) = accumulate("IN_PROGRESSION", 0, times = 9, plateauThreshold = 10)
+
+        assertEquals("IN_PROGRESSION", status)
+        assertEquals(9, counter)
+    }
+
+    @Test
+    fun `given a high difficulty threshold of 10, when the tenth session closes, then the plateau is declared`() {
+        val (status, counter) = accumulate("IN_PROGRESSION", 0, times = 10, plateauThreshold = 10)
+
+        assertEquals("IN_PLATEAU", status)
+        assertEquals(10, counter)
+    }
+
+    // CA-32.07 — changing the difficulty re-evaluates without resetting the counter
+
+    @Test
+    fun `given 6 sessions accumulated under threshold 10, when the difficulty drops to threshold 5, then the plateau is declared keeping the counter`() {
+        val (status, counter) = ProgressionClassificationRule.resolveNewProgressionState(
+            currentStatus = "IN_PROGRESSION",
+            currentCounter = 6,
+            classification = ProgressionClassification.MAINTENANCE,
+            isIsometric = false,
+            isMastered = false,
+            plateauThreshold = 5,
+        )
+
+        assertEquals("IN_PLATEAU", status)
+        assertEquals(7, counter)
+    }
+
+    @Test
+    fun `given a plateau reached under threshold 5, when the difficulty rises to threshold 10, then the counter keeps accumulating`() {
+        val (status, counter) = ProgressionClassificationRule.resolveNewProgressionState(
+            currentStatus = "IN_PLATEAU",
+            currentCounter = 5,
+            classification = ProgressionClassification.MAINTENANCE,
+            isIsometric = false,
+            isMastered = false,
+            plateauThreshold = 10,
+        )
+
+        assertEquals("IN_PLATEAU", status)
+        assertEquals(6, counter)
+    }
+
+    // CA-32.08 — positive progression resets the counter
+
+    @Test
+    fun `given a counter of 7 under the new thresholds, when positive progression is registered, then the counter resets to zero`() {
+        val (status, counter) = ProgressionClassificationRule.resolveNewProgressionState(
+            currentStatus = "IN_PROGRESSION",
+            currentCounter = 7,
+            classification = ProgressionClassification.POSITIVE_PROGRESSION,
+            isIsometric = false,
+            isMastered = false,
+            plateauThreshold = 10,
+        )
+
+        assertEquals("IN_PROGRESSION", status)
+        assertEquals(0, counter)
+    }
+
+    // CA-32.09 — deload and mastered states stay out of the evaluation
+
+    @Test
+    fun `given an exercise in deload, when the new thresholds apply, then its state and counter stay untouched`() {
+        val (status, counter) = ProgressionClassificationRule.resolveNewProgressionState(
+            currentStatus = "IN_DELOAD",
+            currentCounter = 9,
+            classification = ProgressionClassification.REGRESSION,
+            isIsometric = false,
+            isMastered = false,
+            plateauThreshold = 5,
+        )
+
+        assertEquals("IN_DELOAD", status)
+        assertEquals(9, counter)
+    }
+
+    @Test
+    fun `given a mastered exercise, when the new thresholds apply, then its state and counter stay untouched`() {
+        val (status, counter) = ProgressionClassificationRule.resolveNewProgressionState(
+            currentStatus = "MASTERED",
+            currentCounter = 9,
+            classification = ProgressionClassification.REGRESSION,
+            isIsometric = true,
+            isMastered = false,
+            plateauThreshold = 5,
+        )
+
+        assertEquals("MASTERED", status)
+        assertEquals(9, counter)
     }
 }

@@ -40,6 +40,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.estebancoloradogonzalez.tension.R
+import com.estebancoloradogonzalez.tension.domain.model.ProgressionDifficulty
+import com.estebancoloradogonzalez.tension.ui.catalog.components.ProgressionDifficultySelector
 import com.estebancoloradogonzalez.tension.ui.components.ExerciseImagePlaceholder
 import com.estebancoloradogonzalez.tension.ui.components.TensionTopAppBar
 import java.io.File
@@ -99,6 +101,7 @@ fun ExerciseDetailScreen(
                     exercise = state.exercise,
                     onNavigateToHistory = onNavigateToExerciseHistory,
                     onChangeImage = { imagePickerLauncher.launch("image/*") },
+                    onProgressionDifficultySelected = viewModel::onProgressionDifficultySelected,
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(innerPadding),
@@ -113,6 +116,7 @@ private fun ExerciseDetailContent(
     exercise: ExerciseDetailItem,
     onNavigateToHistory: (Long) -> Unit,
     onChangeImage: () -> Unit,
+    onProgressionDifficultySelected: (ProgressionDifficulty) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -139,6 +143,34 @@ private fun ExerciseDetailContent(
             DetailField(
                 label = stringResource(R.string.exercise_field_muscle_zone),
                 value = exercise.muscleZones,
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = stringResource(R.string.exercise_field_progression_difficulty),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            ProgressionDifficultySelector(
+                selectedDifficulty = exercise.progressionDifficulty,
+                onDifficultySelected = onProgressionDifficultySelected,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = stringResource(
+                    R.string.exercise_effective_plateau_threshold,
+                    exercise.effectiveThresholdSessions,
+                ),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = stringResource(R.string.exercise_progression_difficulty_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
             Spacer(modifier = Modifier.height(24.dp))

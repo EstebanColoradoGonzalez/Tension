@@ -3,6 +3,7 @@ package com.estebancoloradogonzalez.tension.di
 import android.content.Context
 import androidx.room.Room
 import com.estebancoloradogonzalez.tension.data.local.dao.AlertDao
+import com.estebancoloradogonzalez.tension.data.local.dao.DailyRoutineOverrideDao
 import com.estebancoloradogonzalez.tension.data.local.dao.DeloadDao
 import com.estebancoloradogonzalez.tension.data.local.dao.DeloadFrozenVersionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.EquipmentTypeDao
@@ -18,6 +19,7 @@ import com.estebancoloradogonzalez.tension.data.local.dao.RoutineDao
 import com.estebancoloradogonzalez.tension.data.local.dao.RoutineVersionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.SessionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.SessionExerciseDao
+import com.estebancoloradogonzalez.tension.data.local.dao.WeekDayDao
 import com.estebancoloradogonzalez.tension.data.local.dao.WeightRecordDao
 import com.estebancoloradogonzalez.tension.data.local.database.Migrations
 import com.estebancoloradogonzalez.tension.data.local.database.TensionDatabase
@@ -44,7 +46,7 @@ object DatabaseModule {
             "tension_database",
         )
             .addCallback(PrepopulateCallback())
-            .addMigrations(Migrations.MIGRATION_6_7, Migrations.MIGRATION_7_8, Migrations.MIGRATION_8_9, Migrations.MIGRATION_9_10, Migrations.MIGRATION_10_11, Migrations.MIGRATION_11_12, Migrations.MIGRATION_12_13)
+            .addMigrations(Migrations.MIGRATION_6_7, Migrations.MIGRATION_7_8, Migrations.MIGRATION_8_9, Migrations.MIGRATION_9_10, Migrations.MIGRATION_10_11, Migrations.MIGRATION_11_12, Migrations.MIGRATION_12_13, Migrations.MIGRATION_13_14, Migrations.MIGRATION_14_15, Migrations.MIGRATION_15_16)
             .build()
     }
 
@@ -76,6 +78,16 @@ object DatabaseModule {
     @Provides
     fun provideRoutineCurrentVersionDao(database: TensionDatabase): RoutineCurrentVersionDao {
         return database.routineCurrentVersionDao()
+    }
+
+    @Provides
+    fun provideWeekDayDao(database: TensionDatabase): WeekDayDao {
+        return database.weekDayDao()
+    }
+
+    @Provides
+    fun provideDailyRoutineOverrideDao(database: TensionDatabase): DailyRoutineOverrideDao {
+        return database.dailyRoutineOverrideDao()
     }
 
     @Provides

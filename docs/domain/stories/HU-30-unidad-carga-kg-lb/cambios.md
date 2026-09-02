@@ -1,0 +1,16 @@
+# Registro de Cambios — Historia #30
+
+| Fecha | Fase | Descripción | Autor |
+|-------|------|-------------|-------|
+| 2026-08-30 | Creación | Historia creada | Esteban Colorado González (PO) |
+| 2026-08-30 | Creación | Preview de interfaz generado en formato ASCII: `30.preview.txt` | Esteban Colorado González (PO) |
+| 2026-08-30 | Creación | Mapeada en `story_mapping_index.md` §2 bajo EPIC-08 y Release 1.4 | Esteban Colorado González (PO) |
+| 2026-08-30 | Creación | **Fase Creación HU cerrada** (2026-08-30 21:34). Estado: Borrador (PO) — lista para análisis arquitectónico. | Esteban Colorado González (PO) |
+| 2026-08-30 | Refinamiento | Plan técnico generado en `refinamiento.md`: 23 tareas en 6 fases. Seis decisiones técnicas, dos de calado: **(D1)** se implementa la migración 13 → 14 pese a la excepción beta documentada en la historia, porque `DatabaseModule` no declara `fallbackToDestructiveMigration` y sin ella toda instalación existente crashearía; **(D2)** la unidad se deriva de la última serie del ejercicio, sin tabla ni columna de preferencia. | Esteban Colorado González (Dev) |
+| 2026-08-31 | Desarrollo | Regla de conversión extraída a dominio puro (`WeightConverter`, `WeightCaptureValidator`) para cumplir RNF29 y RNF30 sin emulador. La validación del peso sale del ViewModel, que queda como mapeador de errores a `strings.xml`. | Esteban Colorado González (Dev) |
+| 2026-08-31 | Desarrollo | **Gap detectado y cerrado:** los controles − / + del campo de peso que exigen CA-30.04 y el preview **no existían** en `RegisterSetScreen`. Se crearon en esta historia (`WeightStepControls`, 48 × 48 dp). | Esteban Colorado González (Dev) |
+| 2026-08-31 | Desarrollo | **Nuevo límite de rango:** el máximo de 500 kg no existía en el sistema. Se valida en la UI y como última barrera en `RegisterSetUseCase`, siempre sobre el valor ya convertido a kilogramos. | Esteban Colorado González (Dev) |
+| 2026-08-31 | Desarrollo | Esquema 13 → 14 con `exercise_set.capture_unit` (`TEXT NOT NULL DEFAULT 'KG'`). Verificado que el `DEFAULT` del esquema exportado por Room (`14.json`) coincide con el SQL de `MIGRATION_13_14`. El respaldo JSON no requirió cambios: `BackupRepositoryImpl` opera por columnas del cursor. | Esteban Colorado González (Dev) |
+| 2026-08-31 | Desarrollo | 36 tests nuevos en 3 suites más 3 casos en `RegisterSetUseCaseTest`. Suite completa: **459/459 en verde** (baseline 420). `assembleDebug` y `lintDebug` sin errores. | Esteban Colorado González (Dev) |
+| 2026-08-31 | Desarrollo | Documentación de arquitectura actualizada (CA-30.10): `domain_and_state_model.md` (convención de kilogramo canónico, columna `capture_unit`, enum `WeightUnit`, esquema 14), `interfaces_contract.md` (`E2-T1` y `F2-T1`) y `architecture_blueprint.md` (versión de esquema). | Esteban Colorado González (Dev) |
+| 2026-08-31 | Dev-Rápido | ⚡ Implementado: selector de unidad `Kg` / `Lb` por ejercicio en el registro de serie, con conversión a kilogramos bajo el capo (factor 0.45359237, 2 decimales, sin redondeo al múltiplo de 0.5), incremento de 0,5 kg / 1 lb, validación de rango sobre el valor canónico, unidad recordada por ejercicio y visible solo en el detalle de la serie. **Estado: Lista para Revisión.** Ver `dev-record.md`. | Esteban Colorado González |

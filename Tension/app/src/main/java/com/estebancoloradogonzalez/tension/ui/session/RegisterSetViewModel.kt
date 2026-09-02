@@ -6,9 +6,13 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.estebancoloradogonzalez.tension.R
+import com.estebancoloradogonzalez.tension.domain.model.WeightUnit
 import com.estebancoloradogonzalez.tension.domain.usecase.session.GetRegisterSetInfoUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.session.RegisterSetUseCase
 import com.estebancoloradogonzalez.tension.domain.util.RepsRangeParser
+import com.estebancoloradogonzalez.tension.domain.util.WeightCaptureError
+import com.estebancoloradogonzalez.tension.domain.util.WeightCaptureValidator
+import com.estebancoloradogonzalez.tension.domain.util.WeightConverter
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
@@ -21,6 +25,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.Locale
 import javax.inject.Inject
 
 @HiltViewModel
@@ -46,9 +51,13 @@ class RegisterSetViewModel @Inject constructor(
         viewModelScope.launch {
             val info = getRegisterSetInfoUseCase(sessionExerciseId) ?: return@launch
 
-            val weightKg = when {
+            // The prefilled load arrives in kilograms; it is shown in the active unit so
+            // the executant never has to convert the number in their head.
+            val weightInput = when {
                 info.isBodyweight || info.isIsometric -> "0"
-                info.lastWeightKg != null -> String.format(java.util.Locale.US, "%.1f", info.lastWeightKg)
+                info.lastWeightKg != null -> format(
+                    WeightConverter.fromKg(info.lastWeightKg, info.captureUnit),
+                )
                 else -> ""
             }
 
@@ -77,7 +86,9 @@ class RegisterSetViewModel @Inject constructor(
                     exerciseName = info.exerciseName,
                     currentSetNumber = info.currentSetNumber,
                     totalSets = info.totalSets,
-                    weightKg = weightKg,
+                    weightInput = weightInput,
+                    captureUnit = info.captureUnit,
+                    convertedWeightKg = convertedWeightKg(weightInput, info.captureUnit),
                     isWeightEditable = !info.isBodyweight && !info.isIsometric,
                     isIsometric = info.isIsometric,
                     isBodyweight = info.isBodyweight,
@@ -134,10 +145,33 @@ class RegisterSetViewModel @Inject constructor(
     }
 
     fun onWeightChanged(value: String) {
-        val error = value.toDoubleOrNull()?.let { parsed ->
-            if (parsed < 0) context.getString(R.string.error_weight_negative) else null
+        _uiState.update { state -> state.withWeightInput(value, state.captureUnit) }
+    }
+
+    /**
+     * Switches the capture unit, converting the current input so the field keeps
+     * expressing the same physical load.
+     */
+    fun onUnitSelected(unit: WeightUnit) {
+        _uiState.update { state ->
+            if (state.captureUnit == unit) return@update state
+
+            val currentValue = state.weightInput.toDoubleOrNull()
+            val converted = if (currentValue != null) {
+                format(WeightConverter.fromKg(WeightConverter.toKg(currentValue, state.captureUnit), unit))
+            } else {
+                state.weightInput
+            }
+            state.withWeightInput(converted, unit)
         }
-        _uiState.update { it.copy(weightKg = value, weightError = error) }
+    }
+
+    fun onWeightStep(increase: Boolean) {
+        _uiState.update { state ->
+            val current = state.weightInput.toDoubleOrNull() ?: 0.0
+            val stepped = WeightConverter.step(current, state.captureUnit, increase)
+            state.withWeightInput(format(stepped), state.captureUnit)
+        }
     }
 
     fun onRepsChanged(value: String) {
@@ -161,12 +195,18 @@ class RegisterSetViewModel @Inject constructor(
 
     fun onConfirm() {
         val state = _uiState.value
-        val weight = state.weightKg.toDoubleOrNull()
+        val captureError = WeightCaptureValidator.validate(state.weightInput, state.captureUnit)
+        val weightKg = state.convertedWeightKg
         val parsedReps = state.reps.toIntOrNull()
 
-        if (weight == null) {
+        if (captureError != null || weightKg == null) {
             _uiState.update {
-                it.copy(weightError = context.getString(R.string.error_weight_negative))
+                it.copy(
+                    weightError = errorMessage(
+                        captureError ?: WeightCaptureError.NotNumeric,
+                        state.captureUnit,
+                    ),
+                )
             }
             return
         }
@@ -187,16 +227,21 @@ class RegisterSetViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true) }
             try {
-                registerSetUseCase(sessionExerciseId, weight, parsedReps, state.selectedRir)
+                registerSetUseCase(
+                    sessionExerciseId,
+                    weightKg,
+                    parsedReps,
+                    state.selectedRir,
+                    state.captureUnit,
+                )
                 _navigateBack.emit(true)
             } catch (_: IllegalArgumentException) {
                 _uiState.update {
                     it.copy(
-                        weightError = if (weight < 0) {
-                            context.getString(R.string.error_weight_negative)
-                        } else {
-                            null
-                        },
+                        weightError = errorMessage(
+                            WeightCaptureValidator.validate(state.weightInput, state.captureUnit),
+                            state.captureUnit,
+                        ),
                         repsError = if (parsedReps < 1) {
                             if (state.isIsometric) {
                                 context.getString(R.string.error_seconds_min)
@@ -215,4 +260,38 @@ class RegisterSetViewModel @Inject constructor(
             }
         }
     }
+
+    private fun RegisterSetUiState.withWeightInput(
+        value: String,
+        unit: WeightUnit,
+    ): RegisterSetUiState {
+        val error = WeightCaptureValidator.validate(value, unit)
+        return copy(
+            weightInput = value,
+            captureUnit = unit,
+            weightError = errorMessage(error, unit),
+            convertedWeightKg = if (error == null) convertedWeightKg(value, unit) else null,
+        )
+    }
+
+    private fun convertedWeightKg(value: String, unit: WeightUnit): Double? {
+        return value.toDoubleOrNull()?.let { WeightConverter.toKg(it, unit) }
+    }
+
+    private fun errorMessage(error: WeightCaptureError?, unit: WeightUnit): String? {
+        return when (error) {
+            null -> null
+            WeightCaptureError.NotNumeric -> context.getString(R.string.error_weight_not_numeric)
+            WeightCaptureError.Negative -> context.getString(R.string.error_weight_negative)
+            WeightCaptureError.AboveMax -> when (unit) {
+                WeightUnit.KG -> context.getString(R.string.error_weight_max_kg)
+                WeightUnit.LB -> context.getString(
+                    R.string.error_weight_max_lb_format,
+                    format(WeightConverter.fromKg(WeightConverter.MAX_WEIGHT_KG, WeightUnit.LB)),
+                )
+            }
+        }
+    }
+
+    private fun format(value: Double): String = String.format(Locale.US, "%.1f", value)
 }

@@ -11,4 +11,5 @@ data class Exercise(
     val isToTechnicalFailure: Boolean,
     val isCustom: Boolean,
     val mediaResource: String?,
+    val progressionDifficulty: ProgressionDifficulty,
 )

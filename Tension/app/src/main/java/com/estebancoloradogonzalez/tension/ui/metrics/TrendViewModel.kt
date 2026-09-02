@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.estebancoloradogonzalez.tension.domain.usecase.metrics.GetMicrocycleMapUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.metrics.GetMuscleGroupTrendUseCase
+import com.estebancoloradogonzalez.tension.ui.components.MetricSufficiencyRules
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -30,14 +31,19 @@ class TrendViewModel @Inject constructor(
                 val microcycleMap = getMicrocycleMapUseCase()
                 val cycleSize = microcycleMap.values.maxOfOrNull { it.size } ?: 1
                 val completedCount = microcycleMap.count { it.value.size == cycleSize }
-                if (completedCount < 4) {
-                    _uiState.value = TrendUiState.InsufficientData(
-                        remaining = 4 - completedCount,
-                    )
+                val requirement = MetricSufficiencyRules.trend(completedCount)
+                if (requirement != null) {
+                    _uiState.value = TrendUiState.InsufficientData(requirement)
                     return@launch
                 }
                 val trends = getMuscleGroupTrendUseCase(microcycleMap)
-                _uiState.value = TrendUiState.Content(trends)
+                _uiState.value = TrendUiState.Content(
+                    trends = trends,
+                    evaluatedMicrocycles = minOf(
+                        completedCount,
+                        MetricSufficiencyRules.MIN_TREND_MICROCYCLES,
+                    ),
+                )
             } catch (e: Exception) {
                 _uiState.value = TrendUiState.Error(
                     e.message ?: "Error al cargar tendencias",

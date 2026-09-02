@@ -2,7 +2,7 @@
 story_number: 20
 title: 'Corrección de sustitución de ejercicios en sesión activa'
 slug: 'correccion-sustitucion-ejercicios-sesion-activa'
-estado: 'Done'
+estado: 'Descartada'
 autor: 'Esteban Colorado González'
 fecha_creacion: '2026-03-04'
 es_resultado_slicing: false

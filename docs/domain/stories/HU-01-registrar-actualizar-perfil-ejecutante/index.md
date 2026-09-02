@@ -2,7 +2,7 @@
 story_number: 1
 title: 'Registrar y actualizar perfil del ejecutante'
 slug: 'registrar-actualizar-perfil-ejecutante'
-estado: 'Done'
+estado: 'Completado'
 autor: 'Esteban Colorado González'
 fecha_creacion: '2026-02-12'
 es_resultado_slicing: false

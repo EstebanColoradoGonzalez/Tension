@@ -5,10 +5,12 @@ import android.content.Context
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.util.Base64
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.estebancoloradogonzalez.tension.R
 import com.estebancoloradogonzalez.tension.data.local.database.TensionDatabase
 import com.estebancoloradogonzalez.tension.domain.model.BackupMetadata
 import com.estebancoloradogonzalez.tension.domain.model.BackupValidationResult
+import com.estebancoloradogonzalez.tension.domain.model.WeekDay
 import com.estebancoloradogonzalez.tension.domain.repository.BackupRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import org.json.JSONArray
@@ -26,7 +28,7 @@ class BackupRepositoryImpl @Inject constructor(
 ) : BackupRepository {
 
     companion object {
-        const val SCHEMA_VERSION = 9
+        const val SCHEMA_VERSION = 10
         private const val LEGACY_SCHEMA_VERSION = 8
         const val APP_VERSION = "1.0"
 
@@ -38,6 +40,12 @@ class BackupRepositoryImpl @Inject constructor(
             "rotation_state",
             "weight_record",
             "routine",
+            // week_day y daily_routine_override llevan FK a routine y deben insertarse
+            // despues de ella. Omitirlas perderia la relacion dia -> rutina en cada
+            // restauracion: el borrado de routine dispara su ON DELETE SET NULL / CASCADE
+            // y nada la repondria.
+            "week_day",
+            "daily_routine_override",
             "muscle_zone",
             "equipment_type",
             "deload",
@@ -233,12 +241,21 @@ class BackupRepositoryImpl @Inject constructor(
 
             for (table in TABLE_ORDER_INSERT) {
                 val rows = dataJson.getJSONArray(table)
+                // A backup file carries the columns of the schema that produced it. Keys
+                // that no longer exist are dropped instead of handed to insert(), which
+                // would fail the whole restore with "no column named ...". The only such
+                // key today is session_exercise.original_exercise_id, retired in v16
+                // (HU-34), and its value was always NULL.
+                val columns = columnsOf(db, table)
                 for (i in 0 until rows.length()) {
                     val row = rows.getJSONObject(i)
                     val cv = ContentValues()
                     val keys = row.keys()
                     while (keys.hasNext()) {
                         val key = keys.next()
+                        if (columns.isNotEmpty() && key !in columns) {
+                            continue
+                        }
                         if (row.isNull(key)) {
                             cv.putNull(key)
                         } else {
@@ -284,7 +301,7 @@ class BackupRepositoryImpl @Inject constructor(
                      FROM plan_assignment pa
                      INNER JOIN session s ON s.id = session_exercise.session_id
                      WHERE pa.routine_version_id = s.routine_version_id
-                       AND pa.exercise_id = COALESCE(session_exercise.original_exercise_id, session_exercise.exercise_id)
+                       AND pa.exercise_id = session_exercise.exercise_id
                      LIMIT 1),
                     slot
                 )
@@ -299,6 +316,24 @@ class BackupRepositoryImpl @Inject constructor(
     }
 
     @Suppress("LongMethod", "CyclomaticComplexMethod")
+    /**
+     * Column names the table actually has in the current schema. Used to discard keys
+     * carried by backups exported from an older schema. An empty result means the shape
+     * could not be read, and the caller then imports every key rather than dropping all
+     * of them.
+     */
+    private fun columnsOf(db: SupportSQLiteDatabase, table: String): Set<String> {
+        val columns = mutableSetOf<String>()
+        db.query("PRAGMA table_info($table)").use { cursor ->
+            val nameIndex = cursor.getColumnIndex("name")
+            if (nameIndex < 0) return emptySet()
+            while (cursor.moveToNext()) {
+                columns.add(cursor.getString(nameIndex))
+            }
+        }
+        return columns
+    }
+
     private fun transformV8ToV9(data: JSONObject): JSONObject {
         val result = JSONObject()
 
@@ -450,7 +485,38 @@ class BackupRepositoryImpl @Inject constructor(
             result.put(table, data.optJSONArray(table) ?: JSONArray())
         }
 
+        // week_day y daily_routine_override no existian en el formato legado (HU-36 los
+        // introduce). La importacion borra e reinserta cada tabla de TABLE_ORDER_INSERT, asi
+        // que omitirlas dejaria los 7 dias sin rutina tras restaurar. Se reconstruye la
+        // relacion asignando las rutinas presentes en el respaldo en su propio orden; los
+        // dias sin rutina disponible quedan como dias de descanso, que es su estado valido.
+        result.put("week_day", buildLegacyWeekDays(routines))
+        result.put("daily_routine_override", JSONArray())
+
         return result
+    }
+
+    /** Los 7 dias, con las rutinas del respaldo legado asignadas de lunes en adelante. */
+    private fun buildLegacyWeekDays(routines: JSONArray): JSONArray {
+        val routineIds = (0 until routines.length())
+            .map { routines.getJSONObject(it) }
+            .sortedBy { it.optInt("sort_order", Int.MAX_VALUE) }
+            .map { it.getLong("id") }
+
+        val weekDays = JSONArray()
+        WeekDay.entries.forEach { day ->
+            val row = JSONObject()
+            row.put("id", day.isoNumber)
+            row.put("code", day.code)
+            val routineId = routineIds.getOrNull(day.isoNumber - 1)
+            if (routineId == null) {
+                row.put("routine_id", JSONObject.NULL)
+            } else {
+                row.put("routine_id", routineId)
+            }
+            weekDays.put(row)
+        }
+        return weekDays
     }
 
     private fun renameColumn(

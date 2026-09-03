@@ -1094,4 +1094,161 @@ object Migrations {
             db.execSQL("CREATE UNIQUE INDEX index_session_exercise_session_id_exercise_id ON session_exercise(session_id, exercise_id)")
         }
     }
+
+    /**
+     * Relación permanente día → rutina y reasignación temporal del día (HU-36).
+     *
+     * `week_day` **se puebla**: la determinación de la sesión del día resuelve «hoy» leyendo su
+     * fila, y una tabla vacía dejaría al ejecutante sin rutina ningún día. Los 7 días existen
+     * siempre; el domingo queda sin rutina asignada, que es el modo en que el descanso se
+     * vuelve un concepto visible en lugar de una fila ausente.
+     *
+     * La rutina de cada día se resuelve por **`sort_order`**, no por identificador. Es el
+     * orden en que el plan declara las rutinas, y es lo que `DefaultWeekDays` reproduce en una
+     * instalación fresca. Emparejar por id supondría que las rutinas 1 a 6 siguen siendo las
+     * originales, y quien haya reordenado o borrado alguna se llevaría un día apuntando a la
+     * rutina equivocada. Con menos de seis rutinas los días sobrantes quedan sin asignar, que
+     * es un estado válido —el mismo que deja `ON DELETE SET NULL`— y no un error.
+     *
+     * `daily_routine_override` no se puebla: es efímera por diseño. Solo se honra cuando su
+     * fecha es hoy, así que una tabla vacía es exactamente «no hay reasignación vigente».
+     */
+    val MIGRATION_16_17 = object : Migration(16, 17) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `week_day` (
+                    `id` INTEGER NOT NULL,
+                    `code` TEXT NOT NULL,
+                    `routine_id` INTEGER,
+                    PRIMARY KEY(`id`),
+                    FOREIGN KEY(`routine_id`) REFERENCES `routine`(`id`)
+                        ON UPDATE NO ACTION ON DELETE SET NULL
+                )
+                """,
+            )
+            db.execSQL(
+                "CREATE UNIQUE INDEX IF NOT EXISTS `index_week_day_code` ON `week_day` (`code`)",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_week_day_routine_id` " +
+                    "ON `week_day` (`routine_id`)",
+            )
+
+            // El id es el número ISO-8601 del día, que es lo que espera WeekDay.fromIso.
+            val dias = listOf(
+                1 to "MONDAY",
+                2 to "TUESDAY",
+                3 to "WEDNESDAY",
+                4 to "THURSDAY",
+                5 to "FRIDAY",
+                6 to "SATURDAY",
+            )
+            dias.forEach { (isoNumber, code) ->
+                db.execSQL(
+                    """
+                    INSERT OR REPLACE INTO week_day (id, code, routine_id)
+                    VALUES (
+                        ?, ?,
+                        (SELECT id FROM routine ORDER BY sort_order, id LIMIT 1 OFFSET ?)
+                    )
+                    """.trimIndent(),
+                    arrayOf(isoNumber, code, isoNumber - 1),
+                )
+            }
+            db.execSQL(
+                "INSERT OR REPLACE INTO week_day (id, code, routine_id) " +
+                    "VALUES (7, 'SUNDAY', NULL)",
+            )
+
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `daily_routine_override` (
+                    `id` INTEGER NOT NULL,
+                    `date` TEXT NOT NULL,
+                    `routine_id` INTEGER NOT NULL,
+                    PRIMARY KEY(`id`),
+                    FOREIGN KEY(`routine_id`) REFERENCES `routine`(`id`)
+                        ON UPDATE NO ACTION ON DELETE CASCADE
+                )
+                """,
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_daily_routine_override_routine_id` " +
+                    "ON `daily_routine_override` (`routine_id`)",
+            )
+        }
+    }
+
+    /**
+     * «Hoy no entreno» (HU-36).
+     *
+     * Tabla de fila única y efímera: solo se honra cuando su fecha es hoy, así que crearla
+     * vacía es exactamente «hoy no está omitido». No se deriva nada del historial anterior —
+     * un día pasado sin sesión ya se lee como no entrenado por su ausencia de `session`, que
+     * es precisamente lo que esta tabla evita tener que inventar.
+     */
+    val MIGRATION_17_18 = object : Migration(17, 18) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `day_skip` (
+                    `id` INTEGER NOT NULL,
+                    `date` TEXT NOT NULL,
+                    PRIMARY KEY(`id`)
+                )
+                """,
+            )
+        }
+    }
+
+    /**
+     * Estado visual del árbol de entrenamiento (HU-37).
+     *
+     * La tabla se crea **vacía a propósito**. El árbol es enteramente derivable del historial y
+     * el arranque de la aplicación lo recalcula; sin fila, `TreeRepositoryImpl` devuelve el
+     * estado de partida en lugar de fallar. Calcular aquí la salud y la etapa sería peor que
+     * inútil: la salud depende de la fecha de hoy, y la de la migración no es la del próximo
+     * arranque, con lo que el valor nacería rancio.
+     */
+    val MIGRATION_18_19 = object : Migration(18, 19) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `tree_state` (
+                    `id` INTEGER NOT NULL,
+                    `health_score` INTEGER NOT NULL,
+                    `growth_stage` TEXT NOT NULL,
+                    `last_session_date` TEXT,
+                    `calculated_at` TEXT NOT NULL,
+                    PRIMARY KEY(`id`)
+                )
+                """,
+            )
+        }
+    }
+
+    /**
+     * Todas las migraciones, en orden.
+     *
+     * Existe para que registrarlas en `DatabaseModule` no sea una lista que haya que recordar
+     * ampliar: añadir una migración aquí la deja registrada. La ausencia de `16→17`, `17→18` y
+     * `18→19` durante tres versiones del esquema fue exactamente el fallo que esto evita — la
+     * aplicación no podía abrir ninguna base existente.
+     */
+    val ALL: Array<Migration> = arrayOf(
+        MIGRATION_6_7,
+        MIGRATION_7_8,
+        MIGRATION_8_9,
+        MIGRATION_9_10,
+        MIGRATION_10_11,
+        MIGRATION_11_12,
+        MIGRATION_12_13,
+        MIGRATION_13_14,
+        MIGRATION_14_15,
+        MIGRATION_15_16,
+        MIGRATION_16_17,
+        MIGRATION_17_18,
+        MIGRATION_18_19,
+    )
 }

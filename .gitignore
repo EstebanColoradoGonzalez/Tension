@@ -7,6 +7,8 @@
 Tension/local.properties
 
 Tension/**/build/
+# Cache del compilador de Kotlin 2.x
+Tension/.kotlin/
 Tension/captures/
 Tension/.externalNativeBuild
 Tension/.cxx/

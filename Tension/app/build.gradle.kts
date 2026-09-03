@@ -44,6 +44,13 @@ android {
             isReturnDefaultValues = true
         }
     }
+    // MigrationTestHelper construye la base en una version antigua leyendo el
+    // esquema exportado, y solo lo encuentra si viaja como asset del APK de pruebas.
+    sourceSets {
+        getByName("androidTest") {
+            assets.srcDirs("$projectDir/schemas")
+        }
+    }
 }
 
 ksp {
@@ -91,6 +98,7 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation("org.json:json:20231013")
     androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.room.testing)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)

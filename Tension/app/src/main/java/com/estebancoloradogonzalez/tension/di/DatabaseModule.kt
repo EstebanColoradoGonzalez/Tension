@@ -48,7 +48,10 @@ object DatabaseModule {
             "tension_database",
         )
             .addCallback(PrepopulateCallback())
-            .addMigrations(Migrations.MIGRATION_6_7, Migrations.MIGRATION_7_8, Migrations.MIGRATION_8_9, Migrations.MIGRATION_9_10, Migrations.MIGRATION_10_11, Migrations.MIGRATION_11_12, Migrations.MIGRATION_12_13, Migrations.MIGRATION_13_14, Migrations.MIGRATION_14_15, Migrations.MIGRATION_15_16)
+            // La lista vive en Migrations.ALL: enumerarlas aquí una a una fue lo que dejó sin
+            // registrar 16→17, 17→18 y 18→19, y con ello la aplicación incapaz de abrir
+            // cualquier base existente.
+            .addMigrations(*Migrations.ALL)
             .build()
     }
 

@@ -7,7 +7,7 @@ import com.estebancoloradogonzalez.tension.data.local.dao.SessionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.SessionExerciseDao
 import com.estebancoloradogonzalez.tension.domain.model.ClassificationCount
 import com.estebancoloradogonzalez.tension.domain.model.ClassificationCountByGroup
-import com.estebancoloradogonzalez.tension.domain.model.ExerciseSessionRange
+import com.estebancoloradogonzalez.tension.domain.model.ExercisePairSessionRange
 import com.estebancoloradogonzalez.tension.domain.model.SetDistributionData
 import com.estebancoloradogonzalez.tension.domain.model.SetTonnageData
 import com.estebancoloradogonzalez.tension.domain.repository.MetricsRepository
@@ -53,15 +53,20 @@ class MetricsRepositoryImpl @Inject constructor(
         return sessionExerciseDao.getClassificationCountsBySessionIds(sessionIds)
     }
 
-    override suspend fun getExerciseSessionRanges(
+    override suspend fun getPairSessionRanges(
         startDate: String,
-    ): List<ExerciseSessionRange> =
-        sessionExerciseDao.getExerciseSessionRangeByPeriod(startDate)
+    ): List<ExercisePairSessionRange> =
+        sessionExerciseDao.getPairSessionRangeByPeriod(startDate)
 
-    override suspend fun getAvgWeightForExerciseInSession(
+    override suspend fun getAvgWeightForPairInSession(
         exerciseId: Long,
+        equipmentTypeId: Long,
         sessionId: Long,
-    ): Double? = exerciseSetDao.getAvgWeightByExerciseInSession(exerciseId, sessionId)
+    ): Double? = exerciseSetDao.getAvgWeightForPairInSession(
+        exerciseId,
+        equipmentTypeId,
+        sessionId,
+    )
 
     override suspend fun getSessionIdsGroupedByMicrocycle(): Map<Int, List<Long>> {
         val sessions = sessionDao.getClosedSessionsOrdered()

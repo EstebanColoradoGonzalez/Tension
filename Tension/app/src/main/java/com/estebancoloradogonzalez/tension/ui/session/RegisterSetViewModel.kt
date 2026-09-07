@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.estebancoloradogonzalez.tension.R
 import com.estebancoloradogonzalez.tension.domain.model.WeightUnit
 import com.estebancoloradogonzalez.tension.domain.rules.ExternalLoadRule
+import com.estebancoloradogonzalez.tension.domain.usecase.session.GetPrefilledLoadForEquipmentUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.session.GetRegisterSetInfoUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.session.RegisterSetUseCase
 import com.estebancoloradogonzalez.tension.domain.util.RepsRangeParser
@@ -32,6 +33,7 @@ import javax.inject.Inject
 @HiltViewModel
 class RegisterSetViewModel @Inject constructor(
     private val getRegisterSetInfoUseCase: GetRegisterSetInfoUseCase,
+    private val getPrefilledLoadForEquipmentUseCase: GetPrefilledLoadForEquipmentUseCase,
     private val registerSetUseCase: RegisterSetUseCase,
     savedStateHandle: SavedStateHandle,
     @ApplicationContext private val context: Context,
@@ -47,6 +49,14 @@ class RegisterSetViewModel @Inject constructor(
 
     private var timerJob: Job? = null
     private var timerStartRealtime: Long = 0L
+
+    /**
+     * Resolución en curso de la precarga del par elegido.
+     *
+     * Se cancela en cuanto el ejecutante toca el peso: una sugerencia que llega tarde y
+     * pisa lo que ya se tecleó es peor que no sugerir nada. El sistema sugiere, no impone.
+     */
+    private var prefillJob: Job? = null
 
     init {
         viewModelScope.launch {
@@ -158,30 +168,56 @@ class RegisterSetViewModel @Inject constructor(
     }
 
     /**
-     * Cambia el implemento y ajusta el campo de peso a lo que ese implemento significa.
+     * Cambia el implemento y **recalcula** la precarga y la unidad para el par nuevo
+     * (CA-40.03).
+     *
+     * El peso que había en el campo pertenecía a otro implemento, y entre dos implementos
+     * el peso no es comparable: heredarlo sería sugerir la carga de otra cosa. Se vuelve a
+     * resolver la precedencia completa —prescripción del par, serie anterior del par,
+     * última serie del par— y si el par nuevo no tiene historial el campo queda **vacío**.
      *
      * Al pasar a un implemento sin carga externa el peso se fija en `"0"`, porque es el
      * valor que se va a registrar y mostrarlo evita que el ejecutante crea que se guardó
-     * lo que tenía teclado. Al pasar a `Peso Añadido` el campo se **limpia** en vez de
-     * heredar: lo anterior era el peso de otra cosa, no un lastre.
+     * lo que tenía teclado.
      */
     fun onEquipmentSelected(equipmentTypeId: Long) {
-        _uiState.update { state ->
-            if (state.selectedEquipmentTypeId == equipmentTypeId) return@update state
+        if (_uiState.value.selectedEquipmentTypeId == equipmentTypeId) return
 
-            val next = state.copy(
-                selectedEquipmentTypeId = equipmentTypeId,
-                equipmentError = null,
+        _uiState.update { state ->
+            state.copy(selectedEquipmentTypeId = equipmentTypeId, equipmentError = null)
+        }
+
+        prefillJob?.cancel()
+        prefillJob = viewModelScope.launch {
+            val prefilled = getPrefilledLoadForEquipmentUseCase(
+                sessionExerciseId,
+                equipmentTypeId,
             )
-            when {
-                !next.isWeightEditable -> next.withWeightInput("0", next.captureUnit)
-                state.isWeightEditable -> next
-                else -> next.withWeightInput("", next.captureUnit)
+            _uiState.update { state ->
+                // La selección pudo cambiar de nuevo mientras se resolvía: aplicar un
+                // resultado tardío pondría en el campo el peso de un implemento que ya no
+                // está elegido.
+                if (state.selectedEquipmentTypeId != equipmentTypeId) return@update state
+
+                val unit = if (state.isWeightEditable) {
+                    prefilled?.captureUnit ?: state.captureUnit
+                } else {
+                    WeightUnit.KG
+                }
+                val weightKg = prefilled?.weightKg
+                val input = when {
+                    !state.isWeightEditable -> "0"
+                    weightKg != null && weightKg > 0.0 ->
+                        format(WeightConverter.fromKg(weightKg, unit))
+                    else -> ""
+                }
+                state.withWeightInput(input, unit)
             }
         }
     }
 
     fun onWeightChanged(value: String) {
+        prefillJob?.cancel()
         _uiState.update { state -> state.withWeightInput(value, state.captureUnit) }
     }
 
@@ -190,6 +226,7 @@ class RegisterSetViewModel @Inject constructor(
      * expressing the same physical load.
      */
     fun onUnitSelected(unit: WeightUnit) {
+        prefillJob?.cancel()
         _uiState.update { state ->
             if (state.captureUnit == unit) return@update state
 
@@ -204,6 +241,7 @@ class RegisterSetViewModel @Inject constructor(
     }
 
     fun onWeightStep(increase: Boolean) {
+        prefillJob?.cancel()
         _uiState.update { state ->
             val current = state.weightInput.toDoubleOrNull() ?: 0.0
             val stepped = WeightConverter.step(current, state.captureUnit, increase)

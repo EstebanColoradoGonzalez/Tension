@@ -3,6 +3,7 @@ package com.estebancoloradogonzalez.tension.domain.rules
 import com.estebancoloradogonzalez.tension.domain.model.PlateauCause
 import com.estebancoloradogonzalez.tension.domain.model.ProgressionDifficulty
 import com.estebancoloradogonzalez.tension.domain.model.SuggestedActionKind
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -123,6 +124,42 @@ class AlertNarrativeRuleTest {
 
         assertTrue(text.contains("despacio"))
         assertTrue(text.contains("10"))
+    }
+
+    // ----- CA-40.05: la meseta nombra los implementos estancados -----
+
+    @Test
+    fun `given two stalled implements, when the plateau is explained, then both are named`() {
+        val text = AlertNarrativeRule.plateauExplanation(
+            "Elevación Lateral",
+            10,
+            ProgressionDifficulty.HIGH,
+            PlateauCause.MIXED,
+            stalledPairs = listOf("Mancuerna" to 11, "Polea" to 12),
+        )
+
+        assertTrue(text.contains("mancuerna"))
+        assertTrue(text.contains("polea"))
+        assertTrue(text.contains("11"))
+        assertTrue(text.contains("12"))
+    }
+
+    // ----- CA-40.08: con un solo implemento el texto no cambia -----
+
+    @Test
+    fun `given a single stalled implement, when the plateau is explained, then the text is the old one`() {
+        val withoutPairs = AlertNarrativeRule.plateauExplanation(
+            "Press de Banca Plano", 10, ProgressionDifficulty.MEDIUM, PlateauCause.MIXED,
+        )
+        val withOnePair = AlertNarrativeRule.plateauExplanation(
+            "Press de Banca Plano",
+            10,
+            ProgressionDifficulty.MEDIUM,
+            PlateauCause.MIXED,
+            stalledPairs = listOf("Barra" to 10),
+        )
+
+        assertEquals(withoutPairs, withOnePair)
     }
 
     @Test

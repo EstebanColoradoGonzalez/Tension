@@ -21,6 +21,7 @@ import com.estebancoloradogonzalez.tension.data.local.dao.RoutineDao
 import com.estebancoloradogonzalez.tension.data.local.dao.RoutineVersionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.SessionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.SessionExerciseDao
+import com.estebancoloradogonzalez.tension.data.local.dao.SessionExerciseProgressionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.TreeStateDao
 import com.estebancoloradogonzalez.tension.data.local.dao.WeekDayDao
 import com.estebancoloradogonzalez.tension.data.local.dao.WeightRecordDao
@@ -44,6 +45,7 @@ import com.estebancoloradogonzalez.tension.data.local.entity.RoutineEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.RoutineVersionEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.SessionEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.SessionExerciseEntity
+import com.estebancoloradogonzalez.tension.data.local.entity.SessionExerciseProgressionEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.TreeStateEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.WeekDayEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.WeightRecordEntity
@@ -68,13 +70,14 @@ import com.estebancoloradogonzalez.tension.data.local.entity.WeightRecordEntity
         SessionEntity::class,
         SessionExerciseEntity::class,
         ExerciseProgressionEntity::class,
+        SessionExerciseProgressionEntity::class,
         ExerciseSetEntity::class,
         AlertEntity::class,
         DeloadEntity::class,
         DeloadFrozenVersionEntity::class,
         TreeStateEntity::class,
     ],
-    version = 20,
+    version = 21,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -95,6 +98,7 @@ abstract class TensionDatabase : RoomDatabase() {
     abstract fun sessionDao(): SessionDao
     abstract fun sessionExerciseDao(): SessionExerciseDao
     abstract fun exerciseProgressionDao(): ExerciseProgressionDao
+    abstract fun sessionExerciseProgressionDao(): SessionExerciseProgressionDao
     abstract fun exerciseSetDao(): ExerciseSetDao
     abstract fun alertDao(): AlertDao
     abstract fun deloadDao(): DeloadDao

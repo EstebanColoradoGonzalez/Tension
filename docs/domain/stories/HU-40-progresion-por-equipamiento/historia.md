@@ -214,11 +214,11 @@ Ninguno. El sistema es local y sin integraciones.
 
 ## Definición de Terminado (Inicial)
 
-- [ ] Funcionalidad implementada según criterios de aceptación
-- [ ] Validaciones funcionando correctamente
-- [ ] Mensajes implementados
-- [ ] Verificado el caso de CA-40.02 de extremo a extremo: primera serie en un implemento nuevo con peso menor no produce `REGRESSION` ni reduce la carga prescrita del otro par
-- [ ] Verificadas las dos reglas de consolidación: disyunción para progresión (CA-40.04) y conjunción para meseta (CA-40.05)
-- [ ] Verificado que el comportamiento observable no cambia para un ejercicio con un solo implemento entrenado (CA-40.08)
-- [ ] Documentación de arquitectura actualizada: modelo de dominio, contrato de interfaces y versión de esquema
-- [ ] `story_mapping_index.md` actualizado con la historia, sus hermanas y sus dependencias
+- [x] Funcionalidad implementada según criterios de aceptación
+- [x] Validaciones funcionando correctamente
+- [x] Mensajes implementados
+- [~] Verificado el caso de CA-40.02 de extremo a extremo: primera serie en un implemento nuevo con peso menor no produce `REGRESSION` ni reduce la carga prescrita del otro par — cubierto por `ProgresionPorEquipamientoTest`, que **compila pero no se ejecutó** (sin emulador en la sesión)
+- [x] Verificadas las dos reglas de consolidación: disyunción para progresión (CA-40.04) y conjunción para meseta (CA-40.05) — `ProgressionConsolidationRuleTest`, en JVM y pasando
+- [x] Verificado que el comportamiento observable no cambia para un ejercicio con un solo implemento entrenado (CA-40.08) — resumen, velocidad de carga y narrativa de alerta, en JVM y pasando
+- [x] Documentación de arquitectura actualizada: modelo de dominio, contrato de interfaces y versión de esquema
+- [x] `story_mapping_index.md` actualizado con la historia, sus hermanas y sus dependencias

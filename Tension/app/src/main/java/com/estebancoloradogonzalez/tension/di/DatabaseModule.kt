@@ -20,6 +20,7 @@ import com.estebancoloradogonzalez.tension.data.local.dao.RoutineDao
 import com.estebancoloradogonzalez.tension.data.local.dao.RoutineVersionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.SessionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.SessionExerciseDao
+import com.estebancoloradogonzalez.tension.data.local.dao.SessionExerciseProgressionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.TreeStateDao
 import com.estebancoloradogonzalez.tension.data.local.dao.WeekDayDao
 import com.estebancoloradogonzalez.tension.data.local.dao.WeightRecordDao
@@ -133,6 +134,13 @@ object DatabaseModule {
     @Provides
     fun provideExerciseProgressionDao(database: TensionDatabase): ExerciseProgressionDao {
         return database.exerciseProgressionDao()
+    }
+
+    @Provides
+    fun provideSessionExerciseProgressionDao(
+        database: TensionDatabase,
+    ): SessionExerciseProgressionDao {
+        return database.sessionExerciseProgressionDao()
     }
 
     @Provides

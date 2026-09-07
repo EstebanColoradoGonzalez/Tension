@@ -706,11 +706,15 @@
 #### `E2-T1`: Registrar Serie de Ejercicio
 
 - **Tipo de Trigger (Entrada):** `Acción del ejecutante: completa el formulario E2 (Registro de Serie) y toca el botón de confirmar.`
-- **Descripción:** El sistema valida los datos y persiste un nuevo `exercise_set`. Asigna automáticamente `set_number = COUNT(series previas del ejercicio en la sesión) + 1`. Si es la primera serie del ejercicio, crea `exercise_progression` si no existe.
+- **Descripción:** El sistema valida los datos y persiste un nuevo `exercise_set`. Asigna automáticamente `set_number = COUNT(series previas del ejercicio en la sesión) + 1`. Si es la primera serie **del par `(ejercicio, equipamiento)`**, crea su `exercise_progression` si no existe: un ejercicio entrenado con tres implementos mantiene tres estados de progresión independientes (CA-40.01).
 
-  El **valor precargado** en el campo de peso se resuelve con una precedencia estricta: (1) la carga prescrita por el motor de Doble Umbral mientras siga **activa**, (2) el peso de la serie anterior del mismo ejercicio en la sesión actual, (3) el peso de la última serie del mismo ejercicio en su sesión cerrada más reciente, (4) campo vacío. Una prescripción está *activa* mientras supere el último peso efectivamente manejado por más de 0.01 Kg: representa un aumento que el ejecutante aún no ha alcanzado. Una vez alcanzada o superada, la prescripción queda consumida y la memoria del último peso toma el relevo, de modo que la precarga acompaña la progresión en lugar de volver a un valor obsoleto. La memoria se resuelve sobre el **ejercicio efectivamente ejecutado** (`session_exercise.exercise_id`) y excluye las sesiones de descarga; la prescripción se resuelve sobre el mismo `session_exercise.exercise_id`, porque `exercise_progression` es una tabla por slot y desde HU-34 el slot **es** el ejercicio que la sesión sostiene: la sustitución por grupo muscular era la única forma de que ambos divergieran y ya no existe. En un microciclo de descarga, la carga de descarga calculada conserva su prioridad sobre la memoria. El valor precargado es siempre editable: el sistema sugiere, no impone.
+  El **valor precargado** en el campo de peso se resuelve con una precedencia estricta, y **desde HU-40 cada uno de sus términos se resuelve sobre el par `(ejercicio, equipamiento)`**: (1) la carga prescrita por el motor de Doble Umbral **para ese par** mientras siga **activa**, (2) el peso de la serie anterior **del mismo par** en la sesión actual, (3) el peso de la última serie **del mismo par** en su sesión cerrada más reciente, (4) campo vacío. Una prescripción está *activa* mientras supere el último peso efectivamente manejado por más de 0.01 Kg: representa un aumento que el ejecutante aún no ha alcanzado. Una vez alcanzada o superada, la prescripción queda consumida y la memoria del último peso toma el relevo, de modo que la precarga acompaña la progresión en lugar de volver a un valor obsoleto. La memoria se resuelve sobre el **ejercicio efectivamente ejecutado** (`session_exercise.exercise_id`) y excluye las sesiones de descarga. En un microciclo de descarga, la carga de descarga calculada **del par** conserva su prioridad sobre la memoria. El valor precargado es siempre editable: el sistema sugiere, no impone.
 
-  El formulario E2 ofrece un **selector de unidad de captura** (`Kg` / `Lb`) junto al campo de peso, más controles de incremento y decremento cuyo paso depende de la unidad activa (0.5 Kg en kilogramos, 1 lb en libras). El selector se preselecciona con la unidad de la última serie registrada del mismo ejercicio y se oculta cuando no hay carga externa que capturar. La conversión a kilogramos ocurre en la capa de presentación antes de invocar el trigger: `weight_kg` llega **siempre en la unidad canónica**.
+  **Al cambiar de implemento en el selector, el peso precargado y la unidad se recalculan para el par nuevo.** Si el par no tiene historial, el campo queda **vacío**: nunca se hereda el peso de otro equipamiento, porque es el peso de otra cosa. El recálculo se cancela en cuanto el ejecutante toca el campo — una sugerencia que llega tarde y pisa lo ya tecleado impondría en vez de sugerir.
+
+  La sesión anterior de un par es la sesión cerrada más reciente **en la que ese par se entrenó**, no la última sesión del ejercicio: una sesión hecha solo con polea no es la sesión anterior del par mancuerna, y tratarla como tal dejaría a la mancuerna sin término de comparación.
+
+  El formulario E2 ofrece un **selector de unidad de captura** (`Kg` / `Lb`) junto al campo de peso, más controles de incremento y decremento cuyo paso depende de la unidad activa (0.5 Kg en kilogramos, 1 lb en libras). El selector se preselecciona con la unidad de la última serie registrada **del mismo par** —la unidad es la etiqueta de la máquina, y dos implementos son dos máquinas— y se oculta cuando no hay carga externa que capturar. La conversión a kilogramos ocurre en la capa de presentación antes de invocar el trigger: `weight_kg` llega **siempre en la unidad canónica**.
 
   El formulario ofrece además un **selector de equipamiento**, situado sobre el campo de peso porque lo gobierna. Está limitado a los implementos que el ejercicio admite (`exercise_equipment`) y se preselecciona con el de la última serie registrada del mismo ejercicio; si no hay ninguna, con la primera opción admitida. Cuando el ejercicio admite **una sola** opción se presenta resuelto, como etiqueta y sin interacción: un control que se puede tocar para no elegir nada informa menos que un texto. El equipamiento es **obligatorio** y dos series del mismo ejercicio en la misma sesión pueden llevar implementos distintos. La serie sigue siendo inmutable tras su creación: el equipamiento registrado no se corrige después.
 
@@ -753,7 +757,13 @@
 
 - **Tipo de Trigger (Entrada):** `Acción del ejecutante: confirma el cierre en el diálogo E4 (Confirmación de Cierre de Sesión). La confirmación está deshabilitada mientras la sesión no tenga ninguna serie registrada.`
 - **Precondición — al menos una serie:** cerrar da por terminado lo entrenado, y sin ninguna fila en `exercise_set` no hay nada que terminar. La sesión permanece `IN_PROGRESS` y es reanudable; para resolver el día sin entrenar, la vía es `B1-T5`.
-- **Descripción:** El sistema ejecuta el protocolo de cierre de sesión: (1) finaliza todos los `session_exercise` no finalizados, (2) calcula tonelaje, (3) ejecuta el motor de reglas por cada ejercicio (comparación histórica, clasificación de progresión, actualización de `exercise_progression`, detección de mesetas y alertas), (4) actualiza `rotation_state`, (5) determina el status de sesión, (6) navega a E5.
+- **Descripción:** El sistema ejecuta el protocolo de cierre de sesión: (1) finaliza todos los `session_exercise` no finalizados, (2) calcula tonelaje, (3) ejecuta el motor de reglas **por cada par `(ejercicio, equipamiento)` entrenado** (comparación histórica del par, clasificación del par, actualización de su `exercise_progression`, carga del Doble Umbral del par), (4) consolida la lectura del ejercicio y evalúa mesetas y alertas, (5) actualiza `rotation_state`, (6) determina el status de sesión, (7) navega a E5.
+
+  **La unidad de comparación es el par.** Una sesión con mancuerna y polea del mismo ejercicio produce **dos** evaluaciones independientes, cada una contra el histórico de su implemento. Estrenar uno no tiene contra qué compararse: su clasificación es `NULL` (Sin Historial) y **nunca `REGRESSION`**, su contador arranca en 0 y el estado del otro par no se altera.
+
+  **La consolidación por ejercicio se deriva, no se persiste como estado.** La clasificación de cada par se guarda en `session_exercise_progression`; `session_exercise.progression_classification` guarda la **consolidada**, con el orden `POSITIVE_PROGRESSION > MAINTENANCE > REGRESSION > NULL`. Eso hace verdadera la disyunción de CA-40.04 —el ejercicio progresa si alguno de sus pares progresó— y es lo que consumen sin cambio alguno la tasa de progresión (`G1-T1`), la tendencia por grupo muscular (`G3-T1`), la alerta `LOW_PROGRESSION_RATE` y el conteo de slots afectados para la descarga.
+
+  **La meseta se declara por conjunción:** el ejercicio entra en meseta —y se emite `PLATEAU`— solo cuando **todos** sus pares han alcanzado el umbral efectivo. Un implemento todavía en progresión desmiente la meseta. `ROUTINE_REQUIRES_DELOAD` cuenta como estancado únicamente el ejercicio cuya condición consolidada se cumple.
 
 **Payload / Parámetros (Input):**
 
@@ -792,6 +802,8 @@
 - **Tipo de Trigger (Entrada):** `Evento de sistema: navegación automática desde E4 tras cierre exitoso de sesión.`
 - **Descripción:** El sistema presenta el resumen calculado durante el cierre de sesión. Vista de solo lectura.
 
+  **Desde HU-40 el resumen presenta un renglón por implemento efectivamente usado**, con la clasificación y la señal de ese par. Con un solo implemento el renglón se colapsa en la línea del ejercicio y la pantalla es **idéntica** a la anterior a esta historia (CA-40.08). La clasificación que acompaña al nombre del ejercicio es la **consolidada**.
+
 **Payload / Parámetros (Input):**
 
 ```json
@@ -815,10 +827,21 @@
     {
       "exercise_id": "INTEGER",
       "name": "TEXT",
-      "progression_classification": "TEXT | null",
-      "prescribed_load_next": "REAL | null",
+      "progression_classification": "TEXT | null // Lectura CONSOLIDADA del ejercicio (CA-40.04)",
+      "prescribed_load_next": "REAL | null // El objetivo más alto entre los pares",
       "action_signal": "TEXT",
-      "is_mastered": "BOOLEAN // true para isométricos dominados"
+      "is_mastered": "BOOLEAN // true para isométricos dominados",
+      "pairs": [
+        {
+          "equipment_type_id": "INTEGER",
+          "equipment_type_name": "TEXT",
+          "progression_classification": "TEXT | null // null = Sin Historial de ese implemento, jamás una regresión",
+          "prescribed_load_next": "REAL | null // La carga que el Doble Umbral prescribió A ESE PAR",
+          "action_signal": "TEXT",
+          "avg_weight_kg": "REAL",
+          "completed_sets": "INTEGER"
+        }
+      ]
     }
   ]
 }
@@ -964,6 +987,8 @@
 
 - **Tipo de Trigger (Entrada):** `Evento de sistema: carga de la vista G1 (Panel de Métricas).`
 - **Descripción:** El sistema calcula los 4 KPIs principales para todos los ejercicios y rutinas del ejecutante y los entrega como indicadores autoexplicativos: etiqueta, valor, unidad, descripción, período y estado.
+
+  **Desde HU-40, los indicadores que comparan peso entre sesiones se calculan por par `(ejercicio, equipamiento)` y se consolidan por ejercicio; ninguno cambia de fórmula, cambia la unidad de comparación.** La **tasa de progresión** consume la clasificación consolidada que el cierre de sesión ya persiste, de modo que alternar implementos no la diluye. La **velocidad de carga** traza su pendiente sobre cada par por separado —entre 20 Kg de polea y 12 de mancuerna no hay pendiente, hay dos magnitudes distintas— y se informa la **mayor** de ellas, con el `session_count` de ese par: es la traducción numérica de la disyunción de CA-40.04, porque promediarlas dejaría que un implemento parado borrase a uno que avanza. El **tonelaje total** y el volumen por grupo muscular **no se segmentan**: el volumen es volumen.
 
 **Payload / Parámetros (Input):**
 
@@ -1236,6 +1261,8 @@ Los umbrales de suficiencia no son una calibración nueva: cada uno transcribe l
 - **Tipo de Trigger (Entrada):** `Acción del ejecutante: toca una alerta en H1.`
 - **Descripción:** El sistema recupera el detalle completo de la alerta, recalcula dinámicamente los datos que la dispararon, redacta la explicación causal y resuelve la acción sugerida. **Toda alerta lleva acción sugerida**: ninguna se limita a describir el problema.
 
+  **`PLATEAU` identifica qué implementos están estancados** (CA-40.05). Se derivan de los contadores vigentes de los pares del ejercicio en lugar de persistirse con la alerta: entre que se emite y se lee, los contadores pueden moverse, y lo que hay que enseñar es el estado de hoy. Con un solo implemento estancado el bloque no se presenta y el texto es el de siempre. El contador que la narrativa cita es el **mayor** entre los pares: la meseta del ejercicio es una conjunción, así que se alcanza cuando el último par cruza el umbral.
+
 **Payload / Parámetros (Input):**
 
 ```json
@@ -1253,8 +1280,15 @@ Los umbrales de suficiencia no son una calibración nueva: cada uno transcribe l
   "level": "TEXT",
   "entity_name": "TEXT",
   "message": "TEXT",
-  "trigger_data": {},
-  "causal_analysis": "TEXT // Explicación en lenguaje natural. Cuando el umbral depende de la dificultad del ejercicio, justifica por qué el sistema esperó lo que esperó",
+  "trigger_data": {
+    "stalled_pairs": [
+      {
+        "equipment_type_name": "TEXT // Solo en PLATEAU. Los implementos que alcanzaron el umbral efectivo",
+        "sessions_without_progression": "INTEGER"
+      }
+    ]
+  },
+  "causal_analysis": "TEXT // Explicación en lenguaje natural. Cuando el umbral depende de la dificultad del ejercicio, justifica por qué el sistema esperó lo que esperó. En PLATEAU con más de un implemento estancado, los nombra: una meseta sin la entidad concreta que la origina no es accionable",
   "suggested_action": {
     "kind": "TEXT // Acción concreta resuelta por el motor",
     "text": "TEXT // Redacción en segunda persona de lo que el ejecutante puede hacer",
@@ -1339,6 +1373,8 @@ Los valores viven en un único punto del código, `AlertThresholdRule`. Esta tab
 - **Tipo de Trigger (Entrada):** `Evento de sistema: carga de la vista I1.`
 - **Descripción:** El sistema determina si hay descarga activa y presenta el estado correspondiente.
 
+  **Desde HU-40 la reducción y el reinicio se calculan sobre la carga de cada par `(ejercicio, equipamiento)`, de forma independiente** (CA-40.06). El listado de reinicio presenta un renglón por par, nombrando el implemento. Un par sin historial anterior a la descarga **no aparece**: no hay carga previa que reducir ni que reiniciar.
+
 **Payload / Parámetros (Input):**
 
 ```json
@@ -1356,7 +1392,8 @@ Los valores viven en un único punto del código, `AlertThresholdRule`. Esta tab
   "restart_loads": [
     {
       "exercise_name": "TEXT",
-      "restart_load_kg": "REAL // 90% de la carga pre-descarga. Solo disponible al finalizar."
+      "equipment_type_name": "TEXT // El implemento del par: un ejercicio hecho con dos aparece dos veces",
+      "restart_load_kg": "REAL // 90% de la carga pre-descarga DEL PAR. Solo disponible al finalizar."
     }
   ],
   "routines_requiring_deload": [
@@ -1427,14 +1464,15 @@ Los valores viven en un único punto del código, `AlertThresholdRule`. Esta tab
 
 **Respuesta / Salida (Output Esperado):**
 
-- **Estado de Éxito:** `Archivo JSON generado con todos los datos. Metadatos incluyen versión del esquema (13) y fecha de exportación. Opciones para compartir el archivo vía apps del sistema.`
+- **Estado de Éxito:** `Archivo JSON generado con todos los datos. Metadatos incluyen versión del esquema (14) y fecha de exportación. Opciones para compartir el archivo vía apps del sistema.`
 - **Ampliación de HU-39:** el respaldo incluye `exercise_equipment` —las opciones de equipamiento de cada ejercicio— y el `equipment_type_id` de cada fila de `exercise_set`, que viaja con el resto de sus columnas. La tabla se inserta después de `exercise` y de `equipment_type`, como su clave foránea exige.
+- **Ampliación de HU-40:** el respaldo incluye la **progresión de cada par** —estado, carga prescrita y contador de sesiones sin progresión de cada `(ejercicio, equipamiento)`— y la tabla `session_exercise_progression` con la clasificación por implemento de cada sesión. Esta última se inserta después de `session_exercise` y de `equipment_type`. Un respaldo restaurado reproduce el estado del motor **par por par, sin recalcularlo**.
 
 ```json
 {
   "file_path": "TEXT // Ruta del archivo generado",
   "file_size_kb": "INTEGER",
-  "schema_version": 13,
+  "schema_version": 14,
   "export_date": "TEXT // ISO 8601",
   "record_counts": {
     "sessions": "INTEGER",
@@ -1475,11 +1513,13 @@ Los valores viven en un único punto del código, `AlertThresholdRule`. Esta tab
 
 - **Estado de Error (formato inválido):** `Mensaje de error al validar. No se ejecuta la restauración. Los datos actuales no se alteran.`
 - **Estado de Error (fallo durante restauración):** `Rollback automático. Los datos originales se preservan. Mensaje de error al ejecutante.`
-- **Compatibilidad de formato:** `Se acepta ÚNICAMENTE el formato vigente (13). Todo formato anterior se rechaza por completo con un mensaje explícito, en lugar de importarse parcialmente.`
-- **Estado de Error (formato anterior):** `ERR_BACKUP_NO_EQUIPMENT. El mensaje nombra la causa: el respaldo se generó con una versión anterior y no incluye el equipamiento de las series, de modo que no puede restaurarse. Nada se importa.`
+- **Compatibilidad de formato:** `Se acepta ÚNICAMENTE el formato vigente (14). Todo formato anterior se rechaza por completo con un mensaje explícito, en lugar de importarse parcialmente.`
+- **Estado de Error (formato anterior):** `ERR_BACKUP_NO_EQUIPMENT. El mensaje nombra la causa: el respaldo se generó con una versión anterior y no incluye el equipamiento de las series ni la progresión por par, de modo que no puede restaurarse. Nada se importa.`
 - **Estado de Error (formato posterior):** `ERR_BACKUP_VERSION_UNSUPPORTED. Un respaldo de un build más nuevo no tiene esa causa concreta y se rechaza por número de versión, que es lo único que se sabe de él.`
 
 > **Por qué el rechazo es total.** Hasta HU-38 se aceptaban los formatos 11 y 8 porque lo que les faltaba era derivable: `tree_state` se reconstruye entero desde el historial restaurado (`N1-T1`), así que restaurar sin él nunca dejaba un estado inválido. **El equipamiento de la serie no se deriva de nada**: un respaldo anterior no dice con qué implemento se hizo cada serie, y `exercise_set.equipment_type_id` es `NOT NULL`. Aceptarlo exigiría inventar un valor por serie, que es exactamente la importación parcial que HU-39 prohíbe. Con el rechazo, los caminos de importación de v8 y v11/v12 se retiraron del código: importación inalcanzable es una promesa que la aplicación ya no cumple.
+>
+> **El formato 13 se rechaza por el mismo argumento.** Su `exercise_progression` está claveada solo por `exercise_id` y no dice con qué implemento se acumuló cada estado. Ahora `equipment_type_id` es `NOT NULL` y encabeza la clave primaria junto a `exercise_id`, así que aceptarlo obligaría a inventar un implemento por fila — y la restauración tiene que reproducir el estado del motor par por par **sin recalcularlo**.
 
 ---
 

@@ -63,14 +63,31 @@ object AlertNarrativeRule {
 
     // ------------------------------------------------------------- explanations
 
+    /**
+     * [stalledPairs] son los implementos que han alcanzado el umbral, con su contador.
+     *
+     * Con uno solo el texto es exactamente el de siempre: para quien no alterna implementos
+     * la alerta no cambia (CA-40.08). Con varios se nombran, porque una meseta que no dice
+     * con qué implemento ocurre deja al ejecutante sin nada concreto que cambiar — la
+     * lección que dejó HU-33.
+     */
     fun plateauExplanation(
         exerciseName: String,
         sessions: Int,
         difficulty: ProgressionDifficulty,
         cause: PlateauCause,
+        stalledPairs: List<Pair<String, Int>> = emptyList(),
     ): String {
-        val opening = "$exerciseName lleva $sessions ${sessionWord(sessions)} sin subir " +
-            "carga ni repeticiones."
+        val opening = if (stalledPairs.size > 1) {
+            val detail = stalledPairs.joinToString(" y ") { (name, count) ->
+                "$count con ${name.lowercase()}"
+            }
+            "$exerciseName lleva $detail sin subir carga ni repeticiones. " +
+                "Los ${stalledPairs.size} implementos están estancados a la vez."
+        } else {
+            "$exerciseName lleva $sessions ${sessionWord(sessions)} sin subir " +
+                "carga ni repeticiones."
+        }
         return "$opening ${paceNote(difficulty, sessions)} ${causeNote(cause)}"
     }
 

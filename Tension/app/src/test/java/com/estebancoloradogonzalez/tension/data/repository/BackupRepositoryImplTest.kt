@@ -26,7 +26,7 @@ import org.junit.Test
 class BackupRepositoryImplTest {
 
     /** Espejo del valor privado del impl: el formato inmediatamente anterior. */
-    private val PREVIOUS_SCHEMA_VERSION = 12
+    private val PREVIOUS_SCHEMA_VERSION = 13
 
     private lateinit var database: TensionDatabase
     private lateinit var context: Context
@@ -251,12 +251,40 @@ class BackupRepositoryImplTest {
         assertTrue(order.indexOf("exercise_equipment") > order.indexOf("equipment_type"))
     }
 
+    // ----- CA-40.09: la progresión de cada par viaja en el respaldo -----
+
+    @Test
+    fun `the per-pair classification table is part of the backup`() {
+        assertTrue(
+            BackupRepositoryImpl.TABLE_ORDER_INSERT.contains("session_exercise_progression"),
+        )
+    }
+
+    @Test
+    fun `per-pair classification is inserted after the tables it points at`() {
+        val order = BackupRepositoryImpl.TABLE_ORDER_INSERT
+        assertTrue(
+            order.indexOf("session_exercise_progression") > order.indexOf("session_exercise"),
+        )
+        assertTrue(
+            order.indexOf("session_exercise_progression") > order.indexOf("equipment_type"),
+        )
+    }
+
+    @Test
+    fun `the backup format is 14`() {
+        // Sube porque `exercise_progression` gana `equipment_type_id` en su clave primaria:
+        // un respaldo 13 no dice con qué implemento se acumuló cada estado, y la CA prohíbe
+        // reconstruirlo.
+        assertEquals(14, BackupRepositoryImpl.SCHEMA_VERSION)
+    }
+
     @Test
     fun `validateBackup accepts the current format`() {
         val result = repository.validateBackup(buildValidBackupJson())
 
         assertTrue(result.isValid)
-        assertEquals(13, result.metadata?.schemaVersion)
+        assertEquals(14, result.metadata?.schemaVersion)
         assertNull(result.errorMessage)
     }
 
@@ -515,7 +543,7 @@ class BackupRepositoryImplTest {
         return json.toString()
     }
 
-/** Respaldo del formato inmediatamente anterior: sin `exercise_equipment`. */
+/** Respaldo del formato inmediatamente anterior: sin `session_exercise_progression`. */
     private fun buildPreviousFormatBackupJson(): String {
         val json = JSONObject()
         json.put("metadata", JSONObject().apply {
@@ -526,7 +554,7 @@ class BackupRepositoryImplTest {
         })
         val data = JSONObject()
         BackupRepositoryImpl.TABLE_ORDER_INSERT
-            .filter { it != "exercise_equipment" }
+            .filter { it != "session_exercise_progression" }
             .forEach { data.put(it, org.json.JSONArray()) }
         json.put("data", data)
         return json.toString()

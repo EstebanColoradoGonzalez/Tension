@@ -6,7 +6,7 @@ import androidx.room.Query
 import com.estebancoloradogonzalez.tension.data.local.entity.SessionExerciseEntity
 import com.estebancoloradogonzalez.tension.domain.model.ClassificationCount
 import com.estebancoloradogonzalez.tension.domain.model.ClassificationCountByGroup
-import com.estebancoloradogonzalez.tension.domain.model.ExerciseSessionRange
+import com.estebancoloradogonzalez.tension.domain.model.ExercisePairSessionRange
 import kotlinx.coroutines.flow.Flow
 
 data class SessionExerciseWithDetails(
@@ -53,12 +53,16 @@ data class SessionExerciseForProgression(
 )
 
 data class ExerciseSummaryDto(
+    val sessionExerciseId: Long,
     val exerciseId: Long,
     val exerciseName: String,
+    /**
+     * Consolidated classification of the exercise in this session (CA-40.04). The
+     * classification of each implement travels separately, in `SessionPairSummaryDto`.
+     */
     val classification: String?,
     val isBodyweight: Int,
     val isIsometric: Int,
-    val prescribedLoadKg: Double?,
     val avgWeightKg: Double,
     val totalReps: Int,
     val setCount: Int,
@@ -102,9 +106,20 @@ interface SessionExerciseDao {
     @Query("SELECT * FROM session_exercise WHERE session_id = :sessionId")
     fun getBySessionId(sessionId: Long): Flow<List<SessionExerciseEntity>>
 
+    /**
+     * Exercises of the active session, as the session screen lists them.
+     *
+     * `prescribedLoadKg` is resolved with `MAX` over the exercise's pairs instead of a join
+     * (HU-40): since `exercise_progression` is keyed by the pair, joining it would produce
+     * one row per implement and the `GROUP BY se.id` would collapse them by picking an
+     * arbitrary one. The value is **informative** — the highest target across implements,
+     * consistent with the disjunction of CA-40.04 — because this screen does not know which
+     * implement the next set will use. The load that actually governs the prefilled field
+     * is the pair's, and it is resolved in `getRegisterSetInfo`.
+     */
     @Query(
         """
-        SELECT 
+        SELECT
             se.id AS sessionExerciseId,
             se.exercise_id AS exerciseId,
             e.name AS exerciseName,
@@ -125,7 +140,8 @@ interface SessionExerciseDao {
             COALESCE(e.is_bodyweight, 0) AS isBodyweight,
             COALESCE(e.is_isometric, 0) AS isIsometric,
             COALESCE(e.is_to_technical_failure, 0) AS isToTechnicalFailure,
-            ep.prescribed_load_kg AS prescribedLoadKg,
+            (SELECT MAX(ep.prescribed_load_kg) FROM exercise_progression ep
+             WHERE ep.exercise_id = se.exercise_id) AS prescribedLoadKg,
             (SELECT COUNT(*) FROM exercise_set es WHERE es.session_exercise_id = se.id) AS completedSets,
             (SELECT mz2.muscle_group FROM exercise_muscle_zone emz2
              INNER JOIN muscle_zone mz2 ON emz2.muscle_zone_id = mz2.id
@@ -150,7 +166,6 @@ interface SessionExerciseDao {
                      ORDER BY pa2.sort_order ASC
                      LIMIT 1)
             END
-        LEFT JOIN exercise_progression ep ON se.exercise_id = ep.exercise_id
         WHERE se.session_id = :sessionId
         GROUP BY se.id
         ORDER BY se.slot ASC
@@ -247,15 +262,23 @@ interface SessionExerciseDao {
     )
     suspend fun switchAlternativeExercise(sessionExerciseId: Long, exerciseId: Long)
 
+    /**
+     * One row per exercise of the session, for the post-session summary.
+     *
+     * Since HU-40 it no longer reads `exercise_progression`: the prescribed load belongs to
+     * the pair and travels in `SessionPairSummaryDto`, one row per implement. What is kept
+     * here is `isMastered`, resolved as *some pair is mastered* — mastery is a property of
+     * the isometric exercise, which has no external load and in practice a single pair.
+     */
     @Query(
         """
         SELECT
+            se.id AS sessionExerciseId,
             se.exercise_id AS exerciseId,
             e.name AS exerciseName,
             se.progression_classification AS classification,
             e.is_bodyweight AS isBodyweight,
             e.is_isometric AS isIsometric,
-            ep.prescribed_load_kg AS prescribedLoadKg,
             COALESCE(
                 (SELECT AVG(es.weight_kg) FROM exercise_set es WHERE es.session_exercise_id = se.id),
                 0.0
@@ -271,7 +294,10 @@ interface SessionExerciseDao {
                    AND pa.exercise_id = se.exercise_id),
                 4
             ) AS prescribedSets,
-            CASE WHEN ep.status = 'MASTERED' THEN 1 ELSE 0 END AS isMastered,
+            CASE WHEN EXISTS (
+                SELECT 1 FROM exercise_progression ep
+                WHERE ep.exercise_id = se.exercise_id AND ep.status = 'MASTERED'
+            ) THEN 1 ELSE 0 END AS isMastered,
             (SELECT mz.muscle_group FROM exercise_muscle_zone emz
              INNER JOIN muscle_zone mz ON emz.muscle_zone_id = mz.id
              WHERE emz.exercise_id = se.exercise_id LIMIT 1) AS muscleGroup,
@@ -293,7 +319,6 @@ interface SessionExerciseDao {
         FROM session_exercise se
         INNER JOIN exercise e ON se.exercise_id = e.id
         INNER JOIN session s ON se.session_id = s.id
-        LEFT JOIN exercise_progression ep ON se.exercise_id = ep.exercise_id
         WHERE se.session_id = :sessionId
         GROUP BY se.id
         HAVING setCount > 0
@@ -346,11 +371,21 @@ interface SessionExerciseDao {
     )
     suspend fun getClassificationCountsForSessions(sessionIds: List<Long>): List<ClassificationCount>
 
+    /**
+     * Session range of every **(exercise, implement) pair** trained in the window.
+     *
+     * The load-velocity KPI compares weights between sessions, so it is computed over each
+     * pair and consolidated afterwards (CA-40.07). Grouping by exercise alone would take
+     * the first session of the dumbbell and the last of the cable as the two ends of one
+     * slope, which is a number made of two incomparable magnitudes.
+     */
     @Query(
         """
         SELECT
             se.exercise_id AS exerciseId,
             e.name AS exerciseName,
+            es.equipment_type_id AS equipmentTypeId,
+            et.name AS equipmentTypeName,
             e.is_bodyweight AS isBodyweight,
             e.is_isometric AS isIsometric,
             MIN(se.session_id) AS firstSessionId,
@@ -359,13 +394,15 @@ interface SessionExerciseDao {
         FROM session_exercise se
         INNER JOIN session s ON se.session_id = s.id
         INNER JOIN exercise e ON se.exercise_id = e.id
+        INNER JOIN exercise_set es ON es.session_exercise_id = se.id
+        INNER JOIN equipment_type et ON es.equipment_type_id = et.id
         WHERE s.status IN ('COMPLETED', 'INCOMPLETE')
           AND s.deload_id IS NULL
           AND s.date >= :startDate
-        GROUP BY se.exercise_id
+        GROUP BY se.exercise_id, es.equipment_type_id
         """,
     )
-    suspend fun getExerciseSessionRangeByPeriod(startDate: String): List<ExerciseSessionRange>
+    suspend fun getPairSessionRangeByPeriod(startDate: String): List<ExercisePairSessionRange>
 
     @Query(
         """

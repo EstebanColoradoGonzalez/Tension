@@ -6,6 +6,8 @@ import com.estebancoloradogonzalez.tension.domain.model.EquipmentType
 import com.estebancoloradogonzalez.tension.domain.model.RegisterSetInfo
 import com.estebancoloradogonzalez.tension.domain.model.WeightUnit
 import com.estebancoloradogonzalez.tension.domain.rules.ExternalLoadRule
+import com.estebancoloradogonzalez.tension.domain.model.PrefilledLoad
+import com.estebancoloradogonzalez.tension.domain.usecase.session.GetPrefilledLoadForEquipmentUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.session.GetRegisterSetInfoUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.session.RegisterSetUseCase
 import io.mockk.coEvery
@@ -35,6 +37,7 @@ class RegisterSetViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
     private val getRegisterSetInfoUseCase: GetRegisterSetInfoUseCase = mockk()
+    private val getPrefilledLoadForEquipmentUseCase: GetPrefilledLoadForEquipmentUseCase = mockk()
     private val registerSetUseCase: RegisterSetUseCase = mockk()
     private val context: Context = mockk()
 
@@ -51,6 +54,10 @@ class RegisterSetViewModelTest {
         Dispatchers.setMain(testDispatcher)
         every { context.getString(any()) } returns "error"
         every { context.getString(any(), *anyVararg()) } returns "error"
+        // Por defecto el par elegido no tiene historial: el campo queda vacío. Los tests
+        // que necesitan memoria del par lo sobrescriben.
+        coEvery { getPrefilledLoadForEquipmentUseCase(any(), any()) } returns
+            PrefilledLoad(weightKg = null, captureUnit = WeightUnit.KG)
     }
 
     @After
@@ -84,6 +91,7 @@ class RegisterSetViewModelTest {
     private fun createViewModel(): RegisterSetViewModel {
         return RegisterSetViewModel(
             getRegisterSetInfoUseCase = getRegisterSetInfoUseCase,
+            getPrefilledLoadForEquipmentUseCase = getPrefilledLoadForEquipmentUseCase,
             registerSetUseCase = registerSetUseCase,
             savedStateHandle = SavedStateHandle(
                 mapOf("sessionExerciseId" to sessionExerciseId),
@@ -457,6 +465,7 @@ class RegisterSetViewModelTest {
             advanceUntilIdle()
 
             viewModel.onEquipmentSelected(pesoAnadido.id)
+            advanceUntilIdle()
 
             val state = viewModel.uiState.value
             assertTrue(state.isWeightEditable)
@@ -482,6 +491,7 @@ class RegisterSetViewModelTest {
 
             viewModel.onWeightChanged("10")
             viewModel.onEquipmentSelected(barraFija.id)
+            advanceUntilIdle()
 
             val state = viewModel.uiState.value
             assertFalse(state.isWeightEditable)
@@ -516,6 +526,110 @@ class RegisterSetViewModelTest {
             coVerify(exactly = 0) {
                 registerSetUseCase(any(), any(), any(), any(), any(), any(), any())
             }
+        }
+
+    // ----- CA-40.03: al cambiar de implemento, la precarga se recalcula para el par -----
+
+    @Test
+    fun `given the new implement has history, when switching, then the field shows that pair's weight`() =
+        runTest {
+            // Given — el formulario nace con mancuerna a 12.5 kg
+            coEvery { getRegisterSetInfoUseCase(sessionExerciseId) } returns
+                info(lastWeightKg = 12.5, equipmentOptions = listOf(mancuerna, barra))
+            // ... y el par de la barra va por 40 kg
+            coEvery { getPrefilledLoadForEquipmentUseCase(sessionExerciseId, barra.id) } returns
+                PrefilledLoad(weightKg = 40.0, captureUnit = WeightUnit.KG)
+
+            val viewModel = createViewModel()
+            advanceUntilIdle()
+            assertEquals("12.5", viewModel.uiState.value.weightInput)
+
+            // When
+            viewModel.onEquipmentSelected(barra.id)
+            advanceUntilIdle()
+
+            // Then — el peso es el del par nuevo, no el que había en el campo
+            assertEquals("40.0", viewModel.uiState.value.weightInput)
+        }
+
+    @Test
+    fun `given the new implement has no history, when switching, then the field is emptied`() =
+        runTest {
+            // Given — mancuerna con historial, máquina nunca entrenada
+            coEvery { getRegisterSetInfoUseCase(sessionExerciseId) } returns
+                info(lastWeightKg = 12.5, equipmentOptions = listOf(mancuerna, maquina))
+            coEvery { getPrefilledLoadForEquipmentUseCase(sessionExerciseId, maquina.id) } returns
+                PrefilledLoad(weightKg = null, captureUnit = WeightUnit.KG)
+
+            val viewModel = createViewModel()
+            advanceUntilIdle()
+
+            // When
+            viewModel.onEquipmentSelected(maquina.id)
+            advanceUntilIdle()
+
+            // Then — vacío, nunca el peso del otro implemento
+            assertEquals("", viewModel.uiState.value.weightInput)
+        }
+
+    @Test
+    fun `given the new pair was captured in lb, when switching, then the unit changes with it`() =
+        runTest {
+            coEvery { getRegisterSetInfoUseCase(sessionExerciseId) } returns
+                info(
+                    captureUnit = WeightUnit.KG,
+                    lastWeightKg = 12.5,
+                    equipmentOptions = listOf(mancuerna, maquina),
+                )
+            coEvery { getPrefilledLoadForEquipmentUseCase(sessionExerciseId, maquina.id) } returns
+                PrefilledLoad(weightKg = 20.41, captureUnit = WeightUnit.LB)
+
+            val viewModel = createViewModel()
+            advanceUntilIdle()
+
+            viewModel.onEquipmentSelected(maquina.id)
+            advanceUntilIdle()
+
+            val state = viewModel.uiState.value
+            assertEquals(WeightUnit.LB, state.captureUnit)
+            assertEquals("45.0", state.weightInput)
+        }
+
+    @Test
+    fun `given the same implement is chosen again, when switching, then nothing is recalculated`() =
+        runTest {
+            coEvery { getRegisterSetInfoUseCase(sessionExerciseId) } returns
+                info(lastWeightKg = 12.5, equipmentOptions = listOf(mancuerna, barra))
+
+            val viewModel = createViewModel()
+            advanceUntilIdle()
+
+            viewModel.onEquipmentSelected(mancuerna.id)
+            advanceUntilIdle()
+
+            assertEquals("12.5", viewModel.uiState.value.weightInput)
+            coVerify(exactly = 0) {
+                getPrefilledLoadForEquipmentUseCase(any(), any())
+            }
+        }
+
+    @Test
+    fun `given the executant types a weight, when the prefill arrives, then it does not overwrite it`() =
+        runTest {
+            // Una sugerencia que llega tarde y pisa lo ya tecleado impone en vez de sugerir.
+            coEvery { getRegisterSetInfoUseCase(sessionExerciseId) } returns
+                info(lastWeightKg = 12.5, equipmentOptions = listOf(mancuerna, barra))
+            coEvery { getPrefilledLoadForEquipmentUseCase(sessionExerciseId, barra.id) } returns
+                PrefilledLoad(weightKg = 40.0, captureUnit = WeightUnit.KG)
+
+            val viewModel = createViewModel()
+            advanceUntilIdle()
+
+            viewModel.onEquipmentSelected(barra.id)
+            viewModel.onWeightChanged("35")
+            advanceUntilIdle()
+
+            assertEquals("35", viewModel.uiState.value.weightInput)
         }
 
     @Test

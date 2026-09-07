@@ -4,12 +4,26 @@ sealed interface AlertTriggerData {
 
     data class PlateauTrigger(
         val sessions: List<PlateauSession>,
+        /**
+         * Implements that have reached the exercise's effective threshold (CA-40.05).
+         *
+         * A plateau is only declared when all of them are stalled, so naming them is what
+         * makes the alert actionable: without the concrete pair, the recommendation has no
+         * subject. Derived from the pairs' current counters and never persisted — between
+         * raising the alert and reading it, what matters is today's state.
+         */
+        val stalledPairs: List<StalledPair> = emptyList(),
     ) : AlertTriggerData
 
     data class PlateauSession(
         val date: String,
         val weightKg: Double,
         val totalReps: Int,
+    )
+
+    data class StalledPair(
+        val equipmentTypeName: String,
+        val sessionsWithoutProgression: Int,
     )
 
     data class ProgressionRateTrigger(

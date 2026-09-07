@@ -178,10 +178,11 @@ private fun ExerciseHistoryContent(
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(modifier = modifier) {
-        // Progression status badge
+        // Estado del ciclo de vida **del implemento leído**: el estado es del par, no del
+        // ejercicio (CA-40.01), y el selector de abajo es el que decide cuál se muestra.
         item {
             ProgressionStatusBadge(
-                status = data.progressionStatus,
+                status = data.progressionStatusByEquipment[selectedEquipment] ?: "NO_HISTORY",
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             )
         }

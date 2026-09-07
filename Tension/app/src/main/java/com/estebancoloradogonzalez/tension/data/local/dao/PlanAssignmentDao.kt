@@ -99,14 +99,14 @@ interface PlanAssignmentDao {
             e.is_bodyweight AS isBodyweight,
             e.is_isometric AS isIsometric,
             e.is_to_technical_failure AS isToTechnicalFailure,
-            ep.prescribed_load_kg AS prescribedLoadKg,
+            (SELECT MAX(ep.prescribed_load_kg) FROM exercise_progression ep
+             WHERE ep.exercise_id = e.id) AS prescribedLoadKg,
             (SELECT mz2.muscle_group FROM exercise_muscle_zone emz2
              INNER JOIN muscle_zone mz2 ON emz2.muscle_zone_id = mz2.id
              WHERE emz2.exercise_id = e.id LIMIT 1) AS muscleGroup,
             pa.slot
         FROM plan_assignment pa
         INNER JOIN exercise e ON pa.exercise_id = e.id
-        LEFT JOIN exercise_progression ep ON e.id = ep.exercise_id
         WHERE pa.routine_version_id = :routineVersionId
         GROUP BY e.id
         ORDER BY pa.sort_order ASC
@@ -176,21 +176,43 @@ interface PlanAssignmentDao {
     suspend fun getExerciseIdsByRoutineVersionId(routineVersionId: Long): List<Long>
 
     /**
-     * Counts the number of distinct SLOTS that have at least one exercise either IN_PLATEAU
-     * or with a REGRESSION classification in this session. Uses slots as the unit so that
-     * the presence of alternatives does not dilute the affected ratio.
+     * Counts the number of distinct SLOTS that have at least one exercise either in a
+     * plateau or with a REGRESSION classification in this session. Uses slots as the unit
+     * so that the presence of alternatives does not dilute the affected ratio.
+     *
+     * Since HU-40 an exercise counts as stalled only when **every** one of its pairs is in
+     * a plateau — the conjunction of CA-40.05. Reading `ep.status = 'IN_PLATEAU'` through a
+     * join would mark the slot as soon as *any* implement stalled, which is the disjunction
+     * the criterion explicitly rules out for plateaus: one implement still progressing
+     * contradicts the plateau, and a deload must not be recommended on a contradiction.
+     *
+     * The `EXISTS` clause is not redundant with the `NOT EXISTS`: an exercise that has
+     * never been trained has no pairs at all, and an empty conjunction would otherwise
+     * declare it stalled.
      */
     @Query(
         """
         SELECT COUNT(DISTINCT pa.slot)
         FROM plan_assignment pa
-        LEFT JOIN exercise_progression ep ON pa.exercise_id = ep.exercise_id
         LEFT JOIN session_exercise se ON (
             se.session_id = :sessionId
             AND se.exercise_id = pa.exercise_id
         )
         WHERE pa.routine_version_id = :routineVersionId
-        AND (ep.status = 'IN_PLATEAU' OR se.progression_classification = 'REGRESSION')
+        AND (
+            (
+                EXISTS (
+                    SELECT 1 FROM exercise_progression ep
+                    WHERE ep.exercise_id = pa.exercise_id
+                )
+                AND NOT EXISTS (
+                    SELECT 1 FROM exercise_progression ep
+                    WHERE ep.exercise_id = pa.exercise_id
+                      AND ep.status <> 'IN_PLATEAU'
+                )
+            )
+            OR se.progression_classification = 'REGRESSION'
+        )
         """,
     )
     suspend fun countAffectedSlotsForDeload(routineVersionId: Long, sessionId: Long): Int

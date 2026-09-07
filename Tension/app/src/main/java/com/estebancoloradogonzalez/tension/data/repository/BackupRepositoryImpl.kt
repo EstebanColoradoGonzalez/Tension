@@ -27,7 +27,7 @@ class BackupRepositoryImpl @Inject constructor(
 ) : BackupRepository {
 
     companion object {
-        const val SCHEMA_VERSION = 13
+        const val SCHEMA_VERSION = 14
 
         const val APP_VERSION = "1.0"
 
@@ -42,6 +42,12 @@ class BackupRepositoryImpl @Inject constructor(
          * valor por serie, que es exactamente la importacion parcial que la historia
          * prohibe. Con ello se retiraron tambien los caminos de v8 y v11: codigo de
          * importacion inalcanzable es una promesa que la aplicacion ya no cumple.
+         *
+         * El formato 13 se rechaza por la misma razon (CA-40.09): su `exercise_progression`
+         * no lleva `equipment_type_id`, que ahora es `NOT NULL` y encabeza la clave
+         * primaria junto a `exercise_id`. Aceptarlo obligaria a inventar un implemento por
+         * fila, y la CA exige que la restauracion reproduzca el estado del motor par por
+         * par **sin recalcularlo**.
          */
         private val ACCEPTED_SCHEMA_VERSIONS = setOf(SCHEMA_VERSION)
 
@@ -76,6 +82,9 @@ class BackupRepositoryImpl @Inject constructor(
             "session",
             "session_exercise",
             "exercise_set",
+            // La clasificacion por implemento de cada sesion. Lleva FK a session_exercise y
+            // a equipment_type, asi que va detras de las dos.
+            "session_exercise_progression",
             "exercise_progression",
             "alert",
         )

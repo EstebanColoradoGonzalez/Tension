@@ -70,12 +70,12 @@
 | **[HU-37](./HU-37-arbol-progreso-entrenamiento/historia.md)** | El árbol de mi entrenamiento | — | EPIC-09 | `Lista para Revisión` | Media |
 | **[HU-38](./HU-38-arbol-3d-interactivo/historia.md)** | El árbol en 3D | — | EPIC-09 | `Lista para Revisión` | Baja |
 | **[HU-39](./HU-39-equipamiento-multiple-por-ejercicio/historia.md)** | Un solo ejercicio, varios implementos | — | EPIC-10 | `Lista para Revisión` | Alta |
-| **[HU-40](./HU-40-progresion-por-equipamiento/historia.md)** | Cambiar de implemento no es retroceder | — | EPIC-10 | `Borrador (PO)` | Alta |
+| **[HU-40](./HU-40-progresion-por-equipamiento/historia.md)** | Cambiar de implemento no es retroceder | — | EPIC-10 | `Lista para Revisión` | Alta |
 | **[HU-41](./HU-41-catalogo-anatomico-plan-alineado/historia.md)** | Catálogo anatómico y plan por defecto alineado | — | EPIC-10 | `Borrador (PO)` | Alta |
 | **[HU-42](./HU-42-1rm-estimado/historia.md)** | Mi 1RM estimado | — | EPIC-10 | `Borrador (PO)` | Media |
 | **[HU-43](./HU-43-ajustar-sesion-del-dia/historia.md)** | Ajustar la sesión del día | — | EPIC-10 | `Borrador (PO)` | Media |
 
-**Dependencias entre historias:** `HU-31` depende de `HU-30` (la coherencia entre el valor precargado y la unidad activa del ejercicio) y `HU-33` depende de `HU-32` (la ponderación de la tasa de progresión consume el atributo de dificultad). `HU-38` depende de `HU-37`, de la que hereda la entidad de persistencia, el cálculo, la ruta, la pantalla dedicada y la representación nativa que allí pasa a fallback. Las cinco historias de **EPIC-10** dependen todas de `HU-39`, que aporta el equipamiento persistido en la serie: `HU-40` y `HU-42` solo de ella —`HU-42` es paralelizable—, `HU-41` de ella más los ocho renombrados que declara, y `HU-43` de `HU-39` y de `HU-41`, porque reutiliza el formulario de creación de ejercicio ya con equipamiento múltiple y jerarquía de zonas. El orden `HU-39` → `HU-40` es **crítico**: hasta que exista `HU-40`, el falso `REGRESSION` por cambio de implemento sigue ocurriendo. El resto son independientes entre sí.
+**Dependencias entre historias:** `HU-31` depende de `HU-30` (la coherencia entre el valor precargado y la unidad activa del ejercicio) y `HU-33` depende de `HU-32` (la ponderación de la tasa de progresión consume el atributo de dificultad). `HU-38` depende de `HU-37`, de la que hereda la entidad de persistencia, el cálculo, la ruta, la pantalla dedicada y la representación nativa que allí pasa a fallback. Las cinco historias de **EPIC-10** dependen todas de `HU-39`, que aporta el equipamiento persistido en la serie: `HU-40` y `HU-42` solo de ella —`HU-42` es paralelizable—, `HU-41` de ella más los ocho renombrados que declara, y `HU-43` de `HU-39` y de `HU-41`, porque reutiliza el formulario de creación de ejercicio ya con equipamiento múltiple y jerarquía de zonas. El orden `HU-39` → `HU-40` era **crítico** y se respetó: ambas están implementadas, y con `HU-40` el falso `REGRESSION` por cambio de implemento deja de ocurrir. El resto son independientes entre sí.
 
 **Nota de partición — HU-37 y HU-38:** ambas provienen de una **misma historia original** (*Árbol de progreso del entrenamiento*, 16 CAs), dividida por análisis INVEST (score 4/6, falla `Small`). Se usó **numeración plana** en lugar de IDs decimales, respetando la convención declarada en el encabezado de este documento. `HU-37` entrega el árbol completo con representación nativa y toda la infraestructura; `HU-38` aísla el riesgo del primer WebView del proyecto y de Three.js.
 
@@ -165,11 +165,11 @@
 
 - **Objetivo:** Corregir el defecto por el que cambiar de implemento se leía como retroceso. El equipamiento pasa de atributo fijo del ejercicio a dato de la serie, y la progresión se resuelve por par (ejercicio, equipamiento) con consolidación booleana por ejercicio. Alrededor de ese cambio: catálogo recatalogado con criterio anatómico, plan por defecto alineado con su implemento sugerido, 1RM estimado y sesión editable.
 - **Historias incluidas:** `HU-39`, `HU-40`, `HU-41`, `HU-42`, `HU-43`.
-- **Orden:** `HU-39` primero y `HU-40` inmediatamente después —orden crítico—; `HU-41` tercera; `HU-42` paralelizable tras `HU-39`; `HU-43` última, tras `HU-39` y `HU-41`. **`HU-39` está implementada** (2026-09-07): el esquema es la versión 20, el respaldo la 13, y las cuatro hermanas construyen sobre la infraestructura que dejó.
+- **Orden:** `HU-39` primero y `HU-40` inmediatamente después —orden crítico—; `HU-41` tercera; `HU-42` paralelizable tras `HU-39`; `HU-43` última, tras `HU-39` y `HU-41`. **`HU-39` y `HU-40` están implementadas** (2026-09-07): el esquema es la versión 21, el respaldo la 14, la unidad de comparación del motor es el par (ejercicio, equipamiento) y las tres hermanas restantes construyen sobre esa base.
 - **Estado:** `Borrador (PO)` — 5 historias creadas, pendientes de análisis arquitectónico.
 - **Alcance de datos:** las cinco extienden el esquema. Se validan sobre **instalación fresca**, heredando la excepción documentada a RNF19 (**ADR-019**) que `HU-39` declara y las cuatro hermanas heredan. La frontera está declarada en el código como `Migrations.LAST_MIGRATED_VERSION`: cada hermana que suba el esquema sin migración tiene que moverla a mano, de modo que el hueco nunca sea un olvido. El historial de sesiones anterior **se pierde**, y los respaldos del formato previo quedan **incompatibles**: la restauración los rechaza con mensaje explícito en lugar de importarlos parcialmente.
 - **Decisión de diseño declarada:** **no se introduce ningún factor de equivalencia de carga entre implementos.** Los pares se comparan consigo mismos y se relacionan por regla booleana —disyunción para progresión, conjunción para meseta—, no por conversión de carga, que exigiría una calibración manual por ejercicio insostenible.
-- **Riesgo:** concentrado en `HU-40`, que reescribe la unidad de comparación de reglas de decisión ya implementadas y probadas —clasificación, Doble Umbral, meseta, descarga, memoria del último peso y KPIs comparativos—. `HU-39` solo añade una dimensión al registro, y `HU-42` es la de menor riesgo: pantalla nueva, entidad propia y dependencia unidireccional hacia el historial.
+- **Riesgo:** estuvo concentrado en `HU-40`, que reescribió la unidad de comparación de reglas de decisión ya implementadas y probadas —clasificación, Doble Umbral, meseta, descarga, memoria del último peso y KPIs comparativos—. `HU-39` solo añade una dimensión al registro, y `HU-42` es la de menor riesgo: pantalla nueva, entidad propia y dependencia unidireccional hacia el historial.
 - **Recorte posible:** si hubiera presión de tiempo, `HU-43` es la única prescindible sin dejar el sistema en un estado inconsistente.
 
 ---
@@ -302,10 +302,10 @@ Los 23 RNFs listados en §3 son restricciones de calidad del sistema completo. S
 |---------|-------|
 | Historias de Usuario | 43 (HU-01 a HU-43, numeración plana) |
 | Historias Done | 34 (todas salvo HU-07, HU-20, HU-37, HU-38 y HU-39 a HU-43) |
-| Historias en Lista para Revisión | 3 (HU-37 y HU-38 — EPIC-09; HU-39 — EPIC-10; implementadas y pendientes de revisión) |
-| Historias en Borrador (PO) | 4 (HU-40 a HU-43 — EPIC-10, pendientes de análisis arquitectónico) |
+| Historias en Lista para Revisión | 4 (HU-37 y HU-38 — EPIC-09; HU-39 y HU-40 — EPIC-10; implementadas y pendientes de revisión) |
+| Historias en Borrador (PO) | 3 (HU-41 a HU-43 — EPIC-10, pendientes de análisis arquitectónico) |
 | Historias descartadas | 2 (HU-07 y HU-20 — HU-34 eliminó la sustitución por grupo muscular que ambas sostenían) |
-| **Suma de control** | **34 + 3 + 4 + 2 = 43** ✅ |
+| **Suma de control** | **34 + 4 + 3 + 2 = 43** ✅ |
 | RFs por historia (promedio) | 2.4 |
 | RFs por historia (máximo) | 8 (HU-15 — Analítica y KPIs) |
 | Historias sin RF propio (correcciones, retiros o solo RNFs) | 16 (HU-07, HU-08, HU-19, HU-20, HU-28 a HU-38 y HU-42) |

@@ -34,14 +34,25 @@ object ProgressionClassificationRule {
     /**
      * Resolves the new progression status and counter after a session is closed.
      *
-     * [plateauThreshold] is the effective threshold of the exercise, resolved by the
-     * caller through `PlateauThresholdRule` from the executant's base threshold and the
-     * exercise's progression difficulty. It is intentionally required: a default would
-     * let a new caller silently inherit an implicit threshold.
+     * Since HU-40 the caller passes the status and the counter of one **(exercise,
+     * equipment) pair**: they are attributes of the pair, because the weight handled with
+     * one implement is not comparable to the weight handled with another.
+     *
+     * [plateauThreshold] is still the effective threshold of the **exercise**, resolved by
+     * the caller through `PlateauThresholdRule` from the executant's base threshold and the
+     * exercise's progression difficulty — the capacity to progress belongs to the movement,
+     * not to the implement. It is only *compared against* each pair's counter. The
+     * parameter is intentionally required: a default would let a new caller silently
+     * inherit an implicit threshold.
      *
      * The counter itself is threshold-agnostic — it always accumulates and only resets
      * on positive progression — so changing an exercise's difficulty re-evaluates the
-     * condition without discarding what was already accumulated.
+     * condition without discarding what was already accumulated. Splitting the counter per
+     * pair preserves that property: each pair keeps accumulating over its own history.
+     *
+     * The status returned here is the status of the pair. The reading of the exercise —
+     * whether it progresses, whether it plateaus — is derived from all its pairs by
+     * [ProgressionConsolidationRule] and is never stored.
      */
     fun resolveNewProgressionState(
         currentStatus: String,

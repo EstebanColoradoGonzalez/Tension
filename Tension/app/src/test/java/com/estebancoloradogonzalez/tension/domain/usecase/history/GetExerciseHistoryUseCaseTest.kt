@@ -20,7 +20,7 @@ class GetExerciseHistoryUseCaseTest {
     fun `invoke returns exercise history with entries`() = runTest {
         val historyData = ExerciseHistoryData(
             exerciseName = "Press Banca",
-            progressionStatus = "IN_PROGRESSION",
+            progressionStatusByEquipment = mapOf("Barra" to "IN_PROGRESSION"),
             isBodyweight = false,
             isIsometric = false,
             equipmentOptions = listOf("Barra"),
@@ -63,14 +63,14 @@ class GetExerciseHistoryUseCaseTest {
 
         assertEquals(3, result.entries.size)
         assertEquals("Press Banca", result.exerciseName)
-        assertEquals("IN_PROGRESSION", result.progressionStatus)
+        assertEquals("IN_PROGRESSION", result.progressionStatusByEquipment["Barra"])
     }
 
     @Test
     fun `invoke returns exercise history with empty entries`() = runTest {
         val historyData = ExerciseHistoryData(
             exerciseName = "Nuevo Ejercicio",
-            progressionStatus = "NO_HISTORY",
+            progressionStatusByEquipment = emptyMap(),
             isBodyweight = false,
             isIsometric = false,
             equipmentOptions = emptyList(),
@@ -81,6 +81,6 @@ class GetExerciseHistoryUseCaseTest {
         val result = useCase(99L)
 
         assertTrue(result.entries.isEmpty())
-        assertEquals("NO_HISTORY", result.progressionStatus)
+        assertTrue(result.progressionStatusByEquipment.isEmpty())
     }
 }

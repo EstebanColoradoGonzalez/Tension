@@ -2,7 +2,7 @@ package com.estebancoloradogonzalez.tension.domain.repository
 
 import com.estebancoloradogonzalez.tension.domain.model.ClassificationCount
 import com.estebancoloradogonzalez.tension.domain.model.ClassificationCountByGroup
-import com.estebancoloradogonzalez.tension.domain.model.ExerciseSessionRange
+import com.estebancoloradogonzalez.tension.domain.model.ExercisePairSessionRange
 import com.estebancoloradogonzalez.tension.domain.model.SetDistributionData
 import com.estebancoloradogonzalez.tension.domain.model.SetTonnageData
 
@@ -20,9 +20,15 @@ interface MetricsRepository {
         sessionIds: List<Long>,
     ): List<ClassificationCountByGroup>
 
-    suspend fun getExerciseSessionRanges(startDate: String): List<ExerciseSessionRange>
 
-    suspend fun getAvgWeightForExerciseInSession(exerciseId: Long, sessionId: Long): Double?
+    /** Rango de sesiones de cada par (ejercicio, equipamiento) en la ventana (CA-40.07). */
+    suspend fun getPairSessionRanges(startDate: String): List<ExercisePairSessionRange>
+
+    suspend fun getAvgWeightForPairInSession(
+        exerciseId: Long,
+        equipmentTypeId: Long,
+        sessionId: Long,
+    ): Double?
 
     suspend fun getSessionIdsGroupedByMicrocycle(): Map<Int, List<Long>>
 

@@ -228,6 +228,7 @@ class CatalogoSembradoTest {
             "daily_routine_override",
             "tree_state",
             "exercise_equipment",
+            "session_exercise_progression",
         ).forEach { tabla ->
             db.openHelper.readableDatabase.query("SELECT COUNT(*) FROM $tabla").use { cursor ->
                 assertTrue("La tabla $tabla no es consultable", cursor.moveToNext())

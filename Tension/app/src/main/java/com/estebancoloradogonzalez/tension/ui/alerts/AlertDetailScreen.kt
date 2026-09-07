@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -215,6 +217,28 @@ private fun TriggerDataContent(triggerData: AlertTriggerData) {
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+            }
+            // Con un solo implemento el bloque sobra: el titular ya lo dice todo y la
+            // pantalla es la de siempre (CA-40.08). Con varios hay que nombrarlos, porque
+            // una meseta sin el implemento concreto no da nada que cambiar (CA-40.05).
+            if (triggerData.stalledPairs.size > 1) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.alert_detail_stalled_equipment_title),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                triggerData.stalledPairs.forEach { pair ->
+                    Text(
+                        text = stringResource(
+                            R.string.alert_detail_stalled_equipment_format,
+                            pair.equipmentTypeName,
+                            pair.sessionsWithoutProgression,
+                        ),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
             }
         }
         is AlertTriggerData.ProgressionRateTrigger -> {

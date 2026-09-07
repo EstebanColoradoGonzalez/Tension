@@ -53,7 +53,7 @@ class ExerciseHistoryViewModelTest {
     fun `state is Loaded with standard exercise trend points in Kg`() = runTest {
         val data = ExerciseHistoryData(
             exerciseName = "Press Banca",
-            progressionStatus = "IN_PROGRESSION",
+            progressionStatusByEquipment = mapOf("Barra" to "IN_PROGRESSION"),
             isBodyweight = false,
             isIsometric = false,
             equipmentOptions = listOf("Barra"),
@@ -76,7 +76,7 @@ class ExerciseHistoryViewModelTest {
     fun `state is Loaded with bodyweight exercise trend points in reps`() = runTest {
         val data = ExerciseHistoryData(
             exerciseName = "Flexiones",
-            progressionStatus = "IN_PROGRESSION",
+            progressionStatusByEquipment = mapOf("Barra" to "IN_PROGRESSION"),
             isBodyweight = true,
             isIsometric = false,
             equipmentOptions = listOf("Barra"),
@@ -97,7 +97,7 @@ class ExerciseHistoryViewModelTest {
     fun `state is Loaded with isometric exercise trend points in seconds`() = runTest {
         val data = ExerciseHistoryData(
             exerciseName = "Plancha",
-            progressionStatus = "IN_PROGRESSION",
+            progressionStatusByEquipment = mapOf("Barra" to "IN_PROGRESSION"),
             isBodyweight = true,
             isIsometric = true,
             equipmentOptions = listOf("Peso Corporal"),
@@ -118,7 +118,7 @@ class ExerciseHistoryViewModelTest {
     fun `state is Empty when no entries`() = runTest {
         val data = ExerciseHistoryData(
             exerciseName = "Nuevo Ejercicio",
-            progressionStatus = "NO_HISTORY",
+            progressionStatusByEquipment = emptyMap(),
             isBodyweight = false,
             isIsometric = false,
             equipmentOptions = emptyList(),
@@ -158,7 +158,7 @@ class ExerciseHistoryViewModelTest {
         )
         val data = ExerciseHistoryData(
             exerciseName = "Press Banca",
-            progressionStatus = "IN_PROGRESSION",
+            progressionStatusByEquipment = mapOf("Barra" to "IN_PROGRESSION"),
             isBodyweight = false,
             isIsometric = false,
             equipmentOptions = listOf("Barra"),
@@ -224,7 +224,7 @@ class ExerciseHistoryViewModelTest {
     fun `given a single implement, when loaded, then it is the only option offered`() = runTest {
         val data = ExerciseHistoryData(
             exerciseName = "Curl de Isquiotibiales Sentado",
-            progressionStatus = "IN_PROGRESSION",
+            progressionStatusByEquipment = mapOf("Barra" to "IN_PROGRESSION"),
             isBodyweight = false,
             isIsometric = false,
             equipmentOptions = listOf("Máquina"),
@@ -246,7 +246,7 @@ class ExerciseHistoryViewModelTest {
     /** Elevación Lateral: dos sesiones con mancuerna y una con polea. */
     private fun twoImplementHistory() = ExerciseHistoryData(
         exerciseName = "Elevación Lateral",
-        progressionStatus = "IN_PROGRESSION",
+        progressionStatusByEquipment = mapOf("Barra" to "IN_PROGRESSION"),
         isBodyweight = false,
         isIsometric = false,
         equipmentOptions = listOf("Mancuerna", "Polea"),

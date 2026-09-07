@@ -2,7 +2,14 @@ package com.estebancoloradogonzalez.tension.domain.model
 
 data class ExerciseHistoryData(
     val exerciseName: String,
-    val progressionStatus: String,
+    /**
+     * Lifecycle status of each implement, keyed by its name (HU-40).
+     *
+     * There is no status of the exercise to show here: the state belongs to the pair, and
+     * the screen already has an implement selector that governs which one is displayed.
+     * An implement with no history is absent from the map, not present with `NO_HISTORY`.
+     */
+    val progressionStatusByEquipment: Map<String, String>,
     val isBodyweight: Boolean,
     val isIsometric: Boolean,
     /**

@@ -136,7 +136,28 @@ class AlertRepositoryImpl @Inject constructor(
                 totalReps = entry.totalReps,
             )
         }
-        return AlertTriggerData.PlateauTrigger(sessions)
+        return AlertTriggerData.PlateauTrigger(sessions, resolveStalledPairs(exerciseId))
+    }
+
+    /**
+     * Implementos del ejercicio que han alcanzado su umbral efectivo (CA-40.05).
+     *
+     * Se derivan del estado vigente de los pares en vez de persistirse con la alerta: entre
+     * que la alerta se emite y se lee, los contadores pueden haberse movido, y lo que hay
+     * que enseñar es el estado de hoy.
+     */
+    private suspend fun resolveStalledPairs(
+        exerciseId: Long,
+    ): List<AlertTriggerData.StalledPair> {
+        val threshold = resolvePlateauThreshold(exerciseId)
+        return exerciseProgressionDao.getPairStatesByExercise(exerciseId)
+            .filter { it.sessionsWithoutProgression >= threshold }
+            .map {
+                AlertTriggerData.StalledPair(
+                    equipmentTypeName = it.equipmentTypeName,
+                    sessionsWithoutProgression = it.sessionsWithoutProgression,
+                )
+            }
     }
 
     private suspend fun buildDeloadTrigger(alert: AlertEntity): AlertTriggerData.DeloadTrigger {
@@ -376,6 +397,8 @@ class AlertRepositoryImpl @Inject constructor(
             sessions = resolvePlateauThreshold(exerciseId),
             difficulty = difficulty,
             cause = PlateauCausalAnalysisRule.analyze(lastRirs, isGroupStagnant),
+            stalledPairs = resolveStalledPairs(exerciseId)
+                .map { it.equipmentTypeName to it.sessionsWithoutProgression },
         )
     }
 
@@ -402,8 +425,12 @@ class AlertRepositoryImpl @Inject constructor(
     private suspend fun buildSuggestedAction(alert: AlertEntity): SuggestedAction {
         val exercise = alert.exerciseId?.let { exerciseDao.getByIdOnce(it) }
         val routineName = alert.routineId?.let { routineDao.getById(it)?.name } ?: ""
+        // El contador que sostiene la meseta declarada es el **mayor** entre los pares: la
+        // meseta del ejercicio es una conjunción, así que se alcanza cuando el último par
+        // cruza el umbral, y ese es el que explica cuánto lleva parado (CA-40.05).
         val sessionsWithoutProgression = alert.exerciseId?.let {
-            exerciseProgressionDao.getByExerciseId(it).first()?.sessionsWithoutProgression
+            exerciseProgressionDao.getAllByExercise(it)
+                .maxOfOrNull { pair -> pair.sessionsWithoutProgression }
         } ?: 0
 
         val context = SuggestedActionContext(

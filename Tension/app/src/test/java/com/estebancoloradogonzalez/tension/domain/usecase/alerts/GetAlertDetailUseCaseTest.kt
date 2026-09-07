@@ -43,4 +43,58 @@ class GetAlertDetailUseCaseTest {
         assertEquals("PLATEAU", result.type)
         assertEquals(SuggestedActionTarget.ExerciseHistory(5L), result.suggestedAction.target)
     }
+
+    // ----- CA-40.05: la alerta identifica qué pares están estancados -----
+
+    @Test
+    fun `invoke carries the stalled implements to the detail`() = runTest {
+        val detail = plateauDetail(
+            stalledPairs = listOf(
+                AlertTriggerData.StalledPair("Mancuerna", 11),
+                AlertTriggerData.StalledPair("Polea", 12),
+            ),
+        )
+        coEvery { repository.getAlertDetail(1L) } returns detail
+
+        val trigger = useCase(1L).triggerData as AlertTriggerData.PlateauTrigger
+
+        assertEquals(2, trigger.stalledPairs.size)
+        assertEquals("Mancuerna", trigger.stalledPairs[0].equipmentTypeName)
+        assertEquals(11, trigger.stalledPairs[0].sessionsWithoutProgression)
+        assertEquals("Polea", trigger.stalledPairs[1].equipmentTypeName)
+        assertEquals(12, trigger.stalledPairs[1].sessionsWithoutProgression)
+    }
+
+    // ----- CA-40.08: con un solo implemento no hay lista que enseñar -----
+
+    @Test
+    fun `invoke carries a single stalled implement without turning it into a list`() = runTest {
+        val detail = plateauDetail(
+            stalledPairs = listOf(AlertTriggerData.StalledPair("Barra", 10)),
+        )
+        coEvery { repository.getAlertDetail(1L) } returns detail
+
+        val trigger = useCase(1L).triggerData as AlertTriggerData.PlateauTrigger
+
+        assertEquals(1, trigger.stalledPairs.size)
+    }
+
+    private fun plateauDetail(
+        stalledPairs: List<AlertTriggerData.StalledPair>,
+    ) = AlertDetail(
+        alertId = 1L,
+        type = "PLATEAU",
+        level = "HIGH_ALERT",
+        entityName = "Elevación Lateral",
+        message = "Meseta",
+        createdAt = "2026-09-07",
+        triggerData = AlertTriggerData.PlateauTrigger(emptyList(), stalledPairs),
+        causalAnalysis = "Análisis causal",
+        suggestedAction = SuggestedAction(
+            kind = SuggestedActionKind.EXTEND_REPS_BEFORE_LOAD,
+            text = "Añade una repetición por serie antes de subir peso",
+            target = SuggestedActionTarget.ExerciseHistory(10L),
+        ),
+        exerciseId = 10L,
+    )
 }

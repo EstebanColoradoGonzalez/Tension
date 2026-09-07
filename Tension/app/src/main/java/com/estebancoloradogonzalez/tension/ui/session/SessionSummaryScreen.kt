@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -32,6 +33,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -41,12 +43,14 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.estebancoloradogonzalez.tension.R
 import com.estebancoloradogonzalez.tension.domain.model.ActionSignal
+import com.estebancoloradogonzalez.tension.domain.model.ExercisePairSummary
 import com.estebancoloradogonzalez.tension.domain.model.ExerciseSummaryItem
 import com.estebancoloradogonzalez.tension.domain.model.ProgressionClassification
 import com.estebancoloradogonzalez.tension.domain.model.SessionSummary
 import com.estebancoloradogonzalez.tension.ui.components.EntityNameText
 import com.estebancoloradogonzalez.tension.ui.components.ProgressionIndicator
 import com.estebancoloradogonzalez.tension.ui.theme.LocalTensionSemanticColors
+import com.estebancoloradogonzalez.tension.ui.theme.TensionSemanticColors
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -235,9 +239,11 @@ private fun ExerciseSummaryRow(
 ) {
     val semanticColors = LocalTensionSemanticColors.current
 
+    // Alto mínimo y no fijo: un ejercicio entrenado con dos implementos gana un renglón por
+    // cada uno (CA-40.02). Con uno solo la fila mide lo mismo que siempre (CA-40.08).
     ListItem(
         modifier = Modifier
-            .height(80.dp)
+            .heightIn(min = 80.dp)
             .clickable(onClick = onClick),
         leadingContent = {
             if (item.isDeload) {
@@ -288,21 +294,33 @@ private fun ExerciseSummaryRow(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
+                } else if (item.pairs.size > 1) {
+                    // Un renglón por implemento: la clasificación se resolvió por par y
+                    // mostrarla agregada escondería justo lo que la historia hace visible
+                    // — que estrenar una polea no es un bache de la mancuerna.
+                    item.pairs.forEach { pair ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            ProgressionIndicator(classification = pair.classification)
+                            Text(
+                                text = "${pair.equipmentTypeName} · " +
+                                    formatPairClassification(pair, item),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = classificationColor(pair.classification, semanticColors),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                    }
                 } else {
                     val classificationText = formatClassificationLine(item)
                     if (classificationText != null) {
                         Text(
                             text = classificationText,
                             style = MaterialTheme.typography.bodyMedium,
-                            color = when (item.classification) {
-                                ProgressionClassification.POSITIVE_PROGRESSION ->
-                                    semanticColors.progressionPositive
-                                ProgressionClassification.MAINTENANCE ->
-                                    semanticColors.maintenance
-                                ProgressionClassification.REGRESSION ->
-                                    semanticColors.regression
-                                null -> MaterialTheme.colorScheme.onSurfaceVariant
-                            },
+                            color = classificationColor(item.classification, semanticColors),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
@@ -331,17 +349,47 @@ private fun ExerciseSummaryRow(
 
 private fun formatClassificationLine(item: ExerciseSummaryItem): String? {
     val classification = item.classification ?: return null
-    val classText = when (classification) {
-        ProgressionClassification.POSITIVE_PROGRESSION -> "Progresión positiva"
-        ProgressionClassification.MAINTENANCE -> "Mantenimiento"
-        ProgressionClassification.REGRESSION -> "Regresión"
-    }
     val context = when {
         item.isBodyweight -> "Peso corporal"
         item.isIsometric -> "Isométrico"
         else -> "%.1f Kg".format(item.weightKg)
     }
+    return "${classificationText(classification)} · $context"
+}
+
+/**
+ * Renglón de un implemento. Un par sin historial se anuncia como tal — «Sin historial» — y
+ * nunca como una regresión: es el estreno de un implemento, no un retroceso (CA-40.02).
+ */
+private fun formatPairClassification(
+    pair: ExercisePairSummary,
+    item: ExerciseSummaryItem,
+): String {
+    val classText = pair.classification?.let { classificationText(it) } ?: "Sin historial"
+    val context = when {
+        item.isBodyweight -> "Peso corporal"
+        item.isIsometric -> "Isométrico"
+        else -> "%.1f Kg".format(pair.weightKg)
+    }
     return "$classText · $context"
+}
+
+private fun classificationText(classification: ProgressionClassification): String =
+    when (classification) {
+        ProgressionClassification.POSITIVE_PROGRESSION -> "Progresión positiva"
+        ProgressionClassification.MAINTENANCE -> "Mantenimiento"
+        ProgressionClassification.REGRESSION -> "Regresión"
+    }
+
+@Composable
+private fun classificationColor(
+    classification: ProgressionClassification?,
+    semanticColors: TensionSemanticColors,
+): Color = when (classification) {
+    ProgressionClassification.POSITIVE_PROGRESSION -> semanticColors.progressionPositive
+    ProgressionClassification.MAINTENANCE -> semanticColors.maintenance
+    ProgressionClassification.REGRESSION -> semanticColors.regression
+    null -> MaterialTheme.colorScheme.onSurfaceVariant
 }
 
 private fun formatActionSignal(

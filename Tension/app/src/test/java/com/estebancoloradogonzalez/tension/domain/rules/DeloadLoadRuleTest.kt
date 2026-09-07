@@ -100,4 +100,31 @@ class DeloadLoadRuleTest {
         // 2.5 × 0.90 = 2.25 → floor(2.25/2.5)×2.5 = 0.0 → clamped to 2.5
         assertEquals(2.5, DeloadLoadRule.calculateResetLoad(2.5, 2.5), 0.001)
     }
+
+    // ----- CA-40.06: la reducción y el reinicio se calculan sobre la carga de cada par -----
+
+    @Test
+    fun `given two implements of one exercise, when deloading, then each reduces over its own load`() {
+        // Given — el mismo ejercicio va por 12.5 Kg con mancuerna y 8.0 con polea
+        val dumbbell = DeloadLoadRule.calculateDeloadLoad(12.5, 2.5)
+        val cable = DeloadLoadRule.calculateDeloadLoad(8.0, 2.5)
+
+        // Then — 12.5 × 0.60 = 7.5; 8.0 × 0.60 = 4.8 → floor a múltiplo de 2.5 = 2.5
+        assertEquals(7.5, dumbbell, 0.001)
+        assertEquals(2.5, cable, 0.001)
+    }
+
+    @Test
+    fun `given two implements of one exercise, when the deload closes, then each restarts over its own load`() {
+        // 12.5 × 0.90 = 11.25 → 10.0; 8.0 × 0.90 = 7.2 → 5.0. Cada par sobre su carga.
+        assertEquals(10.0, DeloadLoadRule.calculateResetLoad(12.5, 2.5), 0.001)
+        assertEquals(5.0, DeloadLoadRule.calculateResetLoad(8.0, 2.5), 0.001)
+    }
+
+    @Test
+    fun `given a pair with no previous load, when deloading, then it receives none`() {
+        // Un par sin historial no recibe carga de descarga: no hay nada que reducir.
+        assertEquals(0.0, DeloadLoadRule.calculateDeloadLoad(0.0, 2.5), 0.001)
+        assertEquals(0.0, DeloadLoadRule.calculateResetLoad(0.0, 2.5), 0.001)
+    }
 }

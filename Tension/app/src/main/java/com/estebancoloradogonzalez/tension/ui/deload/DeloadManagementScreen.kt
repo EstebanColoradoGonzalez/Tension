@@ -385,12 +385,15 @@ private fun DeloadCompletedContent(deloadState: DeloadState.DeloadCompleted) {
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            for (exercise in deloadState.resetLoads) {
+            // Un renglón por par: cada implemento reinicia sobre su propia carga previa
+            // (CA-40.06). Un ejercicio hecho con dos aparece dos veces, nombrando cuál.
+            for (pair in deloadState.resetLoads) {
                 Text(
                     text = stringResource(
-                        R.string.deload_reset_exercise_format,
-                        exercise.exerciseName,
-                        exercise.resetLoadKg,
+                        R.string.deload_reset_pair_format,
+                        pair.exerciseName,
+                        pair.equipmentTypeName,
+                        pair.resetLoadKg,
                     ),
                     style = MaterialTheme.typography.bodyMedium,
                     color = contentColor,

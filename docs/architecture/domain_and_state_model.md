@@ -2,7 +2,7 @@
 
 > Este documento define la arquitectura estructural de la memoria del sistema y el ciclo de vida de sus entidades. Actúa simultáneamente como Modelo Entidad-Relación, Diccionario de Datos y Máquina de Estados. Se utiliza una sintaxis declarativa (pseudo-código estilo Prisma/TypeScript) para definir las estructuras, utilizando los comentarios inline como el diccionario de datos.
 >
-> **Versión de esquema:** 20 (migraciones registradas: v1 → v2 → … → v18 → v19). **v20 no tiene migración**: HU-39 retira `exercise.equipment_type_id`, introduce `exercise_equipment` y añade `exercise_set.equipment_type_id`, y la excepción documentada a RNF19 (ADR-019) resuelve el cambio de esquema sobre instalación fresca. Una base anterior no puede abrir el build vigente — el reinicio lo realiza el ejecutante desinstalando y reinstalando, no la aplicación, y el historial anterior se pierde como consecuencia aceptada.
+> **Versión de esquema:** 21 (migraciones registradas: v1 → v2 → … → v18 → v19). **Ni v20 ni v21 tienen migración**: v20 (HU-39) retira `exercise.equipment_type_id`, introduce `exercise_equipment` y añade `exercise_set.equipment_type_id`; v21 (HU-40) reclave `exercise_progression` por el par `(exercise_id, equipment_type_id)` e introduce `session_exercise_progression`. La excepción documentada a RNF19 (ADR-019) resuelve ambos cambios sobre instalación fresca. Una base anterior no puede abrir el build vigente — el reinicio lo realiza el ejecutante desinstalando y reinstalando, no la aplicación, y el historial anterior se pierde como consecuencia aceptada.
 >
 > El código declara la frontera en `Migrations.LAST_MIGRATED_VERSION` (**19**): por debajo de ella la cadena de migraciones es continua y sin huecos, y el salto de ahí a la versión del esquema es la excepción de ADR-019, que sube historia por historia de forma deliberada. Las migraciones `16→17`, `17→18` y `18→19`, ausentes durante tres versiones, se repusieron después de dejar la aplicación incapaz de abrir cualquier base existente.
 
@@ -254,17 +254,46 @@ model exercise_set {
 // ==========================================
 // ENTIDAD: exercise_progression
 // PROPÓSITO: Estado persistente de progresión y carga
-// prescrita de cada ejercicio. Se crea al registrar la
-// primera serie del ejercicio. Se actualiza automáticamente
-// al cierre de cada sesión por el motor de reglas.
+// prescrita de cada PAR (ejercicio, equipamiento). Se crea
+// al registrar la primera serie del par. Se actualiza
+// automáticamente al cierre de cada sesión por el motor de
+// reglas.
+// La unidad de comparación es el par y no el ejercicio
+// porque el peso no es comparable entre implementos: la
+// tensión de una polea, la estabilización de una mancuerna
+// y la trayectoria guiada de una máquina dan cargas
+// efectivas distintas para el mismo esfuerzo, y compararlas
+// entre sí lee un cambio de implemento como una regresión.
 // Ciclo de vida: NO_HISTORY → IN_PROGRESSION ⇄ IN_PLATEAU
 // → IN_DELOAD → IN_PROGRESSION (o MASTERED para isométricos).
 // ==========================================
 model exercise_progression {
-  exercise_id                  INTEGER  @id @fk(exercise.id)                          // PK y FK → exercise. Relación 1:1. ON DELETE RESTRICT.
-  status                       TEXT     @notNull @default("NO_HISTORY")               // Estado actual del ciclo de vida. Ver Enum ExerciseProgressionStatus.
-  prescribed_load_kg           REAL     @optional @check(">= 0")                      // Carga objetivo para la próxima sesión en Kg. Calculada por el motor de Doble Umbral. NULL para ejercicios de peso corporal e isométricos. Post-descarga: 90% de la carga pre-descarga.
-  sessions_without_progression INTEGER  @notNull @default(0) @check(">= 0")           // Contador de sesiones consecutivas sin progresión. Se incrementa con MAINTENANCE o REGRESSION; se resetea a 0 con POSITIVE_PROGRESSION. Umbral de meseta: umbral efectivo = techo(profile.plateau_base_threshold × multiplicador de exercise.progression_difficulty). Con la base por defecto (5): 5 sesiones para dificultad LOW, 8 para MEDIUM y 10 para HIGH. El contador es agnóstico del umbral — acumula siempre y solo se compara al cierre — de modo que cambiar la dificultad reevalúa la condición sin descartar lo acumulado. Umbrales de acción escalonada: 4 y 6.
+  exercise_id                  INTEGER  @fk(exercise.id)                              // PK compuesta y FK → exercise. ON DELETE RESTRICT.
+  equipment_type_id            INTEGER  @fk(equipment_type.id)                        // PK compuesta y FK → equipment_type. ON DELETE RESTRICT. Sin default: el esquema cambia por instalación fresca (ADR-019) y un default permitiría un estado de progresión sin el implemento que lo identifica. Índice propio: no encabeza la PK.
+  status                       TEXT     @notNull @default("NO_HISTORY")               // Estado actual del ciclo de vida DEL PAR. Ver Enum ExerciseProgressionStatus.
+  prescribed_load_kg           REAL     @optional @check(">= 0")                      // Carga objetivo del PAR para la próxima sesión en Kg. Calculada por el motor de Doble Umbral sobre las series de ese implemento. NULL para ejercicios de peso corporal e isométricos. Post-descarga: 90% de la carga pre-descarga del par.
+  sessions_without_progression INTEGER  @notNull @default(0) @check(">= 0")           // Contador de sesiones consecutivas sin progresión DEL PAR. Se incrementa con MAINTENANCE o REGRESSION; se resetea a 0 con POSITIVE_PROGRESSION. Umbral de meseta: umbral efectivo = techo(profile.plateau_base_threshold × multiplicador de exercise.progression_difficulty) — la dificultad sigue siendo del EJERCICIO, porque es una propiedad del movimiento, y solo se compara contra el contador de cada par. Con la base por defecto (5): 5 sesiones para dificultad LOW, 8 para MEDIUM y 10 para HIGH. El contador es agnóstico del umbral — acumula siempre y solo se compara al cierre — de modo que cambiar la dificultad reevalúa la condición sin descartar lo acumulado. Umbrales de acción escalonada: 4 y 6.
+  // CONSTRAINT: PRIMARY KEY(exercise_id, equipment_type_id).
+  // LECTURA CONSOLIDADA (ProgressionConsolidationRule), NO PERSISTIDA: el ejercicio progresa si ALGUNO de sus pares progresó (disyunción) y entra en meseta solo si TODOS alcanzaron el umbral efectivo (conjunción). No existe fila consolidada: se deriva en cada evaluación, así que no hay copia que pueda desincronizarse.
+}
+
+// ==========================================
+// ENTIDAD: session_exercise_progression
+// PROPÓSITO: Clasificación de progresión de cada PAR
+// (ejercicio-en-sesión, equipamiento) en una sesión concreta.
+// Es un hecho fechado e inmutable, no un estado.
+// session_exercise.progression_classification guarda la
+// lectura CONSOLIDADA del ejercicio —lo que consumen los KPIs,
+// la tasa de progresión y las alertas—; esta tabla guarda lo
+// que hizo cada implemento por separado, que es lo que el
+// resumen post-sesión presenta como un renglón por par.
+// ==========================================
+model session_exercise_progression {
+  session_exercise_id       INTEGER  @fk(session_exercise.id)   // PK compuesta y FK → session_exercise. ON DELETE CASCADE: una sesión descartada ya arrastra sus exercise_set por la misma vía, y esta fila es del mismo orden de dato que una serie.
+  equipment_type_id         INTEGER  @fk(equipment_type.id)     // PK compuesta y FK → equipment_type. ON DELETE RESTRICT. Índice propio.
+  progression_classification TEXT    @optional                  // Clasificación del par. NULL = sin historial de ese par, jamás una regresión. Ver Enum ProgressionClassification.
+  prescribed_load_kg        REAL     @optional @check(">= 0")   // Carga que el Doble Umbral prescribió a ese par EN ESE CIERRE. Se persiste en lugar de leerse en vivo para que el resumen sea un registro fiel y no un valor que sesiones posteriores ya movieron.
+  // CONSTRAINT: PRIMARY KEY(session_exercise_id, equipment_type_id).
 }
 
 // ==========================================
@@ -428,7 +457,10 @@ model alert {
 | `session` | `1 : N` | `session_exercise` | "Contiene ejercicios" | CASCADE: si se elimina una sesión, sus ejercicios-en-sesión se eliminan. |
 | `exercise` | `1 : N` | `session_exercise (exercise_id)` | "Es ejecutado en sesiones" | RESTRICT: un ejercicio no se puede eliminar si tiene registros en sesiones. |
 | `session_exercise` | `1 : N` | `exercise_set` | "Registra series" | CASCADE: si se elimina un ejercicio-en-sesión, sus series se eliminan. |
-| `exercise` | `1 : 1` | `exercise_progression` | "Tiene estado de progresión" | RESTRICT: el estado de progresión es inseparable del ejercicio. Se crea al primer registro. |
+| `exercise` | `1 : N` | `exercise_progression` | "Tiene un estado de progresión por implemento" | RESTRICT: el estado de progresión es inseparable del ejercicio. Se crea al primer registro **del par**. Un ejercicio entrenado con tres implementos mantiene tres estados independientes. |
+| `equipment_type` | `1 : N` | `exercise_progression` | "Segmenta el estado de progresión" | RESTRICT: un tipo de equipamiento no se puede eliminar si algún par lo referencia. |
+| `session_exercise` | `1 : N` | `session_exercise_progression` | "Clasifica por implemento" | CASCADE: si se elimina un ejercicio-en-sesión, sus clasificaciones por par se eliminan, igual que sus series. |
+| `equipment_type` | `1 : N` | `session_exercise_progression` | "Segmenta la clasificación de la sesión" | RESTRICT: un tipo de equipamiento no se puede eliminar si alguna clasificación lo referencia. |
 | `deload` | `1 : N` | `deload_frozen_version` | "Congela versiones de rutinas" | CASCADE: si se elimina un ciclo de descarga, sus versiones congeladas se eliminan. |
 | `routine` | `1 : N` | `deload_frozen_version` | "Tiene versiones congeladas en descargas" | RESTRICT: una rutina no se puede eliminar si tiene versiones congeladas en un ciclo de descarga. |
 | `exercise` | `1 : N` | `alert (exercise_id)` | "Genera alertas de progresión" | RESTRICT: un ejercicio no se puede eliminar si tiene alertas asociadas. |
@@ -582,18 +614,25 @@ enum MuscleGroup {
 
 ### 5.3. Ciclo de Vida de: `exercise_progression`
 
-- **Estado Inicial (Nacimiento):** `NO_HISTORY` — se crea al registrar la primera serie del ejercicio.
+**El ciclo de vida es del par `(ejercicio, equipamiento)`, no del ejercicio.** Cada implemento recorre estos estados por su cuenta y contra su propio histórico. La lectura del ejercicio se **deriva** de sus pares con `ProgressionConsolidationRule` y no se persiste:
+
+- **Progresa** si **alguno** de sus pares progresó — disyunción. Es lo que impide que alternar implementos diluya la progresión general.
+- **Entra en meseta** solo si **todos** sus pares alcanzaron el umbral efectivo — conjunción. Es lo que impide declarar una meseta que un implemento desmiente.
+
+La clasificación consolidada de cada sesión se persiste en `session_exercise.progression_classification` con el orden `POSITIVE_PROGRESSION > MAINTENANCE > REGRESSION > NULL`: se conserva el mejor par clasificado, los pares sin historial se ignoran y, cuando **todos** lo están, el resultado es `NULL` — que es el caso de estrenar un implemento.
+
+- **Estado Inicial (Nacimiento):** `NO_HISTORY` — se crea al registrar la primera serie **del par**.
 - **Estado Final (Terminación):** `MASTERED` — exclusivo para ejercicios isométricos. Una vez alcanzado, no retrocede.
 
 | **Estado Origen** | **Evento / Trigger** | **Estado Destino** | **Condiciones / Validaciones Previas** |
 | --- | --- | --- | --- |
-| `NO_HISTORY` | Se cierra una sesión con ≥ 2 registros históricos del ejercicio | `IN_PROGRESSION` o `IN_PLATEAU` | Con al menos 2 sesiones del ejercicio, el motor puede calcular progresión. Aplica la clasificación correspondiente. |
+| `NO_HISTORY` | Se cierra una sesión con ≥ 2 registros históricos **del par** | `IN_PROGRESSION` o `IN_PLATEAU` | Con al menos 2 sesiones del mismo par, el motor puede calcular progresión. Aplica la clasificación correspondiente. Una sesión en la que el ejercicio se entrenó **solo con otro implemento** no cuenta como sesión anterior del par. |
 | `IN_PROGRESSION` | Se cierra sesión con clasificación `POSITIVE_PROGRESSION` | `IN_PROGRESSION` | `sessions_without_progression` se resetea a 0. |
-| `IN_PROGRESSION` | Se cierra sesión con clasificación `MAINTENANCE` o `REGRESSION` | `IN_PROGRESSION` o `IN_PLATEAU` | `sessions_without_progression` se incrementa. Si alcanza el umbral efectivo del ejercicio → transición a `IN_PLATEAU`. El umbral efectivo se compone en cada evaluación, de modo que cambiar la dificultad del ejercicio o el umbral base reevalúa la condición sin reiniciar el contador ni recalcular estados ya asignados. |
+| `IN_PROGRESSION` | Se cierra sesión con clasificación `MAINTENANCE` o `REGRESSION` | `IN_PROGRESSION` o `IN_PLATEAU` | `sessions_without_progression` **del par** se incrementa. Si alcanza el umbral efectivo del ejercicio → el par transita a `IN_PLATEAU`. El umbral efectivo se compone en cada evaluación, de modo que cambiar la dificultad del ejercicio o el umbral base reevalúa la condición sin reiniciar el contador ni recalcular estados ya asignados. **El ejercicio no se declara en meseta —ni se emite la alerta `PLATEAU`— hasta que todos sus pares alcanzan el umbral.** |
 | `IN_PLATEAU` | Se cierra sesión con clasificación `POSITIVE_PROGRESSION` | `IN_PROGRESSION` | `sessions_without_progression` se resetea a 0. La meseta se resuelve. |
 | `IN_PLATEAU` | Se cierra sesión con clasificación `MAINTENANCE` o `REGRESSION` | `IN_PLATEAU` | `sessions_without_progression` continúa acumulando. Se emiten acciones correctivas escalonadas (umbral 4, umbral 6). |
-| `IN_PROGRESSION` / `IN_PLATEAU` | El ejecutante activa un ciclo de descarga | `IN_DELOAD` | `deload.status = 'ACTIVE'`. Carga prescrita pasa a 60% de la habitual. |
-| `IN_DELOAD` | El ciclo de descarga se completa | `IN_PROGRESSION` | `deload.status = 'COMPLETED'`. La carga prescrita se reinicia al 90% de la pre-descarga. |
+| `IN_PROGRESSION` / `IN_PLATEAU` | El ejecutante activa un ciclo de descarga | `IN_DELOAD` | `deload.status = 'ACTIVE'`. Transiciona **cada par** del ejercicio. La carga prescrita de cada par pasa al 60% de la suya. |
+| `IN_DELOAD` | El ciclo de descarga se completa | `IN_PROGRESSION` | `deload.status = 'COMPLETED'`. La carga prescrita **de cada par** se reinicia al 90% de su propia carga pre-descarga. Un par sin historial anterior a la descarga no recibe carga: no hay nada que reducir. |
 | `IN_EXECUTION` (isométrico) | Se cierra sesión con todas las series ≥ 45 segundos | `MASTERED` | Solo para ejercicios con `is_isometric = 1`. Estado terminal: el ejercicio no ofrece más estímulo progresivo en su variante actual. |
 
 ### 5.4. Ciclo de Vida de: `deload`

@@ -18,6 +18,8 @@ import com.estebancoloradogonzalez.tension.data.local.dao.RoutineDao
 import com.estebancoloradogonzalez.tension.data.local.dao.RoutineVersionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.SessionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.SessionExerciseDao
+import com.estebancoloradogonzalez.tension.data.local.dao.SessionExerciseProgressionDao
+import com.estebancoloradogonzalez.tension.data.local.dao.SetExerciseInfo
 import com.estebancoloradogonzalez.tension.data.local.dao.WeekDayDao
 import com.estebancoloradogonzalez.tension.data.local.database.TensionDatabase
 import com.estebancoloradogonzalez.tension.data.local.entity.AlertEntity
@@ -29,6 +31,7 @@ import com.estebancoloradogonzalez.tension.data.local.entity.ExerciseProgression
 import com.estebancoloradogonzalez.tension.data.local.entity.ExerciseSetEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.SessionEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.SessionExerciseEntity
+import com.estebancoloradogonzalez.tension.data.local.entity.SessionExerciseProgressionEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.WeekDayEntity
 import com.estebancoloradogonzalez.tension.data.repository.model.SessionSummaryData
 import com.estebancoloradogonzalez.tension.domain.model.ActiveSession
@@ -42,6 +45,7 @@ import com.estebancoloradogonzalez.tension.domain.model.ExerciseResetLoad
 import com.estebancoloradogonzalez.tension.domain.model.ExerciseSessionData
 import com.estebancoloradogonzalez.tension.domain.model.ExerciseSessionStatus
 import com.estebancoloradogonzalez.tension.domain.model.NextSession
+import com.estebancoloradogonzalez.tension.domain.model.PrefilledLoad
 import com.estebancoloradogonzalez.tension.domain.model.ProgressionClassification
 import com.estebancoloradogonzalez.tension.domain.model.RegisterSetInfo
 import com.estebancoloradogonzalez.tension.domain.model.RotationResolver
@@ -75,6 +79,7 @@ import com.estebancoloradogonzalez.tension.domain.rules.PrefilledLoadRule
 import com.estebancoloradogonzalez.tension.domain.rules.RoutineFatigueRule
 import com.estebancoloradogonzalez.tension.domain.rules.PlateauThresholdRule
 import com.estebancoloradogonzalez.tension.domain.rules.ProgressionClassificationRule
+import com.estebancoloradogonzalez.tension.domain.rules.ProgressionConsolidationRule
 import com.estebancoloradogonzalez.tension.domain.rules.ProgressionRateRule
 import com.estebancoloradogonzalez.tension.domain.rules.TonnageRule
 import com.estebancoloradogonzalez.tension.domain.util.CurrentDateProvider
@@ -105,6 +110,7 @@ class SessionRepositoryImpl @Inject constructor(
     private val deloadFrozenVersionDao: DeloadFrozenVersionDao,
     private val exerciseSetDao: ExerciseSetDao,
     private val exerciseProgressionDao: ExerciseProgressionDao,
+    private val sessionExerciseProgressionDao: SessionExerciseProgressionDao,
     private val alertDao: AlertDao,
     private val database: TensionDatabase,
     private val deloadDao: DeloadDao,
@@ -449,8 +455,6 @@ class SessionRepositoryImpl @Inject constructor(
         val info = sessionExerciseDao.getExerciseInfoForSet(sessionExerciseId) ?: return null
         val nextSetNumber = exerciseSetDao.getNextSetNumber(sessionExerciseId)
 
-        val isDeload = info.deloadId != null
-
         // Opciones admitidas y preselección: el implemento de la última serie registrada
         // del ejercicio, y la primera opción del catálogo cuando no hay ninguna (CA-39.04).
         val equipmentIds = exerciseDao.getEquipmentIdsByExercise(info.exerciseId).first()
@@ -463,67 +467,16 @@ class SessionRepositoryImpl @Inject constructor(
             ?: equipmentOptions.firstOrNull()?.id
             ?: 0L
 
-        // La carga externa la gobierna el implemento, no solo la marca del ejercicio
-        // (CA-39.05). Aquí se decide el valor con el que el campo nace; la pantalla
-        // recalcula cuando el ejecutante cambia de implemento.
-        val preselectedEquipmentName = equipmentOptions
-            .firstOrNull { it.id == preselectedEquipmentTypeId }?.name
-        val hasExternalLoad = ExternalLoadRule.isCaptureEnabled(
-            isBodyweight = info.isBodyweight == 1,
-            isIsometric = info.isIsometric == 1,
-            equipmentName = preselectedEquipmentName,
+        // El valor con el que el campo nace es el del par preseleccionado. La pantalla
+        // vuelve a preguntar por `getPrefilledLoadForPair` cada vez que el ejecutante
+        // cambia de implemento (CA-40.03).
+        val prefilled = resolvePrefilledLoad(
+            info = info,
+            sessionExerciseId = sessionExerciseId,
+            equipmentTypeId = preselectedEquipmentTypeId,
+            equipmentName = equipmentOptions
+                .firstOrNull { it.id == preselectedEquipmentTypeId }?.name,
         )
-
-        // Memory of the last handled weight, resolved on the exercise actually executed:
-        // swapping a slot for its alternative must not inherit the primary's history.
-        val lastWeightInSessionKg = if (hasExternalLoad) {
-            exerciseSetDao.getLastWeightForSessionExercise(sessionExerciseId)
-        } else {
-            null
-        }
-        val lastWeightInPreviousSessionKg = if (hasExternalLoad) {
-            exerciseSetDao.getLastWeightInPreviousSession(info.exerciseId, info.sessionId)
-        } else {
-            null
-        }
-
-        val lastWeightKg = if (!hasExternalLoad) {
-            0.0
-        } else if (isDeload) {
-            // The deload protocol computes its own load and that decision prevails over
-            // the memory of the last handled weight.
-            val progressionExerciseId = info.exerciseId
-            val progression = exerciseProgressionDao
-                .getByExerciseId(progressionExerciseId).first()
-            val prescribedLoad = progression?.prescribedLoadKg
-            if (prescribedLoad != null) {
-                val muscleGroup = sessionExerciseDao
-                    .getPrimaryMuscleGroupByExercise(progressionExerciseId) ?: ""
-                val increment = LoadIncrementResolver.resolve(muscleGroup)
-                DeloadLoadRule.calculateDeloadLoad(prescribedLoad, increment)
-            } else {
-                lastWeightInSessionKg ?: lastWeightInPreviousSessionKg
-            }
-        } else {
-            // Both the prescription and the memory resolve on the executed exercise.
-            // exercise_progression is a per-slot table and the slot is the exercise the
-            // session holds: muscle-group substitution was the only way for the two to
-            // diverge, and it no longer exists (HU-34).
-            val progressionExerciseId = info.exerciseId
-            val progression = exerciseProgressionDao
-                .getByExerciseId(progressionExerciseId).first()
-            PrefilledLoadRule.resolve(
-                prescribedLoadKg = progression?.prescribedLoadKg,
-                lastWeightInSessionKg = lastWeightInSessionKg,
-                lastWeightInPreviousSessionKg = lastWeightInPreviousSessionKg,
-            )
-        }
-
-        val captureUnit = if (hasExternalLoad) {
-            WeightUnit.fromCode(exerciseSetDao.getLastCaptureUnitForExercise(info.exerciseId))
-        } else {
-            WeightUnit.KG
-        }
 
         return RegisterSetInfo(
             sessionExerciseId = sessionExerciseId,
@@ -531,15 +484,96 @@ class SessionRepositoryImpl @Inject constructor(
             exerciseName = info.exerciseName,
             currentSetNumber = nextSetNumber,
             totalSets = info.totalSets,
-            lastWeightKg = lastWeightKg,
+            lastWeightKg = prefilled.weightKg,
             isBodyweight = info.isBodyweight == 1,
             isIsometric = info.isIsometric == 1,
             isToTechnicalFailure = info.isToTechnicalFailure == 1,
             prescribedReps = info.reps,
-            captureUnit = captureUnit,
+            captureUnit = prefilled.captureUnit,
             equipmentOptions = equipmentOptions,
             preselectedEquipmentTypeId = preselectedEquipmentTypeId,
         )
+    }
+
+    override suspend fun getPrefilledLoadForPair(
+        sessionExerciseId: Long,
+        equipmentTypeId: Long,
+    ): PrefilledLoad? {
+        val info = sessionExerciseDao.getExerciseInfoForSet(sessionExerciseId) ?: return null
+        val equipmentName = equipmentTypeDao.getByIds(listOf(equipmentTypeId)).first()
+            .firstOrNull()?.name
+        return resolvePrefilledLoad(info, sessionExerciseId, equipmentTypeId, equipmentName)
+    }
+
+    /**
+     * Resolves the prefilled weight and the capture unit **for one pair** (CA-40.03).
+     *
+     * The precedence is the one that has always governed the field — prescription while it
+     * is still active, previous set in this session, last set in the pair's most recent
+     * closed session, empty — but every one of its terms is now resolved over
+     * `(exercise, equipment)`. A pair with no history leaves the field empty: the weight of
+     * another implement is never inherited, because it is the weight of a different thing.
+     */
+    private suspend fun resolvePrefilledLoad(
+        info: SetExerciseInfo,
+        sessionExerciseId: Long,
+        equipmentTypeId: Long,
+        equipmentName: String?,
+    ): PrefilledLoad {
+        val isDeload = info.deloadId != null
+
+        // La carga externa la gobierna el implemento, no solo la marca del ejercicio
+        // (CA-39.05).
+        val hasExternalLoad = ExternalLoadRule.isCaptureEnabled(
+            isBodyweight = info.isBodyweight == 1,
+            isIsometric = info.isIsometric == 1,
+            equipmentName = equipmentName,
+        )
+
+        if (!hasExternalLoad) {
+            return PrefilledLoad(weightKg = 0.0, captureUnit = WeightUnit.KG)
+        }
+
+        // Memory of the last handled weight, resolved on the exercise actually executed and
+        // on the implement actually selected: swapping a slot for its alternative must not
+        // inherit the primary's history, and swapping the implement must not inherit the
+        // other implement's weight.
+        val lastWeightInSessionKg = exerciseSetDao
+            .getLastWeightForPairInSessionExercise(sessionExerciseId, equipmentTypeId)
+        val lastWeightInPreviousSessionKg = exerciseSetDao
+            .getLastWeightForPairInPreviousSession(
+                info.exerciseId,
+                equipmentTypeId,
+                info.sessionId,
+            )
+
+        val progression = exerciseProgressionDao.getByPair(info.exerciseId, equipmentTypeId)
+
+        val weightKg = if (isDeload) {
+            // The deload protocol computes its own load and that decision prevails over
+            // the memory of the last handled weight — over the memory of this pair.
+            val prescribedLoad = progression?.prescribedLoadKg
+            if (prescribedLoad != null) {
+                val muscleGroup = sessionExerciseDao
+                    .getPrimaryMuscleGroupByExercise(info.exerciseId) ?: ""
+                val increment = LoadIncrementResolver.resolve(muscleGroup)
+                DeloadLoadRule.calculateDeloadLoad(prescribedLoad, increment)
+            } else {
+                lastWeightInSessionKg ?: lastWeightInPreviousSessionKg
+            }
+        } else {
+            PrefilledLoadRule.resolve(
+                prescribedLoadKg = progression?.prescribedLoadKg,
+                lastWeightInSessionKg = lastWeightInSessionKg,
+                lastWeightInPreviousSessionKg = lastWeightInPreviousSessionKg,
+            )
+        }
+
+        val captureUnit = WeightUnit.fromCode(
+            exerciseSetDao.getLastCaptureUnitForPair(info.exerciseId, equipmentTypeId),
+        )
+
+        return PrefilledLoad(weightKg = weightKg, captureUnit = captureUnit)
     }
 
     override suspend fun registerSet(
@@ -588,9 +622,14 @@ class SessionRepositoryImpl @Inject constructor(
                 ),
             )
 
-            val progressionExerciseId = info.exerciseId
+            // El estado de progresión se crea para el **par**, no para el ejercicio
+            // (CA-40.01): un ejercicio entrenado con tres implementos mantiene tres
+            // estados independientes.
             exerciseProgressionDao.insertIfNotExists(
-                ExerciseProgressionEntity(exerciseId = progressionExerciseId),
+                ExerciseProgressionEntity(
+                    exerciseId = info.exerciseId,
+                    equipmentTypeId = equipmentTypeId,
+                ),
             )
         }
     }
@@ -694,6 +733,9 @@ class SessionRepositoryImpl @Inject constructor(
                     deloadDao.complete(deloadId, today)
                     deloadFrozenVersionDao.deleteByDeloadId(deloadId)
 
+                    // El reinicio al 90% se calcula sobre la carga previa de **cada par**,
+                    // de forma independiente (CA-40.06). Un par sin historial anterior a la
+                    // descarga no recibe carga: no hay nada que reducir ni que reiniciar.
                     val allInDeload = exerciseProgressionDao.getAllInDeload()
                     for (progression in allInDeload) {
                         val exercise = exerciseDao.getByIdOnce(progression.exerciseId)
@@ -709,8 +751,9 @@ class SessionRepositoryImpl @Inject constructor(
                                 ),
                             )
                         } else {
-                            val preDeloadWeight = exerciseSetDao.getPreDeloadAvgWeight(
+                            val preDeloadWeight = exerciseSetDao.getPreDeloadAvgWeightForPair(
                                 progression.exerciseId,
+                                progression.equipmentTypeId,
                                 deload.activationDate,
                             )
                             val muscleGroup = getMuscleGroupForExercise(progression.exerciseId)
@@ -773,129 +816,170 @@ class SessionRepositoryImpl @Inject constructor(
             )
             if (currentSetDtos.isEmpty()) continue
 
-            val currentData = ExerciseSessionData(
-                sets = currentSetDtos.map { SetData(it.weightKg, it.reps, it.rir) },
-            )
-
-            val previousSetDtos = exerciseSetDao.getLastHistoricalSets(
-                exercise.exerciseId,
-                sessionId,
-            )
-            val previousData = if (previousSetDtos.isNotEmpty()) {
-                ExerciseSessionData(
-                    sets = previousSetDtos.map { SetData(it.weightKg, it.reps, it.rir) },
-                )
-            } else {
-                null
-            }
-
             val isBodyweight = exercise.isBodyweight == 1
             val isIsometric = exercise.isIsometric == 1
 
+            // La unidad de comparación es el par (ejercicio, equipamiento): una sesión con
+            // mancuerna y polea del mismo ejercicio produce dos evaluaciones independientes
+            // (CA-40.02). Los implementos salen de las series efectivamente registradas.
+            val equipmentIdsInSession = currentSetDtos
+                .map { it.equipmentTypeId }
+                .distinct()
+
             // During deload, skip classification and progression update entirely.
             // Intentionally underloaded deload work (60% load) should not affect
-            // progression state or produce misleading classification labels.
+            // progression state or produce misleading classification labels. Se resuelve
+            // por par: cada implemento tiene su propio estado congelado.
             if (isDeloadSession) {
-                val prog = exerciseProgressionDao
-                    .getByExerciseId(exercise.exerciseId).first()
-                if (prog == null || prog.status != "IN_DELOAD") continue
-                // Preserve prescribed load for IN_DELOAD exercises (state is frozen)
-                exerciseProgressionDao.update(
-                    prog.copy(
-                        prescribedLoadKg = prog.prescribedLoadKg,
-                    ),
-                )
+                for (equipmentTypeId in equipmentIdsInSession) {
+                    val prog = exerciseProgressionDao
+                        .getByPair(exercise.exerciseId, equipmentTypeId)
+                    if (prog == null || prog.status != "IN_DELOAD") continue
+                    // Preserve prescribed load for IN_DELOAD pairs (state is frozen)
+                    exerciseProgressionDao.update(
+                        prog.copy(prescribedLoadKg = prog.prescribedLoadKg),
+                    )
+                }
                 continue
             }
 
-            val classification = ProgressionClassificationRule.classify(
-                current = currentData,
-                previous = previousData,
-                isBodyweight = isBodyweight,
-                isIsometric = isIsometric,
-            )
-
-            sessionExerciseDao.updateProgressionClassification(
-                exercise.sessionExerciseId,
-                classification?.name,
-            )
-
-            val isMastered = isIsometric &&
-                ProgressionClassificationRule.isIsometricMastered(currentData)
-
-            val currentProgression = exerciseProgressionDao
-                .getByExerciseId(exercise.exerciseId).first()
-
-            if (currentProgression == null) continue
-
             // Effective threshold = base (the person's pace) x difficulty (the
-            // exercise's capacity to progress). The accumulated counter is never reset
-            // by a difficulty change: only the number it is compared against moves.
+            // exercise's capacity to progress). La dificultad sigue siendo del ejercicio
+            // —es una propiedad del movimiento— y solo se **compara** contra el contador
+            // de cada par (CA-40.01).
             val effectivePlateauThreshold = PlateauThresholdRule.effectiveThreshold(
                 plateauBaseThreshold,
                 ProgressionDifficulty.fromCode(exercise.progressionDifficulty),
             )
 
-            val (newStatus, newCounter) =
-                ProgressionClassificationRule.resolveNewProgressionState(
-                    currentStatus = currentProgression.status,
-                    currentCounter = currentProgression.sessionsWithoutProgression,
-                    classification = classification,
-                    isIsometric = isIsometric,
-                    isMastered = isMastered,
-                    plateauThreshold = effectivePlateauThreshold,
+            val pairClassifications = mutableListOf<ProgressionClassification?>()
+
+            for (equipmentTypeId in equipmentIdsInSession) {
+                val pairSets = currentSetDtos.filter { it.equipmentTypeId == equipmentTypeId }
+                val currentData = ExerciseSessionData(
+                    sets = pairSets.map { SetData(it.weightKg, it.reps, it.rir) },
                 )
 
-            val prescribedLoadKg = if (isBodyweight || isIsometric) {
-                null
-            } else {
-                val meetsThreshold = DoubleThresholdRule.meetsDoubleThreshold(currentData)
-                if (meetsThreshold) {
-                    val loadIncrementKg = LoadIncrementResolver.resolve(exercise.muscleGroup)
-                    currentData.avgWeightKg + loadIncrementKg
+                // El término de comparación es la última sesión **del mismo par**. Estrenar
+                // un implemento no tiene contra qué compararse, y eso es «Sin Historial»,
+                // nunca una regresión (CA-40.02).
+                val previousSetDtos = exerciseSetDao.getLastHistoricalSetsForPair(
+                    exercise.exerciseId,
+                    equipmentTypeId,
+                    sessionId,
+                )
+                val previousData = if (previousSetDtos.isNotEmpty()) {
+                    ExerciseSessionData(
+                        sets = previousSetDtos.map { SetData(it.weightKg, it.reps, it.rir) },
+                    )
                 } else {
-                    currentProgression.prescribedLoadKg ?: currentData.avgWeightKg
+                    null
                 }
+
+                val classification = ProgressionClassificationRule.classify(
+                    current = currentData,
+                    previous = previousData,
+                    isBodyweight = isBodyweight,
+                    isIsometric = isIsometric,
+                )
+                pairClassifications.add(classification)
+
+                val isMastered = isIsometric &&
+                    ProgressionClassificationRule.isIsometricMastered(currentData)
+
+                val currentProgression = exerciseProgressionDao
+                    .getByPair(exercise.exerciseId, equipmentTypeId)
+                    ?: continue
+
+                val (newStatus, newCounter) =
+                    ProgressionClassificationRule.resolveNewProgressionState(
+                        currentStatus = currentProgression.status,
+                        currentCounter = currentProgression.sessionsWithoutProgression,
+                        classification = classification,
+                        isIsometric = isIsometric,
+                        isMastered = isMastered,
+                        plateauThreshold = effectivePlateauThreshold,
+                    )
+
+                val prescribedLoadKg = if (isBodyweight || isIsometric) {
+                    null
+                } else {
+                    val meetsThreshold = DoubleThresholdRule.meetsDoubleThreshold(currentData)
+                    if (meetsThreshold) {
+                        val loadIncrementKg = LoadIncrementResolver.resolve(exercise.muscleGroup)
+                        currentData.avgWeightKg + loadIncrementKg
+                    } else {
+                        currentProgression.prescribedLoadKg ?: currentData.avgWeightKg
+                    }
+                }
+
+                exerciseProgressionDao.update(
+                    currentProgression.copy(
+                        status = newStatus,
+                        sessionsWithoutProgression = newCounter,
+                        prescribedLoadKg = prescribedLoadKg,
+                    ),
+                )
+
+                // La clasificación del par se persiste aparte de la consolidada: es lo que
+                // el resumen post-sesión presenta como un renglón por implemento.
+                sessionExerciseProgressionDao.upsert(
+                    SessionExerciseProgressionEntity(
+                        sessionExerciseId = exercise.sessionExerciseId,
+                        equipmentTypeId = equipmentTypeId,
+                        progressionClassification = classification?.name,
+                        prescribedLoadKg = prescribedLoadKg,
+                    ),
+                )
             }
 
-            if (classification != null) {
+            // `session_exercise.progression_classification` guarda la lectura **consolidada**
+            // del ejercicio (CA-40.04). Es lo que consumen la tasa de progresión, los KPIs
+            // comparativos y las alertas, sin que ninguna de sus consultas tenga que saber
+            // de implementos.
+            val consolidated = ProgressionConsolidationRule.consolidate(pairClassifications)
+
+            sessionExerciseDao.updateProgressionClassification(
+                exercise.sessionExerciseId,
+                consolidated?.name,
+            )
+
+            if (consolidated != null) {
                 exercisesWithRecords++
-                if (classification == ProgressionClassification.REGRESSION) {
+                if (consolidated == ProgressionClassification.REGRESSION) {
                     regressionCount++
                 }
             }
 
-            if (!isDeloadSession) {
-                val previousStatus = currentProgression.status
-                if (previousStatus != "IN_PLATEAU" && newStatus == "IN_PLATEAU") {
-                    if (!alertDao.existsActiveByExercise(exercise.exerciseId, "PLATEAU")) {
-                        alertDao.insert(
-                            AlertEntity(
-                                type = "PLATEAU",
-                                level = "HIGH_ALERT",
-                                exerciseId = exercise.exerciseId,
-                                routineId = routineId,
-                                message = AlertNarrativeRule.plateauHeadline(
-                                    exercise.exerciseName,
-                                    effectivePlateauThreshold,
-                                ),
-                                isActive = 1,
-                                createdAt = today,
-                            ),
-                        )
-                    }
-                } else if (previousStatus == "IN_PLATEAU" && newStatus != "IN_PLATEAU") {
-                    alertDao.resolveByExerciseAndType(exercise.exerciseId, "PLATEAU", today)
-                }
-            }
-
-            exerciseProgressionDao.update(
-                currentProgression.copy(
-                    status = newStatus,
-                    sessionsWithoutProgression = newCounter,
-                    prescribedLoadKg = prescribedLoadKg,
-                ),
+            // La meseta se declara por conjunción: solo cuando **todos** los pares del
+            // ejercicio han alcanzado el umbral efectivo (CA-40.05). Un implemento en
+            // progresión desmiente la meseta, y por eso se evalúa después de haber
+            // actualizado todos los pares y no dentro del bucle.
+            val allPairs = exerciseProgressionDao.getAllByExercise(exercise.exerciseId)
+            val wasInPlateau = alertDao.existsActiveByExercise(exercise.exerciseId, "PLATEAU")
+            val isInPlateau = ProgressionConsolidationRule.isInPlateau(
+                allPairs.map { it.sessionsWithoutProgression },
+                effectivePlateauThreshold,
             )
+
+            if (isInPlateau && !wasInPlateau) {
+                alertDao.insert(
+                    AlertEntity(
+                        type = "PLATEAU",
+                        level = "HIGH_ALERT",
+                        exerciseId = exercise.exerciseId,
+                        routineId = routineId,
+                        message = AlertNarrativeRule.plateauHeadline(
+                            exercise.exerciseName,
+                            effectivePlateauThreshold,
+                        ),
+                        isActive = 1,
+                        createdAt = today,
+                    ),
+                )
+            } else if (!isInPlateau && wasInPlateau) {
+                alertDao.resolveByExerciseAndType(exercise.exerciseId, "PLATEAU", today)
+            }
         }
 
         try { evaluateLowAdherence(today) } catch (_: Exception) { }
@@ -946,11 +1030,12 @@ class SessionRepositoryImpl @Inject constructor(
     override suspend fun getSessionSummaryData(sessionId: Long): SessionSummaryData {
         val info = sessionDao.getSessionSummaryInfo(sessionId)
         val exercises = sessionExerciseDao.getExercisesForSummary(sessionId)
+        val pairs = sessionExerciseProgressionDao.getPairSummariesForSession(sessionId)
         val routineRequiresDeload = alertDao.existsActiveByRoutine(
             info.routineId,
             "ROUTINE_REQUIRES_DELOAD",
         )
-        return SessionSummaryData(info, exercises, routineRequiresDeload)
+        return SessionSummaryData(info, exercises, pairs, routineRequiresDeload)
     }
 
     override suspend fun activateDeload() {
@@ -1096,12 +1181,21 @@ class SessionRepositoryImpl @Inject constructor(
         }.distinct()
         if (deloadExerciseIds.isEmpty()) return emptyList()
 
+        // Un elemento por **par**: cada implemento reinicia sobre su propia carga previa
+        // (CA-40.06), así que un ejercicio entrenado con dos aparece dos veces, cada uno
+        // con su implemento nombrado.
         val progressions = exerciseProgressionDao.getAllWithPrescribedLoad()
         return progressions.filter { it.exerciseId in deloadExerciseIds }.mapNotNull { progression ->
             val exercise = exerciseDao.getByIdOnce(progression.exerciseId) ?: return@mapNotNull null
             if (exercise.isBodyweight == 1 || exercise.isIsometric == 1) return@mapNotNull null
             val loadKg = progression.prescribedLoadKg ?: return@mapNotNull null
-            ExerciseResetLoad(exerciseName = exercise.name, resetLoadKg = loadKg)
+            val equipmentName = equipmentTypeDao.getByIds(listOf(progression.equipmentTypeId))
+                .first().firstOrNull()?.name ?: return@mapNotNull null
+            ExerciseResetLoad(
+                exerciseName = exercise.name,
+                equipmentTypeName = equipmentName,
+                resetLoadKg = loadKg,
+            )
         }
     }
 
@@ -1159,7 +1253,6 @@ class SessionRepositoryImpl @Inject constructor(
     override suspend fun getExerciseHistory(exerciseId: Long): ExerciseHistoryData {
         val exercise = exerciseDao.getByIdOnce(exerciseId)
             ?: throw IllegalArgumentException("Exercise not found: $exerciseId")
-        val progression = exerciseProgressionDao.getByExerciseId(exerciseId).first()
         val historyDtos = sessionExerciseDao.getExerciseHistoryEntries(exerciseId)
 
         val entries = historyDtos.map { dto ->
@@ -1181,9 +1274,17 @@ class SessionRepositoryImpl @Inject constructor(
         // vacíos ni agrupaciones sin datos (CA-39.08). El orden es el de la consulta.
         val equipmentOptions = entries.map { it.equipmentTypeName }.distinct()
 
+        // El estado del ciclo de vida es del par (CA-40.01), así que se entrega uno por
+        // implemento y la pantalla muestra el del que tenga seleccionado. Un implemento sin
+        // estado persistido queda fuera del mapa en vez de entrar como `NO_HISTORY`: el
+        // selector solo ofrece los que tienen historial.
+        val progressionStatusByEquipment = exerciseProgressionDao
+            .getPairStatesByExercise(exerciseId)
+            .associate { it.equipmentTypeName to it.status }
+
         return ExerciseHistoryData(
             exerciseName = exercise.name,
-            progressionStatus = progression?.status ?: "NO_HISTORY",
+            progressionStatusByEquipment = progressionStatusByEquipment,
             isBodyweight = exercise.isBodyweight == 1,
             isIsometric = exercise.isIsometric == 1,
             equipmentOptions = equipmentOptions,

@@ -4,6 +4,7 @@ import com.estebancoloradogonzalez.tension.data.repository.model.SessionSummaryD
 import com.estebancoloradogonzalez.tension.domain.model.ActiveSession
 import com.estebancoloradogonzalez.tension.domain.model.DeloadState
 import com.estebancoloradogonzalez.tension.domain.model.ExerciseHistoryData
+import com.estebancoloradogonzalez.tension.domain.model.PrefilledLoad
 import com.estebancoloradogonzalez.tension.domain.model.RegisterSetInfo
 import com.estebancoloradogonzalez.tension.domain.model.RotationState
 import com.estebancoloradogonzalez.tension.domain.model.SessionDetail
@@ -22,6 +23,17 @@ interface SessionRepository {
     fun getRotationState(): Flow<RotationState?>
     fun getSessionRoutineVersion(sessionId: Long): Flow<Pair<String, Int>?>
     suspend fun getRegisterSetInfo(sessionExerciseId: Long): RegisterSetInfo?
+
+    /**
+     * Peso y unidad con los que precargar el formulario para un par concreto (CA-40.03).
+     *
+     * Existe aparte de [getRegisterSetInfo] porque el implemento se puede cambiar sin salir
+     * de la pantalla, y al cambiarlo la precarga deja de ser válida: pertenecía a otro par.
+     */
+    suspend fun getPrefilledLoadForPair(
+        sessionExerciseId: Long,
+        equipmentTypeId: Long,
+    ): PrefilledLoad?
     suspend fun registerSet(
         sessionExerciseId: Long,
         weightKg: Double,

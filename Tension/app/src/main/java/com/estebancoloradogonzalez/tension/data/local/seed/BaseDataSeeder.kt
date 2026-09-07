@@ -43,30 +43,11 @@ object BaseDataSeeder {
         db.insert("muscle_zone", SQLiteDatabase.CONFLICT_REPLACE, values)
     }
 
+    /** Los datos residen en [EquipmentCatalog]; aquí solo se mapean a `ContentValues`. */
     private fun seedEquipmentTypes(db: SupportSQLiteDatabase) {
-        insertEquipmentType(db, 1, "Máquina")
-        insertEquipmentType(db, 2, "Mancuernas")
-        insertEquipmentType(db, 3, "Barra de Pesas")
-        insertEquipmentType(db, 4, "Cuerpo")
-        insertEquipmentType(db, 5, "Mancuerna")
-        insertEquipmentType(db, 6, "Polea")
-        insertEquipmentType(db, 7, "Pesa")
-        insertEquipmentType(db, 8, "Mancuerna o Pesa Rusa")
-        insertEquipmentType(db, 9, "Máquina Multiestación")
-        insertEquipmentType(db, 10, "Mancuernas o Polea")
-        insertEquipmentType(db, 11, "Polea con Cuerda")
-        insertEquipmentType(db, 12, "Polea con Cuerda o Polea con Barra en V")
-        insertEquipmentType(db, 13, "Barra")
-        insertEquipmentType(db, 14, "Mancuerna o Polea o Barra")
-        insertEquipmentType(db, 15, "Barra o Mancuernas")
-        insertEquipmentType(db, 16, "Banda Elástica")
-        insertEquipmentType(db, 17, "Kettlebell")
-        insertEquipmentType(db, 18, "Barra EZ")
-        insertEquipmentType(db, 19, "TRX/Suspensión")
-        insertEquipmentType(db, 20, "Balón Medicinal")
-        insertEquipmentType(db, 21, "Rodillo de Abdomen")
-        insertEquipmentType(db, 22, "Paralelas/Dip Station")
-        insertEquipmentType(db, 23, "Barra Fija")
+        EquipmentCatalog.ALL.forEach { type ->
+            insertEquipmentType(db, type.id, type.name)
+        }
     }
 
     private fun insertEquipmentType(db: SupportSQLiteDatabase, id: Long, name: String) {

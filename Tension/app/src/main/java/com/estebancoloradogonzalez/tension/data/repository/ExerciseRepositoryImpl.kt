@@ -1,9 +1,13 @@
 package com.estebancoloradogonzalez.tension.data.repository
 
+import com.estebancoloradogonzalez.tension.data.local.dao.AGGREGATE_SEPARATOR
 import com.estebancoloradogonzalez.tension.data.local.dao.EquipmentTypeDao
 import com.estebancoloradogonzalez.tension.data.local.dao.ExerciseDao
+import com.estebancoloradogonzalez.tension.data.local.dao.ExerciseSetDao
+import com.estebancoloradogonzalez.tension.data.local.dao.ExerciseWithDetails
 import com.estebancoloradogonzalez.tension.data.local.dao.MuscleZoneDao
 import com.estebancoloradogonzalez.tension.data.local.entity.ExerciseEntity
+import com.estebancoloradogonzalez.tension.data.local.entity.ExerciseEquipmentEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.ExerciseMuscleZoneEntity
 import com.estebancoloradogonzalez.tension.domain.model.EquipmentType
 import com.estebancoloradogonzalez.tension.domain.model.Exercise
@@ -18,6 +22,7 @@ class ExerciseRepositoryImpl @Inject constructor(
     private val exerciseDao: ExerciseDao,
     private val equipmentTypeDao: EquipmentTypeDao,
     private val muscleZoneDao: MuscleZoneDao,
+    private val exerciseSetDao: ExerciseSetDao,
 ) : ExerciseRepository {
 
     override fun getAllExercises(): Flow<List<Exercise>> =
@@ -70,9 +75,12 @@ class ExerciseRepositoryImpl @Inject constructor(
             }
         }
 
+    override fun getEquipmentIdsOfExercise(exerciseId: Long): Flow<List<Long>> =
+        exerciseDao.getEquipmentIdsByExercise(exerciseId)
+
     override suspend fun createExercise(
         name: String,
-        equipmentTypeId: Long,
+        equipmentTypeIds: List<Long>,
         muscleZoneIds: List<Long>,
         isBodyweight: Boolean,
         isIsometric: Boolean,
@@ -82,7 +90,6 @@ class ExerciseRepositoryImpl @Inject constructor(
     ): Long {
         val entity = ExerciseEntity(
             name = name,
-            equipmentTypeId = equipmentTypeId,
             isBodyweight = if (isBodyweight) 1 else 0,
             isIsometric = if (isIsometric) 1 else 0,
             isToTechnicalFailure = if (isToTechnicalFailure) 1 else 0,
@@ -90,10 +97,13 @@ class ExerciseRepositoryImpl @Inject constructor(
             mediaResource = mediaResource,
             progressionDifficulty = progressionDifficulty.name,
         )
-        return exerciseDao.insertExerciseWithMuscleZones(
-            entity,
-            muscleZoneIds.map { zoneId ->
+        return exerciseDao.insertExerciseWithRelations(
+            exercise = entity,
+            muscleZones = muscleZoneIds.map { zoneId ->
                 ExerciseMuscleZoneEntity(exerciseId = 0, muscleZoneId = zoneId)
+            },
+            equipment = equipmentTypeIds.map { equipmentId ->
+                ExerciseEquipmentEntity(exerciseId = 0, equipmentTypeId = equipmentId)
             },
         )
     }
@@ -109,17 +119,36 @@ class ExerciseRepositoryImpl @Inject constructor(
         exerciseDao.updateProgressionDifficulty(exerciseId, difficulty.name)
     }
 
-    override suspend fun exerciseExistsByNameAndEquipment(
-        name: String,
-        equipmentTypeId: Long,
-    ): Boolean = exerciseDao.countByNameAndEquipment(name, equipmentTypeId) > 0
+    override suspend fun exerciseExistsByName(name: String): Boolean =
+        exerciseDao.countByName(name) > 0
 
-    private fun com.estebancoloradogonzalez.tension.data.local.dao.ExerciseWithDetails.toDomainModel() =
+    override suspend fun addEquipmentToExercise(exerciseId: Long, equipmentTypeId: Long) {
+        exerciseDao.insertAllEquipment(
+            listOf(
+                ExerciseEquipmentEntity(
+                    exerciseId = exerciseId,
+                    equipmentTypeId = equipmentTypeId,
+                ),
+            ),
+        )
+    }
+
+    override suspend fun removeEquipmentFromExercise(exerciseId: Long, equipmentTypeId: Long) {
+        exerciseDao.deleteEquipment(exerciseId, equipmentTypeId)
+    }
+
+    override suspend fun countEquipmentOfExercise(exerciseId: Long): Int =
+        exerciseDao.countEquipmentByExercise(exerciseId)
+
+    override suspend fun countSetsWithEquipment(exerciseId: Long, equipmentTypeId: Long): Int =
+        exerciseSetDao.countSetsByExerciseAndEquipment(exerciseId, equipmentTypeId)
+
+    private fun ExerciseWithDetails.toDomainModel() =
         Exercise(
             id = id,
             name = name,
-            equipmentTypeName = equipmentTypeName,
-            muscleZones = muscleZones?.split(", ")?.filter { it.isNotBlank() } ?: emptyList(),
+            equipmentTypes = equipmentTypes.toAggregatedList(),
+            muscleZones = muscleZones.toAggregatedList(),
             muscleGroup = muscleGroup,
             isBodyweight = isBodyweight == 1,
             isIsometric = isIsometric == 1,
@@ -129,3 +158,13 @@ class ExerciseRepositoryImpl @Inject constructor(
             progressionDifficulty = ProgressionDifficulty.fromCode(progressionDifficulty),
         )
 }
+
+/**
+ * Deshace la agregación que hacen las consultas de catálogo y de plan.
+ *
+ * Ver [AGGREGATE_SEPARATOR]: el separador es la barra vertical y no `", "`, que era lo
+ * que se partía antes contra un `GROUP_CONCAT` que emitía `","` — y por eso el filtro por
+ * zona muscular no encontraba los ejercicios de dos zonas.
+ */
+internal fun String?.toAggregatedList(): List<String> =
+    this?.split(AGGREGATE_SEPARATOR)?.filter { it.isNotBlank() } ?: emptyList()

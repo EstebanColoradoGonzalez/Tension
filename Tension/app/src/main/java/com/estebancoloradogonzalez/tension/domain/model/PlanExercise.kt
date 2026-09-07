@@ -3,7 +3,7 @@ package com.estebancoloradogonzalez.tension.domain.model
 data class PlanExercise(
     val exerciseId: Long,
     val name: String,
-    val equipmentTypeName: String,
+    val equipmentTypes: List<String>,
     val muscleZones: List<String>,
     val sets: Int,
     val reps: String,

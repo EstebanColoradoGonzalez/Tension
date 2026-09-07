@@ -144,7 +144,7 @@ class SessionPreviewViewModel @Inject constructor(
                                 PreviewExerciseItem(
                                     exerciseId = exercise.exerciseId,
                                     name = exercise.exerciseName,
-                                    equipmentTypeName = exercise.equipmentTypeName,
+                                    equipmentSummary = exercise.equipmentTypes.joinToString(" · "),
                                     muscleZones = exercise.muscleZones,
                                     setsDisplay = "${exercise.sets} series",
                                     repsDisplay = repsText,

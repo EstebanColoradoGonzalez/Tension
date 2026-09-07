@@ -315,7 +315,7 @@ private fun PlanExerciseList(
                 supportingContent = {
                     Column {
                         Text(
-                            text = "${exercise.muscleZonesSummary} · ${exercise.equipmentTypeName}",
+                            text = "${exercise.muscleZonesSummary} · ${exercise.equipmentSummary}",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
@@ -419,7 +419,7 @@ private fun AssignExerciseSheet(
                                 },
                                 supportingContent = {
                                     Text(
-                                        text = "${exercise.muscleZonesSummary} · ${exercise.equipmentTypeName}",
+                                        text = "${exercise.muscleZonesSummary} · ${exercise.equipmentSummary}",
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         maxLines = 1,
@@ -684,7 +684,7 @@ private fun AddAlternativeSheet(
                         ListItem(
                             headlineContent = { Text(exercise.name) },
                             supportingContent = {
-                                Text("${exercise.muscleZonesSummary} · ${exercise.equipmentTypeName}")
+                                Text("${exercise.muscleZonesSummary} · ${exercise.equipmentSummary}")
                             },
                             modifier = Modifier.clickable { onExerciseSelected(exercise.id) },
                             colors = androidx.compose.material3.ListItemDefaults.colors(

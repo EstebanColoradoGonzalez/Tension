@@ -10,7 +10,7 @@ data class PlanVersionDetailUiState(
 data class PlanExerciseItem(
     val exerciseId: Long,
     val name: String,
-    val equipmentTypeName: String,
+    val equipmentSummary: String,
     val muscleZonesSummary: String,
     val sets: Int,
     val repsDisplay: String,
@@ -35,7 +35,7 @@ data class AssignExerciseSheetState(
 data class AssignableExerciseItem(
     val id: Long,
     val name: String,
-    val equipmentTypeName: String,
+    val equipmentSummary: String,
     val muscleZonesSummary: String,
 )
 

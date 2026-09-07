@@ -299,6 +299,17 @@ private fun SetRow(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
+        // Con qué implemento se ejecutó (CA-39.08). En su propia línea y no dentro del
+        // formato de la serie: dos series del mismo ejercicio en la misma sesión pueden
+        // llevar implementos distintos, y la diferencia tiene que verse de un barrido.
+        if (set.equipmentTypeName.isNotBlank()) {
+            Text(
+                text = set.equipmentTypeName,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+
         // Only place in the app where the capture unit surfaces: every aggregate
         // stays in kilograms.
         if (set.captureUnit == WeightUnit.LB) {

@@ -16,10 +16,17 @@ import com.estebancoloradogonzalez.tension.domain.model.WeightUnit
             childColumns = ["session_exercise_id"],
             onDelete = ForeignKey.CASCADE,
         ),
+        ForeignKey(
+            entity = EquipmentTypeEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["equipment_type_id"],
+            onDelete = ForeignKey.RESTRICT,
+        ),
     ],
     indices = [
         Index(value = ["session_exercise_id"]),
         Index(value = ["session_exercise_id", "set_number"], unique = true),
+        Index(value = ["equipment_type_id"]),
     ],
 )
 data class ExerciseSetEntity(
@@ -45,4 +52,12 @@ data class ExerciseSetEntity(
     /** Unit the executant typed the weight in. Presentation only — weightKg is canonical. */
     @ColumnInfo(name = "capture_unit", defaultValue = "KG")
     val captureUnit: String = WeightUnit.KG.name,
+
+    /**
+     * Implement actually used in this set. Mandatory and without default: the schema
+     * changes on a fresh install, so there is no prior row to backfill, and a default
+     * would let a set be written without the one datum HU-39 exists to capture.
+     */
+    @ColumnInfo(name = "equipment_type_id")
+    val equipmentTypeId: Long,
 )

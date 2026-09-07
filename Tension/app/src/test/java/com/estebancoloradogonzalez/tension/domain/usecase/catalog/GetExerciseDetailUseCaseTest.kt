@@ -30,7 +30,7 @@ class GetExerciseDetailUseCaseTest {
         val exercise = Exercise(
             id = 1,
             name = "Press de banca",
-            equipmentTypeName = "Máquina",
+            equipmentTypes = listOf("Máquina", "Barra"),
             muscleZones = listOf("Pecho Medio"),
             muscleGroup = null,
             isBodyweight = false,

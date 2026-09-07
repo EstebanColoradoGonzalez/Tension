@@ -313,7 +313,7 @@ private fun ExerciseList(
                     Text(
                         text = stringResource(
                             R.string.exercise_supporting_format,
-                            exercise.equipmentTypeName,
+                            exercise.equipmentSummary,
                             exercise.muscleZonesSummary,
                         ),
                         style = MaterialTheme.typography.bodyMedium,

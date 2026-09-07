@@ -53,6 +53,7 @@ import com.estebancoloradogonzalez.tension.domain.model.WeightUnit
 import com.estebancoloradogonzalez.tension.ui.components.CounterText
 import com.estebancoloradogonzalez.tension.ui.components.EntityNameText
 import com.estebancoloradogonzalez.tension.ui.session.components.IsometricChronometer
+import com.estebancoloradogonzalez.tension.ui.session.components.SetEquipmentSelector
 import com.estebancoloradogonzalez.tension.ui.session.components.WeightUnitSelector
 import java.util.Locale
 
@@ -134,6 +135,17 @@ fun RegisterSetScreen(
                 .padding(horizontal = 16.dp)
                 .verticalScroll(rememberScrollState()),
         ) {
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // El implemento va antes del peso porque lo gobierna: decide si el campo se
+            // captura y qué significa el número (CA-39.04, CA-39.05).
+            SetEquipmentSelector(
+                options = uiState.equipmentOptions,
+                selectedId = uiState.selectedEquipmentTypeId,
+                onSelected = viewModel::onEquipmentSelected,
+                error = uiState.equipmentError,
+            )
+
             Spacer(modifier = Modifier.height(16.dp))
 
             WeightSection(
@@ -229,6 +241,15 @@ private fun WeightSection(
             Spacer(modifier = Modifier.height(8.dp))
             WeightStepControls(unit = uiState.captureUnit, onWeightStep = onWeightStep)
         }
+
+        if (uiState.isAddedWeight) {
+            Text(
+                text = stringResource(R.string.register_set_weight_added_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+        }
     }
 }
 
@@ -287,7 +308,15 @@ private fun WeightField(
 ) {
     val label = when {
         uiState.isIsometric -> stringResource(R.string.register_set_weight_isometric_label)
-        uiState.isBodyweight -> stringResource(R.string.register_set_weight_bodyweight_label)
+        // `Peso Añadido` es lo único que se captura sobre un ejercicio de peso corporal, y
+        // la etiqueta lo nombra: el valor es el lastre, no el peso movido (CA-39.05).
+        uiState.isAddedWeight -> stringResource(
+            R.string.register_set_weight_added_label_format,
+            stringResource(unitLabelRes(uiState.captureUnit)),
+        )
+        !uiState.isWeightEditable -> stringResource(
+            R.string.register_set_weight_bodyweight_label,
+        )
         else -> stringResource(
             R.string.register_set_weight_label_format,
             stringResource(unitLabelRes(uiState.captureUnit)),

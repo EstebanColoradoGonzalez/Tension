@@ -97,6 +97,45 @@ interface ExerciseSetDao {
     )
     suspend fun getLastCaptureUnitForExercise(exerciseId: Long): String?
 
+    /**
+     * Implemento de la última serie registrada del ejercicio — la preselección del
+     * selector de equipamiento (CA-39.04).
+     *
+     * Igual que la unidad de captura, las sesiones de descarga **no** se excluyen: el
+     * implemento con el que se entrena no cambia con el microciclo. Y resuelve sobre
+     * `se.exercise_id`, no sobre el slot, porque la memoria pertenece al ejercicio
+     * efectivamente ejecutado.
+     */
+    @Query(
+        """
+        SELECT es.equipment_type_id
+        FROM exercise_set es
+        INNER JOIN session_exercise se ON es.session_exercise_id = se.id
+        WHERE se.exercise_id = :exerciseId
+        ORDER BY es.id DESC
+        LIMIT 1
+        """,
+    )
+    suspend fun getLastEquipmentTypeIdForExercise(exerciseId: Long): Long?
+
+    /**
+     * Series ya registradas del ejercicio con ese implemento.
+     *
+     * Es lo que impide retirarlo de las opciones del ejercicio (CA-39.10): una serie es
+     * inmutable tras su creación y no puede quedar apuntando a un equipamiento que el
+     * ejercicio dejó de admitir.
+     */
+    @Query(
+        """
+        SELECT COUNT(*)
+        FROM exercise_set es
+        INNER JOIN session_exercise se ON es.session_exercise_id = se.id
+        WHERE se.exercise_id = :exerciseId
+          AND es.equipment_type_id = :equipmentTypeId
+        """,
+    )
+    suspend fun countSetsByExerciseAndEquipment(exerciseId: Long, equipmentTypeId: Long): Int
+
     @Query(
         """
         SELECT AVG(es.weight_kg)
@@ -118,18 +157,22 @@ interface ExerciseSetDao {
 
     @Query(
         """
-        SELECT weight_kg AS weightKg, reps, rir, capture_unit AS captureUnit
-        FROM exercise_set
-        WHERE session_exercise_id = :sessionExerciseId
-        ORDER BY set_number
+        SELECT es.weight_kg AS weightKg, es.reps, es.rir, es.capture_unit AS captureUnit,
+               et.name AS equipmentTypeName
+        FROM exercise_set es
+        INNER JOIN equipment_type et ON es.equipment_type_id = et.id
+        WHERE es.session_exercise_id = :sessionExerciseId
+        ORDER BY es.set_number
         """,
     )
     suspend fun getSetsForSessionExercise(sessionExerciseId: Long): List<ExerciseSetData>
 
     @Query(
         """
-        SELECT es.weight_kg AS weightKg, es.reps, es.rir, es.capture_unit AS captureUnit
+        SELECT es.weight_kg AS weightKg, es.reps, es.rir, es.capture_unit AS captureUnit,
+               et.name AS equipmentTypeName
         FROM exercise_set es
+        INNER JOIN equipment_type et ON es.equipment_type_id = et.id
         WHERE es.session_exercise_id = (
             SELECT se2.id
             FROM session_exercise se2
@@ -197,4 +240,5 @@ data class ExerciseSetData(
     val reps: Int,
     val rir: Int,
     val captureUnit: String,
+    val equipmentTypeName: String,
 )

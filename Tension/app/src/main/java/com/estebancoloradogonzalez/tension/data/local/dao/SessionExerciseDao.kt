@@ -13,7 +13,8 @@ data class SessionExerciseWithDetails(
     val sessionExerciseId: Long,
     val exerciseId: Long?,
     val exerciseName: String?,
-    val equipmentTypeName: String?,
+    /** Implementos admitidos del ejercicio, separados por [AGGREGATE_SEPARATOR]. */
+    val equipmentTypes: String?,
     val muscleZones: String?,
     val sets: Int,
     val reps: String,
@@ -81,6 +82,7 @@ data class ExerciseHistoryEntryDto(
     val date: String,
     val routineName: String,
     val versionNumber: Int,
+    val equipmentTypeName: String,
     val avgWeightKg: Double,
     val totalReps: Int,
     val avgRir: Double,
@@ -106,8 +108,18 @@ interface SessionExerciseDao {
             se.id AS sessionExerciseId,
             se.exercise_id AS exerciseId,
             e.name AS exerciseName,
-            et.name AS equipmentTypeName,
-            GROUP_CONCAT(DISTINCT mz.name) AS muscleZones,
+            (SELECT GROUP_CONCAT(name, '|') FROM (
+                SELECT et.name AS name FROM exercise_equipment ee
+                INNER JOIN equipment_type et ON ee.equipment_type_id = et.id
+                WHERE ee.exercise_id = se.exercise_id
+                ORDER BY et.id
+            )) AS equipmentTypes,
+            (SELECT GROUP_CONCAT(name, '|') FROM (
+                SELECT mz.name AS name FROM exercise_muscle_zone emz
+                INNER JOIN muscle_zone mz ON emz.muscle_zone_id = mz.id
+                WHERE emz.exercise_id = se.exercise_id
+                ORDER BY mz.id
+            )) AS muscleZones,
             COALESCE(pa.sets, 4) AS sets,
             COALESCE(pa.reps, '8-12') AS reps,
             COALESCE(e.is_bodyweight, 0) AS isBodyweight,
@@ -126,7 +138,6 @@ interface SessionExerciseDao {
                AND pa_alt.slot = se.slot) AS alternativesInSlot
         FROM session_exercise se
         LEFT JOIN exercise e ON se.exercise_id = e.id
-        LEFT JOIN equipment_type et ON e.equipment_type_id = et.id
         INNER JOIN session s ON se.session_id = s.id
         LEFT JOIN plan_assignment pa ON pa.routine_version_id = s.routine_version_id
             AND pa.exercise_id = CASE
@@ -139,8 +150,6 @@ interface SessionExerciseDao {
                      ORDER BY pa2.sort_order ASC
                      LIMIT 1)
             END
-        LEFT JOIN exercise_muscle_zone emz ON e.id = emz.exercise_id
-        LEFT JOIN muscle_zone mz ON emz.muscle_zone_id = mz.id
         LEFT JOIN exercise_progression ep ON se.exercise_id = ep.exercise_id
         WHERE se.session_id = :sessionId
         GROUP BY se.id
@@ -403,6 +412,15 @@ interface SessionExerciseDao {
     )
     suspend fun getExercisesForSessionDetail(sessionId: Long): List<SessionDetailExerciseDto>
 
+    /**
+     * Historial del ejercicio, **una entrada por sesión y por implemento**.
+     *
+     * La segmentación va en el `GROUP BY` y no en el ViewModel porque los promedios se
+     * calculan aquí: agrupar solo por `se.id` mezclaría el peso de la mancuerna con el de
+     * la polea antes de que el dato salga de la base, y CA-39.08 exige que una serie de
+     * polea nunca se compare con una de mancuerna. Una sesión en la que se usaron dos
+     * implementos produce dos entradas con la misma fecha.
+     */
     @Query(
         """
         SELECT
@@ -413,16 +431,18 @@ interface SessionExerciseDao {
             COALESCE(SUM(es.reps), 0) AS totalReps,
             COALESCE(AVG(es.rir), 0.0) AS avgRir,
             se.progression_classification AS classification,
-            CASE WHEN s.deload_id IS NOT NULL THEN 1 ELSE 0 END AS isDeload
+            CASE WHEN s.deload_id IS NOT NULL THEN 1 ELSE 0 END AS isDeload,
+            et.name AS equipmentTypeName
         FROM session_exercise se
         INNER JOIN session s ON se.session_id = s.id
         INNER JOIN routine_version rv ON s.routine_version_id = rv.id
         INNER JOIN routine r ON rv.routine_id = r.id
         INNER JOIN exercise_set es ON es.session_exercise_id = se.id
+        INNER JOIN equipment_type et ON es.equipment_type_id = et.id
         WHERE se.exercise_id = :exerciseId
           AND s.status IN ('COMPLETED', 'INCOMPLETE')
-        GROUP BY se.id
-        ORDER BY s.date DESC, s.id DESC
+        GROUP BY se.id, es.equipment_type_id
+        ORDER BY s.date DESC, s.id DESC, et.id ASC
         """,
     )
     suspend fun getExerciseHistoryEntries(exerciseId: Long): List<ExerciseHistoryEntryDto>

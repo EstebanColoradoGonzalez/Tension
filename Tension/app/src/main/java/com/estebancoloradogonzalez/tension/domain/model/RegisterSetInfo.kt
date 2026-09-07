@@ -12,4 +12,11 @@ data class RegisterSetInfo(
     val isToTechnicalFailure: Boolean,
     val prescribedReps: String,
     val captureUnit: WeightUnit,
+    /** Opciones que el ejercicio admite, en orden de catálogo. Nunca vacío. */
+    val equipmentOptions: List<EquipmentType>,
+    /**
+     * Implemento de la última serie registrada del ejercicio, o la primera opción
+     * admitida cuando no hay ninguna (CA-39.04).
+     */
+    val preselectedEquipmentTypeId: Long,
 )

@@ -92,7 +92,7 @@ class ActiveSessionViewModel @Inject constructor(
                                 sessionExerciseId = detail.sessionExerciseId,
                                 exerciseId = detail.exerciseId,
                                 name = detail.name ?: "",
-                                equipmentTypeName = detail.equipmentTypeName ?: "",
+                                equipmentSummary = detail.equipmentTypes.joinToString(" · "),
                                 muscleZones = detail.muscleZones.joinToString(", "),
                                 sets = detail.sets,
                                 reps = detail.reps,
@@ -167,7 +167,7 @@ class ActiveSessionViewModel @Inject constructor(
                         AlternativeOption(
                             exerciseId = alt.exerciseId,
                             name = alt.name,
-                            equipmentTypeName = alt.equipmentTypeName,
+                            equipmentSummary = alt.equipmentTypes.joinToString(" · "),
                             muscleZonesSummary = alt.muscleZones.joinToString(", "),
                         )
                     },

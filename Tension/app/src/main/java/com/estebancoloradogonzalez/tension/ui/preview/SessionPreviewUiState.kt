@@ -24,7 +24,7 @@ data class SessionPreviewUiState(
 data class PreviewExerciseItem(
     val exerciseId: Long,
     val name: String,
-    val equipmentTypeName: String,
+    val equipmentSummary: String,
     val muscleZones: String,
     val setsDisplay: String,
     val repsDisplay: String,

@@ -1229,12 +1229,30 @@ object Migrations {
     }
 
     /**
+     * Última versión de esquema alcanzable por migración.
+     *
+     * Por debajo de ella la cadena debe ser continua y sin huecos — eso es lo que la
+     * ausencia de `16→17`, `17→18` y `18→19` durante tres versiones costó: la aplicación
+     * no podía abrir ninguna base existente.
+     *
+     * El salto de aquí a `@Database(version = ...)` es la excepción documentada a RNF19
+     * (**ADR-019**): durante la beta, el cambio de esquema se resuelve sobre instalación
+     * fresca y el reinicio lo hace el ejecutante desinstalando y reinstalando, no la
+     * aplicación. Sube de forma deliberada, historia por historia, y por eso es una
+     * constante con nombre y no una ausencia silenciosa. HU-39 lleva el esquema a la 20
+     * sin migración (CA-39.11).
+     */
+    const val LAST_MIGRATED_VERSION = 19
+
+    /**
      * Todas las migraciones, en orden.
      *
      * Existe para que registrarlas en `DatabaseModule` no sea una lista que haya que recordar
      * ampliar: añadir una migración aquí la deja registrada. La ausencia de `16→17`, `17→18` y
      * `18→19` durante tres versiones del esquema fue exactamente el fallo que esto evita — la
      * aplicación no podía abrir ninguna base existente.
+     *
+     * La última debe terminar en [LAST_MIGRATED_VERSION], no en la versión del esquema.
      */
     val ALL: Array<Migration> = arrayOf(
         MIGRATION_6_7,

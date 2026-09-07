@@ -8,7 +8,7 @@ data class CreateExerciseUiState(
     val isLoading: Boolean = true,
     val name: String = "",
     val equipmentTypes: List<EquipmentType> = emptyList(),
-    val selectedEquipmentTypeId: Long? = null,
+    val selectedEquipmentTypeIds: Set<Long> = emptySet(),
     val muscleZones: List<MuscleZone> = emptyList(),
     val selectedMuscleZoneIds: Set<Long> = emptySet(),
     val isBodyweight: Boolean = false,
@@ -23,12 +23,9 @@ data class CreateExerciseUiState(
     val saveSuccess: Boolean = false,
     val saveError: String? = null,
 ) {
-    val selectedEquipmentName: String
-        get() = equipmentTypes.find { it.id == selectedEquipmentTypeId }?.name ?: ""
-
     val canSave: Boolean
         get() = name.isNotBlank() &&
-            selectedEquipmentTypeId != null &&
+            selectedEquipmentTypeIds.isNotEmpty() &&
             selectedMuscleZoneIds.isNotEmpty() &&
             !isSaving
 }

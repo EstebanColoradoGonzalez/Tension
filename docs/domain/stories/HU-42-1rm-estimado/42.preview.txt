@@ -1,0 +1,281 @@
+╔══════════════════════════════════════════════════════════════╗
+║  ⚠️  PROTOTIPO — PROPUESTA PENDIENTE DE VALIDACIÓN CON DISEÑO  ║
+╚══════════════════════════════════════════════════════════════╝
+
+HU #42 — Mi 1RM estimado
+Plataforma: mobile / portrait (390 px) · Material 3 · targets ≥ 48 dp
+
+
+────────────────────────────────────────────────────────────────
+ MÉTRICAS  ·  entrada al 1RM (CA-42.01)
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+| Métricas                                 |
++──────────────────────────────────────────+
+|  Tonelaje · últimos 7 días               |
+|  14 820 kg                               |
+|  ▁▂▄▆█▅▃                                 |
+|  ─────────────────────────────────────   |
+|  Tasa de progresión · 4 semanas   68 %   |
+|  RIR promedio                     1.2    |
+|  Adherencia semanal               83 %   |
+|  ─────────────────────────────────────   |
+|                                          |
+|  +──────────────────────────────────────+|
+|  |  1RM estimado                     ›  ||  ← NUEVA entrada
+|  |  Tu fuerza máxima por implemento     ||    48 dp de alto
+|  +──────────────────────────────────────+|
+|                                          |
+|  +──────────────────────────────────────+|
+|  |  Volumen por grupo muscular       ›  ||  ya existentes
+|  +──────────────────────────────────────+|
+|  +──────────────────────────────────────+|
+|  |  Tendencia de progresión          ›  ||
+|  +──────────────────────────────────────+|
++──────────────────────────────────────────+
+|   Inicio   Catálogo  [Métricas]  Perfil  |  sin pestaña nueva
++──────────────────────────────────────────+
+
+  ⓘ La entrada se compone SIEMPRE, incluso sin sesiones.
+    El estado vacío lo resuelve la pantalla de destino.
+
+
+────────────────────────────────────────────────────────────────
+ 1RM ESTIMADO  ·  tarjeta por ejercicio (CA-42.02, CA-42.06)
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+| ←  1RM estimado                          |
++──────────────────────────────────────────+
+|                                          |
+|  +──────────────────────────────────────+|
+|  |  Aperturas                           ||
+|  |  ⟪Mancuerna⟫  ⟨Máquina⟩              ||  chips: solo los
+|  |                                      ||  implementos
+|  |        33.3 kg  ·  73.5 lb           ||  ENTRENADOS
+|  +──────────────────────────────────────+|
+|                                          |
+|  +──────────────────────────────────────+|
+|  |  Crunch Abdominal                    ||
+|  |  Polea                               ||  UNA sola opción
+|  |                                      ||  entrenada →
+|  |        40.0 kg  ·  88.2 lb           ||  etiqueta, no chip
+|  +──────────────────────────────────────+|
+|                                          |
+|  +──────────────────────────────────────+|
+|  |  Curl Martillo                       ||
+|  |  ⟪Mancuerna⟫                         ||
+|  |                                      ||
+|  |        21.3 kg  ·  47.0 lb           ||
+|  +──────────────────────────────────────+|
+|                                          |
+|  +──────────────────────────────────────+|
+|  |  Elevación Lateral                   ||
+|  |  ⟪Mancuerna⟫  ⟨Polea⟩                ||
+|  |                                      ||
+|  |        16.0 kg  ·  35.3 lb           ||
+|  +──────────────────────────────────────+|
+|                                          |
+|  +──────────────────────────────────────+|
+|  |  Jalón al Pecho                      ||
+|  |  ⟪Polea⟫                             ||
+|  |                                      ||
+|  |        73.4 kg  ·  161.8 lb          ||
+|  +──────────────────────────────────────+|
+|                                          |
+|  +──────────────────────────────────────+|
+|  |  Press de Banca Plano                ||
+|  |  ⟪Barra⟫  ⟨Mancuerna⟩                ||
+|  |                                      ||
+|  |        93.4 kg  ·  205.9 lb          ||
+|  +──────────────────────────────────────+|
+|                       ⋮                  |
++──────────────────────────────────────────+
+
+   ⟪ ⟫ chip activo      ⟨ ⟩ chip disponible
+   El primero queda activo al abrir la pantalla.
+   Orden de la lista: alfabético por nombre de ejercicio.
+
+
+────────────────────────────────────────────────────────────────
+ CAMBIO DE IMPLEMENTO DENTRO DE LA TARJETA (CA-42.02)
+────────────────────────────────────────────────────────────────
+
+  +──────────────────────────────────────+
+  |  Elevación Lateral                   |
+  |  ⟪Mancuerna⟫  ⟨Polea⟩                |
+  |                                      |
+  |        16.0 kg  ·  35.3 lb           |
+  +──────────────────────────────────────+
+                    │
+                    │  toca el chip «Polea»
+                    ▼
+  +──────────────────────────────────────+
+  |  Elevación Lateral                   |
+  |  ⟨Mancuerna⟩  ⟪Polea⟫                |
+  |                                      |
+  |        22.7 kg  ·  50.0 lb           |
+  +──────────────────────────────────────+
+
+  Sin navegación: el número cambia en su sitio.
+  Un ejercicio, una tarjeta — la lista no se multiplica
+  por implemento.
+
+
+────────────────────────────────────────────────────────────────
+ CUÁNDO SE CALCULA  ·  la serie de referencia (CA-42.03)
+────────────────────────────────────────────────────────────────
+
+  Condición EXACTA:   10 repeticiones  Y  RIR 1
+
+    reps  RIR   ¿califica?
+    ────  ───   ──────────────────────────────────────
+     10    1    ✓  sí
+     10    0    ✗  no — RIR distinto de 1
+     10    2    ✗  no — RIR distinto de 1
+      9    1    ✗  no — repeticiones distintas de 10
+     11    1    ✗  no — repeticiones distintas de 10
+     12    1    ✗  no
+
+  Fórmula:   1RM = Peso / [1.0278 − (0.0278 × Reps)]
+
+  Con reps = 10:
+             1.0278 − 0.278  =  0.7498
+             1RM  =  Peso / 0.7498  =  Peso × 1.3337
+
+  Ejemplos:      12.0 kg × 10 · RIR 1   ─►   16.0 kg
+                 70.0 kg × 10 · RIR 1   ─►   93.4 kg
+                 30.0 kg × 10 · RIR 1   ─►   40.0 kg
+
+  ⓘ Al exigirse exactamente 10 repeticiones, la fórmula nunca
+    opera cerca de su indeterminación:
+
+      reps  0 ─────────── 10 ─────────── 36.97 ────────►
+                          ▲                 ▲
+                     único punto      denominador = 0
+                     de operación     (1RM negativo
+                                       por encima)
+
+
+────────────────────────────────────────────────────────────────
+ UN RÉCORD QUE NUNCA BAJA (CA-42.04)
+────────────────────────────────────────────────────────────────
+
+  Elevación Lateral · Mancuerna
+
+   sesión   serie registrada          califica   1RM guardado
+   ──────   ───────────────────────   ────────   ────────────
+   14 ago   11.0 kg × 10 · RIR 1        ✓          14.7 kg
+   21 ago   11.0 kg × 10 · RIR 1        ✓          14.7 kg  ═
+   28 ago   11.5 kg × 12 · RIR 1        ✗          14.7 kg  ═
+   28 ago   11.5 kg × 10 · RIR 1        ✓          15.3 kg  ▲
+    4 sep   12.0 kg × 10 · RIR 1        ✓          16.0 kg  ▲
+    6 sep   11.0 kg × 10 · RIR 1        ✓          16.0 kg  ═
+                                                    ▲
+                              bajó el peso, el récord se
+                              conserva — nunca decrece
+
+  Varias series que califican en la MISMA sesión:
+
+    serie 2   11.5 kg × 10 · RIR 1   ─►  15.3 kg
+    serie 4   12.0 kg × 10 · RIR 1   ─►  16.0 kg   ◄ gana
+                                                     la más alta
+
+  ⓘ Las series de descarga también califican si cumplen la
+    condición: al ser un máximo, una carga reducida no puede
+    deteriorarlo.
+
+
+────────────────────────────────────────────────────────────────
+ EXCLUSIONES  ·  sin carga externa no hay 1RM (CA-42.05)
+────────────────────────────────────────────────────────────────
+
+  Dominadas — cuatro opciones, un solo par con 1RM
+
+    Peso Corporal    peso = 0   ✗  no se calcula
+    Barra Fija       peso = 0   ✗  no se calcula
+    Máquina          peso = 0   ✗  no se calcula (asistida)
+    Peso Añadido     peso > 0   ✓  sobre el LASTRE únicamente
+
+  +──────────────────────────────────────+
+  |  Dominadas                           |
+  |  ⟪Peso Añadido⟫                      |  solo aparece el
+  |                                      |  par con carga
+  |        13.3 kg  ·  29.4 lb           |
+  +──────────────────────────────────────+
+     10 kg de lastre × 10 · RIR 1  ─►  13.3 kg
+     ⓘ tu peso corporal NO se suma
+
+  Isométricos:  excluidos por completo. En ellos las
+                repeticiones son SEGUNDOS, así que «10
+                repeticiones» no significa nada.
+
+  A fallo técnico:  misma regla que el resto — solo califica
+                    la serie de exactamente 10 con RIR 1.
+
+
+────────────────────────────────────────────────────────────────
+ ESTADOS EXTREMOS (CA-42.07)
+────────────────────────────────────────────────────────────────
+
+  Empty state — ninguna serie ha calificado nunca:
+
++──────────────────────────────────────────+
+| ←  1RM estimado                          |
++──────────────────────────────────────────+
+|                                          |
+|                                          |
+|              [  📊  96×96  ]             |  ícono Gray400
+|                                          |
+|        Todavía no hay ningún 1RM         |  Gray900
+|                                          |
+|     El 1RM se estima con una serie de    |  Gray700
+|     10 repeticiones y RIR 1. Cuando      |
+|     registres una así, aparecerá aquí.   |
+|                                          |
+|                                          |
++──────────────────────────────────────────+
+
+  Lo que NO aparece en la lista:
+
+    · ejercicios del Diccionario sin ninguna serie
+    · ejercicios entrenados cuyas series nunca calificaron
+    · implementos entrenados sin serie que califique,
+      aunque otro implemento del mismo ejercicio sí lo tenga
+
+  Nunca se muestra un cero ni un guion: si no hay dato,
+  no hay fila.
+
+  Ejemplo — Elevación Lateral entrenada con dos implementos,
+  pero solo mancuerna llegó a 10 × RIR 1:
+
+  +──────────────────────────────────────+
+  |  Elevación Lateral                   |
+  |  Mancuerna                           |  Polea NO aparece
+  |                                      |  como chip
+  |        16.0 kg  ·  35.3 lb           |
+  +──────────────────────────────────────+
+
+
+────────────────────────────────────────────────────────────────
+ AISLAMIENTO DE LA FUNCIONALIDAD
+────────────────────────────────────────────────────────────────
+
+    historial de series  ─────────►  1RM
+                          lee de
+
+    1RM  ──╳──►  prescripción de carga
+    1RM  ──╳──►  Doble Umbral
+    1RM  ──╳──►  detección de meseta
+    1RM  ──╳──►  protocolo de descarga
+    1RM  ──╳──►  alertas
+    1RM  ──╳──►  KPIs
+
+  Dependencia unidireccional: el 1RM lee del historial y
+  ningún componente del sistema lee del 1RM.
+  Mismo modelo de aislamiento que HU-37.
+
+╔══════════════════════════════════════════════════════════════╗
+║  ⚠️  PROTOTIPO — PROPUESTA PENDIENTE DE VALIDACIÓN CON DISEÑO  ║
+╚══════════════════════════════════════════════════════════════╝

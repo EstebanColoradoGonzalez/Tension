@@ -1,13 +1,16 @@
 package com.estebancoloradogonzalez.tension.ui.catalog
 
+import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.estebancoloradogonzalez.tension.R
 import com.estebancoloradogonzalez.tension.data.local.storage.ImageStorageHelper
 import com.estebancoloradogonzalez.tension.domain.model.ProgressionDifficulty
 import com.estebancoloradogonzalez.tension.domain.usecase.catalog.CreateExerciseUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.catalog.GetAllFilterOptionsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,6 +24,7 @@ class CreateExerciseViewModel @Inject constructor(
     private val getAllFilterOptionsUseCase: GetAllFilterOptionsUseCase,
     private val createExerciseUseCase: CreateExerciseUseCase,
     private val imageStorageHelper: ImageStorageHelper,
+    @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CreateExerciseUiState())
@@ -47,8 +51,12 @@ class CreateExerciseViewModel @Inject constructor(
         _uiState.update { it.copy(name = name, nameError = null) }
     }
 
-    fun onEquipmentTypeSelected(id: Long) {
-        _uiState.update { it.copy(selectedEquipmentTypeId = id, equipmentError = null) }
+    fun onEquipmentTypeToggled(id: Long) {
+        _uiState.update { state ->
+            val newSet = state.selectedEquipmentTypeIds.toMutableSet()
+            if (newSet.contains(id)) newSet.remove(id) else newSet.add(id)
+            state.copy(selectedEquipmentTypeIds = newSet, equipmentError = null)
+        }
     }
 
     fun onMuscleZoneToggled(id: Long) {
@@ -95,8 +103,10 @@ class CreateExerciseViewModel @Inject constructor(
             _uiState.update { it.copy(nameError = "El nombre es obligatorio") }
             hasError = true
         }
-        if (state.selectedEquipmentTypeId == null) {
-            _uiState.update { it.copy(equipmentError = "Selecciona un tipo de equipo") }
+        if (state.selectedEquipmentTypeIds.isEmpty()) {
+            _uiState.update {
+                it.copy(equipmentError = context.getString(R.string.exercise_equipment_error_empty))
+            }
             hasError = true
         }
         if (state.selectedMuscleZoneIds.isEmpty()) {
@@ -110,7 +120,7 @@ class CreateExerciseViewModel @Inject constructor(
             try {
                 createExerciseUseCase(
                     name = state.name,
-                    equipmentTypeId = state.selectedEquipmentTypeId!!,
+                    equipmentTypeIds = state.selectedEquipmentTypeIds.toList(),
                     muscleZoneIds = state.selectedMuscleZoneIds.toList(),
                     isBodyweight = state.isBodyweight,
                     isIsometric = state.isIsometric,

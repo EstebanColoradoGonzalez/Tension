@@ -28,6 +28,7 @@ interface SessionRepository {
         reps: Int,
         rir: Int,
         captureUnit: WeightUnit,
+        equipmentTypeId: Long,
     )
     suspend fun finalizeExercise(sessionExerciseId: Long)
     suspend fun switchAlternativeInSession(sessionExerciseId: Long, exerciseId: Long)

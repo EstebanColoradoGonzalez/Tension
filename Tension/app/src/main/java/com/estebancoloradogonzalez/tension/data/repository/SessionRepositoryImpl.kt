@@ -6,6 +6,7 @@ import com.estebancoloradogonzalez.tension.data.local.dao.DailyRoutineOverrideDa
 import com.estebancoloradogonzalez.tension.data.local.dao.DaySkipDao
 import com.estebancoloradogonzalez.tension.data.local.dao.DeloadDao
 import com.estebancoloradogonzalez.tension.data.local.dao.DeloadFrozenVersionDao
+import com.estebancoloradogonzalez.tension.data.local.dao.EquipmentTypeDao
 import com.estebancoloradogonzalez.tension.data.local.dao.ExerciseDao
 import com.estebancoloradogonzalez.tension.data.local.dao.ExerciseProgressionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.ExerciseSetDao
@@ -34,6 +35,7 @@ import com.estebancoloradogonzalez.tension.domain.model.ActiveSession
 import com.estebancoloradogonzalez.tension.domain.model.DailyRoutineOverride
 import com.estebancoloradogonzalez.tension.domain.model.DayOutcome
 import com.estebancoloradogonzalez.tension.domain.model.DeloadState
+import com.estebancoloradogonzalez.tension.domain.model.EquipmentType
 import com.estebancoloradogonzalez.tension.domain.model.ExerciseHistoryData
 import com.estebancoloradogonzalez.tension.domain.model.ExerciseHistoryEntry
 import com.estebancoloradogonzalez.tension.domain.model.ExerciseResetLoad
@@ -67,6 +69,7 @@ import com.estebancoloradogonzalez.tension.domain.rules.DeloadLoadRule
 import com.estebancoloradogonzalez.tension.domain.rules.DeloadNeedRule
 import com.estebancoloradogonzalez.tension.domain.rules.NextTrainingDayRule
 import com.estebancoloradogonzalez.tension.domain.rules.DoubleThresholdRule
+import com.estebancoloradogonzalez.tension.domain.rules.ExternalLoadRule
 import com.estebancoloradogonzalez.tension.domain.rules.LoadIncrementResolver
 import com.estebancoloradogonzalez.tension.domain.rules.PrefilledLoadRule
 import com.estebancoloradogonzalez.tension.domain.rules.RoutineFatigueRule
@@ -106,6 +109,7 @@ class SessionRepositoryImpl @Inject constructor(
     private val database: TensionDatabase,
     private val deloadDao: DeloadDao,
     private val exerciseDao: ExerciseDao,
+    private val equipmentTypeDao: EquipmentTypeDao,
     private val profileDao: ProfileDao,
     private val currentDateProvider: CurrentDateProvider,
 ) : SessionRepository {
@@ -392,12 +396,8 @@ class SessionRepositoryImpl @Inject constructor(
                     sessionExerciseId = detail.sessionExerciseId,
                     exerciseId = detail.exerciseId,
                     name = detail.exerciseName,
-                    equipmentTypeName = detail.equipmentTypeName,
-                    muscleZones = detail.muscleZones
-                        ?.split(",")
-                        ?.map { it.trim() }
-                        ?.filter { it.isNotEmpty() }
-                        ?: emptyList(),
+                    equipmentTypes = detail.equipmentTypes.toAggregatedList(),
+                    muscleZones = detail.muscleZones.toAggregatedList(),
                     sets = detail.sets,
                     reps = detail.reps,
                     isBodyweight = detail.isBodyweight == 1,
@@ -451,7 +451,28 @@ class SessionRepositoryImpl @Inject constructor(
 
         val isDeload = info.deloadId != null
 
-        val hasExternalLoad = info.isBodyweight == 0 && info.isIsometric == 0
+        // Opciones admitidas y preselección: el implemento de la última serie registrada
+        // del ejercicio, y la primera opción del catálogo cuando no hay ninguna (CA-39.04).
+        val equipmentIds = exerciseDao.getEquipmentIdsByExercise(info.exerciseId).first()
+        val equipmentOptions = equipmentTypeDao.getByIds(equipmentIds).first()
+            .map { EquipmentType(id = it.id, name = it.name) }
+        val lastEquipmentTypeId = exerciseSetDao
+            .getLastEquipmentTypeIdForExercise(info.exerciseId)
+        val preselectedEquipmentTypeId = lastEquipmentTypeId
+            ?.takeIf { candidate -> equipmentOptions.any { it.id == candidate } }
+            ?: equipmentOptions.firstOrNull()?.id
+            ?: 0L
+
+        // La carga externa la gobierna el implemento, no solo la marca del ejercicio
+        // (CA-39.05). Aquí se decide el valor con el que el campo nace; la pantalla
+        // recalcula cuando el ejecutante cambia de implemento.
+        val preselectedEquipmentName = equipmentOptions
+            .firstOrNull { it.id == preselectedEquipmentTypeId }?.name
+        val hasExternalLoad = ExternalLoadRule.isCaptureEnabled(
+            isBodyweight = info.isBodyweight == 1,
+            isIsometric = info.isIsometric == 1,
+            equipmentName = preselectedEquipmentName,
+        )
 
         // Memory of the last handled weight, resolved on the exercise actually executed:
         // swapping a slot for its alternative must not inherit the primary's history.
@@ -516,6 +537,8 @@ class SessionRepositoryImpl @Inject constructor(
             isToTechnicalFailure = info.isToTechnicalFailure == 1,
             prescribedReps = info.reps,
             captureUnit = captureUnit,
+            equipmentOptions = equipmentOptions,
+            preselectedEquipmentTypeId = preselectedEquipmentTypeId,
         )
     }
 
@@ -525,25 +548,43 @@ class SessionRepositoryImpl @Inject constructor(
         reps: Int,
         rir: Int,
         captureUnit: WeightUnit,
+        equipmentTypeId: Long,
     ) {
         database.withTransaction {
             val nextSetNumber = exerciseSetDao.getNextSetNumber(sessionExerciseId)
             val info = sessionExerciseDao.getExerciseInfoForSet(sessionExerciseId)
                 ?: throw IllegalStateException("Session exercise not found")
 
-            // Exercises without external load have no unit to choose: they are always
-            // registered at zero kilograms.
-            val hasExternalLoad = info.isBodyweight == 0 && info.isIsometric == 0
+            // El implemento tiene que estar entre los que el ejercicio admite. La interfaz
+            // solo ofrece esos; esta guarda cubre la ruta de datos (CA-39.04).
+            val admitted = exerciseDao.getEquipmentIdsByExercise(info.exerciseId).first()
+            require(equipmentTypeId in admitted) {
+                "Equipment is not admitted by this exercise"
+            }
+
+            // Sin carga externa no hay peso ni unidad que elegir: la serie se registra en
+            // cero kilogramos. Lo decide el implemento y no solo la marca del ejercicio
+            // (CA-39.05) — el contrapeso de una máquina asistida registrado como peso
+            // invertiría el significado del dato.
+            val equipmentName = equipmentTypeDao.getByIds(listOf(equipmentTypeId)).first()
+                .firstOrNull()?.name
+            val hasExternalLoad = ExternalLoadRule.isCaptureEnabled(
+                isBodyweight = info.isBodyweight == 1,
+                isIsometric = info.isIsometric == 1,
+                equipmentName = equipmentName,
+            )
             val persistedUnit = if (hasExternalLoad) captureUnit else WeightUnit.KG
+            val persistedWeightKg = if (hasExternalLoad) weightKg else 0.0
 
             exerciseSetDao.insert(
                 ExerciseSetEntity(
                     sessionExerciseId = sessionExerciseId,
                     setNumber = nextSetNumber,
-                    weightKg = weightKg,
+                    weightKg = persistedWeightKg,
                     reps = reps,
                     rir = rir,
                     captureUnit = persistedUnit.name,
+                    equipmentTypeId = equipmentTypeId,
                 ),
             )
 
@@ -1090,6 +1131,7 @@ class SessionRepositoryImpl @Inject constructor(
                     reps = set.reps,
                     rir = set.rir,
                     captureUnit = WeightUnit.fromCode(set.captureUnit),
+                    equipmentTypeName = set.equipmentTypeName,
                 )
             }
             SessionDetailExercise(
@@ -1125,6 +1167,7 @@ class SessionRepositoryImpl @Inject constructor(
                 date = dto.date,
                 routineName = dto.routineName,
                 versionNumber = dto.versionNumber,
+                equipmentTypeName = dto.equipmentTypeName,
                 avgWeightKg = dto.avgWeightKg,
                 totalReps = dto.totalReps,
                 avgRir = dto.avgRir,
@@ -1133,11 +1176,17 @@ class SessionRepositoryImpl @Inject constructor(
             )
         }
 
+        // Solo los implementos con los que se ha entrenado de verdad: un ejercicio que
+        // admite varios pero se ha hecho con uno solo muestra ese uno, sin selectores
+        // vacíos ni agrupaciones sin datos (CA-39.08). El orden es el de la consulta.
+        val equipmentOptions = entries.map { it.equipmentTypeName }.distinct()
+
         return ExerciseHistoryData(
             exerciseName = exercise.name,
             progressionStatus = progression?.status ?: "NO_HISTORY",
             isBodyweight = exercise.isBodyweight == 1,
             isIsometric = exercise.isIsometric == 1,
+            equipmentOptions = equipmentOptions,
             entries = entries,
         )
     }
@@ -1416,8 +1465,8 @@ class SessionRepositoryImpl @Inject constructor(
                 SessionPreviewExercise(
                     exerciseId = dto.exerciseId,
                     exerciseName = dto.exerciseName,
-                    equipmentTypeName = dto.equipmentTypeName,
-                    muscleZones = dto.muscleZones ?: "",
+                    equipmentTypes = dto.equipmentTypes.toAggregatedList(),
+                    muscleZones = dto.muscleZones.toAggregatedList().joinToString(", "),
                     sets = dto.sets,
                     reps = dto.reps,
                     isBodyweight = dto.isBodyweight == 1,

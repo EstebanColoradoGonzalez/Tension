@@ -2,24 +2,22 @@ package com.estebancoloradogonzalez.tension.data.local.entity
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
-import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.estebancoloradogonzalez.tension.domain.model.ProgressionDifficulty
 
+/**
+ * Ejercicio del catálogo.
+ *
+ * El equipamiento **no** es un atributo del ejercicio desde HU-39: vive en
+ * [ExerciseEquipmentEntity] como lista de implementos admitidos. Con ello el nombre dejó
+ * de formar clave compuesta con el equipamiento y es único por sí solo — el mismo
+ * movimiento con distintos implementos es un ejercicio, no varios.
+ */
 @Entity(
     tableName = "exercise",
-    foreignKeys = [
-        ForeignKey(
-            entity = EquipmentTypeEntity::class,
-            parentColumns = ["id"],
-            childColumns = ["equipment_type_id"],
-            onDelete = ForeignKey.RESTRICT,
-        ),
-    ],
     indices = [
-        Index(value = ["equipment_type_id"]),
-        Index(value = ["name", "equipment_type_id"], unique = true),
+        Index(value = ["name"], unique = true),
     ],
 )
 data class ExerciseEntity(
@@ -29,9 +27,6 @@ data class ExerciseEntity(
 
     @ColumnInfo(name = "name")
     val name: String,
-
-    @ColumnInfo(name = "equipment_type_id")
-    val equipmentTypeId: Long,
 
     @ColumnInfo(name = "is_bodyweight", defaultValue = "0")
     val isBodyweight: Int = 0,

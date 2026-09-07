@@ -52,7 +52,7 @@ class GetExercisesUseCaseTest {
     private fun exercise(id: Long, name: String) = Exercise(
         id = id,
         name = name,
-        equipmentTypeName = "Máquina",
+        equipmentTypes = listOf("Máquina"),
         muscleZones = listOf("Pecho Medio"),
         muscleGroup = null,
         isBodyweight = false,

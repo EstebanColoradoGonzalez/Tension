@@ -13,7 +13,7 @@ data class ExerciseDictionaryUiState(
 data class ExerciseItem(
     val id: Long,
     val name: String,
-    val equipmentTypeName: String,
+    val equipmentSummary: String,
     val muscleZonesSummary: String,
     val isCustom: Boolean,
 )

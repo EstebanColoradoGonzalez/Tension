@@ -713,7 +713,7 @@ private fun AlternativeSelectionSheet(
                 items(state.alternatives) { option ->
                     androidx.compose.material3.ListItem(
                         headlineContent = { Text(option.name) },
-                        supportingContent = { Text("${option.muscleZonesSummary} · ${option.equipmentTypeName}") },
+                        supportingContent = { Text("${option.muscleZonesSummary} · ${option.equipmentSummary}") },
                         modifier = Modifier.clickable { onAlternativeSelected(option.exerciseId) },
                         colors = androidx.compose.material3.ListItemDefaults.colors(
                             containerColor = if (state.selectedExerciseId == option.exerciseId) {

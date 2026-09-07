@@ -11,7 +11,11 @@ import com.estebancoloradogonzalez.tension.domain.model.ProgressionDifficulty
 data class SeedExercise(
     val id: Long,
     val name: String,
-    val equipmentTypeId: Long,
+    /**
+     * Implementos admitidos, en el orden declarado por el catálogo. Nunca vacío: un
+     * ejercicio sin equipamiento no puede existir (HU-39).
+     */
+    val equipmentTypeIds: List<Long>,
     val muscleZoneIds: List<Long>,
     val mediaResource: String,
     val isBodyweight: Boolean = false,

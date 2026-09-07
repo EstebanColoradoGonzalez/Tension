@@ -13,9 +13,13 @@ interface ExerciseRepository {
     fun getAllMuscleZones(): Flow<List<MuscleZone>>
     fun getEquipmentTypesWithExercises(): Flow<List<EquipmentType>>
     fun getMuscleZonesWithExercises(): Flow<List<MuscleZone>>
+
+    /** Ids de los implementos que el ejercicio admite, en orden de catálogo. */
+    fun getEquipmentIdsOfExercise(exerciseId: Long): Flow<List<Long>>
+
     suspend fun createExercise(
         name: String,
-        equipmentTypeId: Long,
+        equipmentTypeIds: List<Long>,
         muscleZoneIds: List<Long>,
         isBodyweight: Boolean,
         isIsometric: Boolean,
@@ -25,5 +29,16 @@ interface ExerciseRepository {
     ): Long
     suspend fun updateExerciseImage(exerciseId: Long, mediaResource: String?)
     suspend fun updateProgressionDifficulty(exerciseId: Long, difficulty: ProgressionDifficulty)
-    suspend fun exerciseExistsByNameAndEquipment(name: String, equipmentTypeId: Long): Boolean
+
+    /** El nombre es único por sí solo: el implemento no forma parte de la identidad. */
+    suspend fun exerciseExistsByName(name: String): Boolean
+
+    suspend fun addEquipmentToExercise(exerciseId: Long, equipmentTypeId: Long)
+    suspend fun removeEquipmentFromExercise(exerciseId: Long, equipmentTypeId: Long)
+
+    /** Cuántos implementos admite el ejercicio. Nunca puede quedar en 0. */
+    suspend fun countEquipmentOfExercise(exerciseId: Long): Int
+
+    /** Series ya registradas del ejercicio con ese implemento. */
+    suspend fun countSetsWithEquipment(exerciseId: Long, equipmentTypeId: Long): Int
 }

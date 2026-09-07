@@ -183,7 +183,14 @@ class MigrationV16ToV19Test {
      * Ninguna migración registrada falta ni sobra respecto al recorrido 6 → 19.
      *
      * Es la comprobación que habría detectado el fallo original sin necesidad de un
-     * dispositivo: la cadena tiene que ser continua y terminar en la versión del esquema.
+     * dispositivo: la cadena tiene que ser continua y terminar exactamente donde
+     * `Migrations.LAST_MIGRATED_VERSION` dice.
+     *
+     * **No** se compara contra la versión del esquema. ADR-019 permite que el esquema vaya
+     * por delante durante la beta —el reinicio lo hace el ejecutante desinstalando— y
+     * HU-39 lo lleva a la 20 sin migración. Lo que la prueba sigue impidiendo es lo que
+     * causó el fallo: un hueco por olvido. Subir el esquema sin migración obliga a mover
+     * una constante con nombre y KDoc, visible en el diff.
      */
     @Test
     fun la_cadena_de_migraciones_no_tiene_huecos() {
@@ -199,11 +206,25 @@ class MigrationV16ToV19Test {
             )
         }
         assertEquals(
-            "La ultima migracion debe llegar a la version del esquema",
-            VERSION_ESQUEMA,
+            "La ultima migracion debe llegar a LAST_MIGRATED_VERSION",
+            Migrations.LAST_MIGRATED_VERSION,
             saltos.last().second,
         )
         assertNotNull(saltos.firstOrNull())
+    }
+
+    /**
+     * El salto entre la ultima migracion y el esquema vigente es la excepcion de ADR-019, y
+     * es **deliberado**: nunca hacia atras y nunca a mas de una version de distancia sin que
+     * alguien lo declare.
+     */
+    @Test
+    fun el_esquema_no_va_por_detras_de_la_ultima_migracion() {
+        assertTrue(
+            "El esquema ($VERSION_ESQUEMA) no puede ser anterior a la ultima migracion " +
+                "(${Migrations.LAST_MIGRATED_VERSION})",
+            VERSION_ESQUEMA >= Migrations.LAST_MIGRATED_VERSION,
+        )
     }
 
     private fun existeTabla(db: SupportSQLiteDatabase, tabla: String): Boolean =
@@ -219,6 +240,6 @@ class MigrationV16ToV19Test {
         const val TEST_DB = "migration-test-16-19"
 
         /** Debe seguir a `@Database(version = ...)` de `TensionDatabase`. */
-        const val VERSION_ESQUEMA = 19
+        const val VERSION_ESQUEMA = 20
     }
 }

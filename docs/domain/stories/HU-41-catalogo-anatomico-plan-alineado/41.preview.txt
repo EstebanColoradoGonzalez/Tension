@@ -1,0 +1,365 @@
+╔══════════════════════════════════════════════════════════════╗
+║  ⚠️  PROTOTIPO — PROPUESTA PENDIENTE DE VALIDACIÓN CON DISEÑO  ║
+╚══════════════════════════════════════════════════════════════╝
+
+HU #41 — Catálogo anatómico y plan por defecto alineado
+Plataforma: mobile / portrait (390 px) · Material 3 · targets ≥ 48 dp
+
+
+────────────────────────────────────────────────────────────────
+ CREAR / EDITAR EJERCICIO  ·  zonas con jerarquía (CA-41.02)
+────────────────────────────────────────────────────────────────
+
+  Dos campos separados. La jerarquía queda implícita en el
+  campo donde se elige, y la obligatoriedad se lee donde se
+  incumple.
+
++──────────────────────────────────────────+
+| ←  Editar · Press de Banca Inclinado     |
++──────────────────────────────────────────+
+|                                          |
+|  Nombre (*)                              |
+|  +──────────────────────────────────────+|
+|  | Press de Banca Inclinado             ||
+|  +──────────────────────────────────────+|
+|                                          |
+|  Equipamiento admitido (*)     → HU-39   |
+|  4 de 15 seleccionados                   |
+|                                          |
+|  Zonas principales (*)                   |
+|  ─────────────────────────────────────   |
+|  +──────────────────────────────────────+|
+|  | Pectoral Superior                 ✕  ||  48 dp por fila
+|  +──────────────────────────────────────+|
+|  [ + Añadir zona principal            ] |
+|  ┌ espacio reservado para error ───────┐ |
+|  └──────────────────────────────────────┘|
+|                                          |
+|  Zonas secundarias        (opcional)     |
+|  ─────────────────────────────────────   |
+|  +──────────────────────────────────────+|
+|  | Deltoides Anterior                ✕  ||
+|  +──────────────────────────────────────+|
+|  +──────────────────────────────────────+|
+|  | Tríceps Braquial                  ✕  ||
+|  +──────────────────────────────────────+|
+|  [ + Añadir zona secundaria           ] |
+|                                          |
+|  Dificultad de progresión                |
+|  +──────────────────────────────────────+|
+|  | ▼ Baja                               ||  no se modifica
+|  +──────────────────────────────────────+|  en esta historia
+|                                          |
+|  Imagen del ejercicio                    |
+|  [  🖼  390×220  ]                       |
+|                                          |
+|      [ Cancelar ]   [   Guardar   ]      |
++──────────────────────────────────────────+
+
+  Estado error — sin zona principal (CA-41.09):
+
+|  Zonas principales (*)                   |
+|  ═════════════════════════════════════   |  borde error
+|  [ + Añadir zona principal            ] |  Gray600 2px
+|  ⚠ Elige al menos una zona principal     |
+|                                          |
+|  Zonas secundarias        (opcional)     |
+|  | Deltoides Anterior                ✕  ||  el error vive
+|                                          |  junto al campo
+|      [ Cancelar ]   [   Guardar   ]      |  que lo causa
+|                     ▒▒▒▒▒▒▒▒▒▒▒▒▒        |  deshabilitado
+
+
+────────────────────────────────────────────────────────────────
+ SELECTOR DE ZONA  ·  33 zonas por grupo muscular (CA-41.01)
+────────────────────────────────────────────────────────────────
+
+   +────────────────────────────────────+
+   |  Añadir zona principal        ✕    |
+   |  ────────────────────────────────  |
+   |  🔍 [______________________]       |
+   |  ────────────────────────────────  |
+   |  PECHO                             |  encabezado de
+   |    Pectoral Superior            ✓  |  grupo, Gray700
+   |    Pectoral Medio                  |
+   |    Pectoral Inferior               |  ✓ ya elegida
+   |    Pectoral Mayor                  |
+   |  HOMBRO                            |
+   |    Deltoides Anterior           ◦  |  ◦ ya elegida como
+   |    Deltoides Lateral               |    secundaria
+   |    Deltoides Posterior             |
+   |    Manguito Rotador                |
+   |  ESPALDA                           |
+   |    Dorsal Ancho                    |
+   |    Espalda Alta                    |
+   |    Trapecio                        |
+   |    Trapecio Superior               |
+   |    Trapecio Inferior               |
+   |    Romboides                       |
+   |    Erectores Espinales             |
+   |  BÍCEPS                            |
+   |    Bíceps Braquial                 |
+   |    Bíceps — Cabeza Larga           |
+   |    Bíceps — Cabeza Corta           |
+   |  TRÍCEPS                           |
+   |    Tríceps Braquial             ◦  |
+   |    Tríceps — Cabeza Larga          |
+   |    Tríceps — Cabeza Lateral        |
+   |    Tríceps — Cabeza Medial         |
+   |  ANTEBRAZO                         |
+   |    Braquial                        |
+   |    Braquiorradial                  |
+   |  ABDOMEN                           |
+   |    Recto Abdominal                 |
+   |    Oblicuos                        |
+   |  CUÁDRICEPS · ISQUIOTIBIALES ·     |
+   |  GLÚTEOS · ADUCTORES ·             |
+   |  ABDUCTORES · GEMELOS · CUELLO     |
+   |    ...                             |
+   |  ────────────────────────────────  |
+   |              [ Cancelar ]  [ OK ]  |
+   +────────────────────────────────────+
+
+  ⓘ Una zona ya elegida en el otro campo se marca, y no puede
+    seleccionarse a la vez como principal y secundaria.
+
+
+────────────────────────────────────────────────────────────────
+ DICCIONARIO  ·  detalle con jerarquía visible (CA-41.02)
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+| ←  Press de Banca Inclinado              |
++──────────────────────────────────────────+
+|  [  🖼  390×220  ]                       |
+|                                          |
+|  Equipamiento admitido                   |
+|  Barra · Mancuerna · Máquina ·           |
+|  Máquina Smith                           |
+|                                          |
+|  Zona principal                          |  Gray900, primero
+|  Pectoral Superior                       |
+|                                          |
+|  Zonas secundarias                       |  Gray700, después
+|  Deltoides Anterior · Tríceps Braquial   |  y menor tamaño
+|                                          |
+|  Dificultad de progresión                |
+|  Baja                                    |
++──────────────────────────────────────────+
+
+
+────────────────────────────────────────────────────────────────
+ PLAN  ·  equipamiento sugerido por asignación (CA-41.05)
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+| ←  Pull — Trapecios y Espalda Media      |
+|    Versión 1 · viernes                   |
++──────────────────────────────────────────+
+|  1  Remo T Inclinado                     |
+|     Máquina · 4 series · 8-12        ⋮   |  ← sugerido
+|  ─────────────────────────────────────   |
+|  2  Face Pull                            |
+|     Polea · 3 series · 8-12          ⋮   |
+|     ↳ alt. Vuelos Posteriores            |  cada uno del
+|        Mancuerna · 3 series          ⋮   |  puesto dual con
+|  ─────────────────────────────────────   |  SU sugerencia
+|  3  Remo Horizontal                      |
+|     Polea · 3 series · 8-12          ⋮   |
+|  ─────────────────────────────────────   |
+|  4  Remo al Mentón               ✦ nuevo |  ← sustituye a
+|     Barra · 3 series · 8-12          ⋮   |    Remo Unilateral
+|  ─────────────────────────────────────   |    Polea Alta
+|  5  Curl de Predicador                   |
+|     Mancuerna · 3 series · 8-12      ⋮   |
+|  ─────────────────────────────────────   |
+|  6  Crunch Abdominal                     |
+|     Polea · 3 series · 8-12          ⋮   |
++──────────────────────────────────────────+
+
+  Editar la sugerencia — solo las opciones del ejercicio:
+
+   +────────────────────────────────────+
+   |  Equipamiento sugerido             |
+   |  Remo al Mentón                    |
+   |  ────────────────────────────────  |
+   |  (●) Barra                         |
+   |  (○) Polea                         |
+   |  (○) Mancuerna                     |
+   |  ────────────────────────────────  |
+   |  ⓘ Solo los implementos que este   |
+   |    ejercicio admite                |
+   |              [ Cancelar ]  [ OK ]  |
+   +────────────────────────────────────+
+
+  Estado error — sugerencia fuera de las opciones (CA-41.08):
+
+   ⚠ «Máquina Smith» no está entre los implementos que
+     Remo al Mentón admite.
+
+  Y al revés — quitar del ejercicio un implemento que el plan
+  sugiere:
+
+   ⚠ No se puede quitar «Barra»: el plan lo sugiere para
+     Remo al Mentón el viernes.
+
+
+────────────────────────────────────────────────────────────────
+ REGISTRAR SERIE  ·  la sugerencia preselecciona (CA-41.05)
+────────────────────────────────────────────────────────────────
+
+  Primera serie del ejercicio en la sesión:
+
+|  Remo al Mentón                          |
+|  Serie 1 de 3 · 8-12 reps                |
+|                                          |
+|  Equipamiento (*)                        |
+|  +──────────────────────────────────────+|
+|  | ▼ Barra                              ||
+|  +──────────────────────────────────────+|
+|  ⓘ sugerido por el plan                  |
+
+  El Ejecutante lo cambia a Polea y registra. Serie siguiente:
+
+|  Remo al Mentón                          |
+|  Serie 2 de 3 · 8-12 reps                |
+|                                          |
+|  Equipamiento (*)                        |
+|  +──────────────────────────────────────+|
+|  | ▼ Polea                              ||
+|  +──────────────────────────────────────+|
+|  ⓘ último implemento usado                |  el último cambio
+|                                          |  manda
+
+  Ejercicio SIN asignación de plan — el añadido en sesión
+  por HU-43:
+
+|  Equipamiento (*)                        |
+|  +──────────────────────────────────────+|
+|  | ▼ Polea                              ||  último uso, o la
+|  +──────────────────────────────────────+|  primera opción
+|                                          |  admitida si nunca
+                                              se usó
+
+
+────────────────────────────────────────────────────────────────
+ PLAN POR DEFECTO  ·  el delta de los tres días (CA-41.06)
+────────────────────────────────────────────────────────────────
+
+  MIÉRCOLES · Lower — Cuádriceps
+
+    antes                          después
+    ─────────────────────────      ─────────────────────────
+    1 Extensión de Cuádriceps 4    1 Aductores            3  ◄
+    2 Hack o Prensa           3    2 Extensión Cuádriceps 4
+    3 Sentadilla Búlgara      3    3 Hack o Prensa        3
+    4 Aductores               3 ►  4 Sentadilla Búlgara   3
+    5 Elev. Pantorrilla       3    5 Elev. Pantorrilla    3
+
+  SÁBADO · Lower — Isquiotibiales y Glúteo
+
+    antes                          después
+    ─────────────────────────      ─────────────────────────
+    1 Curl Isquiotibiales     4    1 Aductores            3  ◄
+    2 Peso Muerto Rumano      3    2 Curl Isquiotibiales  4
+    3 Hip Thrust              3    3 Peso Muerto Rumano   3
+    4 Aductores               3 ►  4 Hip Thrust           3
+    5 Elev. Pantorrilla       3    5 Elev. Pantorrilla    3
+
+  VIERNES · Pull — Trapecios y Espalda Media
+
+    antes                          después
+    ─────────────────────────      ─────────────────────────
+    4 Remo Unilateral         3 ►  4 Remo al Mentón       3  ◄
+      Polea Alta                     Barra
+
+    ⓘ Remo Unilateral Polea Alta permanece en el Diccionario
+      como alternativa de puesto o asignación manual
+
+  LUNES · MARTES · JUEVES        sin cambio de composición
+
+  Totales que no cambian:  6 rutinas · 1 versión cada una
+                           35 asignaciones · 4 puestos duales
+                           rango 8-12 en todas
+                           relación rutina ↔ día intacta
+
+
+────────────────────────────────────────────────────────────────
+ MÉTRICAS  ·  todas las zonas cuentan (CA-41.04)
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+| ←  Volumen por grupo muscular            |
+|    Últimos 7 días                        |
++──────────────────────────────────────────+
+|  Pecho          ████████████   4 210 kg  |
+|  Espalda        ██████████     3 480 kg  |
+|  Cuádriceps     ████████       2 940 kg  |
+|  Hombro         ██████         2 120 kg  |
+|  Tríceps        ████           1 380 kg  |
+|  Glúteos        ███              980 kg  |
+|  Bíceps         ██               720 kg  |
+|  Isquiotibiales ██               640 kg  |
+|  Abdomen        █                350 kg  |
+|  Gemelos        █                290 kg  |
+|  Aductores      █                240 kg  |
+|  Antebrazo      ▌                150 kg  |
+|                                          |
+|  ⓘ Cuentan todas las zonas del ejercicio,|
+|    principales y secundarias, sin        |
+|    ponderación                           |
++──────────────────────────────────────────+
+
+  Los 14 grupos siguen siendo el eje de agregación.
+  Lo que gana precisión es lo que hay POR DEBAJO de cada uno:
+
+    Hombro   ◄── Deltoides Anterior
+             ◄── Deltoides Lateral
+             ◄── Deltoides Posterior
+             ◄── Manguito Rotador
+
+    antes:   una sola zona «Hombro» para
+             Elevación Lateral y Press Militar por igual
+
+
+────────────────────────────────────────────────────────────────
+ CATÁLOGO DE ZONAS  ·  33 zonas, 14 grupos (CA-41.01)
+────────────────────────────────────────────────────────────────
+
+  Pecho          4   Pectoral Superior / Medio / Inferior /
+                     Mayor
+  Hombro         4   Deltoides Anterior / Lateral /
+                     Posterior · Manguito Rotador
+  Espalda        7   Dorsal Ancho · Espalda Alta · Trapecio ·
+                     Trapecio Superior / Inferior ·
+                     Romboides · Erectores Espinales
+  Bíceps         3   Bíceps Braquial · Cabeza Larga / Corta
+  Tríceps        4   Tríceps Braquial · Cabeza Larga /
+                     Lateral / Medial
+  Antebrazo      2   Braquial · Braquiorradial
+  Abdomen        2   Recto Abdominal · Oblicuos
+  Cuádriceps     1   Cuádriceps
+  Isquiotibiales 1   Isquiotibiales
+  Glúteos        1   Glúteo Mayor
+  Aductores      1   Aductores
+  Abductores     1   Abductores          ○ sin ejercicio seed
+  Gemelos        1   Gastrocnemio
+  Cuello         1   Cuello              ○ sin ejercicio seed
+                ──
+                33
+
+  Retiradas:  Hombro       ─► los tres deltoides + manguito
+              Antebrazo    ─► braquial + braquiorradial
+              Espalda Media ─► trapecio + romboides +
+                               espalda alta
+
+  Conservadas sin ejercicio:  Abductores, Cuello
+              para no impedir ejercicios propios a futuro
+
+  No se crea:  Core — no es un músculo. Press Pallof pasa a
+               Oblicuos (principal) + Recto Abdominal
+               (secundario)
+
+╔══════════════════════════════════════════════════════════════╗
+║  ⚠️  PROTOTIPO — PROPUESTA PENDIENTE DE VALIDACIÓN CON DISEÑO  ║
+╚══════════════════════════════════════════════════════════════╝

@@ -46,7 +46,7 @@ class PlanVersionDetailViewModel @Inject constructor(
                     PlanExerciseItem(
                         exerciseId = pe.exerciseId,
                         name = pe.name,
-                        equipmentTypeName = pe.equipmentTypeName,
+                        equipmentSummary = pe.equipmentTypes.joinToString(" · "),
                         muscleZonesSummary = pe.muscleZones.joinToString(", "),
                         sets = pe.sets,
                         repsDisplay = repsDisplay,
@@ -134,7 +134,7 @@ class PlanVersionDetailViewModel @Inject constructor(
                         AssignableExerciseItem(
                             id = e.id,
                             name = e.name,
-                            equipmentTypeName = e.equipmentTypeName,
+                            equipmentSummary = e.equipmentTypes.joinToString(" · "),
                             muscleZonesSummary = e.muscleZones.joinToString(", "),
                         )
                     },
@@ -239,7 +239,7 @@ class PlanVersionDetailViewModel @Inject constructor(
                     AssignableExerciseItem(
                         id = e.id,
                         name = e.name,
-                        equipmentTypeName = e.equipmentTypeName,
+                        equipmentSummary = e.equipmentTypes.joinToString(" · "),
                         muscleZonesSummary = e.muscleZones.joinToString(", "),
                     )
                 },

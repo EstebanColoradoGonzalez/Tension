@@ -31,6 +31,7 @@ import com.estebancoloradogonzalez.tension.data.local.entity.DeloadEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.DeloadFrozenVersionEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.EquipmentTypeEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.ExerciseEntity
+import com.estebancoloradogonzalez.tension.data.local.entity.ExerciseEquipmentEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.ExerciseMuscleZoneEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.ExerciseProgressionEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.ExerciseSetEntity
@@ -62,6 +63,7 @@ import com.estebancoloradogonzalez.tension.data.local.entity.WeightRecordEntity
         EquipmentTypeEntity::class,
         ExerciseEntity::class,
         ExerciseMuscleZoneEntity::class,
+        ExerciseEquipmentEntity::class,
         PlanAssignmentEntity::class,
         SessionEntity::class,
         SessionExerciseEntity::class,
@@ -72,7 +74,7 @@ import com.estebancoloradogonzalez.tension.data.local.entity.WeightRecordEntity
         DeloadFrozenVersionEntity::class,
         TreeStateEntity::class,
     ],
-    version = 19,
+    version = 20,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)

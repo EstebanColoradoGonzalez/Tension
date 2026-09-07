@@ -23,11 +23,13 @@ class GetExerciseHistoryUseCaseTest {
             progressionStatus = "IN_PROGRESSION",
             isBodyweight = false,
             isIsometric = false,
+            equipmentOptions = listOf("Barra"),
             entries = listOf(
                 ExerciseHistoryEntry(
                     date = "2026-02-15",
                     routineName = "Push",
                     versionNumber = 1,
+                    equipmentTypeName = "Barra",
                     avgWeightKg = 60.0,
                     totalReps = 40,
                     avgRir = 2.0,
@@ -37,6 +39,7 @@ class GetExerciseHistoryUseCaseTest {
                     date = "2026-02-10",
                     routineName = "Push",
                     versionNumber = 1,
+                    equipmentTypeName = "Barra",
                     avgWeightKg = 57.5,
                     totalReps = 38,
                     avgRir = 2.5,
@@ -46,6 +49,7 @@ class GetExerciseHistoryUseCaseTest {
                     date = "2026-02-05",
                     routineName = "Push",
                     versionNumber = 1,
+                    equipmentTypeName = "Barra",
                     avgWeightKg = 55.0,
                     totalReps = 36,
                     avgRir = 3.0,
@@ -69,6 +73,7 @@ class GetExerciseHistoryUseCaseTest {
             progressionStatus = "NO_HISTORY",
             isBodyweight = false,
             isIsometric = false,
+            equipmentOptions = emptyList(),
             entries = emptyList(),
         )
         coEvery { repository.getExerciseHistory(99L) } returns historyData

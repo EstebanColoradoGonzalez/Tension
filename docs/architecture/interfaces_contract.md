@@ -364,7 +364,7 @@
 #### `D1-T1`: Filtrar Diccionario de Ejercicios
 
 - **Tipo de Trigger (Entrada):** `Acción del ejecutante: selecciona un valor en los dropdowns de filtro de la vista D1. El filtro se aplica en tiempo real al cambiar cualquier dropdown.`
-- **Descripción:** El sistema consulta `exercise` JOIN `exercise_muscle_zone` JOIN `muscle_zone` y `equipment_type` aplicando los filtros activos. Devuelve la lista filtrada.
+- **Descripción:** El sistema consulta `exercise` con sus dos relaciones N:M —`exercise_muscle_zone` y `exercise_equipment`— aplicando los filtros activos. Devuelve la lista filtrada. El filtro por equipamiento coincide si **alguna** de las opciones que el ejercicio admite es la filtrada, no si es «la» suya: desde HU-39 un ejercicio declara una lista.
 
 **Payload / Parámetros (Input):**
 
@@ -385,7 +385,7 @@
     {
       "id": "INTEGER",
       "name": "TEXT",
-      "equipment_type": "TEXT",
+      "equipment_types": ["TEXT"] ,
       "muscle_zones": ["TEXT"],
       "is_custom": "BOOLEAN",
       "is_bodyweight": "BOOLEAN",
@@ -404,7 +404,7 @@
 #### `D2-T1`: Consultar Detalle de Ejercicio
 
 - **Tipo de Trigger (Entrada):** `Acción del ejecutante: toca un ejercicio en D1, D4, E1 o F3 para ver su ficha completa.`
-- **Descripción:** El sistema recupera los datos completos del ejercicio seleccionado incluyendo zonas musculares asociadas y ruta de media visual.
+- **Descripción:** El sistema recupera los datos completos del ejercicio seleccionado incluyendo **todos** los implementos que admite, las zonas musculares asociadas y la ruta de media visual.
 
 **Payload / Parámetros (Input):**
 
@@ -422,7 +422,8 @@
 {
   "id": "INTEGER",
   "name": "TEXT",
-  "equipment_type": "TEXT",
+  "equipment_types": ["TEXT"] ,
+  "equipment_types_with_sets": ["INTEGER"] ,
   "muscle_zones": ["TEXT"],
   "is_custom": "BOOLEAN",
   "is_bodyweight": "BOOLEAN",
@@ -433,6 +434,8 @@
   "effective_plateau_threshold": "INTEGER // Derivado, no persistido: techo(umbral base del perfil x multiplicador de la dificultad). Se muestra como 'Se considerará estancado tras N sesiones sin progresar'."
 }
 ```
+
+> `equipment_types` son **todas** las opciones que el ejercicio admite, en el orden del catálogo, y `equipment_types_with_sets` los identificadores de las que ya tienen series registradas — las que la ficha marca con candado y no se pueden retirar (`D2-T3`).
 
 ---
 
@@ -456,17 +459,44 @@
 
 ---
 
-#### `D5-T1`: Crear Ejercicio Personalizado
+#### `D2-T3`: Editar Equipamiento Admitido del Ejercicio
 
-- **Tipo de Trigger (Entrada):** `Acción del ejecutante: toca el botón "Crear" en D5 (Crear Ejercicio) con datos válidos.`
-- **Descripción:** El sistema valida la unicidad del par `(name, equipment_type_id)` y persiste el nuevo ejercicio con `is_custom = 1`. Crea las entradas correspondientes en `exercise_muscle_zone`. Si se seleccionó imagen, la copia al almacenamiento interno.
+- **Tipo de Trigger (Entrada):** `Acción del ejecutante: marca o desmarca una casilla de la lista de equipamiento admitido en D2.`
+- **Descripción:** El sistema persiste la relación `exercise_equipment` de inmediato, **sin botón de guardado** — mismo patrón que el cambio de imagen (`D2-T2`) y el de dificultad de progresión. Marcar añade la fila; desmarcar **valida antes de escribir** y, si el motivo lo impide, no escribe nada y la casilla vuelve a su sitio, porque el estado se deriva del flujo de Room y ese flujo no cambió.
+- **Aplica igual** a los 37 ejercicios seed y a los creados por el ejecutante.
 
 **Payload / Parámetros (Input):**
 
 ```json
 {
-  "name": "TEXT // Obligatorio. No vacío.",
+  "exercise_id": "INTEGER // Obligatorio.",
   "equipment_type_id": "INTEGER // Obligatorio. FK válida a equipment_type.",
+  "action": "TEXT ['ADD', 'REMOVE'] // Determinado por el estado de la casilla."
+}
+```
+
+**Respuesta / Salida (Output Esperado):**
+
+- **Estado de Éxito:** `exercise_equipment actualizado. D2 refleja la lista nueva, su contador y sus candados.`
+- **Estado de Error (última opción):** `ERR_EQUIPMENT_REQUIRED. No se persiste. Mensaje inline al pie de la lista: el atributo es obligatorio y no admite lista vacía.`
+- **Estado de Error (con historial):** `ERR_EQUIPMENT_HAS_SETS. No se persiste. Mensaje inline que nombra el implemento: existen series registradas con él, y una serie ya escrita no puede quedar apuntando a un equipamiento que el ejercicio dejó de admitir.`
+
+> La comprobación de la última opción va **antes** que la del historial: con una sola opción el motivo es que quedaría vacía, y anunciar el historial cuando el problema es otro haría buscar donde no está.
+
+---
+
+#### `D5-T1`: Crear Ejercicio Personalizado
+
+- **Tipo de Trigger (Entrada):** `Acción del ejecutante: toca el botón "Crear" en D5 (Crear Ejercicio) con datos válidos.`
+- **Descripción:** El sistema valida la unicidad de `name` —el nombre es único **por sí solo** desde HU-39: el implemento no forma parte de la identidad del ejercicio— y persiste el nuevo ejercicio con `is_custom = 1`. Crea las entradas correspondientes en `exercise_muscle_zone` y en `exercise_equipment`, en la misma transacción. Si se seleccionó imagen, la copia al almacenamiento interno.
+- **El equipamiento se elige en una lista de casillas** con los 15 tipos del catálogo, en su orden declarado, con un contador de seleccionados al pie. Se exige **al menos uno** para poder guardar, y el botón permanece deshabilitado mientras la selección esté vacía.
+
+**Payload / Parámetros (Input):**
+
+```json
+{
+  "name": "TEXT // Obligatorio. No vacío. Único por sí solo en el catálogo.",
+  "equipment_type_ids": ["INTEGER"] ,
   "muscle_zone_ids": ["INTEGER"] ,
   "is_bodyweight": "BOOLEAN // Opcional. Default false.",
   "is_isometric": "BOOLEAN // Opcional. Default false. Si true, is_bodyweight debe ser true.",
@@ -487,7 +517,10 @@
 }
 ```
 
-- **Estado de Error (unicidad):** `Snackbar con mensaje de error. No se persiste el ejercicio. El formulario permanece con los datos ingresados.`
+- **Estado de Error (unicidad):** `ERR_EXERCISE_NAME_DUPLICATE. Snackbar con mensaje de error. No se persiste el ejercicio. El formulario permanece con los datos ingresados.`
+- **Estado de Error (equipamiento vacío):** `ERR_EQUIPMENT_REQUIRED. Error inline en el campo de equipamiento. El botón de guardar permanece deshabilitado mientras la selección esté vacía.`
+
+> `equipment_type_ids` es obligatorio y no vacío. Los identificadores repetidos se colapsan.
 
 ---
 
@@ -677,7 +710,11 @@
 
   El **valor precargado** en el campo de peso se resuelve con una precedencia estricta: (1) la carga prescrita por el motor de Doble Umbral mientras siga **activa**, (2) el peso de la serie anterior del mismo ejercicio en la sesión actual, (3) el peso de la última serie del mismo ejercicio en su sesión cerrada más reciente, (4) campo vacío. Una prescripción está *activa* mientras supere el último peso efectivamente manejado por más de 0.01 Kg: representa un aumento que el ejecutante aún no ha alcanzado. Una vez alcanzada o superada, la prescripción queda consumida y la memoria del último peso toma el relevo, de modo que la precarga acompaña la progresión en lugar de volver a un valor obsoleto. La memoria se resuelve sobre el **ejercicio efectivamente ejecutado** (`session_exercise.exercise_id`) y excluye las sesiones de descarga; la prescripción se resuelve sobre el mismo `session_exercise.exercise_id`, porque `exercise_progression` es una tabla por slot y desde HU-34 el slot **es** el ejercicio que la sesión sostiene: la sustitución por grupo muscular era la única forma de que ambos divergieran y ya no existe. En un microciclo de descarga, la carga de descarga calculada conserva su prioridad sobre la memoria. El valor precargado es siempre editable: el sistema sugiere, no impone.
 
-  El formulario E2 ofrece un **selector de unidad de captura** (`Kg` / `Lb`) junto al campo de peso, más controles de incremento y decremento cuyo paso depende de la unidad activa (0.5 Kg en kilogramos, 1 lb en libras). El selector se preselecciona con la unidad de la última serie registrada del mismo ejercicio y se oculta para ejercicios de peso corporal e isométricos. La conversión a kilogramos ocurre en la capa de presentación antes de invocar el trigger: `weight_kg` llega **siempre en la unidad canónica**.
+  El formulario E2 ofrece un **selector de unidad de captura** (`Kg` / `Lb`) junto al campo de peso, más controles de incremento y decremento cuyo paso depende de la unidad activa (0.5 Kg en kilogramos, 1 lb en libras). El selector se preselecciona con la unidad de la última serie registrada del mismo ejercicio y se oculta cuando no hay carga externa que capturar. La conversión a kilogramos ocurre en la capa de presentación antes de invocar el trigger: `weight_kg` llega **siempre en la unidad canónica**.
+
+  El formulario ofrece además un **selector de equipamiento**, situado sobre el campo de peso porque lo gobierna. Está limitado a los implementos que el ejercicio admite (`exercise_equipment`) y se preselecciona con el de la última serie registrada del mismo ejercicio; si no hay ninguna, con la primera opción admitida. Cuando el ejercicio admite **una sola** opción se presenta resuelto, como etiqueta y sin interacción: un control que se puede tocar para no elegir nada informa menos que un texto. El equipamiento es **obligatorio** y dos series del mismo ejercicio en la misma sesión pueden llevar implementos distintos. La serie sigue siendo inmutable tras su creación: el equipamiento registrado no se corrige después.
+
+  **El implemento decide si hay carga externa que capturar** (`ExternalLoadRule`), y lo decide él y no solo la marca del ejercicio: `Peso Corporal` registra 0 en cualquier ejercicio; `Peso Añadido` es lo único que habilita la captura sobre un ejercicio de peso corporal, y exige un valor **estrictamente mayor que 0** porque representa exclusivamente la carga externa; sobre un ejercicio de peso corporal, `Barra Fija` —la dominada estricta— y `Máquina` —la asistida, cuya carga es un contrapeso que **resta** esfuerzo y que registrado como peso invertiría el significado del dato— registran 0. Sobre cualquier otro ejercicio, `Máquina` sí es carga. Cuando la captura está deshabilitada, el campo de peso permanece visible y bloqueado en 0 y el selector de unidad se oculta.
 
 **Payload / Parámetros (Input):**
 
@@ -687,7 +724,8 @@
   "weight_kg": "REAL [0, 500] // Obligatorio. Valor canónico en kilogramos, ya convertido desde capture_unit. 0 para ejercicios de peso corporal e isométricos.",
   "reps": "INTEGER >= 1 // Obligatorio. Para isométricos: segundos sostenidos.",
   "rir": "INTEGER [0, 1, 2] // Obligatorio. Reserva de esfuerzo percibida.",
-  "capture_unit": "TEXT ['KG', 'LB'] // Obligatorio. Unidad en la que el ejecutante capturó el valor. Se persiste para preseleccionar el selector y mostrarla en el detalle de la serie. Se fuerza a 'KG' en ejercicios de peso corporal e isométricos."
+  "capture_unit": "TEXT ['KG', 'LB'] // Obligatorio. Unidad en la que el ejecutante capturó el valor. Se persiste para preseleccionar el selector y mostrarla en el detalle de la serie. Se fuerza a 'KG' cuando no hay carga externa.",
+  "equipment_type_id": "INTEGER // Obligatorio. FK válida a equipment_type y presente en exercise_equipment del ejercicio. Sin valor por defecto: es el dato que la serie existe para registrar."
 }
 ```
 
@@ -704,6 +742,10 @@
 ```
 
 - **Estado de Error:** `Valores fuera de rango no se persisten. El formulario muestra error inline en el campo inválido. El botón de confirmar permanece deshabilitado. La validación del peso se evalúa siempre sobre el valor ya convertido a kilogramos, nunca sobre el valor capturado: no numérico, negativo o superior a 500 Kg equivalentes. El mensaje de máximo expresa el límite en la unidad activa (500 Kg / 1102.3 lb).`
+- **Estado de Error (sin equipamiento):** `ERR_EQUIPMENT_REQUIRED. No se persiste. El botón de confirmar permanece deshabilitado mientras no haya implemento elegido.`
+- **Estado de Error (lastre en cero):** `ERR_VALIDATION_WEIGHT. Con 'Peso Añadido' un lastre de 0 no es lastre: error inline en el campo de peso y nada se persiste.`
+
+> Al cambiar de implemento, el campo de peso se ajusta a lo que ese implemento significa: pasando a uno sin carga externa se fija en 0, y pasando a `Peso Añadido` se **limpia** en vez de heredar, porque lo anterior era el peso de otra cosa y no un lastre.
 
 ---
 
@@ -821,7 +863,7 @@
 #### `F2-T1`: Consultar Detalle de Sesión Pasada
 
 - **Tipo de Trigger (Entrada):** `Acción del ejecutante: toca una sesión en F1.`
-- **Descripción:** El sistema recupera la sesión completa con sus ejercicios y series. Refleja el ejercicio que realmente se ejecutó — el del plan, o la alternativa del slot si el ejecutante la intercambió (HU-26).
+- **Descripción:** El sistema recupera la sesión completa con sus ejercicios y series. Refleja el ejercicio que realmente se ejecutó — el del plan, o la alternativa del slot si el ejecutante la intercambió (HU-26) — y, por cada serie, **con qué implemento** se ejecutó. El implemento se presenta en su propia línea bajo el peso, las repeticiones y el RIR: dos series del mismo ejercicio en la misma sesión pueden llevar implementos distintos, y la diferencia tiene que verse de un barrido. El tonelaje del ejercicio suma todas las series, cualquiera que fuera el implemento.
 
 **Payload / Parámetros (Input):**
 
@@ -852,7 +894,8 @@
           "weight_kg": "REAL",
           "reps": "INTEGER",
           "rir": "INTEGER",
-          "capture_unit": "TEXT ['KG', 'LB'] // Única ubicación de la app donde la unidad de captura se presenta. Cuando es 'LB', el detalle añade el valor original en libras bajo el valor en kilogramos. El tonelaje y todos los agregados permanecen en kilogramos."
+          "capture_unit": "TEXT ['KG', 'LB'] // Única ubicación de la app donde la unidad de captura se presenta. Cuando es 'LB', el detalle añade el valor original en libras bajo el valor en kilogramos. El tonelaje y todos los agregados permanecen en kilogramos.",
+          "equipment_type": "TEXT // Implemento con el que se ejecutó la serie. Nunca null."
         }
       ]
     }
@@ -865,7 +908,9 @@
 #### `F3-T1`: Consultar Historial de Ejercicio
 
 - **Tipo de Trigger (Entrada):** `Acción del ejecutante: navega a F3 desde D2, E5, F2, G1 o H2 con un ejercicio específico.`
-- **Descripción:** El sistema recupera todos los registros históricos del ejercicio. Calcula la tendencia de carga.
+- **Descripción:** El sistema recupera los registros históricos del ejercicio **segmentados por implemento**: una entrada por sesión **y por implemento**, de modo que una sesión en la que se usaron mancuerna y polea produce dos entradas con la misma fecha, cada una con su propio promedio de peso. La segmentación ocurre en la agregación de la consulta y no en la presentación, porque los promedios se calculan ahí: agrupar solo por sesión mezclaría el peso de los dos implementos antes de que el dato saliera de la base. **Una serie de un implemento nunca se presenta en la misma serie temporal de comparación de peso que la de otro.**
+
+  `equipment_options` son los implementos con los que el ejercicio se ha entrenado **de verdad**, no los que admite: un ejercicio que admite varios pero se ha hecho con uno solo muestra ese uno como etiqueta, sin selector vacío ni agrupaciones sin datos. Con más de uno, la pantalla ofrece el selector y `history` y `load_trend` corresponden **únicamente** al implemento seleccionado.
 
 **Payload / Parámetros (Input):**
 
@@ -884,12 +929,15 @@
   "progression_status": "TEXT // Estado actual: 'NO_HISTORY', 'IN_PROGRESSION', 'IN_PLATEAU', 'IN_DELOAD', 'MASTERED'",
   "prescribed_load_next": "REAL | null",
   "sessions_without_progression": "INTEGER",
+  "equipment_options": ["TEXT"] ,
+  "selected_equipment": "TEXT | null // El implemento de la lectura. null solo cuando no hay historial.",
   "history": [
     {
       "session_id": "INTEGER",
       "date": "TEXT",
       "routine_name": "TEXT",
       "version_number": "INTEGER",
+      "equipment_type": "TEXT // Implemento de las series que promedia esta entrada.",
       "weight_kg_avg": "REAL",
       "reps_avg": "REAL",
       "rir_avg": "REAL",
@@ -1380,6 +1428,7 @@ Los valores viven en un único punto del código, `AlertThresholdRule`. Esta tab
 **Respuesta / Salida (Output Esperado):**
 
 - **Estado de Éxito:** `Archivo JSON generado con todos los datos. Metadatos incluyen versión del esquema (13) y fecha de exportación. Opciones para compartir el archivo vía apps del sistema.`
+- **Ampliación de HU-39:** el respaldo incluye `exercise_equipment` —las opciones de equipamiento de cada ejercicio— y el `equipment_type_id` de cada fila de `exercise_set`, que viaja con el resto de sus columnas. La tabla se inserta después de `exercise` y de `equipment_type`, como su clave foránea exige.
 
 ```json
 {
@@ -1426,7 +1475,11 @@ Los valores viven en un único punto del código, `AlertThresholdRule`. Esta tab
 
 - **Estado de Error (formato inválido):** `Mensaje de error al validar. No se ejecuta la restauración. Los datos actuales no se alteran.`
 - **Estado de Error (fallo durante restauración):** `Rollback automático. Los datos originales se preservan. Mensaje de error al ejecutante.`
-- **Compatibilidad de formato:** `Se aceptan el formato vigente (12), el inmediatamente anterior (11) y el legado (8). Un respaldo v11 no trae tree_state; la restauración lo reconstruye desde el historial restaurado (N1-T1), de modo que el árbol queda en un estado válido sin necesidad de que el respaldo lo traiga.`
+- **Compatibilidad de formato:** `Se acepta ÚNICAMENTE el formato vigente (13). Todo formato anterior se rechaza por completo con un mensaje explícito, en lugar de importarse parcialmente.`
+- **Estado de Error (formato anterior):** `ERR_BACKUP_NO_EQUIPMENT. El mensaje nombra la causa: el respaldo se generó con una versión anterior y no incluye el equipamiento de las series, de modo que no puede restaurarse. Nada se importa.`
+- **Estado de Error (formato posterior):** `ERR_BACKUP_VERSION_UNSUPPORTED. Un respaldo de un build más nuevo no tiene esa causa concreta y se rechaza por número de versión, que es lo único que se sabe de él.`
+
+> **Por qué el rechazo es total.** Hasta HU-38 se aceptaban los formatos 11 y 8 porque lo que les faltaba era derivable: `tree_state` se reconstruye entero desde el historial restaurado (`N1-T1`), así que restaurar sin él nunca dejaba un estado inválido. **El equipamiento de la serie no se deriva de nada**: un respaldo anterior no dice con qué implemento se hizo cada serie, y `exercise_set.equipment_type_id` es `NOT NULL`. Aceptarlo exigiría inventar un valor por serie, que es exactamente la importación parcial que HU-39 prohíbe. Con el rechazo, los caminos de importación de v8 y v11/v12 se retiraron del código: importación inalcanzable es una promesa que la aplicación ya no cumple.
 
 ---
 
@@ -1566,7 +1619,10 @@ Los valores viven en un único punto del código, `AlertThresholdRule`. Esta tab
 | `ERR_DEASSIGN_SESSION_ACTIVE` | Se intenta desasignar un ejercicio del plan con sesión activa de esa versión | Deshabilitar el botón de eliminar en D4. Mostrar tooltip explicativo. |
 | `ERR_BACKUP_FORMAT_INVALID` | El archivo de backup seleccionado no tiene el formato JSON esperado o está corrupto | Mostrar mensaje de error en J3. No ejecutar restauración. |
 | `ERR_BACKUP_VERSION_UNSUPPORTED` | La versión del esquema del backup es incompatible con la versión actual | Mostrar mensaje de error con la versión detectada. No ejecutar restauración. |
-| `ERR_EXERCISE_NAME_DUPLICATE` | Se intenta crear un ejercicio con un par (nombre, tipo de equipo) ya existente | Mostrar error en D5 vía Snackbar: "Ya existe un ejercicio con ese nombre y tipo de equipo." |
+| `ERR_EXERCISE_NAME_DUPLICATE` | Se intenta crear un ejercicio con un nombre ya existente | Mostrar error en D5 vía Snackbar. Desde HU-39 el nombre es único **por sí solo**: el implemento no forma parte de la identidad del ejercicio, así que un nombre repetido con otro equipamiento tampoco se admite. |
+| `ERR_EQUIPMENT_REQUIRED` | Se intenta guardar un ejercicio sin equipamiento (`D5-T1`), retirar la última opción de uno existente (`D2-T3`) o registrar una serie sin implemento (`E2-T1`) | El botón correspondiente ya está deshabilitado con la selección vacía. Si llega a la capa de datos, mostrar error inline en el campo de equipamiento: el atributo es obligatorio y no admite lista vacía. |
+| `ERR_EQUIPMENT_HAS_SETS` | Se intenta retirar de un ejercicio un equipamiento con el que ya hay series registradas (`D2-T3`) | La casilla se presenta con candado. Mostrar mensaje inline que nombra el implemento: la serie es inmutable y no puede quedar apuntando a un equipamiento que el ejercicio dejó de admitir. |
+| `ERR_BACKUP_NO_EQUIPMENT` | El respaldo seleccionado se generó con un formato anterior a 13 y no incluye el equipamiento de las series | Mostrar mensaje explícito en J3 nombrando la causa. No ejecutar restauración, ni total ni parcial. |
 
 ---
 
@@ -1592,4 +1648,7 @@ Los valores viven en un único punto del código, `AlertThresholdRule`. Esta tab
 - **El presupuesto de render manda sobre la fidelidad visual:** `Si el dispositivo no completa la carga y el render inicial del arbol 3D en menos de 1 segundo, o no sostiene la fluidez del gesto, el sistema degrada los graficos por codigo -sombras, luego esferas de la copa, luego segmentos del tronco, luego poligonos por primitiva- hasta cumplirlo. La degradacion es automatica y no se ofrece como ajuste al ejecutante. Ante conflicto entre fluidez y fidelidad, gana la fluidez (CA-38.06).`
 - **La representación nativa del árbol no se elimina:** `El icono vectorial de HU-37 se conserva en el codigo de forma permanente como fallback de N1. Un dispositivo sin WebView, con WebView desactualizado o incapaz de renderizar contenido 3D presenta el icono sin mensaje de error, sin pantalla en blanco y sin perder ninguna informacion de la pantalla (CA-38.05, RNF-20).`
 - **El árbol no tiene pestaña propia:** `N1 es una ruta nueva alcanzable solo desde la tarjeta de B1 (B1-T8). No se añade a la barra de navegacion inferior, que permanece visible durante la pantalla.`
+- **Un tipo, un implemento:** `El catálogo equipment_type no admite valores compuestos ni disyunciones: cada fila nombra un implemento y no una alternativa entre varios. La alternativa vive en exercise_equipment —los implementos que el ejercicio admite— y la elección en exercise_set.equipment_type_id. Los agarres no son equipamiento: cuerda y barra en V son Polea. No existe interfaz para crear, renombrar ni eliminar tipos de equipamiento: la tabla es cerrada y sembrada.`
+- **Ningún ejercicio sin equipamiento:** `Todo ejercicio declara al menos un implemento admitido, en la creación y en la edición. La validación vive en la capa Domain, la interfaz deshabilita el guardado con la selección vacía y la relación no se puede dejar vacía retirando opciones una a una.`
+- **El equipamiento de la serie no se corrige:** `exercise_set es inmutable tras su creación, y el implemento registrado no es la excepción. Ninguna interfaz expone su edición. Por eso tampoco se puede retirar de un ejercicio un implemento con el que ya se registró una serie: la fila quedaría apuntando a algo que el ejercicio dejó de admitir.`
 - **Idioma único:** `Toda la interfaz opera exclusivamente en español. No existe selector de idioma ni soporte para internacionalización (RNF-08).`

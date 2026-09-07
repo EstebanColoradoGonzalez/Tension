@@ -4,7 +4,7 @@ data class SessionExerciseDetail(
     val sessionExerciseId: Long,
     val exerciseId: Long?,
     val name: String?,
-    val equipmentTypeName: String?,
+    val equipmentTypes: List<String>,
     val muscleZones: List<String>,
     val sets: Int,
     val reps: String,

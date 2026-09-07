@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.estebancoloradogonzalez.tension.R
 import com.estebancoloradogonzalez.tension.domain.model.WeightUnit
+import com.estebancoloradogonzalez.tension.domain.rules.ExternalLoadRule
 import com.estebancoloradogonzalez.tension.domain.usecase.session.GetRegisterSetInfoUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.session.RegisterSetUseCase
 import com.estebancoloradogonzalez.tension.domain.util.RepsRangeParser
@@ -51,11 +52,22 @@ class RegisterSetViewModel @Inject constructor(
         viewModelScope.launch {
             val info = getRegisterSetInfoUseCase(sessionExerciseId) ?: return@launch
 
+            // El implemento preseleccionado gobierna si hay carga externa que capturar
+            // (CA-39.05). Con `Peso Añadido` el lastre no se hereda de otra serie: la carga
+            // anterior es de la barra fija o de la máquina, y allí siempre fue 0.
+            val equipmentName = info.equipmentOptions
+                .firstOrNull { it.id == info.preselectedEquipmentTypeId }?.name
+            val captureEnabled = ExternalLoadRule.isCaptureEnabled(
+                isBodyweight = info.isBodyweight,
+                isIsometric = info.isIsometric,
+                equipmentName = equipmentName,
+            )
+
             // The prefilled load arrives in kilograms; it is shown in the active unit so
             // the executant never has to convert the number in their head.
             val weightInput = when {
-                info.isBodyweight || info.isIsometric -> "0"
-                info.lastWeightKg != null -> format(
+                !captureEnabled -> "0"
+                info.lastWeightKg != null && info.lastWeightKg > 0.0 -> format(
                     WeightConverter.fromKg(info.lastWeightKg, info.captureUnit),
                 )
                 else -> ""
@@ -89,9 +101,10 @@ class RegisterSetViewModel @Inject constructor(
                     weightInput = weightInput,
                     captureUnit = info.captureUnit,
                     convertedWeightKg = convertedWeightKg(weightInput, info.captureUnit),
-                    isWeightEditable = !info.isBodyweight && !info.isIsometric,
                     isIsometric = info.isIsometric,
                     isBodyweight = info.isBodyweight,
+                    equipmentOptions = info.equipmentOptions,
+                    selectedEquipmentTypeId = info.preselectedEquipmentTypeId,
                     showChronometer = showChronometer,
                     minSeconds = minSeconds,
                     maxSeconds = maxSeconds,
@@ -141,6 +154,30 @@ class RegisterSetViewModel @Inject constructor(
                 timerState = TimerState.STOPPED,
                 reps = seconds.toString(),
             )
+        }
+    }
+
+    /**
+     * Cambia el implemento y ajusta el campo de peso a lo que ese implemento significa.
+     *
+     * Al pasar a un implemento sin carga externa el peso se fija en `"0"`, porque es el
+     * valor que se va a registrar y mostrarlo evita que el ejecutante crea que se guardó
+     * lo que tenía teclado. Al pasar a `Peso Añadido` el campo se **limpia** en vez de
+     * heredar: lo anterior era el peso de otra cosa, no un lastre.
+     */
+    fun onEquipmentSelected(equipmentTypeId: Long) {
+        _uiState.update { state ->
+            if (state.selectedEquipmentTypeId == equipmentTypeId) return@update state
+
+            val next = state.copy(
+                selectedEquipmentTypeId = equipmentTypeId,
+                equipmentError = null,
+            )
+            when {
+                !next.isWeightEditable -> next.withWeightInput("0", next.captureUnit)
+                state.isWeightEditable -> next
+                else -> next.withWeightInput("", next.captureUnit)
+            }
         }
     }
 
@@ -223,16 +260,35 @@ class RegisterSetViewModel @Inject constructor(
             return
         }
         if (state.selectedRir == null) return
+        val equipmentTypeId = state.selectedEquipmentTypeId
+        if (equipmentTypeId == null) {
+            _uiState.update {
+                it.copy(
+                    equipmentError = context.getString(
+                        R.string.register_set_equipment_error_required,
+                    ),
+                )
+            }
+            return
+        }
+        if (state.isAddedWeight && weightKg <= 0.0) {
+            _uiState.update {
+                it.copy(weightError = context.getString(R.string.error_weight_added_min))
+            }
+            return
+        }
 
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true) }
             try {
                 registerSetUseCase(
-                    sessionExerciseId,
-                    weightKg,
-                    parsedReps,
-                    state.selectedRir,
-                    state.captureUnit,
+                    sessionExerciseId = sessionExerciseId,
+                    weightKg = weightKg,
+                    reps = parsedReps,
+                    rir = state.selectedRir,
+                    captureUnit = state.captureUnit,
+                    equipmentTypeId = equipmentTypeId,
+                    equipmentTypeName = state.selectedEquipmentName,
                 )
                 _navigateBack.emit(true)
             } catch (_: IllegalArgumentException) {

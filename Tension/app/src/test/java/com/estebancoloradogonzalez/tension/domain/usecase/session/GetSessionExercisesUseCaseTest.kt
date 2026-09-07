@@ -24,7 +24,7 @@ class GetSessionExercisesUseCaseTest {
                 sessionExerciseId = 1L,
                 exerciseId = 10L,
                 name = "Press Banca",
-                equipmentTypeName = "Barra",
+                equipmentTypes = listOf("Barra", "Mancuerna"),
                 muscleZones = listOf("Pecho", "Tríceps"),
                 sets = 4,
                 reps = "8-12",

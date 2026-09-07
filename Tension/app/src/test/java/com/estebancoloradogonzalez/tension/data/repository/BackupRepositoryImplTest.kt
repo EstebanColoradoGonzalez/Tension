@@ -25,8 +25,8 @@ import org.junit.Test
 
 class BackupRepositoryImplTest {
 
-    /** Espejo del valor privado del impl: el formato anterior, sin `tree_state`. */
-    private val PREVIOUS_SCHEMA_VERSION = 11
+    /** Espejo del valor privado del impl: el formato inmediatamente anterior. */
+    private val PREVIOUS_SCHEMA_VERSION = 12
 
     private lateinit var database: TensionDatabase
     private lateinit var context: Context
@@ -177,7 +177,7 @@ class BackupRepositoryImplTest {
         val json = JSONObject().apply {
             put("metadata", JSONObject().apply {
                 put("appVersion", "1.0")
-                put("schemaVersion", 7)
+                put("schemaVersion", BackupRepositoryImpl.SCHEMA_VERSION)
                 put("exportDate", "2026-02-20T14:00:00")
                 put("recordCount", 0)
             })
@@ -194,7 +194,7 @@ class BackupRepositoryImplTest {
         val json = JSONObject().apply {
             put("metadata", JSONObject().apply {
                 put("appVersion", "1.0")
-                put("schemaVersion", 7)
+                put("schemaVersion", BackupRepositoryImpl.SCHEMA_VERSION)
                 put("exportDate", "2026-02-20T14:00:00")
                 put("recordCount", 0)
             })
@@ -225,24 +225,58 @@ class BackupRepositoryImplTest {
         assertTrue(data.has("tree_state"))
     }
 
-    // El formato anterior no traia tree_state. Rechazarlo inutilizaria todo respaldo
-    // exportado hasta ahora, y el arbol es enteramente derivable del historial restaurado.
+    // =========================================================================
+    // Equipamiento de la serie — el formato anterior se rechaza (HU-39, CA-39.12)
+    // =========================================================================
+
+    // El argumento que salvo al formato sin tree_state no aplica: el arbol era derivable
+    // del historial, el equipamiento de la serie no se deriva de nada. Un respaldo anterior
+    // no dice con que implemento se hizo cada serie, y la columna es NOT NULL.
 
     @Test
-    fun `validateBackup accepts the previous format without the tree state table`() {
-        val result = repository.validateBackup(buildPreviousFormatBackupJson())
+    fun `exportToJson carries the exercise equipment table`() = runTest {
+        BackupRepositoryImpl.TABLE_ORDER_INSERT.forEach { table ->
+            every { db.query("SELECT * FROM $table") } returns createEmptyCursor()
+        }
+
+        val data = JSONObject(repository.exportToJson()).getJSONObject("data")
+
+        assertTrue(data.has("exercise_equipment"))
+    }
+
+    @Test
+    fun `exercise equipment is inserted after the tables it points at`() {
+        val order = BackupRepositoryImpl.TABLE_ORDER_INSERT
+        assertTrue(order.indexOf("exercise_equipment") > order.indexOf("exercise"))
+        assertTrue(order.indexOf("exercise_equipment") > order.indexOf("equipment_type"))
+    }
+
+    @Test
+    fun `validateBackup accepts the current format`() {
+        val result = repository.validateBackup(buildValidBackupJson())
 
         assertTrue(result.isValid)
-        assertEquals(PREVIOUS_SCHEMA_VERSION, result.metadata?.schemaVersion)
+        assertEquals(13, result.metadata?.schemaVersion)
         assertNull(result.errorMessage)
     }
 
     @Test
-    fun `validateBackup still rejects the format before the previous one`() {
-        val result = repository.validateBackup(buildBackupJsonWithSchemaVersion(10))
+    fun `validateBackup rejects the immediately previous format`() {
+        val result = repository.validateBackup(buildPreviousFormatBackupJson())
 
         assertFalse(result.isValid)
+        assertNull(result.metadata)
         assertNotNull(result.errorMessage)
+    }
+
+    @Test
+    fun `validateBackup rejects every older format`() {
+        listOf(11, 10, 8).forEach { version ->
+            val result = repository.validateBackup(buildBackupJsonWithSchemaVersion(version))
+
+            assertFalse("La version $version deberia rechazarse", result.isValid)
+            assertNotNull(result.errorMessage)
+        }
     }
 
     // Un respaldo del formato actual sin la tabla si esta incompleto: la exporto y la perdio.
@@ -256,17 +290,6 @@ class BackupRepositoryImplTest {
 
         assertFalse(result.isValid)
         assertNotNull(result.errorMessage)
-    }
-
-    @Test
-    fun `importFromJson restores the previous format without failing`() = runTest {
-        var transactionSuccessfulCalled = false
-        every { db.setTransactionSuccessful() } answers { transactionSuccessfulCalled = true }
-
-        repository.importFromJson(buildPreviousFormatBackupJson())
-
-        assertTrue(transactionSuccessfulCalled)
-        verify { db.endTransaction() }
     }
 
     @Test
@@ -303,7 +326,7 @@ class BackupRepositoryImplTest {
         val jsonObj = JSONObject()
         jsonObj.put("metadata", JSONObject().apply {
             put("appVersion", "1.0")
-            put("schemaVersion", 7)
+            put("schemaVersion", BackupRepositoryImpl.SCHEMA_VERSION)
             put("exportDate", "2026-02-20T14:00:00")
             put("recordCount", 16)
         })
@@ -492,7 +515,7 @@ class BackupRepositoryImplTest {
         return json.toString()
     }
 
-    /** Respaldo del formato inmediatamente anterior: sin `tree_state`. */
+/** Respaldo del formato inmediatamente anterior: sin `exercise_equipment`. */
     private fun buildPreviousFormatBackupJson(): String {
         val json = JSONObject()
         json.put("metadata", JSONObject().apply {
@@ -503,7 +526,7 @@ class BackupRepositoryImplTest {
         })
         val data = JSONObject()
         BackupRepositoryImpl.TABLE_ORDER_INSERT
-            .filter { it != "tree_state" }
+            .filter { it != "exercise_equipment" }
             .forEach { data.put(it, org.json.JSONArray()) }
         json.put("data", data)
         return json.toString()

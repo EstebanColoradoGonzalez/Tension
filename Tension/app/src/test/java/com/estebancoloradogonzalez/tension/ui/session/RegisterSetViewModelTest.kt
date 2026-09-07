@@ -2,8 +2,10 @@ package com.estebancoloradogonzalez.tension.ui.session
 
 import android.content.Context
 import androidx.lifecycle.SavedStateHandle
+import com.estebancoloradogonzalez.tension.domain.model.EquipmentType
 import com.estebancoloradogonzalez.tension.domain.model.RegisterSetInfo
 import com.estebancoloradogonzalez.tension.domain.model.WeightUnit
+import com.estebancoloradogonzalez.tension.domain.rules.ExternalLoadRule
 import com.estebancoloradogonzalez.tension.domain.usecase.session.GetRegisterSetInfoUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.session.RegisterSetUseCase
 import io.mockk.coEvery
@@ -38,6 +40,12 @@ class RegisterSetViewModelTest {
 
     private val sessionExerciseId = 42L
 
+    private val barra = EquipmentType(id = 4L, name = "Barra")
+    private val mancuerna = EquipmentType(id = 6L, name = "Mancuerna")
+    private val barraFija = EquipmentType(id = 5L, name = "Barra Fija")
+    private val maquina = EquipmentType(id = 1L, name = "Máquina")
+    private val pesoAnadido = EquipmentType(id = 10L, name = ExternalLoadRule.PESO_ANADIDO)
+
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
@@ -55,6 +63,8 @@ class RegisterSetViewModelTest {
         lastWeightKg: Double? = 40.0,
         isBodyweight: Boolean = false,
         isIsometric: Boolean = false,
+        equipmentOptions: List<EquipmentType> = listOf(barra),
+        preselectedEquipmentTypeId: Long = equipmentOptions.first().id,
     ) = RegisterSetInfo(
         sessionExerciseId = sessionExerciseId,
         exerciseId = 10L,
@@ -67,6 +77,8 @@ class RegisterSetViewModelTest {
         isToTechnicalFailure = false,
         prescribedReps = "8-12",
         captureUnit = captureUnit,
+        equipmentOptions = equipmentOptions,
+        preselectedEquipmentTypeId = preselectedEquipmentTypeId,
     )
 
     private fun createViewModel(): RegisterSetViewModel {
@@ -122,7 +134,11 @@ class RegisterSetViewModelTest {
     fun `given a bodyweight exercise, when loading, then the selector is hidden and unit is kg`() =
         runTest {
             coEvery { getRegisterSetInfoUseCase(sessionExerciseId) } returns
-                info(isBodyweight = true, lastWeightKg = 0.0)
+                info(
+                    isBodyweight = true,
+                    lastWeightKg = 0.0,
+                    equipmentOptions = listOf(barraFija, maquina, pesoAnadido),
+                )
 
             val viewModel = createViewModel()
             advanceUntilIdle()
@@ -228,7 +244,9 @@ class RegisterSetViewModelTest {
     fun `given a weight captured in lb, when confirming, then kilograms are persisted`() = runTest {
         coEvery { getRegisterSetInfoUseCase(sessionExerciseId) } returns
             info(captureUnit = WeightUnit.LB, lastWeightKg = null)
-        coEvery { registerSetUseCase(any(), any(), any(), any(), any()) } just runs
+        coEvery {
+            registerSetUseCase(any(), any(), any(), any(), any(), any(), any())
+        } just runs
 
         val viewModel = createViewModel()
         advanceUntilIdle()
@@ -239,7 +257,9 @@ class RegisterSetViewModelTest {
         viewModel.onConfirm()
         advanceUntilIdle()
 
-        coVerify { registerSetUseCase(sessionExerciseId, 20.41, 10, 2, WeightUnit.LB) }
+        coVerify {
+            registerSetUseCase(sessionExerciseId, 20.41, 10, 2, WeightUnit.LB, barra.id, barra.name)
+        }
     }
 
     @Test
@@ -247,7 +267,9 @@ class RegisterSetViewModelTest {
         runTest {
             coEvery { getRegisterSetInfoUseCase(sessionExerciseId) } returns
                 info(captureUnit = WeightUnit.KG, lastWeightKg = null)
-            coEvery { registerSetUseCase(any(), any(), any(), any(), any()) } just runs
+            coEvery {
+            registerSetUseCase(any(), any(), any(), any(), any(), any(), any())
+        } just runs
 
             val viewModel = createViewModel()
             advanceUntilIdle()
@@ -258,7 +280,17 @@ class RegisterSetViewModelTest {
             viewModel.onConfirm()
             advanceUntilIdle()
 
-            coVerify { registerSetUseCase(sessionExerciseId, 62.5, 8, 1, WeightUnit.KG) }
+            coVerify {
+                registerSetUseCase(
+                    sessionExerciseId,
+                    62.5,
+                    8,
+                    1,
+                    WeightUnit.KG,
+                    barra.id,
+                    barra.name,
+                )
+            }
         }
 
     // ----- CA-30.05: validation on the converted value -----
@@ -281,7 +313,9 @@ class RegisterSetViewModelTest {
             val state = viewModel.uiState.value
             assertNotNull(state.weightError)
             assertFalse(state.isConfirmEnabled)
-            coVerify(exactly = 0) { registerSetUseCase(any(), any(), any(), any(), any()) }
+            coVerify(exactly = 0) {
+                registerSetUseCase(any(), any(), any(), any(), any(), any(), any())
+            }
         }
 
     @Test
@@ -324,5 +358,194 @@ class RegisterSetViewModelTest {
         viewModel.onWeightChanged("-5")
 
         assertNotNull(viewModel.uiState.value.weightError)
+    }
+
+    // ----- CA-39.04: preselección del implemento -----
+
+    @Test
+    fun `given a last used implement, when loading, then it comes preselected`() = runTest {
+        coEvery { getRegisterSetInfoUseCase(sessionExerciseId) } returns
+            info(
+                equipmentOptions = listOf(barra, mancuerna),
+                preselectedEquipmentTypeId = mancuerna.id,
+            )
+
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(mancuerna.id, state.selectedEquipmentTypeId)
+        assertEquals(mancuerna.name, state.selectedEquipmentName)
+    }
+
+    @Test
+    fun `given no history, when loading, then the first admitted option is preselected`() =
+        runTest {
+            coEvery { getRegisterSetInfoUseCase(sessionExerciseId) } returns
+                info(lastWeightKg = null, equipmentOptions = listOf(barra, mancuerna))
+
+            val viewModel = createViewModel()
+            advanceUntilIdle()
+
+            assertEquals(barra.id, viewModel.uiState.value.selectedEquipmentTypeId)
+        }
+
+    @Test
+    fun `given a single admitted option, when loading, then it is already resolved`() = runTest {
+        coEvery { getRegisterSetInfoUseCase(sessionExerciseId) } returns
+            info(equipmentOptions = listOf(barra))
+
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(1, state.equipmentOptions.size)
+        assertEquals(barra.id, state.selectedEquipmentTypeId)
+    }
+
+    // ----- CA-39.05: el implemento gobierna la captura del peso -----
+
+    @Test
+    fun `given dominadas on barra fija, when loading, then the weight is locked at zero`() =
+        runTest {
+            coEvery { getRegisterSetInfoUseCase(sessionExerciseId) } returns
+                info(
+                    isBodyweight = true,
+                    lastWeightKg = 0.0,
+                    equipmentOptions = listOf(barraFija, maquina, pesoAnadido),
+                )
+
+            val viewModel = createViewModel()
+            advanceUntilIdle()
+
+            val state = viewModel.uiState.value
+            assertFalse(state.isWeightEditable)
+            assertFalse(state.isAddedWeight)
+            assertEquals("0", state.weightInput)
+        }
+
+    @Test
+    fun `given dominadas on maquina asistida, when loading, then the weight stays at zero`() =
+        runTest {
+            coEvery { getRegisterSetInfoUseCase(sessionExerciseId) } returns
+                info(
+                    isBodyweight = true,
+                    lastWeightKg = 0.0,
+                    equipmentOptions = listOf(barraFija, maquina, pesoAnadido),
+                    preselectedEquipmentTypeId = maquina.id,
+                )
+
+            val viewModel = createViewModel()
+            advanceUntilIdle()
+
+            val state = viewModel.uiState.value
+            assertFalse(state.isWeightEditable)
+            assertEquals("0", state.weightInput)
+        }
+
+    @Test
+    fun `given dominadas, when switching to peso anadido, then the field is enabled and cleared`() =
+        runTest {
+            coEvery { getRegisterSetInfoUseCase(sessionExerciseId) } returns
+                info(
+                    isBodyweight = true,
+                    lastWeightKg = 0.0,
+                    equipmentOptions = listOf(barraFija, maquina, pesoAnadido),
+                )
+
+            val viewModel = createViewModel()
+            advanceUntilIdle()
+
+            viewModel.onEquipmentSelected(pesoAnadido.id)
+
+            val state = viewModel.uiState.value
+            assertTrue(state.isWeightEditable)
+            assertTrue(state.isAddedWeight)
+            assertTrue(state.isUnitSelectorVisible)
+            // Se limpia en vez de heredar: lo anterior era 0, no un lastre.
+            assertEquals("", state.weightInput)
+        }
+
+    @Test
+    fun `given peso anadido, when switching back to barra fija, then the field returns to zero`() =
+        runTest {
+            coEvery { getRegisterSetInfoUseCase(sessionExerciseId) } returns
+                info(
+                    isBodyweight = true,
+                    lastWeightKg = 0.0,
+                    equipmentOptions = listOf(barraFija, maquina, pesoAnadido),
+                    preselectedEquipmentTypeId = pesoAnadido.id,
+                )
+
+            val viewModel = createViewModel()
+            advanceUntilIdle()
+
+            viewModel.onWeightChanged("10")
+            viewModel.onEquipmentSelected(barraFija.id)
+
+            val state = viewModel.uiState.value
+            assertFalse(state.isWeightEditable)
+            assertEquals("0", state.weightInput)
+        }
+
+    @Test
+    fun `given peso anadido with zero load, when confirming, then nothing is persisted`() =
+        runTest {
+            coEvery { getRegisterSetInfoUseCase(sessionExerciseId) } returns
+                info(
+                    isBodyweight = true,
+                    lastWeightKg = 0.0,
+                    equipmentOptions = listOf(barraFija, maquina, pesoAnadido),
+                    preselectedEquipmentTypeId = pesoAnadido.id,
+                )
+            coEvery {
+                registerSetUseCase(any(), any(), any(), any(), any(), any(), any())
+            } just runs
+
+            val viewModel = createViewModel()
+            advanceUntilIdle()
+
+            viewModel.onWeightChanged("0")
+            viewModel.onRepsChanged("8")
+            viewModel.onRirSelected(1)
+            viewModel.onConfirm()
+            advanceUntilIdle()
+
+            assertNotNull(viewModel.uiState.value.weightError)
+            assertFalse(viewModel.uiState.value.isConfirmEnabled)
+            coVerify(exactly = 0) {
+                registerSetUseCase(any(), any(), any(), any(), any(), any(), any())
+            }
+        }
+
+    @Test
+    fun `given a chosen implement, when confirming, then it travels to the use case`() = runTest {
+        coEvery { getRegisterSetInfoUseCase(sessionExerciseId) } returns
+            info(lastWeightKg = null, equipmentOptions = listOf(barra, mancuerna))
+        coEvery {
+            registerSetUseCase(any(), any(), any(), any(), any(), any(), any())
+        } just runs
+
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        viewModel.onEquipmentSelected(mancuerna.id)
+        viewModel.onWeightChanged("12")
+        viewModel.onRepsChanged("10")
+        viewModel.onRirSelected(1)
+        viewModel.onConfirm()
+        advanceUntilIdle()
+
+        coVerify {
+            registerSetUseCase(
+                sessionExerciseId,
+                12.0,
+                10,
+                1,
+                WeightUnit.KG,
+                mancuerna.id,
+                mancuerna.name,
+            )
+        }
     }
 }

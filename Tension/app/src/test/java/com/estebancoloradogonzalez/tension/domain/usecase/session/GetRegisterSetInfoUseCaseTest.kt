@@ -1,5 +1,6 @@
 package com.estebancoloradogonzalez.tension.domain.usecase.session
 
+import com.estebancoloradogonzalez.tension.domain.model.EquipmentType
 import com.estebancoloradogonzalez.tension.domain.model.RegisterSetInfo
 import com.estebancoloradogonzalez.tension.domain.model.WeightUnit
 import com.estebancoloradogonzalez.tension.domain.repository.SessionRepository
@@ -30,6 +31,11 @@ class GetRegisterSetInfoUseCaseTest {
             isToTechnicalFailure = false,
             prescribedReps = "8-12",
             captureUnit = WeightUnit.KG,
+            equipmentOptions = listOf(
+                EquipmentType(id = 4L, name = "Barra"),
+                EquipmentType(id = 6L, name = "Mancuerna"),
+            ),
+            preselectedEquipmentTypeId = 6L,
         )
         coEvery { repository.getRegisterSetInfo(1L) } returns expected
 

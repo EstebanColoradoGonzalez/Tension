@@ -3,9 +3,12 @@ package com.estebancoloradogonzalez.tension.ui.history
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -17,6 +20,7 @@ import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -147,6 +151,9 @@ fun ExerciseHistoryScreen(
                     data = state.data,
                     trendPoints = state.trendPoints,
                     yAxisLabel = state.yAxisLabel,
+                    equipmentOptions = state.equipmentOptions,
+                    selectedEquipment = state.selectedEquipment,
+                    onEquipmentSelected = viewModel::onEquipmentSelected,
                     exerciseId = viewModel.exerciseId,
                     onNavigateToExerciseDetail = onNavigateToExerciseDetail,
                     modifier = Modifier
@@ -163,6 +170,9 @@ private fun ExerciseHistoryContent(
     data: ExerciseHistoryData,
     trendPoints: List<TrendPoint>,
     yAxisLabel: String,
+    equipmentOptions: List<String>,
+    selectedEquipment: String?,
+    onEquipmentSelected: (String) -> Unit,
     exerciseId: Long,
     onNavigateToExerciseDetail: (Long) -> Unit,
     modifier: Modifier = Modifier,
@@ -172,6 +182,17 @@ private fun ExerciseHistoryContent(
         item {
             ProgressionStatusBadge(
                 status = data.progressionStatus,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            )
+        }
+
+        // Implemento de la lectura. Con uno solo es etiqueta y no selector: no hay nada
+        // que elegir, y un control con una opción sobra (CA-39.08).
+        item {
+            EquipmentSegment(
+                options = equipmentOptions,
+                selected = selectedEquipment,
+                onSelected = onEquipmentSelected,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             )
         }
@@ -213,6 +234,57 @@ private fun ExerciseHistoryContent(
                 )
             }
         }
+    }
+}
+
+/**
+ * Selector de implemento del historial.
+ *
+ * Los chips van sobre un desplegable porque el número de opciones es el de implementos
+ * realmente usados —uno, dos o tres en la práctica— y con esa cardinalidad un chip por
+ * opción se lee y se toca en un gesto, sin abrir nada.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun EquipmentSegment(
+    options: List<String>,
+    selected: String?,
+    onSelected: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    if (options.isEmpty()) return
+
+    Column(modifier = modifier) {
+        Text(
+            text = stringResource(R.string.exercise_history_equipment_label),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+
+        if (options.size == 1) {
+            Text(
+                text = options.first(),
+                style = MaterialTheme.typography.bodyLarge,
+            )
+            return@Column
+        }
+
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            options.forEach { option ->
+                FilterChip(
+                    selected = option == selected,
+                    onClick = { onSelected(option) },
+                    label = { Text(option) },
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = stringResource(R.string.exercise_history_equipment_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 

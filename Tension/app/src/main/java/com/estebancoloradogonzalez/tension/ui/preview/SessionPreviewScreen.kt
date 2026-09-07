@@ -272,7 +272,7 @@ private fun PreviewExerciseCard(exercise: PreviewExerciseItem) {
             Spacer(modifier = Modifier.height(4.dp))
 
             Text(
-                text = "${exercise.muscleZones} · ${exercise.equipmentTypeName}",
+                text = "${exercise.muscleZones} · ${exercise.equipmentSummary}",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

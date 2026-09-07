@@ -24,14 +24,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -40,9 +36,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -53,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.estebancoloradogonzalez.tension.R
+import com.estebancoloradogonzalez.tension.ui.catalog.components.EquipmentMultiSelector
 import com.estebancoloradogonzalez.tension.ui.catalog.components.ProgressionDifficultySelector
 import com.estebancoloradogonzalez.tension.ui.components.ExerciseImagePlaceholder
 import com.estebancoloradogonzalez.tension.ui.components.TensionTopAppBar
@@ -165,43 +160,17 @@ fun CreateExerciseScreen(
                         modifier = Modifier.fillMaxWidth(),
                     )
 
-                    // Equipment type dropdown
-                    var equipmentExpanded by remember { mutableStateOf(false) }
-                    ExposedDropdownMenuBox(
-                        expanded = equipmentExpanded,
-                        onExpandedChange = { equipmentExpanded = it },
-                    ) {
-                        OutlinedTextField(
-                            value = uiState.selectedEquipmentName,
-                            onValueChange = {},
-                            readOnly = true,
-                            label = { Text(stringResource(R.string.exercise_field_equipment)) },
-                            trailingIcon = {
-                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = equipmentExpanded)
-                            },
-                            isError = uiState.equipmentError != null,
-                            supportingText = uiState.equipmentError?.let { error ->
-                                { Text(error) }
-                            },
-                            modifier = Modifier
-                                .menuAnchor(MenuAnchorType.PrimaryNotEditable)
-                                .fillMaxWidth(),
-                        )
-                        ExposedDropdownMenu(
-                            expanded = equipmentExpanded,
-                            onDismissRequest = { equipmentExpanded = false },
-                        ) {
-                            uiState.equipmentTypes.forEach { type ->
-                                DropdownMenuItem(
-                                    text = { Text(type.name) },
-                                    onClick = {
-                                        viewModel.onEquipmentTypeSelected(type.id)
-                                        equipmentExpanded = false
-                                    },
-                                )
-                            }
-                        }
-                    }
+                    // Equipamiento admitido — selección múltiple, obligatoria
+                    Text(
+                        text = stringResource(R.string.exercise_field_equipment),
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                    EquipmentMultiSelector(
+                        options = uiState.equipmentTypes,
+                        selectedIds = uiState.selectedEquipmentTypeIds,
+                        onToggle = viewModel::onEquipmentTypeToggled,
+                        error = uiState.equipmentError,
+                    )
 
                     // Muscle zones — multi-select chips
                     Text(

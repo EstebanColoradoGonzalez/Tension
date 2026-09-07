@@ -1,0 +1,262 @@
+╔══════════════════════════════════════════════════════════════╗
+║  ⚠️  PROTOTIPO — PROPUESTA PENDIENTE DE VALIDACIÓN CON DISEÑO  ║
+╚══════════════════════════════════════════════════════════════╝
+
+HU #40 — Cambiar de implemento no es retroceder
+Plataforma: mobile / portrait (390 px) · Material 3 · targets ≥ 48 dp
+
+  Esta historia NO añade pantallas ni controles. Cambia el DATO
+  que las pantallas existentes muestran. El wireframe contrasta
+  el antes y el después de cada punto afectado.
+
+
+────────────────────────────────────────────────────────────────
+ EL DEFECTO QUE SE CORRIGE  ·  el caso de CA-40.02
+────────────────────────────────────────────────────────────────
+
+  Elevación Lateral · dificultad ALTA · umbral efectivo 10
+
+  Historial:   28 ago  Mancuerna  11.5 kg × 10 · RIR 1
+               4 sep   Mancuerna  12.0 kg × 10 · RIR 1
+               6 sep   Polea       8.0 kg × 10 · RIR 1   ← estreno
+
+  ANTES (por ejercicio)              DESPUÉS (por par)
+  ─────────────────────────          ─────────────────────────
+  12.0 → 8.0  = bajó                 Polea: sin historial
+  ⚠ REGRESSION                       ⓘ Sin Historial
+  contador  0 → 1                    contador Polea = 0
+  carga prescrita ↓                  contador Mancuerna intacto
+  meseta más cerca                   carga de Mancuerna intacta
+                                     nada se degrada
+  ▲ bache diagnosticado              ▲ bache inexistente,
+    que no existió                     no diagnosticado
+
+
+────────────────────────────────────────────────────────────────
+ RESUMEN POST-SESIÓN  ·  clasificación por par (CA-40.02)
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+| Resumen de la sesión · 6 sep             |
++──────────────────────────────────────────+
+|  Push — Deltoides Lateral y Medio        |
+|  Tonelaje total            2 148.5 kg    |
+|  ─────────────────────────────────────   |
+|                                          |
+|  Elevación Lateral                       |
+|   Mancuerna   ▲ Progresión positiva      |  un renglón por
+|   Polea       ⓘ Sin historial            |  PAR ejecutado
+|  ─────────────────────────────────────   |
+|  Press de Banca Inclinado                |
+|   Barra       ▬ Mantenimiento            |
+|  ─────────────────────────────────────   |
+|  Press de Banca Plano                    |
+|   Barra       ▲ Progresión positiva      |
+|  ─────────────────────────────────────   |
+|  Aperturas                               |
+|   Máquina     ▬ Mantenimiento            |
+|                                          |
++──────────────────────────────────────────+
+
+  Ejercicio con un solo implemento (CA-40.08) —
+  se colapsa, sin renglón extra:
+
+|  Curl de Isquiotibiales Sentado          |
+|   ▲ Progresión positiva                  |  igual que antes
+|                                          |  de esta historia
+
+
+────────────────────────────────────────────────────────────────
+ REGISTRAR SERIE  ·  la precarga se recalcula (CA-40.03)
+────────────────────────────────────────────────────────────────
+
+  Al cambiar el selector de equipamiento, el peso y la unidad
+  se recalculan para el par nuevo.
+
++──────────────────────────────────────────+
+|  Elevación Lateral                       |
+|  Serie 3 de 4 · 8-12 reps                |
+|                                          |
+|  Equipamiento (*)                        |
+|  +──────────────────────────────────────+|
+|  | ▼ Mancuerna                          ||
+|  +──────────────────────────────────────+|
+|                                          |
+|  Peso (*)                                |
+|  +──────────────+   +────────┬────────+  |
+|  |    12.5      |   |  (●)Kg │ (○)Lb |  |
+|  +──────────────+   +────────┴────────+  |
+|  ⓘ carga objetivo del par Mancuerna      |
++──────────────────────────────────────────+
+                    │
+                    │  cambia el selector a Polea
+                    ▼
++──────────────────────────────────────────+
+|  Equipamiento (*)                        |
+|  +──────────────────────────────────────+|
+|  | ▼ Polea                              ||
+|  +──────────────────────────────────────+|
+|                                          |
+|  Peso (*)                                |
+|  +──────────────+   +────────┬────────+  |
+|  |     8.0      |   |  (●)Kg │ (○)Lb |  |
+|  +──────────────+   +────────┴────────+  |
+|  ⓘ último peso del par Polea             |
++──────────────────────────────────────────+
+                    │
+                    │  cambia a Máquina — nunca entrenada
+                    ▼
++──────────────────────────────────────────+
+|  Equipamiento (*)                        |
+|  +──────────────────────────────────────+|
+|  | ▼ Máquina                            ||
+|  +──────────────────────────────────────+|
+|                                          |
+|  Peso (*)                                |
+|  +──────────────+   +────────┬────────+  |
+|  |              |   |  (●)Kg │ (○)Lb |  |  VACÍO
+|  +──────────────+   +────────┴────────+  |
+|                                          |  nunca se hereda
+|                                          |  el peso de otro
++──────────────────────────────────────────+  implemento
+
+  Precedencia del valor precargado — resuelta SOBRE EL PAR:
+
+    1. carga prescrita del par        (si sigue activa)
+    2. serie anterior del par         (en esta sesión)
+    3. última serie del par           (sesión cerrada)
+    4. campo vacío
+
+  En descarga, la carga de descarga del par tiene prioridad
+  sobre la memoria.
+
+
+────────────────────────────────────────────────────────────────
+ MÉTRICAS  ·  qué se segmenta y qué no (CA-40.07)
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+| Métricas                                 |
++──────────────────────────────────────────+
+|  Tonelaje · últimos 7 días               |
+|  14 820 kg                               |  NO se segmenta —
+|  ▁▂▄▆█▅▃                                 |  el volumen es
+|  ⓘ suma todas las series, con            |  volumen
+|    cualquier implemento                  |
+|  ─────────────────────────────────────   |
+|                                          |
+|  Tasa de progresión · 4 semanas          |
+|  68 %                                    |  SÍ se segmenta:
+|  ⓘ compara peso — se calcula por         |  compara pesos,
+|    implemento y se consolida por         |  luego consolida
+|    ejercicio                             |
+|  ─────────────────────────────────────   |
+|                                          |
+|  RIR promedio                     1.2    |
+|  Adherencia semanal               83 %   |
++──────────────────────────────────────────+
+
+  Regla de consolidación por ejercicio:
+
+    PROGRESIÓN  =  disyunción  (∨)
+       el ejercicio progresa si ALGUNO de sus pares progresó
+       ─► alternar implementos no diluye la progresión
+
+    MESETA      =  conjunción  (∧)
+       el ejercicio se estanca si TODOS sus pares se estancaron
+       ─► un implemento en progresión desmiente la meseta
+
+
+────────────────────────────────────────────────────────────────
+ MESETA  ·  el caso que NO dispara alerta (CA-40.05)
+────────────────────────────────────────────────────────────────
+
+  Elevación Lateral · umbral efectivo 10
+
+    par Mancuerna   contador 11  ≥ 10   ● estancado
+    par Polea       contador  2  <  10  ○ en progresión
+                                        ──────────────
+                    conjunción           NO hay meseta
+
+  ─► el ejercicio NO se declara en meseta
+  ─► NO se emite alerta PLATEAU
+
+
+  El caso que SÍ la dispara:
+
+    par Mancuerna   contador 11  ≥ 10   ● estancado
+    par Polea       contador 12  ≥ 10   ● estancado
+                                        ──────────────
+                    conjunción           MESETA
+
++──────────────────────────────────────────+
+| ←  Detalle de alerta                     |
++──────────────────────────────────────────+
+|  ● ALERTA ALTA                           |
+|  Meseta en Elevación Lateral             |
+|  ─────────────────────────────────────   |
+|                                          |
+|  Llevas 11 sesiones con mancuerna y 12   |
+|  con polea sin subir carga ni            |
+|  repeticiones. Los dos implementos       |
+|  están estancados a la vez.              |
+|                                          |
+|  Implementos estancados                  |  ← la alerta NOMBRA
+|   · Mancuerna    11 sesiones             |    los pares, para
+|   · Polea        12 sesiones             |    ser accionable
+|                                          |
+|  Qué puedes hacer                        |
+|   · Activar una descarga                 |
+|   · Revisar el rango de repeticiones     |
+|                                          |
+|         [   Activar descarga   ]         |
++──────────────────────────────────────────+
+
+
+────────────────────────────────────────────────────────────────
+ DESCARGA  ·  reducción y reinicio por par (CA-40.06)
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+| ←  Estado de descarga                    |
++──────────────────────────────────────────+
+|  Descarga activa · microciclo 1 de 1     |
+|  ─────────────────────────────────────   |
+|                                          |
+|  Elevación Lateral                       |
+|   Mancuerna    12.5 kg  →   7.5 kg       |  60 % de la carga
+|   Polea         8.0 kg  →   5.0 kg       |  de CADA par
+|  ─────────────────────────────────────   |
+|  Press de Banca Plano                    |
+|   Barra        70.0 kg  →  42.0 kg       |
+|  ─────────────────────────────────────   |
+|                                          |
+|  Al cerrar la descarga, cada par         |
+|  reinicia al 90 % de su carga previa.    |
+|                                          |
+|  ⓘ Un par sin historial no recibe carga  |
+|    de descarga: no hay nada que reducir  |
++──────────────────────────────────────────+
+
+
+────────────────────────────────────────────────────────────────
+ QUÉ PASA A SER POR PAR
+────────────────────────────────────────────────────────────────
+
+   por par                          sigue por ejercicio
+   ──────────────────────────       ──────────────────────────
+   estado del ciclo de vida         dificultad de progresión
+   carga prescrita                  zonas musculares
+   contador sin progresión          recurso visual
+   clasificación de la sesión       nombre
+   memoria del último peso
+   unidad de captura                sin segmentar
+   carga de descarga                ──────────────────────────
+                                    tonelaje total
+   derivado, no persistido          volumen por grupo muscular
+   ──────────────────────────
+   lectura consolidada (∨ / ∧)
+
+╔══════════════════════════════════════════════════════════════╗
+║  ⚠️  PROTOTIPO — PROPUESTA PENDIENTE DE VALIDACIÓN CON DISEÑO  ║
+╚══════════════════════════════════════════════════════════════╝

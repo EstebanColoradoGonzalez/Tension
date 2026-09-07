@@ -1,0 +1,341 @@
+╔══════════════════════════════════════════════════════════════╗
+║  ⚠️  PROTOTIPO — PROPUESTA PENDIENTE DE VALIDACIÓN CON DISEÑO  ║
+╚══════════════════════════════════════════════════════════════╝
+
+HU #39 — Un solo ejercicio, varios implementos
+Plataforma: mobile / portrait (390 px) · Material 3 · targets ≥ 48 dp
+
+
+────────────────────────────────────────────────────────────────
+ CREAR / EDITAR EJERCICIO  ·  equipamiento múltiple (CA-39.03)
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+| ←  Nuevo ejercicio                       |
++──────────────────────────────────────────+
+|                                          |
+|  Nombre (*)                              |
+|  +──────────────────────────────────────+|
+|  | Elevación Lateral                    ||
+|  +──────────────────────────────────────+|
+|  ┌ espacio reservado para error ───────┐ |
+|  └──────────────────────────────────────┘|
+|                                          |
+|  Equipamiento admitido (*)               |  lista de casillas
+|  ─────────────────────────────────────   |  scroll dentro de
+|  [ ] Máquina                             |  la sección
+|  [ ] Máquina Smith                       |
+|  [x] Polea                               |  48 dp por fila
+|  [ ] Barra                               |
+|  [ ] Barra Fija                          |
+|  [x] Mancuerna                           |
+|  [ ] Pesa Rusa                           |
+|  [ ] Banda Elástica                      |
+|  [ ] Peso Corporal                       |
+|  [ ] Peso Añadido                        |
+|  [ ] Barra EZ                            |
+|  [ ] TRX/Suspensión                      |
+|  [ ] Balón Medicinal                     |
+|  [ ] Rodillo de Abdomen                  |
+|  [ ] Paralelas/Dip Station               |
+|  ─────────────────────────────────────   |
+|  2 de 15 seleccionados                   |  contador Gray500
+|  ┌ espacio reservado para error ───────┐ |
+|  └──────────────────────────────────────┘|
+|                                          |
+|  Zonas musculares (*)         → HU-41    |  jerarquía llega
+|  Dificultad de progresión                |  en HU-41
+|  Imagen del ejercicio                    |
+|                                          |
+|      [ Cancelar ]   [   Guardar   ]      |  CTA primario
+|                                          |
++──────────────────────────────────────────+
+
+  Estado error — ninguna casilla marcada (CA-39.09):
+
+|  Equipamiento admitido (*)               |
+|  ═════════════════════════════════════   |  borde error
+|  [ ] Máquina ...  (ninguno marcado)      |  Gray600 2px
+|  ─────────────────────────────────────   |
+|  0 de 15 seleccionados                   |
+|  ⚠ Elige al menos un equipamiento        |
+|                                          |
+|      [ Cancelar ]   [   Guardar   ]      |  deshabilitado
+|                     ▒▒▒▒▒▒▒▒▒▒▒▒▒        |  Gray200 / Gray500
+
+
+────────────────────────────────────────────────────────────────
+ EDITAR EJERCICIO  ·  quitar equipamiento con historial (CA-39.10)
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+|  Equipamiento admitido (*)               |
+|  ─────────────────────────────────────   |
+|  [ ] Máquina                             |
+|  [x] Polea            🔒                 |  candado: tiene
+|  [x] Mancuerna                           |  series registradas
+|  ─────────────────────────────────────   |
+|  2 de 15 seleccionados                   |
+|                                          |
+|  ⚠ No se puede quitar «Polea»: hay       |
+|    series registradas con ese            |
+|    equipamiento.                         |
++──────────────────────────────────────────+
+
+
+────────────────────────────────────────────────────────────────
+ DICCIONARIO  ·  detalle del ejercicio (CA-39.03)
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+| ←  Elevación Lateral                     |
++──────────────────────────────────────────+
+|  [  🖼  390×220  ]                       |  Gray200 / borde
+|                                          |  Gray300
+|  Equipamiento admitido                   |
+|  Mancuerna · Polea · Máquina             |  las TRES, no una
+|                                          |
+|  Zona muscular                           |
+|  Hombro                                  |  granularidad
+|                                          |  actual → HU-41
+|  Dificultad de progresión                |
+|  Alta                                    |
++──────────────────────────────────────────+
+
+
+────────────────────────────────────────────────────────────────
+ DICCIONARIO  ·  filtro por equipamiento (CA-39.03)
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+| Diccionario de Ejercicios          🔍    |
++──────────────────────────────────────────+
+|  Equipamiento  [▼ Polea            ]     |
+|  ─────────────────────────────────────   |
+|  Aductores                               |  aparece: Polea es
+|  Crunch Abdominal                        |  UNA de sus
+|  Cruce de Polea Alta                     |  opciones
+|  Curl Bayesian en Banco Inclinado        |
+|  Curl de Concentración                   |
+|  Elevación Lateral                       |
+|  ...                                     |
+|                                          |
+|  ⓘ Un ejercicio aparece si ALGUNA de     |
+|    sus opciones coincide con el filtro   |
++──────────────────────────────────────────+
+
+
+────────────────────────────────────────────────────────────────
+ REGISTRAR SERIE  ·  selector de equipamiento (CA-39.04)
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+| ←  Registrar serie                       |
++──────────────────────────────────────────+
+|                                          |
+|  Elevación Lateral                       |
+|  Serie 2 de 4 · 8-12 reps                |
+|                                          |
+|  Equipamiento (*)                        |  NUEVO
+|  +──────────────────────────────────────+|
+|  | ▼ Mancuerna                          ||  preseleccionado
+|  +──────────────────────────────────────+|  con el último uso
+|  ┌ espacio reservado para error ───────┐ |
+|  └──────────────────────────────────────┘|
+|                                          |
+|  Peso (*)                                |
+|  +──────────────+   +────────┬────────+  |
+|  |    12.0      |   |  (●)Kg │ (○)Lb |  |
+|  +──────────────+   +────────┴────────+  |
+|    [   −   ]   [   +   ]                 |
+|    incremento 0.5 kg                     |
+|                                          |
+|  Repeticiones (*)      RIR (*)           |
+|  +────────────+        +────────────+    |
+|  |     10     |        |     1      |    |
+|  +────────────+        +────────────+    |
+|                                          |
+|         [    Registrar serie    ]        |
++──────────────────────────────────────────+
+
+  Desplegado — solo las opciones del ejercicio:
+
+   +────────────────────────────────+
+   | Equipamiento                   |
+   +────────────────────────────────+
+   | (●) Mancuerna                  |
+   | (○) Polea                      |
+   | (○) Máquina                    |
+   +────────────────────────────────+
+        Máquina Smith, Barra, etc.
+        NO aparecen — el ejercicio
+        no las admite
+
+  Ejercicio con UNA sola opción (CA-39.04):
+
+|  Equipamiento                            |
+|  Polea                                   |  resuelto, sin
+|                                          |  interacción
+
+
+────────────────────────────────────────────────────────────────
+ PESO CORPORAL  ·  el equipamiento gobierna el campo (CA-39.05)
+────────────────────────────────────────────────────────────────
+
+  Dominadas — cuatro opciones, dos comportamientos
+
++──────────────────────────────────────────+
+|  Dominadas                               |
+|  Serie 1 de 4                            |
+|                                          |
+|  Equipamiento (*)                        |
+|  +──────────────────────────────────────+|
+|  | ▼ Barra Fija                         ||
+|  +──────────────────────────────────────+|
+|                                          |
+|  Peso                                    |
+|  +──────────────+                        |  sin selector
+|  |     ▒▒0▒▒    |  no editable           |  Gray200
+|  +──────────────+                        |
+|                                          |
+|  Repeticiones (*)      RIR (*)           |
+|  +────────────+        +────────────+    |
+|  |      8     |        |     1      |    |
+|  +────────────+        +────────────+    |
++──────────────────────────────────────────+
+
++──────────────────────────────────────────+
+|  Dominadas                               |
+|  Serie 1 de 4                            |
+|                                          |
+|  Equipamiento (*)                        |
+|  +──────────────────────────────────────+|
+|  | ▼ Peso Añadido                       ||
+|  +──────────────────────────────────────+|
+|                                          |
+|  Peso añadido (*)                        |  HABILITADO
+|  +──────────────+   +────────┬────────+  |
+|  |    10.0      |   |  (●)Kg │ (○)Lb |  |
+|  +──────────────+   +────────┴────────+  |
+|    [   −   ]   [   +   ]                 |
+|  ⓘ solo el lastre — tu peso corporal     |
+|    no se suma                            |
+|                                          |
+|  Repeticiones (*)      RIR (*)           |
+|  +────────────+        +────────────+    |
+|  |      8     |        |     1      |    |
+|  +────────────+        +────────────+    |
++──────────────────────────────────────────+
+
+  Tabla de comportamiento del campo de peso:
+
+    Peso Corporal   →  oculto,  peso = 0
+    Barra Fija      →  oculto,  peso = 0
+    Máquina         →  oculto,  peso = 0   (asistida: el
+                                            contrapeso RESTA
+                                            esfuerzo; registrarlo
+                                            invertiría el dato)
+    Peso Añadido    →  visible, peso > 0
+
+
+────────────────────────────────────────────────────────────────
+ HISTORIAL DE SESIÓN  ·  el equipamiento de cada serie (CA-39.08)
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+| ←  Sesión del 4 sep · Push — Deltoides   |
++──────────────────────────────────────────+
+|  Elevación Lateral                       |
+|  ─────────────────────────────────────   |
+|  Serie 1   12.0 kg · 10 reps · RIR 1     |
+|            Mancuerna                     |  ← equipamiento
+|  ─────────────────────────────────────   |    de la serie
+|  Serie 2   12.0 kg ·  9 reps · RIR 1     |
+|            Mancuerna                     |
+|  ─────────────────────────────────────   |
+|  Serie 3   16.7 kg · 10 reps · RIR 1     |
+|            Polea                         |  ← otro implemento
+|  ─────────────────────────────────────   |    en la MISMA
+|  Serie 4   16.7 kg ·  8 reps · RIR 0     |    sesión
+|            Polea                         |
+|  ─────────────────────────────────────   |
+|  Tonelaje del ejercicio        731.0 kg  |  suma todo
++──────────────────────────────────────────+
+
+
+────────────────────────────────────────────────────────────────
+ HISTORIAL DE EJERCICIO  ·  separado por implemento (CA-39.08)
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+| ←  Elevación Lateral · Historial         |
++──────────────────────────────────────────+
+|  Implemento  [▼ Mancuerna         ]      |
+|  ─────────────────────────────────────   |
+|  4 sep    12.0 kg  · 10 · 9 reps         |
+|  28 ago   11.5 kg  · 10 · 10 reps        |
+|  21 ago   11.5 kg  ·  9 · 8 reps         |
+|  ─────────────────────────────────────   |
+|                                          |
+|  ⓘ Una serie de polea nunca se compara   |
+|    con una de mancuerna                  |
++──────────────────────────────────────────+
+
+  Ejercicio entrenado con UN solo implemento (CA-39.08):
+
++──────────────────────────────────────────+
+| ←  Curl de Isquiotibiales · Historial    |
++──────────────────────────────────────────+
+|  Máquina                                 |  etiqueta, no
+|  ─────────────────────────────────────   |  selector: no hay
+|  6 sep    35.0 kg  · 12 · 11 reps        |  nada que elegir
+|  30 ago   32.5 kg  · 12 · 12 reps        |
++──────────────────────────────────────────+
+
+
+────────────────────────────────────────────────────────────────
+ RESTAURAR RESPALDO  ·  formato anterior (CA-39.12)
+────────────────────────────────────────────────────────────────
+
+   +────────────────────────────────────+
+   |  Respaldo incompatible             |
+   |  ────────────────────────────────  |
+   |  Este respaldo se generó con una   |
+   |  versión anterior de la aplicación |
+   |  y no incluye el equipamiento de   |
+   |  las series.                       |
+   |                                    |
+   |  No puede restaurarse.             |
+   |                                    |
+   |                    [ Entendido ]   |
+   +────────────────────────────────────+
+
+  Se rechaza por completo — nunca se importa parcialmente.
+
+
+────────────────────────────────────────────────────────────────
+ FRONTERA TRANSITORIA DE ESTA HISTORIA
+────────────────────────────────────────────────────────────────
+
+  Lo que HU-39 entrega:
+
+    registro  ──►  el implemento queda escrito en la serie
+    historial ──►  el implemento se lee y se separa
+    catálogo  ──►  un ejercicio, N implementos
+
+  Lo que TODAVÍA no cambia (llega en HU-40):
+
+    progresión  ──►  sigue comparando por EJERCICIO
+                     el falso REGRESSION al estrenar un
+                     implemento sigue ocurriendo
+
+  Y en HU-41:
+
+    zonas       ──►  granularidad y jerarquía
+    plan        ──►  equipamiento sugerido por asignación
+                     (hasta entonces, la preselección es
+                      el último implemento usado)
+
+╔══════════════════════════════════════════════════════════════╗
+║  ⚠️  PROTOTIPO — PROPUESTA PENDIENTE DE VALIDACIÓN CON DISEÑO  ║
+╚══════════════════════════════════════════════════════════════╝

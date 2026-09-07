@@ -10,7 +10,8 @@ import kotlinx.coroutines.flow.Flow
 data class PlanAssignmentWithExerciseDetails(
     val exerciseId: Long,
     val exerciseName: String,
-    val equipmentTypeName: String,
+    /** Implementos admitidos, separados por [AGGREGATE_SEPARATOR] y en orden de catálogo. */
+    val equipmentTypes: String?,
     val muscleZones: String?,
     val sets: Int,
     val reps: String,
@@ -24,7 +25,8 @@ data class PlanAssignmentWithExerciseDetails(
 data class SessionPreviewExerciseDto(
     val exerciseId: Long,
     val exerciseName: String,
-    val equipmentTypeName: String,
+    /** Implementos admitidos, separados por [AGGREGATE_SEPARATOR] y en orden de catálogo. */
+    val equipmentTypes: String?,
     val muscleZones: String?,
     val sets: Int,
     val reps: String,
@@ -47,8 +49,18 @@ interface PlanAssignmentDao {
         SELECT 
             e.id AS exerciseId,
             e.name AS exerciseName,
-            et.name AS equipmentTypeName,
-            GROUP_CONCAT(mz.name, ', ') AS muscleZones,
+            (SELECT GROUP_CONCAT(name, '|') FROM (
+                SELECT et.name AS name FROM exercise_equipment ee
+                INNER JOIN equipment_type et ON ee.equipment_type_id = et.id
+                WHERE ee.exercise_id = e.id
+                ORDER BY et.id
+            )) AS equipmentTypes,
+            (SELECT GROUP_CONCAT(name, '|') FROM (
+                SELECT mz.name AS name FROM exercise_muscle_zone emz
+                INNER JOIN muscle_zone mz ON emz.muscle_zone_id = mz.id
+                WHERE emz.exercise_id = e.id
+                ORDER BY mz.id
+            )) AS muscleZones,
             pa.sets,
             pa.reps,
             e.is_bodyweight AS isBodyweight,
@@ -58,9 +70,6 @@ interface PlanAssignmentDao {
             pa.slot
         FROM plan_assignment pa
         INNER JOIN exercise e ON pa.exercise_id = e.id
-        INNER JOIN equipment_type et ON e.equipment_type_id = et.id
-        LEFT JOIN exercise_muscle_zone emz ON e.id = emz.exercise_id
-        LEFT JOIN muscle_zone mz ON emz.muscle_zone_id = mz.id
         WHERE pa.routine_version_id = :routineVersionId
         GROUP BY e.id
         ORDER BY pa.sort_order ASC
@@ -73,8 +82,18 @@ interface PlanAssignmentDao {
         SELECT 
             e.id AS exerciseId,
             e.name AS exerciseName,
-            et.name AS equipmentTypeName,
-            GROUP_CONCAT(DISTINCT mz.name) AS muscleZones,
+            (SELECT GROUP_CONCAT(name, '|') FROM (
+                SELECT et.name AS name FROM exercise_equipment ee
+                INNER JOIN equipment_type et ON ee.equipment_type_id = et.id
+                WHERE ee.exercise_id = e.id
+                ORDER BY et.id
+            )) AS equipmentTypes,
+            (SELECT GROUP_CONCAT(name, '|') FROM (
+                SELECT mz.name AS name FROM exercise_muscle_zone emz
+                INNER JOIN muscle_zone mz ON emz.muscle_zone_id = mz.id
+                WHERE emz.exercise_id = e.id
+                ORDER BY mz.id
+            )) AS muscleZones,
             pa.sets,
             pa.reps,
             e.is_bodyweight AS isBodyweight,
@@ -87,9 +106,6 @@ interface PlanAssignmentDao {
             pa.slot
         FROM plan_assignment pa
         INNER JOIN exercise e ON pa.exercise_id = e.id
-        INNER JOIN equipment_type et ON e.equipment_type_id = et.id
-        LEFT JOIN exercise_muscle_zone emz ON e.id = emz.exercise_id
-        LEFT JOIN muscle_zone mz ON emz.muscle_zone_id = mz.id
         LEFT JOIN exercise_progression ep ON e.id = ep.exercise_id
         WHERE pa.routine_version_id = :routineVersionId
         GROUP BY e.id
@@ -121,8 +137,18 @@ interface PlanAssignmentDao {
         SELECT 
             e.id AS exerciseId,
             e.name AS exerciseName,
-            et.name AS equipmentTypeName,
-            GROUP_CONCAT(mz.name, ', ') AS muscleZones,
+            (SELECT GROUP_CONCAT(name, '|') FROM (
+                SELECT et.name AS name FROM exercise_equipment ee
+                INNER JOIN equipment_type et ON ee.equipment_type_id = et.id
+                WHERE ee.exercise_id = e.id
+                ORDER BY et.id
+            )) AS equipmentTypes,
+            (SELECT GROUP_CONCAT(name, '|') FROM (
+                SELECT mz.name AS name FROM exercise_muscle_zone emz
+                INNER JOIN muscle_zone mz ON emz.muscle_zone_id = mz.id
+                WHERE emz.exercise_id = e.id
+                ORDER BY mz.id
+            )) AS muscleZones,
             pa.sets,
             pa.reps,
             e.is_bodyweight AS isBodyweight,
@@ -132,9 +158,6 @@ interface PlanAssignmentDao {
             pa.slot
         FROM plan_assignment pa
         INNER JOIN exercise e ON pa.exercise_id = e.id
-        INNER JOIN equipment_type et ON e.equipment_type_id = et.id
-        LEFT JOIN exercise_muscle_zone emz ON e.id = emz.exercise_id
-        LEFT JOIN muscle_zone mz ON emz.muscle_zone_id = mz.id
         WHERE pa.routine_version_id = :routineVersionId AND pa.slot = :slot
         GROUP BY e.id
         ORDER BY e.name ASC

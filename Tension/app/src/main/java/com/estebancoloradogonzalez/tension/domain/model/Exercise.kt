@@ -3,7 +3,8 @@ package com.estebancoloradogonzalez.tension.domain.model
 data class Exercise(
     val id: Long,
     val name: String,
-    val equipmentTypeName: String,
+    /** Implementos con los que el ejercicio se puede hacer. Nunca vacío. */
+    val equipmentTypes: List<String>,
     val muscleZones: List<String>,
     val muscleGroup: String?,
     val isBodyweight: Boolean,

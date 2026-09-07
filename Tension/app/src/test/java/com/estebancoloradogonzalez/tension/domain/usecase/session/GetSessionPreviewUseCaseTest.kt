@@ -21,7 +21,7 @@ class GetSessionPreviewUseCaseTest {
             SessionPreviewExercise(
                 exerciseId = 1L,
                 exerciseName = "Sentadilla",
-                equipmentTypeName = "Barra",
+                equipmentTypes = listOf("Barra"),
                 muscleZones = "Cuádriceps",
                 sets = 4,
                 reps = "8-12",

@@ -125,6 +125,54 @@ class CatalogoSembradoTest {
     }
 
     /**
+     * El catálogo de equipamiento es una tabla cerrada de 15 tipos atómicos (HU-39). Un tipo
+     * de más o de menos significa que el sembrado y la tabla de aceptación divergieron.
+     */
+    @Test
+    fun el_catalogo_de_equipamiento_tiene_quince_tipos() {
+        assertEquals(
+            "El catálogo de equipamiento debe tener 15 tipos atómicos",
+            15,
+            contar("SELECT COUNT(*) FROM equipment_type"),
+        )
+    }
+
+    /**
+     * Sin equipamiento un ejercicio no se puede registrar: el formulario de serie no tendría
+     * ninguna opción que ofrecer y el equipamiento es obligatorio en la serie.
+     */
+    @Test
+    fun todo_ejercicio_admite_al_menos_un_equipamiento() {
+        val huerfanos = contar(
+            "SELECT COUNT(*) FROM exercise e " +
+                "LEFT JOIN exercise_equipment ee ON ee.exercise_id = e.id " +
+                "WHERE ee.exercise_id IS NULL",
+        )
+        assertEquals("Hay ejercicios sin ningún equipamiento admitido", 0, huerfanos)
+    }
+
+    @Test
+    fun las_relaciones_ejercicio_equipamiento_no_cuelgan_de_nada() {
+        assertEquals(
+            "Relaciones que apuntan a un ejercicio que no existe",
+            0,
+            contar(
+                "SELECT COUNT(*) FROM exercise_equipment ee " +
+                    "LEFT JOIN exercise e ON e.id = ee.exercise_id WHERE e.id IS NULL",
+            ),
+        )
+        assertEquals(
+            "Relaciones que apuntan a un equipamiento que no existe",
+            0,
+            contar(
+                "SELECT COUNT(*) FROM exercise_equipment ee " +
+                    "LEFT JOIN equipment_type et ON et.id = ee.equipment_type_id " +
+                    "WHERE et.id IS NULL",
+            ),
+        )
+    }
+
+    /**
      * Sin zona muscular un ejercicio no entra en la distribución de volumen ni en el análisis
      * de fatiga por grupo: existe en el catálogo pero es invisible para las métricas.
      */
@@ -179,6 +227,7 @@ class CatalogoSembradoTest {
             "day_skip",
             "daily_routine_override",
             "tree_state",
+            "exercise_equipment",
         ).forEach { tabla ->
             db.openHelper.readableDatabase.query("SELECT COUNT(*) FROM $tabla").use { cursor ->
                 assertTrue("La tabla $tabla no es consultable", cursor.moveToNext())

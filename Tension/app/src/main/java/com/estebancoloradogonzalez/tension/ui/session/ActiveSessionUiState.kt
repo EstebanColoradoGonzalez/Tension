@@ -34,7 +34,7 @@ data class AlternativeSelectionUiState(
 data class AlternativeOption(
     val exerciseId: Long,
     val name: String,
-    val equipmentTypeName: String,
+    val equipmentSummary: String,
     val muscleZonesSummary: String,
 )
 
@@ -42,7 +42,7 @@ data class ExerciseUiItem(
     val sessionExerciseId: Long,
     val exerciseId: Long?,
     val name: String,
-    val equipmentTypeName: String,
+    val equipmentSummary: String,
     val muscleZones: String,
     val sets: Int,
     val reps: String,

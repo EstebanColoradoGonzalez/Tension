@@ -41,6 +41,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.estebancoloradogonzalez.tension.R
 import com.estebancoloradogonzalez.tension.domain.model.ProgressionDifficulty
+import com.estebancoloradogonzalez.tension.ui.catalog.components.EquipmentMultiSelector
 import com.estebancoloradogonzalez.tension.ui.catalog.components.ProgressionDifficultySelector
 import com.estebancoloradogonzalez.tension.ui.components.ExerciseImagePlaceholder
 import com.estebancoloradogonzalez.tension.ui.components.TensionTopAppBar
@@ -102,6 +103,7 @@ fun ExerciseDetailScreen(
                     onNavigateToHistory = onNavigateToExerciseHistory,
                     onChangeImage = { imagePickerLauncher.launch("image/*") },
                     onProgressionDifficultySelected = viewModel::onProgressionDifficultySelected,
+                    onEquipmentToggled = viewModel::onEquipmentToggled,
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(innerPadding),
@@ -117,6 +119,7 @@ private fun ExerciseDetailContent(
     onNavigateToHistory: (Long) -> Unit,
     onChangeImage: () -> Unit,
     onProgressionDifficultySelected: (ProgressionDifficulty) -> Unit,
+    onEquipmentToggled: (Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -137,7 +140,18 @@ private fun ExerciseDetailContent(
             Spacer(modifier = Modifier.height(16.dp))
             DetailField(
                 label = stringResource(R.string.exercise_field_equipment),
-                value = exercise.equipmentTypeName,
+                value = exercise.equipmentSummary,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            // Editable en el sitio y sin botón de guardar, igual que la imagen y la
+            // dificultad de progresión: la ficha persiste al instante y el flujo de Room
+            // repinta. Un intento rechazado no escribe nada, así que la casilla vuelve.
+            EquipmentMultiSelector(
+                options = exercise.equipmentOptions,
+                selectedIds = exercise.selectedEquipmentIds,
+                onToggle = onEquipmentToggled,
+                equipmentWithSets = exercise.equipmentWithSets,
+                error = exercise.equipmentError,
             )
             Spacer(modifier = Modifier.height(16.dp))
             DetailField(

@@ -25,20 +25,54 @@ class ExerciseHistoryViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<ExerciseHistoryUiState>(ExerciseHistoryUiState.Loading)
     val uiState: StateFlow<ExerciseHistoryUiState> = _uiState.asStateFlow()
 
+    /** El historial completo, sin segmentar. Se carga una vez y se filtra en memoria. */
+    private var fullHistory: ExerciseHistoryData? = null
+
     init {
         viewModelScope.launch {
             val historyData = getExerciseHistoryUseCase(exerciseId)
+            fullHistory = historyData
             if (historyData.entries.isEmpty()) {
                 _uiState.value = ExerciseHistoryUiState.Empty
             } else {
-                val (trendPoints, yAxisLabel) = buildTrendData(historyData)
-                _uiState.value = ExerciseHistoryUiState.Loaded(
-                    data = historyData,
-                    trendPoints = trendPoints,
-                    yAxisLabel = yAxisLabel,
+                _uiState.value = loadedState(
+                    historyData,
+                    historyData.equipmentOptions.firstOrNull(),
                 )
             }
         }
+    }
+
+    /**
+     * Cambia el implemento de la lectura.
+     *
+     * Se resuelve sobre lo ya cargado y no vuelve a consultar: la segmentación la hizo la
+     * base al agrupar por implemento, así que aquí solo se elige qué subconjunto se lee.
+     */
+    fun onEquipmentSelected(equipmentTypeName: String) {
+        val history = fullHistory ?: return
+        _uiState.value = loadedState(history, equipmentTypeName)
+    }
+
+    private fun loadedState(
+        history: ExerciseHistoryData,
+        selectedEquipment: String?,
+    ): ExerciseHistoryUiState.Loaded {
+        val filtered = if (selectedEquipment == null) {
+            history
+        } else {
+            history.copy(
+                entries = history.entries.filter { it.equipmentTypeName == selectedEquipment },
+            )
+        }
+        val (trendPoints, yAxisLabel) = buildTrendData(filtered)
+        return ExerciseHistoryUiState.Loaded(
+            data = filtered,
+            trendPoints = trendPoints,
+            yAxisLabel = yAxisLabel,
+            equipmentOptions = history.equipmentOptions,
+            selectedEquipment = selectedEquipment,
+        )
     }
 
     private fun buildTrendData(data: ExerciseHistoryData): Pair<List<TrendPoint>, String> {

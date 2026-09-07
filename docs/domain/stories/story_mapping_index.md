@@ -4,7 +4,7 @@
 >
 > **Nota de migración — Normalización de IDs:** Los IDs de historias han sido normalizados — la HU-15.5 pasa a ser HU-16 y los IDs subsiguientes se desplazan en +1 hasta HU-26. La columna "ID Legacy" en §2 preserva la referencia al ID original para trazabilidad completa.
 >
-> **Nota — numeración:** el proyecto tiene **38 historias con numeración plana y correlativa**, `HU-01` a `HU-38`. No existen IDs decimales ni historias contenedoras: cada historia es autocontenida y se implementa por sí misma. Cuando una historia se divide por análisis INVEST, sus hijas reciben números planos consecutivos y declaran su origen y su orden en el frontmatter — es el caso de `HU-37` y `HU-38`.
+> **Nota — numeración:** el proyecto tiene **43 historias con numeración plana y correlativa**, `HU-01` a `HU-43`. No existen IDs decimales ni historias contenedoras: cada historia es autocontenida y se implementa por sí misma. Cuando una historia se divide por análisis INVEST, sus hijas reciben números planos consecutivos y declaran su origen y su orden en el frontmatter — es el caso de `HU-37` y `HU-38`, y de `HU-39` a `HU-43`.
 
 ---
 
@@ -21,6 +21,7 @@
 - **[EPIC-07] Evolución del Plan:** Transición a plan completamente libre definido por el usuario (eliminación de módulos fijos A/B/C), actualización del catálogo de ejercicios y plan por defecto, ajustes de usabilidad y alternativas por puesto en el plan.
 - **[EPIC-08] Fidelidad al Gimnasio Real:** Reducción de la fricción entre lo que ocurre en el gimnasio y lo que el sistema modela: captura de carga en la unidad real del implemento, memoria del último peso manejado, umbrales de progresión realistas por ejercicio, alertas accionables, métricas legibles, días de la semana reasignables y retiro del mecanismo de sustitución por grupo muscular.
 - **[EPIC-09] Recompensa Visual:** Representación visual del historial de entrenamiento como un árbol que crece con las sesiones acumuladas y se marchita con la ausencia. **Excepción de alcance declarada:** la exclusión de `system_definition_document.md` §2.1 —motivación, adherencia y días del calendario como insumos de decisión— **se mantiene intacta**. Esta épica es puramente visual y aislada: lee del historial y ningún componente de decisión, alerta o KPI lee de ella.
+- **[EPIC-10] El Implemento como Dimensión:** El equipamiento deja de ser un atributo fijo del ejercicio y pasa a ser un dato de la serie, con la progresión resolviéndose por par (ejercicio, equipamiento). Corrige el defecto por el que cambiar de mancuerna a polea se leía como regresión. Arrastra consigo la recatalogación anatómica del diccionario, el plan por defecto alineado con su implemento sugerido, el 1RM estimado y la sesión editable. Es la continuación natural de EPIC-08: misma intención de fidelidad al gimnasio real, aplicada a la dimensión que faltaba.
 
 ---
 
@@ -66,12 +67,19 @@
 | **[HU-34](./HU-34-eliminar-sustitucion-grupo-muscular/historia.md)** | Eliminación de la sustitución por grupo muscular | — | EPIC-08 | `Done` | Media |
 | **[HU-35](./HU-35-metricas-comprensibles/historia.md)** | Métricas que se explican solas | — | EPIC-08 | `Done` | Media |
 | **[HU-36](./HU-36-dias-semana-reasignables/historia.md)** | Días de la semana como entidad reasignable | — | EPIC-08 | `Done` | Alta |
-| **[HU-37](./HU-37-arbol-progreso-entrenamiento/historia.md)** | El árbol de mi entrenamiento | — | EPIC-09 | `Borrador (PO)` | Media |
-| **[HU-38](./HU-38-arbol-3d-interactivo/historia.md)** | El árbol en 3D | — | EPIC-09 | `Borrador (PO)` | Baja |
+| **[HU-37](./HU-37-arbol-progreso-entrenamiento/historia.md)** | El árbol de mi entrenamiento | — | EPIC-09 | `Lista para Revisión` | Media |
+| **[HU-38](./HU-38-arbol-3d-interactivo/historia.md)** | El árbol en 3D | — | EPIC-09 | `Lista para Revisión` | Baja |
+| **[HU-39](./HU-39-equipamiento-multiple-por-ejercicio/historia.md)** | Un solo ejercicio, varios implementos | — | EPIC-10 | `Lista para Revisión` | Alta |
+| **[HU-40](./HU-40-progresion-por-equipamiento/historia.md)** | Cambiar de implemento no es retroceder | — | EPIC-10 | `Borrador (PO)` | Alta |
+| **[HU-41](./HU-41-catalogo-anatomico-plan-alineado/historia.md)** | Catálogo anatómico y plan por defecto alineado | — | EPIC-10 | `Borrador (PO)` | Alta |
+| **[HU-42](./HU-42-1rm-estimado/historia.md)** | Mi 1RM estimado | — | EPIC-10 | `Borrador (PO)` | Media |
+| **[HU-43](./HU-43-ajustar-sesion-del-dia/historia.md)** | Ajustar la sesión del día | — | EPIC-10 | `Borrador (PO)` | Media |
 
-**Dependencias entre historias:** `HU-31` depende de `HU-30` (la coherencia entre el valor precargado y la unidad activa del ejercicio) y `HU-33` depende de `HU-32` (la ponderación de la tasa de progresión consume el atributo de dificultad). `HU-38` depende de `HU-37`, de la que hereda la entidad de persistencia, el cálculo, la ruta, la pantalla dedicada y la representación nativa que allí pasa a fallback. El resto son independientes entre sí.
+**Dependencias entre historias:** `HU-31` depende de `HU-30` (la coherencia entre el valor precargado y la unidad activa del ejercicio) y `HU-33` depende de `HU-32` (la ponderación de la tasa de progresión consume el atributo de dificultad). `HU-38` depende de `HU-37`, de la que hereda la entidad de persistencia, el cálculo, la ruta, la pantalla dedicada y la representación nativa que allí pasa a fallback. Las cinco historias de **EPIC-10** dependen todas de `HU-39`, que aporta el equipamiento persistido en la serie: `HU-40` y `HU-42` solo de ella —`HU-42` es paralelizable—, `HU-41` de ella más los ocho renombrados que declara, y `HU-43` de `HU-39` y de `HU-41`, porque reutiliza el formulario de creación de ejercicio ya con equipamiento múltiple y jerarquía de zonas. El orden `HU-39` → `HU-40` es **crítico**: hasta que exista `HU-40`, el falso `REGRESSION` por cambio de implemento sigue ocurriendo. El resto son independientes entre sí.
 
 **Nota de partición — HU-37 y HU-38:** ambas provienen de una **misma historia original** (*Árbol de progreso del entrenamiento*, 16 CAs), dividida por análisis INVEST (score 4/6, falla `Small`). Se usó **numeración plana** en lugar de IDs decimales, respetando la convención declarada en el encabezado de este documento. `HU-37` entrega el árbol completo con representación nativa y toda la infraestructura; `HU-38` aísla el riesgo del primer WebView del proyecto y de Three.js.
+
+**Nota de partición — HU-39 a HU-43:** las cinco provienen de una **misma historia original** (*Equipamiento por ejercicio, 1RM estimado y sesión editable*, 40 CAs), dividida por análisis INVEST (score 4/6, fallan `Negotiable` y `Small`, con complejidad Alta en cuatro de las cinco dimensiones). Se usó **numeración plana**, como en HU-37/HU-38. El corte es vertical por frente de valor: `HU-39` concentra la infraestructura —catálogo atómico de equipamiento, relación de un ejercicio con varios implementos, equipamiento en la serie, formularios, esquema y respaldo—; `HU-40` cambia la unidad de comparación del motor de decisión al par (ejercicio, equipamiento) y añade la consolidación booleana; `HU-41` recataloga el diccionario con 33 zonas anatómicas jerarquizadas y alinea el plan por defecto; `HU-42` añade el 1RM estimado en una pantalla nueva y aislada; `HU-43` abre la sesión activa a añadir y retirar ejercicios de forma temporal. La cobertura de los 40 CAs originales sobre las cinco hijas fue validada: sin huérfanos y sin duplicados. `HU-43` es la única prescindible sin dejar el sistema en un estado inconsistente.
 
 ---
 
@@ -146,14 +154,27 @@
 
 - **Objetivo:** Dar al ejecutante una devolución visual de su constancia que no exija interpretar métricas. Un árbol que crece con las sesiones acumuladas y se marchita con la ausencia, con la estatura expresando el historial y la salud la recencia. Se entrega en dos fases: primero el árbol completo con representación nativa, después el modelo 3D interactivo.
 - **Historias incluidas:** `HU-37`, `HU-38` — en ese orden obligatorio.
-- **Estado:** `Borrador (PO)` — 2 historias creadas, pendientes de análisis arquitectónico.
+- **Estado:** `Lista para Revisión` — 2 historias implementadas por Dev-Rápido, pendientes de revisión.
 - **Excepción de alcance:** la exclusión de `system_definition_document.md` §2.1 **se mantiene**. El árbol es una capa puramente visual y aislada, con dependencia unidireccional hacia el historial. No alimenta al motor de decisión, no genera alertas y no altera ningún KPI.
 - **Alcance de datos:** `HU-37` introduce una entidad nueva y un incremento del formato de respaldo. Se valida sobre instalación fresca — excepción documentada a RNF19 (ADR-019), limitada a esa historia.
 - **Riesgo:** concentrado íntegramente en `HU-38`, que introduce el **primer WebView del proyecto** y su primera dependencia JavaScript. La partición existe para que ese riesgo no bloquee la entrega del árbol.
 
 ---
 
-## 4.7. Inconsistencias Declaradas (corregidas)
+### 4.7. Release 1.6 — El Implemento como Dimensión (EPIC-10)
+
+- **Objetivo:** Corregir el defecto por el que cambiar de implemento se leía como retroceso. El equipamiento pasa de atributo fijo del ejercicio a dato de la serie, y la progresión se resuelve por par (ejercicio, equipamiento) con consolidación booleana por ejercicio. Alrededor de ese cambio: catálogo recatalogado con criterio anatómico, plan por defecto alineado con su implemento sugerido, 1RM estimado y sesión editable.
+- **Historias incluidas:** `HU-39`, `HU-40`, `HU-41`, `HU-42`, `HU-43`.
+- **Orden:** `HU-39` primero y `HU-40` inmediatamente después —orden crítico—; `HU-41` tercera; `HU-42` paralelizable tras `HU-39`; `HU-43` última, tras `HU-39` y `HU-41`. **`HU-39` está implementada** (2026-09-07): el esquema es la versión 20, el respaldo la 13, y las cuatro hermanas construyen sobre la infraestructura que dejó.
+- **Estado:** `Borrador (PO)` — 5 historias creadas, pendientes de análisis arquitectónico.
+- **Alcance de datos:** las cinco extienden el esquema. Se validan sobre **instalación fresca**, heredando la excepción documentada a RNF19 (**ADR-019**) que `HU-39` declara y las cuatro hermanas heredan. La frontera está declarada en el código como `Migrations.LAST_MIGRATED_VERSION`: cada hermana que suba el esquema sin migración tiene que moverla a mano, de modo que el hueco nunca sea un olvido. El historial de sesiones anterior **se pierde**, y los respaldos del formato previo quedan **incompatibles**: la restauración los rechaza con mensaje explícito en lugar de importarlos parcialmente.
+- **Decisión de diseño declarada:** **no se introduce ningún factor de equivalencia de carga entre implementos.** Los pares se comparan consigo mismos y se relacionan por regla booleana —disyunción para progresión, conjunción para meseta—, no por conversión de carga, que exigiría una calibración manual por ejercicio insostenible.
+- **Riesgo:** concentrado en `HU-40`, que reescribe la unidad de comparación de reglas de decisión ya implementadas y probadas —clasificación, Doble Umbral, meseta, descarga, memoria del último peso y KPIs comparativos—. `HU-39` solo añade una dimensión al registro, y `HU-42` es la de menor riesgo: pantalla nueva, entidad propia y dependencia unidireccional hacia el historial.
+- **Recorte posible:** si hubiera presión de tiempo, `HU-43` es la única prescindible sin dejar el sistema en un estado inconsistente.
+
+---
+
+## 4.8. Inconsistencias Declaradas (corregidas)
 
 *Discrepancias entre este índice y el estado real del sistema, corregidas en HU-34 el 2026-08-31 (CA-34.05).*
 
@@ -164,6 +185,7 @@
 | **HU-07** — Sustituir ejercicio en sesión activa | `Done` | ✅ `Descartada` — funcionalidad eliminada por HU-34 |
 | **RF16** — Sustituir ejercicio puntualmente | Asignado a HU-07 | ✅ Reasignado a **HU-26** (alternativas por slot) en §7 y §10 |
 | **HU-27** y las nueve historias de EPIC-08 | Presentes en §2, ausentes en §10 | ✅ Incorporadas a §10 con su estado real |
+| **HU-37** y **HU-38** — El árbol de entrenamiento | `Borrador (PO)` | ✅ `Lista para Revisión` — ambas fueron implementadas por Dev-Rápido y su propio `index.md` ya lo indicaba. Corregido el 2026-09-06 durante la creación de EPIC-10 |
 
 ---
 
@@ -278,14 +300,15 @@ Los 23 RNFs listados en §3 son restricciones de calidad del sistema completo. S
 
 | Métrica | Valor |
 |---------|-------|
-| Historias de Usuario | 38 (HU-01 a HU-38, numeración plana) |
-| Historias Done | 34 (todas salvo HU-07, HU-20, HU-37 y HU-38) |
-| Historias en Borrador (PO) | 2 (HU-37 y HU-38 — EPIC-09, pendientes de análisis arquitectónico) |
+| Historias de Usuario | 43 (HU-01 a HU-43, numeración plana) |
+| Historias Done | 34 (todas salvo HU-07, HU-20, HU-37, HU-38 y HU-39 a HU-43) |
+| Historias en Lista para Revisión | 3 (HU-37 y HU-38 — EPIC-09; HU-39 — EPIC-10; implementadas y pendientes de revisión) |
+| Historias en Borrador (PO) | 4 (HU-40 a HU-43 — EPIC-10, pendientes de análisis arquitectónico) |
 | Historias descartadas | 2 (HU-07 y HU-20 — HU-34 eliminó la sustitución por grupo muscular que ambas sostenían) |
-| **Suma de control** | **34 + 2 + 2 = 38** ✅ |
+| **Suma de control** | **34 + 3 + 4 + 2 = 43** ✅ |
 | RFs por historia (promedio) | 2.4 |
 | RFs por historia (máximo) | 8 (HU-15 — Analítica y KPIs) |
-| Historias sin RF propio (correcciones, retiros o solo RNFs) | 15 (HU-07, HU-08, HU-19, HU-20, HU-28 a HU-38) |
+| Historias sin RF propio (correcciones, retiros o solo RNFs) | 16 (HU-07, HU-08, HU-19, HU-20, HU-28 a HU-38 y HU-42) |
 | Historias sin RNF específicos | 16 (cubiertas por RNFs transversales) |
 
 ---
@@ -334,5 +357,10 @@ Los 23 RNFs listados en §3 son restricciones de calidad del sistema completo. S
 | HU-36 | — | RNF13 |
 | HU-37 | — | RNF31 |
 | HU-38 | — | RNF31 |
+| HU-39 | RF04, RF07, RF13, RF61, RF62 (mod.) | RNF19, RNF31 |
+| HU-40 | RF23, RF24, RF25, RF26, RF27, RF28, RF29, RF31, RF33, RF34, RF35, RF38, RF39, RF43, RF50, RF51 (mod.) | RNF05, RNF19 |
+| HU-41 | RF04, RF05, RF06, RF07, RF08, RF45, RF46, RF62, RF63, RF64 (mod.) | RNF19, RNF31 |
+| HU-42 | — | RNF19, RNF31 |
+| HU-43 | RF14, RF19, RF62 (ext.) | RNF19, RNF31 |
 
-> **Nota:** un `—` en la columna de RF significa que la historia no declara requisitos funcionales propios. Las historias de EPIC-08 (`HU-28` a `HU-36`) son en su mayoría correcciones y ajustes sobre funcionalidad ya entregada: su trazabilidad vive en los criterios de aceptación de cada historia, no en un RF nuevo. Filas incorporadas en HU-34 (CA-34.05).
+> **Nota:** un `—` en la columna de RF significa que la historia no declara requisitos funcionales propios. Las historias de EPIC-08 (`HU-28` a `HU-36`) son en su mayoría correcciones y ajustes sobre funcionalidad ya entregada: su trazabilidad vive en los criterios de aceptación de cada historia, no en un RF nuevo. Filas incorporadas en HU-34 (CA-34.05). Las historias de EPIC-10 (`HU-39` a `HU-43`) marcan con `(mod.)` los RF cuya funcionalidad reinterpretan bajo la dimensión del equipamiento, sin introducir requisitos nuevos: `HU-42` es la única capacidad enteramente nueva y no tiene RF propio asignado.

@@ -10,7 +10,6 @@ import com.estebancoloradogonzalez.tension.R
 import com.estebancoloradogonzalez.tension.data.local.database.TensionDatabase
 import com.estebancoloradogonzalez.tension.domain.model.BackupMetadata
 import com.estebancoloradogonzalez.tension.domain.model.BackupValidationResult
-import com.estebancoloradogonzalez.tension.domain.model.WeekDay
 import com.estebancoloradogonzalez.tension.domain.repository.BackupRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import org.json.JSONArray
@@ -28,27 +27,23 @@ class BackupRepositoryImpl @Inject constructor(
 ) : BackupRepository {
 
     companion object {
-        const val SCHEMA_VERSION = 12
+        const val SCHEMA_VERSION = 13
 
-        /**
-         * Formato inmediatamente anterior, sin `tree_state`. Se acepta porque el arbol es
-         * enteramente derivable del historial: restaurar sin el nunca deja un estado
-         * invalido, y rechazarlo inutilizaria todo respaldo exportado hasta ahora.
-         */
-        private const val PREVIOUS_SCHEMA_VERSION = 11
-        private const val LEGACY_SCHEMA_VERSION = 8
         const val APP_VERSION = "1.0"
 
-        private val MODULE_CODE_TO_ROUTINE_ID = mapOf("A" to 1L, "B" to 2L, "C" to 3L)
-
-        /** Tabla que el formato anterior no traia. */
-        private const val TREE_STATE_TABLE = "tree_state"
-
-        private val ACCEPTED_SCHEMA_VERSIONS = setOf(
-            SCHEMA_VERSION,
-            PREVIOUS_SCHEMA_VERSION,
-            LEGACY_SCHEMA_VERSION,
-        )
+        /**
+         * **Solo el formato vigente.** Los anteriores se rechazan por completo (CA-39.12).
+         *
+         * El argumento que salvo al formato sin `tree_state` no aplica aqui: el arbol era
+         * enteramente derivable del historial, asi que restaurar sin el nunca dejaba un
+         * estado invalido. El **equipamiento de la serie no se deriva de nada** — un
+         * respaldo anterior no dice con que implemento se hizo cada serie, y
+         * `exercise_set.equipment_type_id` es `NOT NULL`. Aceptarlo exigiria inventar un
+         * valor por serie, que es exactamente la importacion parcial que la historia
+         * prohibe. Con ello se retiraron tambien los caminos de v8 y v11: codigo de
+         * importacion inalcanzable es una promesa que la aplicacion ya no cumple.
+         */
+        private val ACCEPTED_SCHEMA_VERSIONS = setOf(SCHEMA_VERSION)
 
         // INSERT order: parents first (FK dependencies satisfied)
         val TABLE_ORDER_INSERT = listOf(
@@ -71,6 +66,9 @@ class BackupRepositoryImpl @Inject constructor(
             "deload",
             "exercise",
             "exercise_muscle_zone",
+            // Los implementos admitidos del ejercicio. Lleva FK a exercise y a
+            // equipment_type, asi que va detras de las dos, junto a su gemela.
+            "exercise_equipment",
             "routine_version",
             "routine_current_version",
             "deload_frozen_version",
@@ -84,25 +82,6 @@ class BackupRepositoryImpl @Inject constructor(
 
         // DELETE order: children first (reverse of insert)
         val TABLE_ORDER_DELETE = TABLE_ORDER_INSERT.reversed()
-
-        val LEGACY_TABLE_ORDER = listOf(
-            "profile",
-            "rotation_state",
-            "weight_record",
-            "module",
-            "muscle_zone",
-            "equipment_type",
-            "deload",
-            "exercise",
-            "exercise_muscle_zone",
-            "module_version",
-            "plan_assignment",
-            "session",
-            "session_exercise",
-            "exercise_set",
-            "exercise_progression",
-            "alert",
-        )
     }
 
     override suspend fun exportToJson(): String {
@@ -188,15 +167,24 @@ class BackupRepositoryImpl @Inject constructor(
         }
 
         if (schemaVersion !in ACCEPTED_SCHEMA_VERSIONS) {
+            // Un formato anterior se rechaza nombrando la causa y no los numeros de
+            // version: lo que le falta al archivo es el equipamiento de las series
+            // (CA-39.12). Un formato *posterior* —un respaldo de un build mas nuevo— no
+            // tiene esa causa y se rechaza por version, que es lo unico que se sabe de el.
+            val message = if (schemaVersion > SCHEMA_VERSION) {
+                context.getString(
+                    R.string.import_backup_incompatible_version,
+                    SCHEMA_VERSION,
+                    schemaVersion,
+                )
+            } else {
+                context.getString(R.string.import_backup_no_equipment)
+            }
             return BackupValidationResult(
                 isValid = false,
                 metadata = null,
                 sessionCount = 0,
-                errorMessage = context.getString(
-                    R.string.import_backup_incompatible_version,
-                    SCHEMA_VERSION,
-                    schemaVersion,
-                ),
+                errorMessage = message,
             )
         }
 
@@ -210,12 +198,7 @@ class BackupRepositoryImpl @Inject constructor(
         }
 
         val dataJson = parsed.getJSONObject("data")
-        val requiredTables = when (schemaVersion) {
-            LEGACY_SCHEMA_VERSION -> LEGACY_TABLE_ORDER
-            PREVIOUS_SCHEMA_VERSION -> TABLE_ORDER_INSERT - TREE_STATE_TABLE
-            else -> TABLE_ORDER_INSERT
-        }
-        for (table in requiredTables) {
+        for (table in TABLE_ORDER_INSERT) {
             if (!dataJson.has(table)) {
                 return BackupValidationResult(
                     isValid = false,
@@ -245,12 +228,7 @@ class BackupRepositoryImpl @Inject constructor(
 
     override suspend fun importFromJson(json: String) {
         val parsed = JSONObject(json)
-        val schemaVersion = parsed.getJSONObject("metadata").getInt("schemaVersion")
-        val dataJson = if (schemaVersion == LEGACY_SCHEMA_VERSION) {
-            transformV8ToV9(parsed.getJSONObject("data"))
-        } else {
-            parsed.getJSONObject("data")
-        }
+        val dataJson = parsed.getJSONObject("data")
         val db = database.openHelper.writableDatabase
 
         db.beginTransaction()
@@ -260,9 +238,8 @@ class BackupRepositoryImpl @Inject constructor(
             }
 
             for (table in TABLE_ORDER_INSERT) {
-                // Un respaldo del formato anterior no trae tree_state. Leerlo con
-                // getJSONArray abortaria la restauracion entera por una tabla que el
-                // recalculo posterior reconstruye sola.
+                // `optJSONArray` y no `getJSONArray`: una tabla ausente no debe abortar la
+                // restauracion entera. La validacion previa ya exige que esten todas.
                 val rows = dataJson.optJSONArray(table) ?: JSONArray()
                 // A backup file carries the columns of the schema that produced it. Keys
                 // that no longer exist are dropped instead of handed to insert(), which
@@ -338,7 +315,6 @@ class BackupRepositoryImpl @Inject constructor(
         }
     }
 
-    @Suppress("LongMethod", "CyclomaticComplexMethod")
     /**
      * Column names the table actually has in the current schema. Used to discard keys
      * carried by backups exported from an older schema. An empty result means the shape
@@ -355,220 +331,5 @@ class BackupRepositoryImpl @Inject constructor(
             }
         }
         return columns
-    }
-
-    private fun transformV8ToV9(data: JSONObject): JSONObject {
-        val result = JSONObject()
-
-        // module → routine (v8 module table: code=String PK, name, group_description, load_increment_kg)
-        val modules = data.optJSONArray("module") ?: JSONArray()
-        val routines = JSONArray()
-        for (i in 0 until modules.length()) {
-            val m = modules.getJSONObject(i)
-            val code = m.getString("code")
-            val routineId = MODULE_CODE_TO_ROUTINE_ID[code] ?: continue
-            val routine = JSONObject()
-            routine.put("id", routineId)
-            routine.put("name", m.getString("name"))
-            routine.put("sort_order", routineId.toInt())
-            routine.put("created_at", "2025-01-01")
-            routines.put(routine)
-        }
-        result.put("routine", routines)
-
-        // module_version → routine_version (v8: module_code=String FK)
-        val moduleVersions = data.optJSONArray("module_version") ?: JSONArray()
-        val routineVersions = JSONArray()
-        for (i in 0 until moduleVersions.length()) {
-            val mv = moduleVersions.getJSONObject(i)
-            val rv = JSONObject()
-            rv.put("id", mv.get("id"))
-            val moduleCode = mv.getString("module_code")
-            rv.put("routine_id", MODULE_CODE_TO_ROUTINE_ID[moduleCode] ?: continue)
-            rv.put("version_number", mv.get("version_number"))
-            routineVersions.put(rv)
-        }
-        result.put("routine_version", routineVersions)
-
-        // rotation_state → extract routine_current_version
-        val rotationStates = data.optJSONArray("rotation_state") ?: JSONArray()
-        val routineCurrentVersions = JSONArray()
-        val cleanedRotationStates = JSONArray()
-        for (i in 0 until rotationStates.length()) {
-            val rs = rotationStates.getJSONObject(i)
-            for ((code, routineId) in MODULE_CODE_TO_ROUTINE_ID) {
-                val colName = "current_version_module_${code.lowercase()}"
-                if (rs.has(colName) && !rs.isNull(colName)) {
-                    val rcv = JSONObject()
-                    rcv.put("routine_id", routineId)
-                    rcv.put("current_version_number", rs.get(colName))
-                    routineCurrentVersions.put(rcv)
-                }
-            }
-            val cleaned = JSONObject()
-            cleaned.put("id", rs.get("id"))
-            cleaned.put("microcycle_position", rs.get("microcycle_position"))
-            cleaned.put("microcycle_count", rs.get("microcycle_count"))
-            cleanedRotationStates.put(cleaned)
-        }
-        result.put("routine_current_version", routineCurrentVersions)
-        result.put("rotation_state", cleanedRotationStates)
-
-        // deload → extract deload_frozen_version
-        val deloads = data.optJSONArray("deload") ?: JSONArray()
-        val deloadFrozenVersions = JSONArray()
-        val cleanedDeloads = JSONArray()
-        for (i in 0 until deloads.length()) {
-            val d = deloads.getJSONObject(i)
-            val deloadId = d.get("id")
-            for ((code, routineId) in MODULE_CODE_TO_ROUTINE_ID) {
-                val colName = "frozen_version_module_${code.lowercase()}"
-                if (d.has(colName) && !d.isNull(colName)) {
-                    val dfv = JSONObject()
-                    dfv.put("deload_id", deloadId)
-                    dfv.put("routine_id", routineId)
-                    dfv.put("frozen_version_number", d.get(colName))
-                    deloadFrozenVersions.put(dfv)
-                }
-            }
-            val cleaned = JSONObject()
-            cleaned.put("id", d.get("id"))
-            cleaned.put("status", d.getString("status"))
-            cleaned.put("activation_date", d.getString("activation_date"))
-            if (d.has("completion_date") && !d.isNull("completion_date")) {
-                cleaned.put("completion_date", d.getString("completion_date"))
-            } else {
-                cleaned.put("completion_date", JSONObject.NULL)
-            }
-            cleanedDeloads.put(cleaned)
-        }
-        result.put("deload_frozen_version", deloadFrozenVersions)
-        result.put("deload", cleanedDeloads)
-
-        // exercise: drop module_code
-        val exercises = data.optJSONArray("exercise") ?: JSONArray()
-        val cleanedExercises = JSONArray()
-        for (i in 0 until exercises.length()) {
-            val e = exercises.getJSONObject(i)
-            val cleaned = JSONObject()
-            val keys = e.keys()
-            while (keys.hasNext()) {
-                val key = keys.next()
-                if (key != "module_code") {
-                    cleaned.put(key, e.get(key))
-                }
-            }
-            cleanedExercises.put(cleaned)
-        }
-        result.put("exercise", cleanedExercises)
-
-        // session: module_version_id → routine_version_id
-        renameColumn(data, result, "session", "module_version_id", "routine_version_id")
-
-        // plan_assignment: module_version_id → routine_version_id
-        renameColumn(data, result, "plan_assignment", "module_version_id", "routine_version_id")
-
-        // alert: module_code → routine_id
-        val alerts = data.optJSONArray("alert") ?: JSONArray()
-        val cleanedAlerts = JSONArray()
-        for (i in 0 until alerts.length()) {
-            val a = alerts.getJSONObject(i)
-            val cleaned = JSONObject()
-            val keys = a.keys()
-            while (keys.hasNext()) {
-                val key = keys.next()
-                if (key == "module_code") {
-                    if (!a.isNull(key)) {
-                        val code = a.getString(key)
-                        cleaned.put("routine_id", MODULE_CODE_TO_ROUTINE_ID[code] ?: JSONObject.NULL)
-                    } else {
-                        cleaned.put("routine_id", JSONObject.NULL)
-                    }
-                } else if (key == "type") {
-                    val type = a.getString(key)
-                    cleaned.put(
-                        key,
-                        if (type == "MODULE_REQUIRES_DELOAD") "ROUTINE_REQUIRES_DELOAD" else type,
-                    )
-                } else {
-                    cleaned.put(key, a.get(key))
-                }
-            }
-            cleanedAlerts.put(cleaned)
-        }
-        result.put("alert", cleanedAlerts)
-
-        // Pass through unchanged tables
-        val unchangedTables = listOf(
-            "profile", "weight_record", "muscle_zone", "equipment_type",
-            "exercise_muscle_zone", "session_exercise", "exercise_set",
-            "exercise_progression",
-        )
-        for (table in unchangedTables) {
-            result.put(table, data.optJSONArray(table) ?: JSONArray())
-        }
-
-        // week_day y daily_routine_override no existian en el formato legado (HU-36 los
-        // introduce). La importacion borra e reinserta cada tabla de TABLE_ORDER_INSERT, asi
-        // que omitirlas dejaria los 7 dias sin rutina tras restaurar. Se reconstruye la
-        // relacion asignando las rutinas presentes en el respaldo en su propio orden; los
-        // dias sin rutina disponible quedan como dias de descanso, que es su estado valido.
-        result.put("week_day", buildLegacyWeekDays(routines))
-        result.put("daily_routine_override", JSONArray())
-        result.put("day_skip", JSONArray())
-        // La importacion borra e reinserta cada tabla de TABLE_ORDER_INSERT: omitirla la
-        // dejaria vacia en silencio. Se repone vacia y el recalculo posterior la llena.
-        result.put("tree_state", JSONArray())
-
-        return result
-    }
-
-    /** Los 7 dias, con las rutinas del respaldo legado asignadas de lunes en adelante. */
-    private fun buildLegacyWeekDays(routines: JSONArray): JSONArray {
-        val routineIds = (0 until routines.length())
-            .map { routines.getJSONObject(it) }
-            .sortedBy { it.optInt("sort_order", Int.MAX_VALUE) }
-            .map { it.getLong("id") }
-
-        val weekDays = JSONArray()
-        WeekDay.entries.forEach { day ->
-            val row = JSONObject()
-            row.put("id", day.isoNumber)
-            row.put("code", day.code)
-            val routineId = routineIds.getOrNull(day.isoNumber - 1)
-            if (routineId == null) {
-                row.put("routine_id", JSONObject.NULL)
-            } else {
-                row.put("routine_id", routineId)
-            }
-            weekDays.put(row)
-        }
-        return weekDays
-    }
-
-    private fun renameColumn(
-        source: JSONObject,
-        dest: JSONObject,
-        table: String,
-        oldCol: String,
-        newCol: String,
-    ) {
-        val rows = source.optJSONArray(table) ?: JSONArray()
-        val cleaned = JSONArray()
-        for (i in 0 until rows.length()) {
-            val row = rows.getJSONObject(i)
-            val newRow = JSONObject()
-            val keys = row.keys()
-            while (keys.hasNext()) {
-                val key = keys.next()
-                if (key == oldCol) {
-                    newRow.put(newCol, row.get(key))
-                } else {
-                    newRow.put(key, row.get(key))
-                }
-            }
-            cleaned.put(newRow)
-        }
-        dest.put(table, cleaned)
     }
 }

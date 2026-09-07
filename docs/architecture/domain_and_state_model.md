@@ -2,7 +2,9 @@
 
 > Este documento define la arquitectura estructural de la memoria del sistema y el ciclo de vida de sus entidades. Actúa simultáneamente como Modelo Entidad-Relación, Diccionario de Datos y Máquina de Estados. Se utiliza una sintaxis declarativa (pseudo-código estilo Prisma/TypeScript) para definir las estructuras, utilizando los comentarios inline como el diccionario de datos.
 >
-> **Versión de esquema:** 19 (migraciones registradas: v1 → v2 → … → v15 → v16). **v17, v18 ni v19 tienen migración**: HU-36 introduce `week_day`, `daily_routine_override` y `day_skip`, y HU-37 introduce `tree_state`, todas durante la beta, y la excepción documentada a RNF19 (ADR-019) resuelve el cambio de esquema sobre instalación fresca. Una base anterior no puede abrir el build vigente — el reinicio lo realiza el ejecutante desinstalando y reinstalando, no la aplicación.
+> **Versión de esquema:** 20 (migraciones registradas: v1 → v2 → … → v18 → v19). **v20 no tiene migración**: HU-39 retira `exercise.equipment_type_id`, introduce `exercise_equipment` y añade `exercise_set.equipment_type_id`, y la excepción documentada a RNF19 (ADR-019) resuelve el cambio de esquema sobre instalación fresca. Una base anterior no puede abrir el build vigente — el reinicio lo realiza el ejecutante desinstalando y reinstalando, no la aplicación, y el historial anterior se pierde como consecuencia aceptada.
+>
+> El código declara la frontera en `Migrations.LAST_MIGRATED_VERSION` (**19**): por debajo de ella la cadena de migraciones es continua y sin huecos, y el salto de ahí a la versión del esquema es la excepción de ADR-019, que sube historia por historia de forma deliberada. Las migraciones `16→17`, `17→18` y `18→19`, ausentes durante tres versiones, se repusieron después de dejar la aplicación incapaz de abrir cualquier base existente.
 
 ---
 
@@ -52,28 +54,37 @@ model muscle_zone {
 
 // ==========================================
 // ENTIDAD: equipment_type
-// PROPÓSITO: Catálogo de 23 tipos de equipamiento requeridos por
-// los ejercicios. Normaliza el valor repetido y habilita el filtro
-// por equipo en el Diccionario de Ejercicios.
+// PROPÓSITO: Catálogo de 15 tipos de equipamiento atómicos.
+// Un tipo, un implemento: el catálogo no admite disyunciones
+// ("Mancuerna o Polea" describía una alternativa, no un
+// implemento). Referenciado desde dos sitios: los implementos
+// que un ejercicio admite (exercise_equipment) y el implemento
+// con el que se ejecutó una serie (exercise_set).
 // ==========================================
 model equipment_type {
-  id    INTEGER  @id @autoincrement                 // PK. Identificador único.
-  name  TEXT     @unique @notNull                   // Nombre del tipo: "Máquina", "Mancuernas", "Barra de Pesas", "Polea", "Cuerpo", etc. 23 valores seed.
+  id    INTEGER  @id @autoincrement                 // PK. Identificador único. **Encoda el orden declarado del catálogo**, que es el orden de presentación de la lista de casillas del formulario de ejercicio: la tabla es cerrada y sembrada (no hay interfaz para crear tipos), así que ordenar por id es ordenar por el criterio del catálogo. Definido en `data/local/seed/EquipmentCatalog.kt`.
+  name  TEXT     @unique @notNull                   // Nombre del tipo: "Máquina", "Máquina Smith", "Polea", "Barra", "Mancuerna", "Peso Corporal", "Peso Añadido", etc. 15 valores seed. Los agarres no son equipamiento: cuerda y barra en V son "Polea".
 }
 
 // ==========================================
 // ENTIDAD: exercise
 // PROPÓSITO: Catálogo de ejercicios del sistema.
-// Contiene 43 ejercicios precargados (seed) y se extiende
+// Contiene 37 ejercicios precargados (seed) y se extiende
 // con ejercicios creados por el ejecutante (RF-62).
 // Agnóstico de rutina — se asigna libremente al plan.
 // Entidad central: referenciada por plan, sesiones,
 // registros de series, progresión y alertas.
+//
+// El equipamiento NO es un atributo del ejercicio (HU-39):
+// el ejercicio declara la lista de implementos que admite en
+// exercise_equipment, y la serie declara cuál se usó. Con ello
+// el nombre dejó de formar clave compuesta con el equipamiento
+// y el mismo movimiento con distintos implementos es UN
+// ejercicio con varias opciones, no varios ejercicios.
 // ==========================================
 model exercise {
   id                       INTEGER  @id @autoincrement                  // PK. Identificador único.
-  name                     TEXT     @notNull                            // Nombre del ejercicio: "Press de Banca", "Flexiones". Puede repetirse si difiere el equipment_type.
-  equipment_type_id        INTEGER  @fk(equipment_type.id) @notNull    // FK → equipment_type. Tipo de equipamiento requerido. ON DELETE RESTRICT.
+  name                     TEXT     @unique @notNull                    // Nombre del ejercicio: "Elevación Lateral", "Dominadas". **Único por sí solo**: el implemento no forma parte de la identidad del ejercicio.
   is_bodyweight            INTEGER  @notNull @default(0)               // Booleano. 1 = peso corporal (Peso = 0 Kg). Progresión por repeticiones totales, sin Doble Umbral.
   is_isometric             INTEGER  @notNull @default(0)               // Booleano. 1 = isométrico (Plancha, Plancha Lateral). Progresión por segundos (rango 30-45s). "Dominado" al ≥ 45s en todas las series.
   is_to_technical_failure  INTEGER  @notNull @default(0)               // Booleano. 1 = sin límite superior de repeticiones (solo Flexiones). Mutuamente excluyente con is_isometric.
@@ -94,6 +105,26 @@ model exercise_muscle_zone {
   exercise_id     INTEGER  @fk(exercise.id) @notNull     // FK → exercise. ON DELETE RESTRICT. Parte de PK compuesta.
   muscle_zone_id  INTEGER  @fk(muscle_zone.id) @notNull  // FK → muscle_zone. ON DELETE RESTRICT. Parte de PK compuesta.
   // PK COMPUESTA: (exercise_id, muscle_zone_id).
+}
+
+// ==========================================
+// ENTIDAD: exercise_equipment
+// PROPÓSITO: Tabla de unión N:M entre exercise y equipment_type.
+// Los implementos con los que el ejercicio se puede hacer.
+// Obligatoria y no vacía: ningún ejercicio puede existir sin al
+// menos un implemento admitido. Es la lista que el selector del
+// formulario de serie ofrece, y la que acota qué puede llegar a
+// escribirse en exercise_set.equipment_type_id.
+//
+// No se puede retirar un implemento con el que ya se registró
+// una serie: la serie es inmutable y no puede quedar apuntando
+// a algo que el ejercicio dejó de admitir.
+// ==========================================
+model exercise_equipment {
+  exercise_id        INTEGER  @fk(exercise.id) @notNull        // FK → exercise. ON DELETE RESTRICT. Parte de PK compuesta.
+  equipment_type_id  INTEGER  @fk(equipment_type.id) @notNull  // FK → equipment_type. ON DELETE RESTRICT. Parte de PK compuesta.
+  // PK COMPUESTA: (exercise_id, equipment_type_id).
+  // CONSTRAINT DE DOMINIO (capa Domain): COUNT(*) por exercise_id >= 1.
 }
 
 // ==========================================
@@ -215,7 +246,9 @@ model exercise_set {
   reps                 INTEGER  @notNull @check(">= 1")                         // Repeticiones completadas. Para isométricos: segundos sostenidos. Mínimo 1. Mismo tipo de dato — la interpretación depende de exercise.is_isometric.
   rir                  INTEGER  @notNull @check(">= 0 AND <= 2")                // Repeticiones en Reserva (RIR). Escala entera [0, 2]. 0 = fallo técnico alcanzado. 2 = reserva moderada.
   capture_unit         TEXT     @notNull @default("KG")                          // Unidad en la que el ejecutante capturó el peso. Ver Enum WeightUnit. Preferencia de presentación únicamente: weight_kg ya viene convertido y es el valor canónico. Siempre "KG" para ejercicios de peso corporal e isométricos. Se preselecciona a partir de la última serie registrada del mismo ejercicio.
+  equipment_type_id    INTEGER  @fk(equipment_type.id) @notNull                 // FK → equipment_type. ON DELETE RESTRICT. Implemento efectivamente usado en esta serie. **Obligatorio y sin valor por defecto**: el cambio de esquema es por instalación fresca, así que no hay fila previa que rellenar, y un default permitiría escribir una serie sin el único dato que HU-39 existe para capturar. Debe estar entre los implementos que el ejercicio admite (exercise_equipment). Dos series del mismo ejercicio en la misma sesión pueden llevar implementos distintos. Se preselecciona con el de la última serie registrada del mismo ejercicio, y con la primera opción admitida si no hay ninguna.
   // CONSTRAINT: UNIQUE(session_exercise_id, set_number).
+  // REGLA DE DOMINIO (ExternalLoadRule): el implemento decide si hay carga externa que capturar. "Peso Corporal" registra 0; "Peso Añadido" es lo único que habilita la captura sobre un ejercicio de peso corporal y exige > 0; sobre un ejercicio de peso corporal, "Barra Fija" (dominada estricta) y "Máquina" (asistida, cuyo contrapeso RESTA esfuerzo) registran 0.
 }
 
 // ==========================================
@@ -385,7 +418,8 @@ model alert {
 | `routine` | `1 : 1` | `routine_current_version` | "Tiene versión actual" | CASCADE: si se elimina la rutina, se elimina su estado de versión. |
 | `routine` | `1 : N` | `week_day` | "Es la rutina de días" | SET NULL: si se elimina la rutina, el día queda registrado sin rutina asignada. El día nunca se elimina — la tabla tiene 7 filas fijas. La cardinalidad es `1 : N` en sentido estricto: una rutina puede ejecutarse varios días de la semana, y un día ejecuta como máximo una rutina. |
 | `routine` | `1 : 1` | `daily_routine_override` | "Es reasignada temporalmente" | CASCADE: si se elimina la rutina reasignada, la reasignación desaparece con ella. |
-| `equipment_type` | `1 : N` | `exercise` | "Es requerido por" | RESTRICT: no se puede eliminar un tipo de equipo si hay ejercicios que lo usan. |
+| `exercise` | `N : M` | `equipment_type` | "Admite implementos" | Resuelta por `exercise_equipment`. RESTRICT en ambos lados: ningún ejercicio ni tipo de equipamiento se puede eliminar si existe la relación. La relación es **obligatoria y no vacía**: un ejercicio admite uno o más implementos, nunca cero. Sustituye a la `1 : N` de `equipment_type` → `exercise` que existía hasta HU-39. |
+| `equipment_type` | `1 : N` | `exercise_set` | "Es el implemento de series" | RESTRICT: no se puede eliminar un tipo de equipamiento con el que se haya registrado una serie. Es la otra mitad del cambio de HU-39: el equipamiento dejó de ser identidad del catálogo y pasó a ser un dato del registro. |
 | `exercise` | `N : M` | `muscle_zone` | "Trabaja zonas" | Resuelta por `exercise_muscle_zone`. RESTRICT en ambos lados: ningún ejercicio ni zona se puede eliminar si existe la relación. |
 | `routine_version` | `1 : N` | `plan_assignment` | "Prescribe ejercicios" | CASCADE: si se elimina una versión, sus asignaciones se eliminan. |
 | `exercise` | `1 : N` | `plan_assignment` | "Es asignado en versiones" | RESTRICT: un ejercicio no se puede eliminar si está asignado al plan. |
@@ -604,52 +638,77 @@ enum MuscleGroup {
   | 19 | Antebrazo | Antebrazo |
   | 20 | Cuello | Cuello |
 
-- **`equipment_type` (23 filas):** Catálogo completo de tipos de equipamiento precargado. Valores: Máquina, Mancuernas, Barra de Pesas, Cuerpo, Mancuerna, Polea, Pesa, Mancuerna o Pesa Rusa, Máquina Multiestación, Polea con Cuerda, Polea con Barra en V, Mancuerna o Polea, Mancuerna o Polea o Barra, Barra o Mancuernas, Mancuernas o Polea, Banda Elástica, Kettlebell, Barra EZ, TRX/Suspensión, Balón Medicinal, Rodillo de Abdomen, Paralelas/Dip Station, Barra Fija. *Nota: "Mancuerna" (singular, un implemento) y "Mancuernas" (plural, dos implementos) son tipos distintos.*
+- **`equipment_type` (15 filas):** Catálogo completo de tipos **atómicos** precargado. Definido en `data/local/seed/EquipmentCatalog.kt`. El identificador es la posición declarada:
 
-- **`exercise` (37 filas):** Catálogo base de ejercicios precargados con sus flags correspondientes. Definido en `data/local/seed/ExerciseCatalog.kt`:
+  | id | Nombre | Origen |
+  |----|--------|--------|
+  | 1 | Máquina | existente |
+  | 2 | Máquina Smith | nuevo en HU-39 |
+  | 3 | Polea | existente |
+  | 4 | Barra | renombrado desde *Barra de Pesas* |
+  | 5 | Barra Fija | existente |
+  | 6 | Mancuerna | existente (singular) |
+  | 7 | Pesa Rusa | renombrado desde *Kettlebell* |
+  | 8 | Banda Elástica | existente |
+  | 9 | Peso Corporal | renombrado desde *Cuerpo* |
+  | 10 | Peso Añadido | nuevo en HU-39 |
+  | 11 | Barra EZ | existente — sin ejercicio seed |
+  | 12 | TRX/Suspensión | existente — sin ejercicio seed |
+  | 13 | Balón Medicinal | existente — sin ejercicio seed |
+  | 14 | Rodillo de Abdomen | existente — sin ejercicio seed |
+  | 15 | Paralelas/Dip Station | existente — sin ejercicio seed |
 
-  | name | equipment_type | is_bodyweight | is_isometric | is_to_technical_failure |
-  |------|----------------|:---:|:---:|:---:|
-  | Aductores | Máquina | 0 | 0 | 0 |
+  *HU-39 retiró 10 tipos por compuestos, duplicados o por no constituir maquinaria independiente:* `Mancuernas` (plural, colapsado en *Mancuerna*), `Pesa`, `Máquina Multiestación` (subsumido en *Máquina*), `Polea con Cuerda` y `Polea con Barra en V` (son agarres, no equipamiento), `Mancuerna o Polea`, `Mancuerna o Polea o Barra`, `Barra o Mancuernas`, `Mancuernas o Polea` y `Mancuerna o Pesa Rusa`. **Ningún tipo del catálogo expresa una disyunción: un tipo, un implemento.** `Máquina de Remo` y `Máquina Contractor` no son tipos propios — ambos son `Máquina`.
+
+  *Los cinco últimos nacen sin ejercicio seed y quedan disponibles para los ejercicios que cree el ejecutante.*
+
+- **`exercise` (37 filas):** Catálogo base de ejercicios precargados con sus flags correspondientes y los implementos que admiten. Definido en `data/local/seed/ExerciseCatalog.kt`:
+
+  | name | equipamientos admitidos | is_bodyweight | is_isometric | is_to_technical_failure |
+  |------|-------------------------|:---:|:---:|:---:|
+  | Aductores | Máquina, Polea, Banda Elástica | 0 | 0 | 0 |
   | Cruce de Polea Alta | Polea | 0 | 0 | 0 |
-  | Crunch Abdominal | Polea | 0 | 0 | 0 |
-  | Curl Bayesian en Banco Inclinado | Mancuernas | 0 | 0 | 0 |
-  | Curl de Concentración | Mancuerna | 0 | 0 | 0 |
+  | Crunch Abdominal | Peso Corporal, Polea, Máquina | 0 | 0 | 0 |
+  | Curl Bayesian en Banco Inclinado | Polea, Mancuerna | 0 | 0 | 0 |
+  | Curl de Concentración | Mancuerna, Polea | 0 | 0 | 0 |
   | Curl de Isquiotibiales Sentado | Máquina | 0 | 0 | 0 |
-  | Curl de Martillo Cruzado | Mancuernas | 0 | 0 | 0 |
-  | Curl de Predicador | Mancuerna | 0 | 0 | 0 |
-  | Elevación de Pantorrilla en Máquina de Pie | Máquina | 0 | 0 | 0 |
-  | Elevación Lateral | Mancuernas | 0 | 0 | 0 |
+  | Curl de Martillo Cruzado | Mancuerna, Polea | 0 | 0 | 0 |
+  | Curl de Predicador | Barra, Mancuerna, Máquina, Polea | 0 | 0 | 0 |
+  | Elevación de Pantorrilla de Pie | Máquina, Máquina Smith | 0 | 0 | 0 |
+  | Elevación Lateral | Mancuerna, Polea, Máquina | 0 | 0 | 0 |
   | Extensión de Cuádriceps | Máquina | 0 | 0 | 0 |
-  | Extensión de Tríceps en Polea (Pushdown) | Polea con Cuerda | 0 | 0 | 0 |
-  | Extensión de Tríceps por encima de la Cabeza | Mancuernas | 0 | 0 | 0 |
-  | Face Pull | Polea con Cuerda | 0 | 0 | 0 |
-  | Hip Thrust | Máquina | 0 | 0 | 0 |
-  | Peso Muerto Rumano | Barra | 0 | 0 | 0 |
+  | Extensión de Tríceps (Pushdown) | Polea | 0 | 0 | 0 |
+  | Extensión de Tríceps sobre Cabeza | Mancuerna, Barra, Polea | 0 | 0 | 0 |
+  | Face Pull | Polea, Banda Elástica | 0 | 0 | 0 |
+  | Hip Thrust | Barra, Máquina, Mancuerna, Máquina Smith | 0 | 0 | 0 |
+  | Peso Muerto Rumano | Barra, Mancuerna, Máquina Smith | 0 | 0 | 0 |
   | Prensa Inclinada | Máquina | 0 | 0 | 0 |
-  | Press de Banca Inclinado | Mancuerna o Polea o Barra | 0 | 0 | 0 |
-  | Press de Banca Plano | Barra o Mancuernas | 0 | 0 | 0 |
-  | Press Pallof | Polea | 0 | 0 | 0 |
-  | Remo T Inclinado | Máquina | 0 | 0 | 0 |
-  | Sentadilla Búlgara | Mancuernas | 0 | 0 | 0 |
-  | Sentadilla de Zumo | Mancuerna | 0 | 0 | 0 |
-  | Sentadilla Hack | Máquina | 0 | 0 | 0 |
-  | Jalón al Pecho | Polea | 0 | 0 | 0 |
-  | Vuelos Posteriores | Mancuernas | 0 | 0 | 0 |
-  | Remo al Mentón | Barra | 0 | 0 | 0 |
-  | Aperturas | Máquina | 0 | 0 | 0 |
-  | Pull-Over | Polea | 0 | 0 | 0 |
-  | Curl Martillo | Mancuernas | 0 | 0 | 0 |
-  | Rompecráneos | Barra | 0 | 0 | 0 |
-  | Remo Horizontal | Polea | 0 | 0 | 0 |
-  | Zancadas | Mancuernas | 0 | 0 | 0 |
-  | Press Militar | Mancuernas | 0 | 0 | 0 |
-  | Dominadas | Barra Fija | **1** | 0 | 0 |
-  | Remo Unilateral en Polea Baja | Polea | 0 | 0 | 0 |
-  | Remo Unilateral en Polea Alta | Polea | 0 | 0 | 0 |
+  | Press de Banca Inclinado | Barra, Mancuerna, Máquina, Máquina Smith | 0 | 0 | 0 |
+  | Press de Banca Plano | Barra, Mancuerna, Máquina, Máquina Smith | 0 | 0 | 0 |
+  | Press Pallof | Polea, Banda Elástica | 0 | 0 | 0 |
+  | Remo T Inclinado | Barra, Máquina | 0 | 0 | 0 |
+  | Sentadilla Búlgara | Peso Corporal, Mancuerna, Barra, Máquina Smith | 0 | 0 | 0 |
+  | Sentadilla Sumo | Mancuerna, Pesa Rusa, Barra, Polea | 0 | 0 | 0 |
+  | Sentadilla Hack | Máquina, Barra | 0 | 0 | 0 |
+  | Jalón al Pecho | Polea, Máquina | 0 | 0 | 0 |
+  | Vuelos Posteriores (Pájaros) | Mancuerna, Polea, Máquina | 0 | 0 | 0 |
+  | Remo al Mentón | Barra, Polea, Mancuerna | 0 | 0 | 0 |
+  | Aperturas | Mancuerna, Polea, Máquina | 0 | 0 | 0 |
+  | Pull-Over | Mancuerna, Polea, Barra, Máquina | 0 | 0 | 0 |
+  | Curl Martillo | Mancuerna, Polea | 0 | 0 | 0 |
+  | Rompecráneos | Barra, Mancuerna, Polea | 0 | 0 | 0 |
+  | Remo Horizontal | Barra, Mancuerna, Polea, Máquina | 0 | 0 | 0 |
+  | Zancadas (Lunges) | Peso Corporal, Mancuerna, Barra, Máquina Smith | 0 | 0 | 0 |
+  | Press Militar | Barra, Mancuerna, Máquina, Máquina Smith | 0 | 0 | 0 |
+  | Dominadas | Barra Fija, Máquina, Peso Añadido | **1** | 0 | 0 |
+  | Remo Unilateral Polea Baja | Polea | 0 | 0 | 0 |
+  | Remo Unilateral Polea Alta | Polea | 0 | 0 | 0 |
 
-  *Nota: Jalón al Pecho es el mismo ejercicio antes llamado "Tirón de Dorsales" — renombrado en HU-29 conservando identificador, equipamiento, zona muscular, recurso visual e historial.*
+  *Notas de identidad:* `Jalón al Pecho` es el mismo ejercicio antes llamado "Tirón de Dorsales" — renombrado en HU-29. **HU-39 renombró ocho** para quitarles el implemento del nombre, que dejó de ser parte de su identidad: *Elevación de Pantorrilla en Máquina de Pie* → **Elevación de Pantorrilla de Pie**, *Extensión de Tríceps en Polea (Pushdown)* → **Extensión de Tríceps (Pushdown)**, *Extensión de Tríceps por encima de la Cabeza* → **Extensión de Tríceps sobre Cabeza**, *Sentadilla de Zumo* → **Sentadilla Sumo**, *Vuelos Posteriores* → **Vuelos Posteriores (Pájaros)**, *Zancadas* → **Zancadas (Lunges)**, *Remo Unilateral en Polea Baja* → **Remo Unilateral Polea Baja** y *Remo Unilateral en Polea Alta* → **Remo Unilateral Polea Alta**. Cada renombrado conserva su identificador, su recurso visual, su clasificación muscular y su historial — el asset **no** se renombra, igual que en HU-29.
 
+  *`Dominadas` es el único ejercicio seed de peso corporal.* De sus tres implementos, solo `Peso Añadido` habilita la captura de carga: `Barra Fija` es la dominada estricta con el propio peso y `Máquina` es la asistida, cuyo contrapeso resta esfuerzo (ver `ExternalLoadRule`).
+
+- **`exercise_equipment` (97 filas):** Los implementos que cada uno de los 37 ejercicios seed admite, según la tabla anterior. Ningún ejercicio queda con la lista vacía. 7 ejercicios admiten un solo implemento y 10 admiten dos, tres y cuatro respectivamente. De los 15 tipos del catálogo, 10 tienen al menos un ejercicio y 5 nacen sin ninguno.
 - **`exercise_muscle_zone` (41 filas):** Cada uno de los 37 ejercicios seed está vinculado a su(s) zona(s) muscular(es) por criterio biomecánico: el músculo que ejecuta el movimiento, no la máquina ni la ubicación aparente. 33 ejercicios tienen 1 zona. 4 ejercicios tienen 2 zonas: Peso Muerto Rumano (Isquiotibiales + Glúteos), Sentadilla Búlgara (Cuádriceps + Glúteos), Sentadilla de Zumo (Cuádriceps + Aductores), Zancadas (Cuádriceps + Glúteos). *Remo al Mentón fue recatalogado en HU-29 de Hombro + Trapecio a Espalda Alta (zona única).*
 
 - **`rotation_state` (1 fila):** Se inicializa con `id=1, microcycle_position=1, microcycle_count=0` junto con el perfil del ejecutante al completar el onboarding.

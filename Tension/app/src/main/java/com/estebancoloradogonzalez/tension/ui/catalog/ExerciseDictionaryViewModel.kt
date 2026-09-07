@@ -38,7 +38,9 @@ class ExerciseDictionaryViewModel @Inject constructor(
                 _selectedMuscleZone,
             ) { exercises, filterOptions, selectedEquipment, selectedMuscleZone ->
                 val filtered = exercises.filter { exercise ->
-                    val matchesEquipment = selectedEquipment == null || exercise.equipmentTypeName == selectedEquipment
+                    // Coincide si ALGUNA de sus opciones coincide con el filtro (CA-39.03).
+                    val matchesEquipment = selectedEquipment == null ||
+                        exercise.equipmentTypes.any { it == selectedEquipment }
                     val matchesMuscleZone = selectedMuscleZone == null || exercise.muscleZones.any { it == selectedMuscleZone }
                     matchesEquipment && matchesMuscleZone
                 }
@@ -69,7 +71,7 @@ class ExerciseDictionaryViewModel @Inject constructor(
     private fun Exercise.toExerciseItem() = ExerciseItem(
         id = id,
         name = name,
-        equipmentTypeName = equipmentTypeName,
+        equipmentSummary = equipmentTypes.joinToString(" · "),
         muscleZonesSummary = muscleZones.joinToString(", "),
         isCustom = isCustom,
     )

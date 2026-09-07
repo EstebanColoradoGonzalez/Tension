@@ -76,8 +76,8 @@ class PlanRepositoryImpl @Inject constructor(
                         PlanExercise(
                             exerciseId = pa.exerciseId,
                             name = pa.exerciseName,
-                            equipmentTypeName = pa.equipmentTypeName,
-                            muscleZones = pa.muscleZones?.split(", ")?.filter { it.isNotBlank() } ?: emptyList(),
+                            equipmentTypes = pa.equipmentTypes.toAggregatedList(),
+                            muscleZones = pa.muscleZones.toAggregatedList(),
                             sets = pa.sets,
                             reps = pa.reps,
                             isBodyweight = pa.isBodyweight == 1,
@@ -143,8 +143,8 @@ class PlanRepositoryImpl @Inject constructor(
             PlanExercise(
                 exerciseId = pa.exerciseId,
                 name = pa.exerciseName,
-                equipmentTypeName = pa.equipmentTypeName,
-                muscleZones = pa.muscleZones?.split(", ")?.filter { it.isNotBlank() } ?: emptyList(),
+                equipmentTypes = pa.equipmentTypes.toAggregatedList(),
+                muscleZones = pa.muscleZones.toAggregatedList(),
                 sets = pa.sets,
                 reps = pa.reps,
                 isBodyweight = pa.isBodyweight == 1,
@@ -185,8 +185,8 @@ class PlanRepositoryImpl @Inject constructor(
         Exercise(
             id = id,
             name = name,
-            equipmentTypeName = equipmentTypeName,
-            muscleZones = muscleZones?.split(", ")?.filter { it.isNotBlank() } ?: emptyList(),
+            equipmentTypes = equipmentTypes.toAggregatedList(),
+            muscleZones = muscleZones.toAggregatedList(),
             muscleGroup = muscleGroup,
             isBodyweight = isBodyweight == 1,
             isIsometric = isIsometric == 1,

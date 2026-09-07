@@ -1,8 +1,35 @@
 .DS_Store
 .vscode/
-.github/
-.claude/
 .venv/
+
+# ── .github y .claude ───────────────────────────────────────────────────────────────────────
+#
+# Se ignoran por completo **salvo las skills propias del proyecto**.
+#
+# El patron es `dir/*` y no `dir/`: con barra final git no desciende en la carpeta y ninguna
+# excepcion de dentro llegaria a aplicarse nunca. Es la razon por la que este bloque parece
+# mas retorcido de lo necesario.
+.github/*
+.claude/*
+
+# Skills. Se ignoran las que instalan la herramienta y el Metodo Ceiba —docx, pdf, pptx, xlsx
+# y las que anada un update— y se versionan las propias, que llevan el prefijo `tension-`.
+#
+# La convencion del prefijo existe para que **crear una skill nueva del proyecto no obligue a
+# tocar este archivo**: basta nombrarla `tension-<algo>`. Enumerarlas una a una significaria
+# que la primera que alguien olvide se queda fuera del repositorio en silencio, que es
+# exactamente el problema que este bloque viene a resolver.
+!.github/skills/
+!.claude/skills/
+.github/skills/*
+.claude/skills/*
+!.github/skills/tension-*/
+!.claude/skills/tension-*/
+
+# ⚠️ Si un update del Metodo Ceiba vuelve a anadir `.github/skills/` o `.claude/skills/` al
+# final de este archivo, las dos excepciones de arriba dejan de aplicar y las skills del
+# proyecto desaparecen del control de versiones. La senal es `git status` limpio despues de
+# editar una skill. Se arregla borrando esas dos lineas nuevas.
 
 Tension/local.properties
 
@@ -42,9 +69,9 @@ Tension/.idea/compiler.xml
 # Método Ceiba - Auto-managed kanban prompts
 .github/prompts/ceiba-*.prompt.md
 .claude/commands/ceiba-*.md
-# Método Ceiba - Auto-injected agent skills
-.github/skills/
-.claude/skills/
+# Método Ceiba - Auto-injected agent skills: cubiertas por el bloque de skills de arriba, que
+# ademas exceptua las propias del proyecto. No volver a poner aqui `.github/skills/` ni
+# `.claude/skills/`: anularian esas excepciones.
 # Método Ceiba - Metodología exportada (Claude Code)
 .ceiba-metodo/
 

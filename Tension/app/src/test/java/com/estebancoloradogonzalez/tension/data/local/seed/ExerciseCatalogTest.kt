@@ -14,9 +14,12 @@ class ExerciseCatalogTest {
     private fun equipmentNamesOf(id: Long): List<String> =
         ExerciseCatalog.byId(id)!!.equipmentTypeIds.map { EquipmentCatalog.byId(it)!!.name }
 
+    private fun zoneNamesOf(zoneIds: List<Long>): List<String> =
+        zoneIds.map { MuscleZoneCatalog.byId(it)!!.name }
+
     @Test
-    fun `catalog contains exactly 37 exercises`() {
-        assertEquals(37, ExerciseCatalog.ALL.size)
+    fun `catalog contains exactly 38 exercises`() {
+        assertEquals(38, ExerciseCatalog.ALL.size)
     }
 
     @Test
@@ -33,38 +36,154 @@ class ExerciseCatalogTest {
         assertEquals(names.size, names.distinct().size)
     }
 
+    // ============================================================
+    // CA-41.02 / CA-41.03 — Jerarquía principal / secundaria
+    // ============================================================
+
     @Test
-    fun `exercise muscle zone relations total 41`() {
-        val relations = ExerciseCatalog.ALL.sumOf { it.muscleZoneIds.size }
-        assertEquals(41, relations)
+    fun `exercise muscle zone relations total 87`() {
+        assertEquals(87, ExerciseCatalog.ALL.sumOf { it.allMuscleZoneIds.size })
     }
 
     @Test
-    fun `every exercise has at least one muscle zone within the seeded catalog`() {
+    fun `relations split into 52 primary and 35 secondary`() {
+        assertEquals(52, ExerciseCatalog.ALL.sumOf { it.primaryMuscleZoneIds.size })
+        assertEquals(35, ExerciseCatalog.ALL.sumOf { it.secondaryMuscleZoneIds.size })
+    }
+
+    @Test
+    fun `no exercise is left without a primary muscle zone`() {
         ExerciseCatalog.ALL.forEach { exercise ->
-            assertTrue("${exercise.name} sin zona muscular", exercise.muscleZoneIds.isNotEmpty())
-            exercise.muscleZoneIds.forEach { zoneId ->
-                assertTrue("${exercise.name} con zona fuera de rango: $zoneId", zoneId in 1L..20L)
-            }
-            assertEquals(
-                "${exercise.name} con zonas duplicadas",
-                exercise.muscleZoneIds.size,
-                exercise.muscleZoneIds.distinct().size,
+            assertTrue(
+                "${exercise.name} sin zona principal",
+                exercise.primaryMuscleZoneIds.isNotEmpty(),
             )
         }
     }
 
     @Test
-    fun `only four exercises target two muscle zones`() {
-        val multiZone = ExerciseCatalog.ALL.filter { it.muscleZoneIds.size > 1 }.map { it.name }
+    fun `no zone is primary and secondary of the same exercise`() {
+        ExerciseCatalog.ALL.forEach { exercise ->
+            val shared = exercise.primaryMuscleZoneIds
+                .intersect(exercise.secondaryMuscleZoneIds.toSet())
+            assertTrue(
+                "${exercise.name} repite zonas entre principal y secundaria: $shared",
+                shared.isEmpty(),
+            )
+        }
+    }
+
+    @Test
+    fun `every declared muscle zone exists in the catalog and is not duplicated`() {
+        ExerciseCatalog.ALL.forEach { exercise ->
+            exercise.allMuscleZoneIds.forEach { zoneId ->
+                assertNotNull(
+                    "${exercise.name} declara una zona inexistente: $zoneId",
+                    MuscleZoneCatalog.byId(zoneId),
+                )
+            }
+            assertEquals(
+                "${exercise.name} con zonas duplicadas",
+                exercise.allMuscleZoneIds.size,
+                exercise.allMuscleZoneIds.distinct().size,
+            )
+        }
+    }
+
+    @Test
+    fun `no exercise declares a retired muscle zone`() {
+        ExerciseCatalog.ALL.forEach { exercise ->
+            exercise.allMuscleZoneIds.forEach { zoneId ->
+                assertFalse(
+                    "${exercise.name} usa la zona retirada $zoneId",
+                    zoneId in MuscleZoneCatalog.RETIRED_IDS,
+                )
+            }
+        }
+    }
+
+    /**
+     * La tabla de CA-41.03 transcrita desde el texto de la historia, **por nombre y no por
+     * id**.
+     *
+     * Por nombre a propósito: un id equivocado en el seed y el mismo id equivocado aquí se
+     * cancelarían sin que nadie lo notara. Los nombres los fija [MuscleZoneCatalog], que
+     * tiene su propia prueba contra la tabla de CA-41.01.
+     */
+    @Test
+    fun `the 38 exercises are classified exactly as the acceptance table declares`() {
+        val expected = mapOf(
+            "Aductores" to (listOf("Aductores") to emptyList<String>()),
+            "Cruce de Polea Alta" to (listOf("Pectoral Inferior") to listOf("Deltoides Anterior")),
+            "Crunch Abdominal" to (listOf("Recto Abdominal") to emptyList()),
+            "Curl Bayesian en Banco Inclinado" to (listOf("Bíceps — Cabeza Larga") to emptyList()),
+            "Curl de Concentración" to (listOf("Bíceps Braquial") to emptyList()),
+            "Curl de Isquiotibiales Sentado" to (listOf("Isquiotibiales") to emptyList()),
+            "Curl de Martillo Cruzado" to
+                (listOf("Braquial", "Braquiorradial") to listOf("Bíceps Braquial")),
+            "Curl de Predicador" to (listOf("Bíceps — Cabeza Corta") to emptyList()),
+            "Elevación de Pantorrilla de Pie" to (listOf("Gastrocnemio") to emptyList()),
+            "Elevación Lateral" to (listOf("Deltoides Lateral") to emptyList()),
+            "Extensión de Cuádriceps" to (listOf("Cuádriceps") to emptyList()),
+            "Extensión de Tríceps (Pushdown)" to
+                (listOf("Tríceps — Cabeza Lateral", "Tríceps — Cabeza Medial") to emptyList()),
+            "Extensión de Tríceps sobre Cabeza" to
+                (listOf("Tríceps — Cabeza Larga") to emptyList()),
+            "Face Pull" to (listOf("Deltoides Posterior", "Trapecio") to listOf("Manguito Rotador")),
+            "Hip Thrust" to (listOf("Glúteo Mayor") to listOf("Isquiotibiales", "Cuádriceps")),
+            "Peso Muerto Rumano" to
+                (listOf("Isquiotibiales", "Glúteo Mayor") to listOf("Erectores Espinales")),
+            "Prensa Inclinada" to
+                (listOf("Cuádriceps", "Glúteo Mayor") to listOf("Isquiotibiales")),
+            "Press de Banca Inclinado" to
+                (listOf("Pectoral Superior") to listOf("Deltoides Anterior", "Tríceps Braquial")),
+            "Press de Banca Plano" to
+                (listOf("Pectoral Medio") to listOf("Deltoides Anterior", "Tríceps Braquial")),
+            "Press Pallof" to (listOf("Oblicuos") to listOf("Recto Abdominal")),
+            "Remo T Inclinado" to
+                (listOf("Dorsal Ancho", "Trapecio") to listOf("Bíceps Braquial", "Romboides")),
+            "Sentadilla Búlgara" to (listOf("Cuádriceps", "Glúteo Mayor") to emptyList()),
+            "Sentadilla Sumo" to (listOf("Glúteo Mayor", "Cuádriceps") to listOf("Aductores")),
+            "Sentadilla Hack" to (listOf("Cuádriceps") to listOf("Glúteo Mayor")),
+            "Jalón al Pecho" to
+                (listOf("Dorsal Ancho") to listOf("Bíceps Braquial", "Espalda Alta")),
+            "Vuelos Posteriores (Pájaros)" to
+                (listOf("Deltoides Posterior") to listOf("Trapecio", "Romboides")),
+            "Remo al Mentón" to
+                (listOf("Deltoides Lateral", "Trapecio Superior") to listOf("Bíceps Braquial")),
+            "Aperturas" to (listOf("Pectoral Mayor") to listOf("Deltoides Anterior")),
+            "Pull-Over" to (listOf("Dorsal Ancho") to listOf("Pectoral Inferior")),
+            "Curl Martillo" to
+                (listOf("Braquial", "Braquiorradial") to listOf("Bíceps Braquial")),
+            "Rompecráneos" to (listOf("Tríceps Braquial") to emptyList()),
+            "Remo Horizontal" to
+                (listOf("Dorsal Ancho") to listOf("Trapecio", "Romboides", "Bíceps Braquial")),
+            "Zancadas (Lunges)" to (listOf("Cuádriceps", "Glúteo Mayor") to emptyList()),
+            "Press Militar" to
+                (listOf("Deltoides Anterior", "Deltoides Lateral") to listOf("Tríceps Braquial")),
+            "Dominadas" to
+                (listOf("Dorsal Ancho") to listOf("Bíceps Braquial", "Trapecio Inferior")),
+            "Remo Unilateral Polea Baja" to
+                (listOf("Dorsal Ancho") to listOf("Bíceps Braquial", "Romboides")),
+            "Remo Unilateral Polea Alta" to
+                (listOf("Dorsal Ancho", "Espalda Alta") to listOf("Bíceps Braquial")),
+            // Añadido por HU-41 para el cuarto puesto del viernes.
+            "Trapecios con Apoyo en Banco Inclinado" to
+                (
+                    listOf("Trapecio", "Trapecio Inferior") to
+                        listOf("Romboides", "Deltoides Posterior")
+                    ),
+        )
+
+        assertEquals(38, expected.size)
         assertEquals(
-            listOf(
-                "Peso Muerto Rumano",
-                "Sentadilla Búlgara",
-                "Sentadilla Sumo",
-                "Zancadas (Lunges)",
-            ),
-            multiZone.sorted(),
+            expected,
+            ExerciseCatalog.ALL.associate { exercise ->
+                exercise.name to (
+                    zoneNamesOf(exercise.primaryMuscleZoneIds) to
+                        zoneNamesOf(exercise.secondaryMuscleZoneIds)
+                    )
+            },
         )
     }
 
@@ -162,9 +281,9 @@ class ExerciseCatalogTest {
     // ============================================================
 
     @Test
-    fun `exercise equipment relations total 97`() {
+    fun `exercise equipment relations total 100`() {
         val relations = ExerciseCatalog.ALL.sumOf { it.equipmentTypeIds.size }
-        assertEquals(97, relations)
+        assertEquals(100, relations)
     }
 
     @Test
@@ -310,32 +429,34 @@ class ExerciseCatalogTest {
         }
     }
 
-    /** El asset **no** se renombra: el recurso visual se conserva, como en HU-29. */
+    /**
+     * El asset **no** se renombra: el recurso visual se conserva, como en HU-29.
+     *
+     * La clasificación muscular ya no se comprueba aquí: HU-41 la reescribió entera y la
+     * tabla cerrada de CA-41.03 la verifica ejercicio a ejercicio. Lo que este caso
+     * protege es lo que un renombrado no puede tocar — el identificador y la imagen.
+     */
     @Test
-    fun `each renamed exercise keeps its id, its media resource and its muscle zones`() {
+    fun `each renamed exercise keeps its id and its media resource`() {
         val preserved = mapOf(
-            9L to Triple("elevacion_de_pantorrilla_en_maquina_de_pie_maquina", listOf(14L), 1),
-            12L to Triple("extension_de_triceps_en_polea_pushdown_polea_con_cuerda", listOf(8L), 1),
-            13L to Triple("extension_de_triceps_por_encima_de_la_cabeza_mancuernas", listOf(8L), 1),
-            23L to Triple("sentadilla_de_zumo_mancuerna", listOf(10L, 12L), 2),
-            26L to Triple("vuelos_posteriores_mancuernas", listOf(7L), 1),
-            33L to Triple("zancadas_mancuernas", listOf(10L, 15L), 2),
-            36L to Triple("remo_unilateral_en_polea_baja_polea", listOf(4L), 1),
-            37L to Triple("remo_unilateral_en_polea_alta_polea", listOf(16L), 1),
+            9L to "elevacion_de_pantorrilla_en_maquina_de_pie_maquina",
+            12L to "extension_de_triceps_en_polea_pushdown_polea_con_cuerda",
+            13L to "extension_de_triceps_por_encima_de_la_cabeza_mancuernas",
+            23L to "sentadilla_de_zumo_mancuerna",
+            26L to "vuelos_posteriores_mancuernas",
+            33L to "zancadas_mancuernas",
+            36L to "remo_unilateral_en_polea_baja_polea",
+            37L to "remo_unilateral_en_polea_alta_polea",
         )
-        preserved.forEach { (id, expected) ->
-            val exercise = ExerciseCatalog.byId(id)!!
-            val (mediaResource, muscleZoneIds, zoneCount) = expected
-            assertEquals(mediaResource, exercise.mediaResource)
-            assertEquals(muscleZoneIds, exercise.muscleZoneIds)
-            assertEquals(zoneCount, exercise.muscleZoneIds.size)
+        preserved.forEach { (id, mediaResource) ->
+            assertEquals(mediaResource, ExerciseCatalog.byId(id)!!.mediaResource)
         }
     }
 
     @Test
-    fun `the remaining twenty nine exercises keep their names`() {
+    fun `the remaining thirty exercises keep their names`() {
         val renamedIds = setOf(9L, 12L, 13L, 23L, 26L, 33L, 36L, 37L)
-        assertEquals(29, ExerciseCatalog.ALL.count { it.id !in renamedIds })
+        assertEquals(30, ExerciseCatalog.ALL.count { it.id !in renamedIds })
     }
 
     @Test
@@ -356,7 +477,7 @@ class ExerciseCatalogTest {
         assertNotNull(exercise)
         assertEquals("Jalón al Pecho", exercise!!.name)
         assertEquals("tiron_de_dorsales_polea", exercise.mediaResource)
-        assertEquals(listOf(5L), exercise.muscleZoneIds)
+        assertEquals(listOf(MuscleZoneCatalog.DORSAL_ANCHO), exercise.primaryMuscleZoneIds)
     }
 
     @Test
@@ -368,14 +489,20 @@ class ExerciseCatalogTest {
     // CA-29.02 / CA-29.06 — Ejercicios nuevos
 
     @Test
-    fun `press militar is registered with its four implements and shoulder zone`() {
+    fun `press militar is registered with its four implements and deltoid zones`() {
         val exercise = ExerciseCatalog.byId(34)!!
         assertEquals("Press Militar", exercise.name)
         assertEquals(
             listOf("Barra", "Mancuerna", "Máquina", "Máquina Smith"),
             equipmentNamesOf(34),
         )
-        assertEquals(listOf(7L), exercise.muscleZoneIds)
+        // HU-41 reemplazó la zona genérica «Hombro» por los deltoides que ejecutan el
+        // press, con el tríceps asistiendo.
+        assertEquals(
+            listOf(MuscleZoneCatalog.DELTOIDES_ANTERIOR, MuscleZoneCatalog.DELTOIDES_LATERAL),
+            exercise.primaryMuscleZoneIds,
+        )
+        assertEquals(listOf(MuscleZoneCatalog.TRICEPS_BRAQUIAL), exercise.secondaryMuscleZoneIds)
         assertEquals("press_militar_mancuernas", exercise.mediaResource)
         assertFalse(exercise.isBodyweight)
     }
@@ -387,7 +514,7 @@ class ExerciseCatalogTest {
         val exercise = ExerciseCatalog.byId(35)!!
         assertEquals("Dominadas", exercise.name)
         assertEquals(listOf("Barra Fija", "Máquina", "Peso Añadido"), equipmentNamesOf(35))
-        assertEquals(listOf(5L), exercise.muscleZoneIds)
+        assertEquals(listOf(MuscleZoneCatalog.DORSAL_ANCHO), exercise.primaryMuscleZoneIds)
         assertEquals("dominadas_barra_fija", exercise.mediaResource)
         assertTrue(exercise.isBodyweight)
     }
@@ -418,18 +545,52 @@ class ExerciseCatalogTest {
         assertTrue(ExerciseCatalog.ALL.none { it.isToTechnicalFailure })
     }
 
-    // CA-29.08 — Auditoría de catalogación muscular
+    // CA-41.03 — Auditoría de catalogación muscular
 
+    /**
+     * Recatalogado dos veces, y esta prueba registra el porqué de la segunda.
+     *
+     * HU-29 lo dejó en «Espalda Alta» porque el catálogo de entonces no tenía con qué
+     * distinguir el deltoides lateral del trapecio superior: la única alternativa era la
+     * pareja genérica «Hombro» + «Trapecio», que decía menos. Con las 33 zonas de HU-41 sí
+     * la hay, y el movimiento vuelve a lo que ejecuta.
+     */
     @Test
-    fun `remo al menton is catalogued as upper back only`() {
+    fun `remo al menton is recatalogued onto the anatomical zones`() {
         val exercise = ExerciseCatalog.byId(27)!!
         assertEquals("Remo al Mentón", exercise.name)
-        assertEquals(listOf(16L), exercise.muscleZoneIds)
-        assertFalse(exercise.muscleZoneIds.contains(7L))
-        assertFalse(exercise.muscleZoneIds.contains(17L))
+        assertEquals(
+            listOf(MuscleZoneCatalog.DELTOIDES_LATERAL, MuscleZoneCatalog.TRAPECIO_SUPERIOR),
+            exercise.primaryMuscleZoneIds,
+        )
+        assertEquals(listOf(MuscleZoneCatalog.BICEPS_BRAQUIAL), exercise.secondaryMuscleZoneIds)
+        // La zona genérica que HU-29 le había dado ya no le corresponde.
+        assertFalse(MuscleZoneCatalog.ESPALDA_ALTA in exercise.allMuscleZoneIds)
     }
 
     // CA-29.07 — Preservación del diccionario
+
+    // CA-41.03 / D13 — El ejercicio que HU-41 añade
+
+    @Test
+    fun `trapecios con apoyo is the exercise added by this story`() {
+        val exercise = ExerciseCatalog.byId(38)!!
+        assertEquals("Trapecios con Apoyo en Banco Inclinado", exercise.name)
+        assertEquals(listOf("Mancuerna", "Barra", "Máquina Smith"), equipmentNamesOf(38))
+        assertEquals(ProgressionDifficulty.MEDIUM, exercise.progressionDifficulty)
+        assertFalse(exercise.isBodyweight)
+        assertFalse(exercise.isIsometric)
+        // El asset llegó sin el «en» que el nombre sí lleva, y manda el archivo: el asset
+        // no se renombra (misma regla que HU-29).
+        assertEquals("trapecios_con_apoyo_banco_inclinado_mancuernas", exercise.mediaResource)
+    }
+
+    @Test
+    fun `the suggested equipment of the new exercise is its first listed option`() {
+        // Regla de CA-41.07: la sugerencia del plan es el valor atómico de la primera
+        // opción listada. Aquí se fija el lado del catálogo; DefaultPlanTest fija el otro.
+        assertEquals(EquipmentCatalog.MANCUERNA, ExerciseCatalog.byId(38)!!.equipmentTypeIds.first())
+    }
 
     @Test
     fun `exercises dropped from the default plan remain in the dictionary`() {
@@ -477,14 +638,17 @@ class ExerciseCatalogTest {
         }
     }
 
-    /** CA-39.06: la dificultad de progresión no se modifica en esta historia. */
+    /**
+     * CA-41.03: la dificultad de progresión de los 37 existentes **no se modifica**. El
+     * único movimiento es el `MEDIUM` que trae el ejercicio 38 (16 → 17).
+     */
     @Test
-    fun `difficulty distribution splits the catalog into 13 high, 8 low and 16 medium`() {
+    fun `difficulty distribution splits the catalog into 13 high, 8 low and 17 medium`() {
         val byDifficulty = ExerciseCatalog.ALL.groupingBy { it.progressionDifficulty }.eachCount()
 
         assertEquals(13, byDifficulty[ProgressionDifficulty.HIGH])
         assertEquals(8, byDifficulty[ProgressionDifficulty.LOW])
-        assertEquals(16, byDifficulty[ProgressionDifficulty.MEDIUM])
+        assertEquals(17, byDifficulty[ProgressionDifficulty.MEDIUM])
     }
 
     @Test

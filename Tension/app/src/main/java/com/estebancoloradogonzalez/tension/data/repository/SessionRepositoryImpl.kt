@@ -46,6 +46,7 @@ import com.estebancoloradogonzalez.tension.domain.model.ExerciseSessionData
 import com.estebancoloradogonzalez.tension.domain.model.ExerciseSessionStatus
 import com.estebancoloradogonzalez.tension.domain.model.NextSession
 import com.estebancoloradogonzalez.tension.domain.model.PrefilledLoad
+import com.estebancoloradogonzalez.tension.domain.model.PreselectionOrigin
 import com.estebancoloradogonzalez.tension.domain.model.ProgressionClassification
 import com.estebancoloradogonzalez.tension.domain.model.RegisterSetInfo
 import com.estebancoloradogonzalez.tension.domain.model.RotationResolver
@@ -455,17 +456,16 @@ class SessionRepositoryImpl @Inject constructor(
         val info = sessionExerciseDao.getExerciseInfoForSet(sessionExerciseId) ?: return null
         val nextSetNumber = exerciseSetDao.getNextSetNumber(sessionExerciseId)
 
-        // Opciones admitidas y preselección: el implemento de la última serie registrada
-        // del ejercicio, y la primera opción del catálogo cuando no hay ninguna (CA-39.04).
         val equipmentIds = exerciseDao.getEquipmentIdsByExercise(info.exerciseId).first()
         val equipmentOptions = equipmentTypeDao.getByIds(equipmentIds).first()
             .map { EquipmentType(id = it.id, name = it.name) }
-        val lastEquipmentTypeId = exerciseSetDao
-            .getLastEquipmentTypeIdForExercise(info.exerciseId)
-        val preselectedEquipmentTypeId = lastEquipmentTypeId
-            ?.takeIf { candidate -> equipmentOptions.any { it.id == candidate } }
-            ?: equipmentOptions.firstOrNull()?.id
-            ?: 0L
+        val preselection = resolveEquipmentPreselection(
+            sessionExerciseId = sessionExerciseId,
+            sessionId = info.sessionId,
+            exerciseId = info.exerciseId,
+            equipmentOptions = equipmentOptions,
+        )
+        val preselectedEquipmentTypeId = preselection.first
 
         // El valor con el que el campo nace es el del par preseleccionado. La pantalla
         // vuelve a preguntar por `getPrefilledLoadForPair` cada vez que el ejecutante
@@ -492,7 +492,48 @@ class SessionRepositoryImpl @Inject constructor(
             captureUnit = prefilled.captureUnit,
             equipmentOptions = equipmentOptions,
             preselectedEquipmentTypeId = preselectedEquipmentTypeId,
+            preselectionOrigin = preselection.second,
         )
+    }
+
+    /**
+     * Con qué implemento nace el selector de la serie, y por qué (CA-41.05, CA-39.04).
+     *
+     * Tres niveles, en orden:
+     *
+     * 1. **El último usado en esta sesión.** El último cambio manda: si el ejecutante ya
+     *    registró una serie con otro implemento, la siguiente nace con ese y no con el del
+     *    plan.
+     * 2. **La sugerencia del plan**, si el ejercicio tiene asignación en la versión de
+     *    rutina de la sesión. Es la primera serie del ejercicio en la sesión.
+     * 3. **CA-39.04 sin cambios**: el último implemento usado en cualquier sesión y, si
+     *    nunca se usó, la primera opción admitida. Es el camino del ejercicio sin
+     *    asignación —el que se añade dentro de la sesión— y también la red de los dos
+     *    niveles anteriores.
+     *
+     * Cada nivel comprueba que el candidato **siga admitido**: un implemento retirado del
+     * ejercicio después de usarlo no puede preseleccionarse, o el selector nacería con un
+     * valor que no está entre sus opciones.
+     */
+    private suspend fun resolveEquipmentPreselection(
+        sessionExerciseId: Long,
+        sessionId: Long,
+        exerciseId: Long,
+        equipmentOptions: List<EquipmentType>,
+    ): Pair<Long, PreselectionOrigin> {
+        fun Long?.admitted(): Long? =
+            this?.takeIf { candidate -> equipmentOptions.any { it.id == candidate } }
+
+        exerciseSetDao.getLastEquipmentTypeIdInSessionExercise(sessionExerciseId).admitted()
+            ?.let { return it to PreselectionOrigin.LAST_USED }
+
+        planAssignmentDao.getSuggestedEquipmentForSession(sessionId, exerciseId).admitted()
+            ?.let { return it to PreselectionOrigin.PLAN_SUGGESTION }
+
+        exerciseSetDao.getLastEquipmentTypeIdForExercise(exerciseId).admitted()
+            ?.let { return it to PreselectionOrigin.LAST_USED }
+
+        return (equipmentOptions.firstOrNull()?.id ?: 0L) to PreselectionOrigin.FIRST_OPTION
     }
 
     override suspend fun getPrefilledLoadForPair(

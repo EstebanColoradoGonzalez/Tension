@@ -2,7 +2,7 @@
 
 > Este documento define la arquitectura estructural de la memoria del sistema y el ciclo de vida de sus entidades. Actúa simultáneamente como Modelo Entidad-Relación, Diccionario de Datos y Máquina de Estados. Se utiliza una sintaxis declarativa (pseudo-código estilo Prisma/TypeScript) para definir las estructuras, utilizando los comentarios inline como el diccionario de datos.
 >
-> **Versión de esquema:** 21 (migraciones registradas: v1 → v2 → … → v18 → v19). **Ni v20 ni v21 tienen migración**: v20 (HU-39) retira `exercise.equipment_type_id`, introduce `exercise_equipment` y añade `exercise_set.equipment_type_id`; v21 (HU-40) reclave `exercise_progression` por el par `(exercise_id, equipment_type_id)` e introduce `session_exercise_progression`. La excepción documentada a RNF19 (ADR-019) resuelve ambos cambios sobre instalación fresca. Una base anterior no puede abrir el build vigente — el reinicio lo realiza el ejecutante desinstalando y reinstalando, no la aplicación, y el historial anterior se pierde como consecuencia aceptada.
+> **Versión de esquema:** 22 (migraciones registradas: v1 → v2 → … → v18 → v19). **Ni v20, ni v21, ni v22 tienen migración**: v20 (HU-39) retira `exercise.equipment_type_id`, introduce `exercise_equipment` y añade `exercise_set.equipment_type_id`; v21 (HU-40) reclave `exercise_progression` por el par `(exercise_id, equipment_type_id)` e introduce `session_exercise_progression`; v22 (HU-41) añade `muscle_zone.sort_order`, `exercise_muscle_zone.is_primary` y `plan_assignment.suggested_equipment_type_id`. La excepción documentada a RNF19 (ADR-019) resuelve ambos cambios sobre instalación fresca. Una base anterior no puede abrir el build vigente — el reinicio lo realiza el ejecutante desinstalando y reinstalando, no la aplicación, y el historial anterior se pierde como consecuencia aceptada.
 >
 > El código declara la frontera en `Migrations.LAST_MIGRATED_VERSION` (**19**): por debajo de ella la cadena de migraciones es continua y sin huecos, y el salto de ahí a la versión del esquema es la excepción de ADR-019, que sube historia por historia de forma deliberada. Las migraciones `16→17`, `17→18` y `18→19`, ausentes durante tres versiones, se repusieron después de dejar la aplicación incapaz de abrir cualquier base existente.
 
@@ -41,15 +41,16 @@ model routine {
 
 // ==========================================
 // ENTIDAD: muscle_zone
-// PROPÓSITO: Catálogo de 20 zonas musculares específicas.
-// Clasifican cada ejercicio y permiten la agregación de KPIs por
-// grupo muscular. Inmutable (solo el ejecutante puede ampliar
-// mediante ejercicios personalizados).
+// PROPÓSITO: Catálogo de 33 zonas musculares con granularidad
+// anatómica (HU-41). Clasifican cada ejercicio y permiten la
+// agregación de KPIs por grupo muscular. Tabla cerrada y sembrada:
+// no existe interfaz para crear zonas.
 // ==========================================
 model muscle_zone {
-  id            INTEGER  @id @autoincrement         // PK. Identificador único.
-  name          TEXT     @unique @notNull           // Nombre específico de la zona: "Pecho Medio", "Dorsal Ancho", "Cuádriceps". 20 valores seed.
-  muscle_group  TEXT     @notNull                   // Grupo muscular padre para agregación de KPIs: "Pecho", "Espalda", "Abdomen", "Hombro", "Tríceps", "Bíceps", "Cuádriceps", "Isquiotibiales", "Glúteos", "Aductores", "Abductores", "Gemelos", "Antebrazo", "Cuello".
+  id            INTEGER  @id @autoincrement         // PK. Identificador único. Las 17 zonas que sobrevivieron a HU-41 conservan el suyo, renombradas o no; las 16 nuevas ocupan 21-36; los ids 4, 7 y 19 quedaron libres al retirarse "Espalda Media", "Hombro" y "Antebrazo", y NO se reutilizan.
+  name          TEXT     @unique @notNull           // Nombre específico de la zona: "Pectoral Superior", "Deltoides Lateral", "Tríceps — Cabeza Larga". 33 valores seed.
+  muscle_group  TEXT     @notNull                   // Grupo muscular padre para agregación de KPIs: "Pecho", "Espalda", "Abdomen", "Hombro", "Tríceps", "Bíceps", "Cuádriceps", "Isquiotibiales", "Glúteos", "Aductores", "Abductores", "Gemelos", "Antebrazo", "Cuello". Siguen siendo 14: la granularidad fina de HU-41 cabe íntegra dentro de ellos y ningún KPI cambió de eje.
+  sort_order    INTEGER  @notNull                   // Orden declarado por el catálogo, que es el que el selector presenta: los 14 grupos en orden anatómico y, dentro de cada uno, las zonas de mayor a menor. Existe porque el id no puede encodarlo — encoda la historia del catálogo, ya que un renombrado conserva el suyo. Sin default (ADR-019).
 }
 
 // ==========================================
@@ -97,14 +98,19 @@ model exercise {
 
 // ==========================================
 // ENTIDAD: exercise_muscle_zone
-// PROPÓSITO: Tabla de unión N:M entre exercise y muscle_zone.
-// Un ejercicio trabaja 1+ zonas. Crítica para KPIs de
+// PROPÓSITO: Tabla de unión N:M entre exercise y muscle_zone,
+// con la jerarquía de la relación (HU-41). Un ejercicio trabaja
+// 1+ zonas principales y 0+ secundarias. Crítica para KPIs de
 // tonelaje por grupo muscular y distribución de volumen.
 // ==========================================
 model exercise_muscle_zone {
   exercise_id     INTEGER  @fk(exercise.id) @notNull     // FK → exercise. ON DELETE RESTRICT. Parte de PK compuesta.
   muscle_zone_id  INTEGER  @fk(muscle_zone.id) @notNull  // FK → muscle_zone. ON DELETE RESTRICT. Parte de PK compuesta.
-  // PK COMPUESTA: (exercise_id, muscle_zone_id).
+  is_primary      INTEGER  @notNull                      // 1 si la zona ejecuta el movimiento, 0 si solo asiste. Criterio biomecánico. Sin default (ADR-019): un default permitiría escribir una relación sin declarar su jerarquía. INFORMATIVA, NO PONDERADORA: para tonelaje y volumen cuentan todas las zonas por igual (CA-41.04).
+  // PK COMPUESTA: (exercise_id, muscle_zone_id). Es la que hace
+  // IRREPRESENTABLE que una zona sea principal y secundaria del
+  // mismo ejercicio (CA-41.09): una zona es una fila, y la fila
+  // lleva un solo valor de is_primary. No hace falta validarlo.
 }
 
 // ==========================================
@@ -155,6 +161,7 @@ model plan_assignment {
   reps                TEXT     @notNull                           // Rango de repeticiones: "8-12", "TO_TECHNICAL_FAILURE" (Flexiones), "30-45_SEC" (isométricos). Validado en capa Domain.
   sort_order          INTEGER  @notNull @default(0)              // Orden sugerido de ejecución dentro de la versión. 1-based. Orientativo, no restrictivo.
   slot                INTEGER  @notNull @default(0)              // Número de puesto (slot). Múltiples ejercicios con el mismo slot son alternativas equivalentes para ese puesto. Añadido en v12, corregido en v13.
+  suggested_equipment_type_id INTEGER @fk(equipment_type.id) @notNull // FK → equipment_type. ON DELETE RESTRICT. Implemento que el plan sugiere para este puesto (HU-41). OBLIGATORIO: ninguna asignación existe sin él, ni al sembrar ni al asignar a mano (CA-41.07, CA-41.08). Debe estar entre los implementos que el ejercicio admite en exercise_equipment; la invariante se valida en la capa Domain y NO con una FK compuesta, porque RESTRICT sobre una tabla que la ficha del ejercicio edita en caliente convertiría un rechazo explicado en una excepción de SQLite. Cada ejercicio de un puesto dual lleva el suyo: comparten puesto, series y repeticiones, no implemento. Índice propio. Sin default (ADR-019).
   // PK COMPUESTA: (routine_version_id, exercise_id).
 }
 
@@ -449,7 +456,8 @@ model alert {
 | `routine` | `1 : 1` | `daily_routine_override` | "Es reasignada temporalmente" | CASCADE: si se elimina la rutina reasignada, la reasignación desaparece con ella. |
 | `exercise` | `N : M` | `equipment_type` | "Admite implementos" | Resuelta por `exercise_equipment`. RESTRICT en ambos lados: ningún ejercicio ni tipo de equipamiento se puede eliminar si existe la relación. La relación es **obligatoria y no vacía**: un ejercicio admite uno o más implementos, nunca cero. Sustituye a la `1 : N` de `equipment_type` → `exercise` que existía hasta HU-39. |
 | `equipment_type` | `1 : N` | `exercise_set` | "Es el implemento de series" | RESTRICT: no se puede eliminar un tipo de equipamiento con el que se haya registrado una serie. Es la otra mitad del cambio de HU-39: el equipamiento dejó de ser identidad del catálogo y pasó a ser un dato del registro. |
-| `exercise` | `N : M` | `muscle_zone` | "Trabaja zonas" | Resuelta por `exercise_muscle_zone`. RESTRICT en ambos lados: ningún ejercicio ni zona se puede eliminar si existe la relación. |
+| `exercise` | `N : M` | `muscle_zone` | "Trabaja zonas" | Resuelta por `exercise_muscle_zone`, que desde HU-41 califica la relación como **principal** o **secundaria**. RESTRICT en ambos lados: ningún ejercicio ni zona se puede eliminar si existe la relación. |
+| `equipment_type` | `1 : N` | `plan_assignment` | "Es sugerido en asignaciones" | RESTRICT: un tipo de equipamiento no se puede eliminar mientras el plan lo sugiera. La misma restricción, en la capa Domain, impide retirar del ejercicio una opción que alguna asignación sugiere (CA-41.08). |
 | `routine_version` | `1 : N` | `plan_assignment` | "Prescribe ejercicios" | CASCADE: si se elimina una versión, sus asignaciones se eliminan. |
 | `exercise` | `1 : N` | `plan_assignment` | "Es asignado en versiones" | RESTRICT: un ejercicio no se puede eliminar si está asignado al plan. |
 | `routine_version` | `1 : N` | `session` | "Es ejecutada en sesiones" | RESTRICT: una rutina-versión no se puede eliminar si tiene sesiones asociadas. |
@@ -652,30 +660,45 @@ La clasificación consolidada de cada sesión se persiste en `session_exercise.p
 
 *Registros que deben existir en el momento cero del despliegue, antes de la primera interacción del ejecutante.*
 
-- **`muscle_zone` (20 filas):** Catálogo completo de zonas musculares precargado. Valores:
+- **`muscle_zone` (33 filas):** Catálogo completo de zonas musculares precargado, con granularidad anatómica desde HU-41. Definido en `data/local/seed/MuscleZoneCatalog.kt`. El `sort_order` es la posición declarada y gobierna el orden del selector; el `id` encoda la historia del catálogo, no el orden. Valores:
 
-  | id | name | muscle_group |
-  |----|------|--------------|
-  | 1 | Pecho Medio | Pecho |
-  | 2 | Pecho Superior | Pecho |
-  | 3 | Pecho Inferior | Pecho |
-  | 4 | Espalda Media | Espalda |
-  | 5 | Dorsal Ancho | Espalda |
-  | 6 | Abdomen | Abdomen |
-  | 7 | Hombro | Hombro |
-  | 8 | Tríceps | Tríceps |
-  | 9 | Bíceps | Bíceps |
-  | 10 | Cuádriceps | Cuádriceps |
-  | 11 | Isquiotibiales | Isquiotibiales |
-  | 12 | Aductores | Aductores |
-  | 13 | Abductores | Abductores |
-  | 14 | Gemelos | Gemelos |
-  | 15 | Glúteos | Glúteos |
-  | 16 | Espalda Alta | Espalda |
-  | 17 | Trapecio | Espalda |
-  | 18 | Espalda Baja | Espalda |
-  | 19 | Antebrazo | Antebrazo |
-  | 20 | Cuello | Cuello |
+  | sort_order | id | name | muscle_group | origen |
+  |:---:|:---:|------|--------------|--------|
+  | 1 | 2 | Pectoral Superior | Pecho | renombrada desde *Pecho Superior* |
+  | 2 | 1 | Pectoral Medio | Pecho | renombrada desde *Pecho Medio* |
+  | 3 | 3 | Pectoral Inferior | Pecho | renombrada desde *Pecho Inferior* |
+  | 4 | 21 | Pectoral Mayor | Pecho | nueva |
+  | 5 | 22 | Deltoides Anterior | Hombro | nueva |
+  | 6 | 23 | Deltoides Lateral | Hombro | nueva |
+  | 7 | 24 | Deltoides Posterior | Hombro | nueva |
+  | 8 | 25 | Manguito Rotador | Hombro | nueva |
+  | 9 | 5 | Dorsal Ancho | Espalda | existente |
+  | 10 | 16 | Espalda Alta | Espalda | existente |
+  | 11 | 17 | Trapecio | Espalda | existente |
+  | 12 | 26 | Trapecio Superior | Espalda | nueva |
+  | 13 | 27 | Trapecio Inferior | Espalda | nueva |
+  | 14 | 28 | Romboides | Espalda | nueva |
+  | 15 | 18 | Erectores Espinales | Espalda | renombrada desde *Espalda Baja* |
+  | 16 | 9 | Bíceps Braquial | Bíceps | renombrada desde *Bíceps* |
+  | 17 | 29 | Bíceps — Cabeza Larga | Bíceps | nueva |
+  | 18 | 30 | Bíceps — Cabeza Corta | Bíceps | nueva |
+  | 19 | 8 | Tríceps Braquial | Tríceps | renombrada desde *Tríceps* |
+  | 20 | 31 | Tríceps — Cabeza Larga | Tríceps | nueva |
+  | 21 | 32 | Tríceps — Cabeza Lateral | Tríceps | nueva |
+  | 22 | 33 | Tríceps — Cabeza Medial | Tríceps | nueva |
+  | 23 | 34 | Braquial | Antebrazo | nueva |
+  | 24 | 35 | Braquiorradial | Antebrazo | nueva |
+  | 25 | 6 | Recto Abdominal | Abdomen | renombrada desde *Abdomen* |
+  | 26 | 36 | Oblicuos | Abdomen | nueva |
+  | 27 | 10 | Cuádriceps | Cuádriceps | existente |
+  | 28 | 11 | Isquiotibiales | Isquiotibiales | existente |
+  | 29 | 15 | Glúteo Mayor | Glúteos | renombrada desde *Glúteos* |
+  | 30 | 12 | Aductores | Aductores | existente |
+  | 31 | 13 | Abductores | Abductores | existente — **sin ejercicio seed** |
+  | 32 | 14 | Gastrocnemio | Gemelos | renombrada desde *Gemelos* |
+  | 33 | 20 | Cuello | Cuello | existente — **sin ejercicio seed** |
+
+  *Tres zonas se retiraron en HU-41 por quedar cubiertas por otras más específicas, y sus identificadores quedan libres sin reutilizarse:* `4 Espalda Media` (cubierta por trapecio, romboides y espalda alta), `7 Hombro` (por los tres deltoides y el manguito rotador) y `19 Antebrazo` (por braquial y braquiorradial). *`Abductores` y `Cuello` se conservan sin ejercicio* para que el ejecutante pueda catalogar ejercicios propios de esas zonas. *`Core` no se crea:* no es un músculo sino una región, y los movimientos anti-rotación se catalogan por `Oblicuos` y `Recto Abdominal`.
 
 - **`equipment_type` (15 filas):** Catálogo completo de tipos **atómicos** precargado. Definido en `data/local/seed/EquipmentCatalog.kt`. El identificador es la posición declarada:
 
@@ -745,10 +768,12 @@ La clasificación consolidada de cada sesión se persiste en `session_exercise.p
 
   *Notas de identidad:* `Jalón al Pecho` es el mismo ejercicio antes llamado "Tirón de Dorsales" — renombrado en HU-29. **HU-39 renombró ocho** para quitarles el implemento del nombre, que dejó de ser parte de su identidad: *Elevación de Pantorrilla en Máquina de Pie* → **Elevación de Pantorrilla de Pie**, *Extensión de Tríceps en Polea (Pushdown)* → **Extensión de Tríceps (Pushdown)**, *Extensión de Tríceps por encima de la Cabeza* → **Extensión de Tríceps sobre Cabeza**, *Sentadilla de Zumo* → **Sentadilla Sumo**, *Vuelos Posteriores* → **Vuelos Posteriores (Pájaros)**, *Zancadas* → **Zancadas (Lunges)**, *Remo Unilateral en Polea Baja* → **Remo Unilateral Polea Baja** y *Remo Unilateral en Polea Alta* → **Remo Unilateral Polea Alta**. Cada renombrado conserva su identificador, su recurso visual, su clasificación muscular y su historial — el asset **no** se renombra, igual que en HU-29.
 
+  *HU-41 añadió el ejercicio 38, `Trapecios con Apoyo en Banco Inclinado`* —`Mancuerna`, `Barra` y `Máquina Smith`, dificultad media— para el cuarto puesto del viernes, del que sale *Remo Unilateral Polea Alta*. Es la única alta del catálogo desde HU-29. Su `media_resource` es `trapecios_con_apoyo_banco_inclinado_mancuernas`, **sin el «en»** que el nombre sí lleva: manda el archivo, y el asset no se renombra.
+
   *`Dominadas` es el único ejercicio seed de peso corporal.* De sus tres implementos, solo `Peso Añadido` habilita la captura de carga: `Barra Fija` es la dominada estricta con el propio peso y `Máquina` es la asistida, cuyo contrapeso resta esfuerzo (ver `ExternalLoadRule`).
 
-- **`exercise_equipment` (97 filas):** Los implementos que cada uno de los 37 ejercicios seed admite, según la tabla anterior. Ningún ejercicio queda con la lista vacía. 7 ejercicios admiten un solo implemento y 10 admiten dos, tres y cuatro respectivamente. De los 15 tipos del catálogo, 10 tienen al menos un ejercicio y 5 nacen sin ninguno.
-- **`exercise_muscle_zone` (41 filas):** Cada uno de los 37 ejercicios seed está vinculado a su(s) zona(s) muscular(es) por criterio biomecánico: el músculo que ejecuta el movimiento, no la máquina ni la ubicación aparente. 33 ejercicios tienen 1 zona. 4 ejercicios tienen 2 zonas: Peso Muerto Rumano (Isquiotibiales + Glúteos), Sentadilla Búlgara (Cuádriceps + Glúteos), Sentadilla de Zumo (Cuádriceps + Aductores), Zancadas (Cuádriceps + Glúteos). *Remo al Mentón fue recatalogado en HU-29 de Hombro + Trapecio a Espalda Alta (zona única).*
+- **`exercise_equipment` (100 filas):** Los implementos que cada uno de los 38 ejercicios seed admite, según la tabla anterior. Ningún ejercicio queda con la lista vacía. 7 ejercicios admiten un solo implemento y 10 admiten dos, tres y cuatro respectivamente. De los 15 tipos del catálogo, 10 tienen al menos un ejercicio y 5 nacen sin ninguno.
+- **`exercise_muscle_zone` (87 filas):** Cada uno de los 38 ejercicios seed está vinculado a sus zonas musculares por criterio biomecánico —el músculo que ejecuta el movimiento, no la máquina ni la ubicación aparente— y **con jerarquía** desde HU-41: **52 relaciones principales y 35 secundarias**. Ningún ejercicio queda sin zona principal y ninguna zona figura a la vez como principal y secundaria del mismo ejercicio. La tabla cerrada la declara CA-41.03 y la verifican `MuscleZoneCatalogTest` y `ExerciseCatalogTest`, que la transcriben desde el texto de la historia y no desde el código. *`Remo al Mentón` fue recatalogado dos veces: HU-29 lo llevó de Hombro + Trapecio a Espalda Alta porque el catálogo de entonces no tenía con qué distinguirlos, y HU-41 lo devuelve a Deltoides Lateral + Trapecio Superior (principales) con Bíceps Braquial (secundaria).*
 
 - **`rotation_state` (1 fila):** Se inicializa con `id=1, microcycle_position=1, microcycle_count=0` junto con el perfil del ejecutante al completar el onboarding.
 
@@ -774,15 +799,15 @@ La clasificación consolidada de cada sesión se persiste en `session_exercise.p
 
 - **`routine_current_version` (1 fila por rutina del plan):** Se inicializa con `current_version_number=1` para cada rutina que el ejecutante crea al configurar su plan.
 
-- **Plan de entrenamiento predeterminado (seed, 35 asignaciones):** Plan de 6 rutinas precargado en instalación fresca. Cada rutina tiene exactamente 1 versión. Todas las asignaciones usan el rango de repeticiones 8-12. Definido en `data/local/seed/DefaultPlan.kt`. **Los nombres no nombran el día**: desde HU-36 el día es una relación (`week_day`), no un dato de texto dentro del nombre.
-  - **Rutina 1 — Push — Foco Deltoides Lateral y Medio (lunes):** Elevación Lateral (4s), Press de Banca Inclinado **o** Press Militar (slot dual, 3s), Press de Banca Plano (3s), Aperturas (3s).
-  - **Rutina 2 — Pull — Foco Dorsal Ancho (martes):** Jalón al Pecho **o** Dominadas (slot dual, 4s), Curl Martillo (3s), Remo Unilateral en Polea Baja (3s), Curl Bayesian en Banco Inclinado (3s), Pull-Over (3s), Crunch Abdominal (3s).
-  - **Rutina 3 — Lower — Foco Cuádriceps (miércoles):** Extensión de Cuádriceps (4s), Sentadilla Hack **o** Prensa Inclinada (slot dual, 3s), Sentadilla Búlgara (3s), Aductores (3s), Elevación de Pantorrilla (3s).
-  - **Rutina 4 — Push — Foco Tríceps (jueves):** Extensión de Tríceps por encima de la Cabeza (4s), Press de Banca Plano (3s), Aperturas (3s), Extensión de Tríceps en Polea Pushdown (3s), Rompecráneos (3s).
-  - **Rutina 5 — Pull — Foco Trapecios y Espalda Media (viernes):** Remo T Inclinado (4s), Face Pull **o** Vuelos Posteriores (slot dual, 3s), Remo Horizontal (3s), Remo Unilateral en Polea Alta (3s), Curl de Predicador (3s), Crunch Abdominal (3s).
-  - **Rutina 6 — Lower — Foco Isquiotibiales y Glúteo (sábado):** Curl de Isquiotibiales Sentado (4s), Peso Muerto Rumano (3s), Hip Thrust (3s), Aductores (3s), Elevación de Pantorrilla (3s).
-  - **Slots duales (4):** Rutina 1 slot 2, Rutina 2 slot 1, Rutina 3 slot 2, Rutina 5 slot 2. El primer ejercicio del par es el primario y el segundo la alternativa; ambos comparten series y repeticiones.
-  - **Fuera del plan por defecto pero presentes en el Diccionario:** Remo al Mentón, Zancadas y el resto del catálogo siguen disponibles como alternativa de slot o para asignación manual.
+- **Plan de entrenamiento predeterminado (seed, 35 asignaciones):** Plan de 6 rutinas precargado en instalación fresca. Cada rutina tiene exactamente 1 versión. Todas las asignaciones usan el rango de repeticiones 8-12. Definido en `data/local/seed/DefaultPlan.kt`. **Los nombres no nombran el día**: desde HU-36 el día es una relación (`week_day`), no un dato de texto dentro del nombre. Desde HU-41 **cada asignación lleva su equipamiento sugerido**, que preselecciona el selector al registrar la serie sin imponerlo; entre paréntesis junto a cada ejercicio.
+  - **Rutina 1 — Push — Foco Deltoides Lateral y Medio (lunes):** Elevación Lateral (4s, *Mancuerna*), Press de Banca Inclinado (*Barra*) **o** Press Militar (*Barra*) (slot dual, 3s), Press de Banca Plano (3s, *Barra*), Aperturas (3s, *Máquina*).
+  - **Rutina 2 — Pull — Foco Dorsal Ancho (martes):** Jalón al Pecho (*Polea*) **o** Dominadas (*Barra Fija*) (slot dual, 4s — **no comparten sugerencia**: la dominada no se hace en polea), Curl Martillo (3s, *Mancuerna*), Remo Unilateral Polea Baja (3s, *Polea*), Curl Bayesian en Banco Inclinado (3s, *Mancuerna*), Pull-Over (3s, *Polea*), Crunch Abdominal (3s, *Polea*).
+  - **Rutina 3 — Lower — Foco Cuádriceps (miércoles):** Aductores (3s, *Máquina*), Extensión de Cuádriceps (4s, *Máquina*), Sentadilla Hack (*Máquina*) **o** Prensa Inclinada (*Máquina*) (slot dual, 3s), Sentadilla Búlgara (3s, *Mancuerna*), Elevación de Pantorrilla (3s, *Máquina*). *HU-41 trajo `Aductores` del cuarto al primer puesto.*
+  - **Rutina 4 — Push — Foco Tríceps (jueves):** Extensión de Tríceps sobre Cabeza (4s, *Mancuerna*), Press de Banca Plano (3s, *Barra*), Aperturas (3s, *Máquina*), Extensión de Tríceps (Pushdown) (3s, *Polea*), Rompecráneos (3s, *Mancuerna*).
+  - **Rutina 5 — Pull — Foco Trapecios y Espalda Media (viernes):** Remo T Inclinado (4s, *Máquina*), Face Pull (*Polea*) **o** Vuelos Posteriores (*Mancuerna*) (slot dual, 3s), Remo Horizontal (3s, *Polea*), **Trapecios con Apoyo en Banco Inclinado** (3s, *Mancuerna*), Curl de Predicador (3s, *Mancuerna*), Crunch Abdominal (3s, *Polea*). *HU-41 sustituyó `Remo Unilateral Polea Alta` por el ejercicio nuevo en el cuarto puesto.*
+  - **Rutina 6 — Lower — Foco Isquiotibiales y Glúteo (sábado):** Aductores (3s, *Máquina*), Curl de Isquiotibiales Sentado (4s, *Máquina*), Peso Muerto Rumano (3s, *Mancuerna*), Hip Thrust (3s, *Mancuerna*), Elevación de Pantorrilla (3s, *Máquina*). *HU-41 trajo `Aductores` del cuarto al primer puesto.*
+  - **Slots duales (4):** Rutina 1 slot 2, Rutina 2 slot 1, Rutina 3 **slot 3** (corrido por el adelanto de `Aductores`), Rutina 5 slot 2. El primer ejercicio del par es el primario y el segundo la alternativa; ambos comparten series y repeticiones, **pero no el equipamiento sugerido** — son ejercicios distintos con opciones distintas.
+  - **Fuera del plan por defecto pero presentes en el Diccionario (8):** Cruce de Polea Alta, Curl de Concentración, Curl de Martillo Cruzado, Press Pallof, Sentadilla Sumo, Remo al Mentón, Zancadas (Lunges) y Remo Unilateral Polea Alta. Siguen disponibles como alternativa de slot o para asignación manual: salir del plan no es salir del catálogo.
   - **Determinación del día:** la rutina propuesta es la que `week_day` asigna al día de hoy — lunes a sábado entrenan, el domingo descansa. La secuencia Push → Pull → Lower → Push → Pull → Lower deja de ser una rotación por posición y pasa a ser la lectura del calendario.
   - **Microciclo:** `rotation_state` sigue avanzando una posición por sesión cerrada y contando un microciclo cada 6 cierres, exactamente como antes. Con 6 rutinas y 6 días de entrenamiento, un microciclo equivale a una semana completa.
 

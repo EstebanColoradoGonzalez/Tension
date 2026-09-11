@@ -16,10 +16,23 @@ data class SeedExercise(
      * ejercicio sin equipamiento no puede existir (HU-39).
      */
     val equipmentTypeIds: List<Long>,
-    val muscleZoneIds: List<Long>,
+    /**
+     * Zonas que **ejecutan** el movimiento. Nunca vacía: todo ejercicio tiene al menos una
+     * principal (CA-41.02). Varias son legítimas cuando el movimiento reparte el trabajo
+     * por igual.
+     */
+    val primaryMuscleZoneIds: List<Long>,
+    /**
+     * Zonas que **asisten** al movimiento. Puede estar vacía, y nunca comparte una zona
+     * con [primaryMuscleZoneIds] (CA-41.09).
+     */
+    val secondaryMuscleZoneIds: List<Long>,
     val mediaResource: String,
     val isBodyweight: Boolean = false,
     val isIsometric: Boolean = false,
     val isToTechnicalFailure: Boolean = false,
     val progressionDifficulty: ProgressionDifficulty = ProgressionDifficulty.MEDIUM,
-)
+) {
+    /** Todas las zonas del ejercicio, principales primero. Para las lecturas que no distinguen. */
+    val allMuscleZoneIds: List<Long> get() = primaryMuscleZoneIds + secondaryMuscleZoneIds
+}

@@ -145,6 +145,26 @@ interface ExerciseSetDao {
     suspend fun getLastEquipmentTypeIdForExercise(exerciseId: Long): Long?
 
     /**
+     * Implemento de la última serie de este `session_exercise` — el ejercicio **en esta
+     * sesión**, no en su historia entera.
+     *
+     * Es el primer nivel de precedencia del selector al registrar una serie (CA-41.05):
+     * una vez que el ejecutante cambia de implemento, las series siguientes nacen con el
+     * suyo y no con el que sugiere el plan. Nulo mientras no haya ninguna serie, que es
+     * cuando la sugerencia del plan toma el relevo.
+     */
+    @Query(
+        """
+        SELECT es.equipment_type_id
+        FROM exercise_set es
+        WHERE es.session_exercise_id = :sessionExerciseId
+        ORDER BY es.id DESC
+        LIMIT 1
+        """,
+    )
+    suspend fun getLastEquipmentTypeIdInSessionExercise(sessionExerciseId: Long): Long?
+
+    /**
      * Series ya registradas del ejercicio con ese implemento.
      *
      * Es lo que impide retirarlo de las opciones del ejercicio (CA-39.10): una serie es
@@ -263,6 +283,21 @@ interface ExerciseSetDao {
         currentSessionId: Long,
     ): List<ExerciseSetData>
 
+    /**
+     * Tonelaje por grupo muscular de las sesiones dadas.
+     *
+     * **Cuentan todas las zonas del ejercicio, principales y secundarias, sin ponderación**
+     * (CA-41.04). El `INNER JOIN` sin filtro por `emz.is_primary` no es un olvido: la
+     * jerarquía que HU-41 introdujo es informativa para el ejecutante, no un peso de
+     * cálculo, y por eso ningún KPI cambió de definición al ganarla.
+     *
+     * La consecuencia es deliberada: una serie de un ejercicio de tres zonas aporta su
+     * tonelaje **íntegro** a cada uno de los tres grupos. Es la misma agregación de antes
+     * de HU-41, solo que ahora las zonas son más finas — el eje sigue siendo los 14 grupos.
+     *
+     * Si alguna vez se quisiera ponderar por jerarquía, este es el sitio, y sería un
+     * cambio de definición de KPI que exige historia propia.
+     */
     @Query(
         """
         SELECT es.weight_kg AS weightKg, es.reps, mz.muscle_group AS muscleGroup
@@ -307,6 +342,12 @@ interface ExerciseSetDao {
         sessionId: Long,
     ): Double?
 
+    /**
+     * Series por zona muscular de las sesiones dadas, base del volumen por grupo (`G2-T1`).
+     *
+     * Misma invariante que [getTonnageDataBySessionIds]: **todas las zonas cuentan, sin
+     * ponderación** (CA-41.04). Sin filtro por `emz.is_primary`, a propósito.
+     */
     @Query(
         """
         SELECT mz.name AS muscleZoneName, mz.muscle_group AS muscleGroup, COUNT(*) AS setCount

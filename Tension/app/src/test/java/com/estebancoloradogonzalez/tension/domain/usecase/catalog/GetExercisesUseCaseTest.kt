@@ -1,5 +1,6 @@
 package com.estebancoloradogonzalez.tension.domain.usecase.catalog
 
+import com.estebancoloradogonzalez.tension.domain.model.EquipmentType
 import com.estebancoloradogonzalez.tension.domain.model.Exercise
 import com.estebancoloradogonzalez.tension.domain.model.ProgressionDifficulty
 import com.estebancoloradogonzalez.tension.domain.repository.ExerciseRepository
@@ -52,8 +53,9 @@ class GetExercisesUseCaseTest {
     private fun exercise(id: Long, name: String) = Exercise(
         id = id,
         name = name,
-        equipmentTypes = listOf("Máquina"),
-        muscleZones = listOf("Pecho Medio"),
+        equipmentOptions = listOf(EquipmentType(id = 1, name = "Máquina")),
+        primaryMuscleZones = listOf("Pectoral Medio"),
+        secondaryMuscleZones = emptyList(),
         muscleGroup = null,
         isBodyweight = false,
         isIsometric = false,

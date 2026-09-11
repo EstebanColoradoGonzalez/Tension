@@ -52,4 +52,46 @@ class TonnageRuleTest {
         val result = TonnageRule.calculateForMuscleGroup(sets)
         assertEquals(0.0, result["Espalda"]!!, 0.001)
     }
+
+    // ============================================================
+    // CA-41.04 — todas las zonas cuentan, sin ponderación
+    // ============================================================
+
+    /**
+     * `Press de Banca Inclinado` tras HU-41: una zona principal (`Pectoral Superior`) y dos
+     * secundarias (`Deltoides Anterior`, `Tríceps Braquial`), en tres grupos distintos.
+     *
+     * La misma serie aporta su tonelaje **íntegro** a los tres. La jerarquía es informativa
+     * para el ejecutante, no un peso de cálculo: si alguna vez se ponderara, este es el
+     * caso que se pondría rojo.
+     */
+    @Test
+    fun `primary and secondary zones contribute the same tonnage`() {
+        val sets = listOf(
+            SetForTonnage(80.0, 10, "Pecho"),
+            SetForTonnage(80.0, 10, "Hombro"),
+            SetForTonnage(80.0, 10, "Tríceps"),
+        )
+
+        val result = TonnageRule.calculateForMuscleGroup(sets)
+
+        assertEquals(800.0, result["Pecho"]!!, 0.001)
+        assertEquals(800.0, result["Hombro"]!!, 0.001)
+        assertEquals(800.0, result["Tríceps"]!!, 0.001)
+    }
+
+    @Test
+    fun `the aggregation axis is the muscle group, not the zone`() {
+        // Las 33 zonas caben dentro de los 14 grupos, así que dos zonas finas del mismo
+        // grupo suman en él y no abren un eje nuevo: ningún KPI cambió de definición.
+        val sets = listOf(
+            SetForTonnage(30.0, 12, "Hombro"), // Deltoides Lateral
+            SetForTonnage(45.0, 10, "Hombro"), // Deltoides Anterior
+        )
+
+        val result = TonnageRule.calculateForMuscleGroup(sets)
+
+        assertEquals(1, result.size)
+        assertEquals(810.0, result["Hombro"]!!, 0.001)
+    }
 }

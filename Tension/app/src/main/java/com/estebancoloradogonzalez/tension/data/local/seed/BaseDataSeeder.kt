@@ -11,34 +11,25 @@ object BaseDataSeeder {
         seedEquipmentTypes(db)
     }
 
+    /** Los datos residen en [MuscleZoneCatalog]; aquí solo se mapean a `ContentValues`. */
     private fun seedMuscleZones(db: SupportSQLiteDatabase) {
-        insertMuscleZone(db, 1, "Pecho Medio", "Pecho")
-        insertMuscleZone(db, 2, "Pecho Superior", "Pecho")
-        insertMuscleZone(db, 3, "Pecho Inferior", "Pecho")
-        insertMuscleZone(db, 4, "Espalda Media", "Espalda")
-        insertMuscleZone(db, 5, "Dorsal Ancho", "Espalda")
-        insertMuscleZone(db, 6, "Abdomen", "Abdomen")
-        insertMuscleZone(db, 7, "Hombro", "Hombro")
-        insertMuscleZone(db, 8, "Tríceps", "Tríceps")
-        insertMuscleZone(db, 9, "Bíceps", "Bíceps")
-        insertMuscleZone(db, 10, "Cuádriceps", "Cuádriceps")
-        insertMuscleZone(db, 11, "Isquiotibiales", "Isquiotibiales")
-        insertMuscleZone(db, 12, "Aductores", "Aductores")
-        insertMuscleZone(db, 13, "Abductores", "Abductores")
-        insertMuscleZone(db, 14, "Gemelos", "Gemelos")
-        insertMuscleZone(db, 15, "Glúteos", "Glúteos")
-        insertMuscleZone(db, 16, "Espalda Alta", "Espalda")
-        insertMuscleZone(db, 17, "Trapecio", "Espalda")
-        insertMuscleZone(db, 18, "Espalda Baja", "Espalda")
-        insertMuscleZone(db, 19, "Antebrazo", "Antebrazo")
-        insertMuscleZone(db, 20, "Cuello", "Cuello")
+        MuscleZoneCatalog.ALL.forEach { zone ->
+            insertMuscleZone(db, zone.id, zone.name, zone.muscleGroup, zone.sortOrder)
+        }
     }
 
-    private fun insertMuscleZone(db: SupportSQLiteDatabase, id: Long, name: String, muscleGroup: String) {
+    private fun insertMuscleZone(
+        db: SupportSQLiteDatabase,
+        id: Long,
+        name: String,
+        muscleGroup: String,
+        sortOrder: Int,
+    ) {
         val values = ContentValues().apply {
             put("id", id)
             put("name", name)
             put("muscle_group", muscleGroup)
+            put("sort_order", sortOrder)
         }
         db.insert("muscle_zone", SQLiteDatabase.CONFLICT_REPLACE, values)
     }

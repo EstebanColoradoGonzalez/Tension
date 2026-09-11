@@ -12,7 +12,13 @@ data class PlanAssignmentWithExerciseDetails(
     val exerciseName: String,
     /** Implementos admitidos, separados por [AGGREGATE_SEPARATOR] y en orden de catálogo. */
     val equipmentTypes: String?,
-    val muscleZones: String?,
+    /** Zonas que ejecutan el movimiento, separadas por [AGGREGATE_SEPARATOR]. Nunca vacía. */
+    val primaryMuscleZones: String?,
+    /** Zonas que asisten, separadas por [AGGREGATE_SEPARATOR]. Puede venir nula. */
+    val secondaryMuscleZones: String?,
+    /** Implemento que el plan sugiere para este puesto. Nunca nulo (CA-41.07). */
+    val suggestedEquipmentTypeId: Long,
+    val suggestedEquipmentName: String,
     val sets: Int,
     val reps: String,
     val isBodyweight: Int,
@@ -27,7 +33,14 @@ data class SessionPreviewExerciseDto(
     val exerciseName: String,
     /** Implementos admitidos, separados por [AGGREGATE_SEPARATOR] y en orden de catálogo. */
     val equipmentTypes: String?,
+    /**
+     * Todas las zonas del ejercicio, principales primero. La vista previa de la sesión no
+     * distingue jerarquía: enseña de qué va el entrenamiento, no cómo está catalogado.
+     */
     val muscleZones: String?,
+    /** Implemento que el plan sugiere para este puesto. Nunca nulo (CA-41.07). */
+    val suggestedEquipmentTypeId: Long,
+    val suggestedEquipmentName: String,
     val sets: Int,
     val reps: String,
     val isBodyweight: Int,
@@ -58,9 +71,18 @@ interface PlanAssignmentDao {
             (SELECT GROUP_CONCAT(name, '|') FROM (
                 SELECT mz.name AS name FROM exercise_muscle_zone emz
                 INNER JOIN muscle_zone mz ON emz.muscle_zone_id = mz.id
-                WHERE emz.exercise_id = e.id
-                ORDER BY mz.id
-            )) AS muscleZones,
+                WHERE emz.exercise_id = e.id AND emz.is_primary = 1
+                ORDER BY mz.sort_order
+            )) AS primaryMuscleZones,
+            (SELECT GROUP_CONCAT(name, '|') FROM (
+                SELECT mz.name AS name FROM exercise_muscle_zone emz
+                INNER JOIN muscle_zone mz ON emz.muscle_zone_id = mz.id
+                WHERE emz.exercise_id = e.id AND emz.is_primary = 0
+                ORDER BY mz.sort_order
+            )) AS secondaryMuscleZones,
+            pa.suggested_equipment_type_id AS suggestedEquipmentTypeId,
+            (SELECT et2.name FROM equipment_type et2
+             WHERE et2.id = pa.suggested_equipment_type_id) AS suggestedEquipmentName,
             pa.sets,
             pa.reps,
             e.is_bodyweight AS isBodyweight,
@@ -92,8 +114,11 @@ interface PlanAssignmentDao {
                 SELECT mz.name AS name FROM exercise_muscle_zone emz
                 INNER JOIN muscle_zone mz ON emz.muscle_zone_id = mz.id
                 WHERE emz.exercise_id = e.id
-                ORDER BY mz.id
+                ORDER BY emz.is_primary DESC, mz.sort_order
             )) AS muscleZones,
+            pa.suggested_equipment_type_id AS suggestedEquipmentTypeId,
+            (SELECT et2.name FROM equipment_type et2
+             WHERE et2.id = pa.suggested_equipment_type_id) AS suggestedEquipmentName,
             pa.sets,
             pa.reps,
             e.is_bodyweight AS isBodyweight,
@@ -103,7 +128,9 @@ interface PlanAssignmentDao {
              WHERE ep.exercise_id = e.id) AS prescribedLoadKg,
             (SELECT mz2.muscle_group FROM exercise_muscle_zone emz2
              INNER JOIN muscle_zone mz2 ON emz2.muscle_zone_id = mz2.id
-             WHERE emz2.exercise_id = e.id LIMIT 1) AS muscleGroup,
+             WHERE emz2.exercise_id = e.id
+             ORDER BY emz2.is_primary DESC, mz2.sort_order ASC
+             LIMIT 1) AS muscleGroup,
             pa.slot
         FROM plan_assignment pa
         INNER JOIN exercise e ON pa.exercise_id = e.id
@@ -146,9 +173,18 @@ interface PlanAssignmentDao {
             (SELECT GROUP_CONCAT(name, '|') FROM (
                 SELECT mz.name AS name FROM exercise_muscle_zone emz
                 INNER JOIN muscle_zone mz ON emz.muscle_zone_id = mz.id
-                WHERE emz.exercise_id = e.id
-                ORDER BY mz.id
-            )) AS muscleZones,
+                WHERE emz.exercise_id = e.id AND emz.is_primary = 1
+                ORDER BY mz.sort_order
+            )) AS primaryMuscleZones,
+            (SELECT GROUP_CONCAT(name, '|') FROM (
+                SELECT mz.name AS name FROM exercise_muscle_zone emz
+                INNER JOIN muscle_zone mz ON emz.muscle_zone_id = mz.id
+                WHERE emz.exercise_id = e.id AND emz.is_primary = 0
+                ORDER BY mz.sort_order
+            )) AS secondaryMuscleZones,
+            pa.suggested_equipment_type_id AS suggestedEquipmentTypeId,
+            (SELECT et2.name FROM equipment_type et2
+             WHERE et2.id = pa.suggested_equipment_type_id) AS suggestedEquipmentName,
             pa.sets,
             pa.reps,
             e.is_bodyweight AS isBodyweight,
@@ -225,7 +261,7 @@ interface PlanAssignmentDao {
         INNER JOIN muscle_zone mz ON emz.muscle_zone_id = mz.id
         INNER JOIN routine_version rv ON pa.routine_version_id = rv.id
         WHERE rv.routine_id = :routineId
-        ORDER BY mz.name ASC
+        ORDER BY mz.sort_order ASC
         """,
     )
     suspend fun getMuscleZoneNamesByRoutineId(routineId: Long): List<String>
@@ -247,6 +283,69 @@ interface PlanAssignmentDao {
         """,
     )
     suspend fun updateSetsAndRepsBySlot(routineVersionId: Long, slot: Int, sets: Int, reps: String)
+
+    @Query(
+        """
+        UPDATE plan_assignment
+        SET suggested_equipment_type_id = :equipmentTypeId
+        WHERE routine_version_id = :routineVersionId AND exercise_id = :exerciseId
+        """,
+    )
+    suspend fun updateSuggestedEquipment(
+        routineVersionId: Long,
+        exerciseId: Long,
+        equipmentTypeId: Long,
+    )
+
+    @Query(
+        """
+        SELECT pa.suggested_equipment_type_id
+        FROM plan_assignment pa
+        WHERE pa.routine_version_id = :routineVersionId AND pa.exercise_id = :exerciseId
+        """,
+    )
+    suspend fun getSuggestedEquipment(routineVersionId: Long, exerciseId: Long): Long?
+
+    /**
+     * Sugerencia del plan para el ejercicio en la **versión vigente** de la rutina de la
+     * sesión. Es el segundo nivel de precedencia del selector de serie (CA-41.05): manda
+     * sobre la primera opción admitida, y cede ante el implemento ya usado en la sesión.
+     *
+     * Devuelve nulo cuando el ejercicio no tiene asignación —el añadido dentro de la
+     * sesión— y entonces la precedencia cae a CA-39.04.
+     */
+    @Query(
+        """
+        SELECT pa.suggested_equipment_type_id
+        FROM plan_assignment pa
+        INNER JOIN session s ON s.routine_version_id = pa.routine_version_id
+        WHERE s.id = :sessionId AND pa.exercise_id = :exerciseId
+        """,
+    )
+    suspend fun getSuggestedEquipmentForSession(sessionId: Long, exerciseId: Long): Long?
+
+    /**
+     * Rutinas cuyo plan sugiere ese implemento para ese ejercicio.
+     *
+     * Sostiene la dirección inversa de CA-41.08: retirar de un ejercicio una opción que
+     * alguna asignación tiene como sugerencia queda impedido mientras esa asignación
+     * exista. Devuelve los **nombres** y no un conteo para que el rechazo pueda nombrar la
+     * rutina — un «no se puede» sin decir por qué obliga al ejecutante a adivinar.
+     */
+    @Query(
+        """
+        SELECT DISTINCT r.name
+        FROM plan_assignment pa
+        INNER JOIN routine_version rv ON pa.routine_version_id = rv.id
+        INNER JOIN routine r ON rv.routine_id = r.id
+        WHERE pa.exercise_id = :exerciseId AND pa.suggested_equipment_type_id = :equipmentTypeId
+        ORDER BY r.sort_order ASC
+        """,
+    )
+    suspend fun getRoutineNamesSuggestingEquipment(
+        exerciseId: Long,
+        equipmentTypeId: Long,
+    ): List<String>
 
     @Query("SELECT slot FROM plan_assignment WHERE routine_version_id = :routineVersionId AND exercise_id = :exerciseId")
     suspend fun getSlotForExercise(routineVersionId: Long, exerciseId: Long): Int?

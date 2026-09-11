@@ -77,7 +77,7 @@ import com.estebancoloradogonzalez.tension.data.local.entity.WeightRecordEntity
         DeloadFrozenVersionEntity::class,
         TreeStateEntity::class,
     ],
-    version = 21,
+    version = 22,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)

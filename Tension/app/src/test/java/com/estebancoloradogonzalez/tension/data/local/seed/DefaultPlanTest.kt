@@ -100,11 +100,11 @@ class DefaultPlanTest {
     fun `wednesday composition matches the story`() {
         assertEquals(
             listOf(
-                Triple(11L, 4, 1), // Extensión de Cuádriceps
-                Triple(24L, 3, 2), // Sentadilla Hack
-                Triple(17L, 3, 2), // Prensa Inclinada
-                Triple(22L, 3, 3), // Sentadilla Búlgara
-                Triple(1L, 3, 4), // Aductores
+                Triple(1L, 3, 1), // Aductores — HU-41 lo trae del cuarto puesto
+                Triple(11L, 4, 2), // Extensión de Cuádriceps
+                Triple(24L, 3, 3), // Sentadilla Hack
+                Triple(17L, 3, 3), // Prensa Inclinada
+                Triple(22L, 3, 4), // Sentadilla Búlgara
                 Triple(9L, 3, 5), // Elevación de Pantorrilla
             ),
             routine(3),
@@ -133,7 +133,7 @@ class DefaultPlanTest {
                 Triple(14L, 3, 2), // Face Pull
                 Triple(26L, 3, 2), // Vuelos Posteriores
                 Triple(32L, 3, 3), // Remo Horizontal
-                Triple(37L, 3, 4), // Remo Unilateral en Polea Alta
+                Triple(38L, 3, 4), // Trapecios con Apoyo en Banco Inclinado — sustituye al 37
                 Triple(8L, 3, 5), // Curl de Predicador
                 Triple(3L, 3, 6), // Crunch Abdominal
             ),
@@ -145,10 +145,10 @@ class DefaultPlanTest {
     fun `saturday composition matches the story`() {
         assertEquals(
             listOf(
-                Triple(6L, 4, 1), // Curl de Isquiotibiales Sentado
-                Triple(16L, 3, 2), // Peso Muerto Rumano
-                Triple(15L, 3, 3), // Hip Thrust
-                Triple(1L, 3, 4), // Aductores
+                Triple(1L, 3, 1), // Aductores — HU-41 lo trae del cuarto puesto
+                Triple(6L, 4, 2), // Curl de Isquiotibiales Sentado
+                Triple(16L, 3, 3), // Peso Muerto Rumano
+                Triple(15L, 3, 4), // Hip Thrust
                 Triple(9L, 3, 5), // Elevación de Pantorrilla
             ),
             routine(6),
@@ -160,7 +160,167 @@ class DefaultPlanTest {
         val assigned = DefaultPlan.ASSIGNMENTS.map { it.exerciseId }.toSet()
         assertTrue("Remo al Mentón sigue en el plan", 27L !in assigned)
         assertTrue("Zancadas sigue en el plan", 33L !in assigned)
+        // HU-41 lo saca del cuarto puesto del viernes.
+        assertTrue("Remo Unilateral Polea Alta sigue en el plan", 37L !in assigned)
         assertTrue("Extensión de Cuádriceps sigue asignada al sábado", routine(6).none { it.first == 11L })
+    }
+
+    /** Salir del plan no es salir del catálogo: siguen asignables a mano (CA-41.06). */
+    @Test
+    fun `the eight exercises outside the plan remain in the dictionary`() {
+        val assigned = DefaultPlan.ASSIGNMENTS.map { it.exerciseId }.toSet()
+        val outside = ExerciseCatalog.ALL.map { it.id }.filter { it !in assigned }
+        assertEquals(listOf(2L, 5L, 7L, 20L, 23L, 27L, 33L, 37L), outside)
+        outside.forEach { id ->
+            assertNotNull("El ejercicio $id salió del catálogo", ExerciseCatalog.byId(id))
+        }
+    }
+
+    // ============================================================
+    // CA-41.07 — Las 35 asignaciones con su equipamiento sugerido
+    // ============================================================
+
+    /**
+     * La tabla de CA-41.07 transcrita desde el texto de la historia, por **nombre** de
+     * ejercicio y de implemento.
+     *
+     * Por nombre y no por id por la misma razón que en [ExerciseCatalogTest]: un id
+     * equivocado en el seed y el mismo id equivocado aquí se cancelarían.
+     */
+    @Test
+    fun `the 35 assignments carry exactly the suggested equipment of the acceptance table`() {
+        val expected = listOf(
+            // Lunes — Push Deltoides Lateral y Medio
+            Triple(1L, "Elevación Lateral", "Mancuerna"),
+            Triple(1L, "Press de Banca Inclinado", "Barra"),
+            Triple(1L, "Press Militar", "Barra"),
+            Triple(1L, "Press de Banca Plano", "Barra"),
+            Triple(1L, "Aperturas", "Máquina"),
+            // Martes — Pull Dorsal Ancho
+            Triple(2L, "Jalón al Pecho", "Polea"),
+            Triple(2L, "Dominadas", "Barra Fija"),
+            Triple(2L, "Curl Martillo", "Mancuerna"),
+            Triple(2L, "Remo Unilateral Polea Baja", "Polea"),
+            Triple(2L, "Curl Bayesian en Banco Inclinado", "Mancuerna"),
+            Triple(2L, "Pull-Over", "Polea"),
+            Triple(2L, "Crunch Abdominal", "Polea"),
+            // Miércoles — Lower Cuádriceps
+            Triple(3L, "Aductores", "Máquina"),
+            Triple(3L, "Extensión de Cuádriceps", "Máquina"),
+            Triple(3L, "Sentadilla Hack", "Máquina"),
+            Triple(3L, "Prensa Inclinada", "Máquina"),
+            Triple(3L, "Sentadilla Búlgara", "Mancuerna"),
+            Triple(3L, "Elevación de Pantorrilla de Pie", "Máquina"),
+            // Jueves — Push Tríceps
+            Triple(4L, "Extensión de Tríceps sobre Cabeza", "Mancuerna"),
+            Triple(4L, "Press de Banca Plano", "Barra"),
+            Triple(4L, "Aperturas", "Máquina"),
+            Triple(4L, "Extensión de Tríceps (Pushdown)", "Polea"),
+            Triple(4L, "Rompecráneos", "Mancuerna"),
+            // Viernes — Pull Trapecios y Espalda Media
+            Triple(5L, "Remo T Inclinado", "Máquina"),
+            Triple(5L, "Face Pull", "Polea"),
+            Triple(5L, "Vuelos Posteriores (Pájaros)", "Mancuerna"),
+            Triple(5L, "Remo Horizontal", "Polea"),
+            Triple(5L, "Trapecios con Apoyo en Banco Inclinado", "Mancuerna"),
+            Triple(5L, "Curl de Predicador", "Mancuerna"),
+            Triple(5L, "Crunch Abdominal", "Polea"),
+            // Sábado — Lower Isquiotibiales y Glúteo
+            Triple(6L, "Aductores", "Máquina"),
+            Triple(6L, "Curl de Isquiotibiales Sentado", "Máquina"),
+            Triple(6L, "Peso Muerto Rumano", "Mancuerna"),
+            Triple(6L, "Hip Thrust", "Mancuerna"),
+            Triple(6L, "Elevación de Pantorrilla de Pie", "Máquina"),
+        )
+
+        assertEquals(35, expected.size)
+        assertEquals(
+            expected,
+            DefaultPlan.ASSIGNMENTS
+                .sortedWith(compareBy({ it.routineVersionId }, { it.sortOrder }))
+                .map {
+                    Triple(
+                        it.routineVersionId,
+                        ExerciseCatalog.byId(it.exerciseId)!!.name,
+                        EquipmentCatalog.byId(it.suggestedEquipmentTypeId)!!.name,
+                    )
+                },
+        )
+    }
+
+    /**
+     * La verificación cruzada de CA-41.08, y la que más aporta de este archivo: cruza la
+     * tabla de CA-41.07 con la de CA-39.06, escritas en historias distintas.
+     *
+     * Sin ella, una sugerencia no admitida solo aparecería como un rechazo de
+     * `SetSuggestedEquipmentUseCase` en tiempo de ejecución y sobre el dispositivo.
+     */
+    @Test
+    fun `every suggestion is an option the exercise admits`() {
+        DefaultPlan.ASSIGNMENTS.forEach { assignment ->
+            val exercise = ExerciseCatalog.byId(assignment.exerciseId)!!
+            assertTrue(
+                "${exercise.name} sugiere un implemento que no admite: " +
+                    EquipmentCatalog.byId(assignment.suggestedEquipmentTypeId)?.name,
+                assignment.suggestedEquipmentTypeId in exercise.equipmentTypeIds,
+            )
+        }
+    }
+
+    @Test
+    fun `no assignment is left without a suggestion`() {
+        DefaultPlan.ASSIGNMENTS.forEach { assignment ->
+            assertNotNull(
+                "Asignación sin implemento sugerido: ${assignment.exerciseId}",
+                EquipmentCatalog.byId(assignment.suggestedEquipmentTypeId),
+            )
+        }
+    }
+
+    /**
+     * La sugerencia **no** es la primera opción que el ejercicio lista, y conviene dejarlo
+     * escrito porque invita a creerlo.
+     *
+     * La regla del «valor atómico de la primera opción» con la que se resolvieron las 35
+     * hablaba de las tablas que el requerimiento aportó —donde `Aperturas` decía *Máquina
+     * Contractor* y los agarres de polea decían *cuerda* o *barra en V*—, no del orden de
+     * [ExerciseCatalog]. Son cosas distintas y 11 de las 30 asignaciones las separan:
+     * `Peso Muerto Rumano` lista `Barra` primero y el plan sugiere `Mancuerna`.
+     *
+     * La autoridad es la tabla de CA-41.07, verificada arriba renglón a renglón. Lo único
+     * que la sugerencia sí debe cumplir siempre es estar entre las opciones admitidas.
+     */
+    @Test
+    fun `a suggestion need not be the first option the exercise lists`() {
+        val deviating = DefaultPlan.ASSIGNMENTS.count { assignment ->
+            val exercise = ExerciseCatalog.byId(assignment.exerciseId)!!
+            assignment.suggestedEquipmentTypeId != exercise.equipmentTypeIds.first()
+        }
+        assertTrue("La regla del orden del catálogo no gobierna la sugerencia", deviating > 0)
+    }
+
+    @Test
+    fun `the dual slot of tuesday does not share its suggestion`() {
+        // Jalón al Pecho sugiere Polea y Dominadas Barra Fija: comparten puesto, series y
+        // repeticiones, pero no implemento (CA-41.05).
+        val slot = slotsOf(2L).getValue(1)
+        assertEquals(2, slot.size)
+        assertEquals(
+            listOf(EquipmentCatalog.POLEA, EquipmentCatalog.BARRA_FIJA),
+            slot.sortedBy { it.sortOrder }.map { it.suggestedEquipmentTypeId },
+        )
+    }
+
+    @Test
+    fun `dual slots share sets and reps but not necessarily equipment`() {
+        val dualSlots = DefaultPlan.ASSIGNMENTS
+            .groupBy { it.routineVersionId to it.slot }
+            .filterValues { it.size > 1 }
+        assertEquals(4, dualSlots.size)
+        dualSlots.forEach { (key, assignments) ->
+            assertEquals("Series distintas en el slot dual $key", 1, assignments.map { it.sets }.distinct().size)
+            assertEquals("Reps distintas en el slot dual $key", 1, assignments.map { it.reps }.distinct().size)
+        }
     }
 
     // CA-29.04 — Slots duales
@@ -203,7 +363,7 @@ class DefaultPlanTest {
             .filterValues { it.size > 1 }
         assertEquals(4, dualSlots.size)
         assertEquals(
-            listOf(1L to 2, 2L to 1, 3L to 2, 5L to 2),
+            listOf(1L to 2, 2L to 1, 3L to 3, 5L to 2),
             dualSlots.keys.sortedWith(compareBy({ it.first }, { it.second })),
         )
     }
@@ -234,7 +394,7 @@ class DefaultPlanTest {
             .mapValues { (_, pair) -> pair.minByOrNull { it.sortOrder }!!.exerciseId }
         assertEquals(18L, primaries[1L to 2]) // Press de Banca Inclinado sobre Press Militar
         assertEquals(25L, primaries[2L to 1]) // Jalón al Pecho sobre Dominadas
-        assertEquals(24L, primaries[3L to 2]) // Sentadilla Hack sobre Prensa Inclinada
+        assertEquals(24L, primaries[3L to 3]) // Sentadilla Hack sobre Prensa Inclinada
         assertEquals(14L, primaries[5L to 2]) // Face Pull sobre Vuelos Posteriores
     }
 

@@ -13,4 +13,12 @@ data class SeedAssignment(
     val reps: String,
     val sortOrder: Int,
     val slot: Int,
+    /**
+     * Implemento que el plan sugiere para este puesto. Es el **valor atómico de la primera
+     * opción** que el ejercicio lista, y siempre una de las que admite (CA-41.07).
+     *
+     * Cada ejercicio de un slot dual lleva la suya: comparten puesto, series y
+     * repeticiones, pero no implemento.
+     */
+    val suggestedEquipmentTypeId: Long,
 )

@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -58,6 +60,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.material3.RadioButton
+import androidx.compose.ui.semantics.Role
+import com.estebancoloradogonzalez.tension.domain.model.EquipmentType
 import com.estebancoloradogonzalez.tension.R
 import com.estebancoloradogonzalez.tension.ui.components.EntityNameText
 
@@ -180,6 +186,7 @@ fun PlanVersionDetailScreen(
                             onExerciseClick = onNavigateToExerciseDetail,
                             onDeleteClick = viewModel::onDeleteExercise,
                             onEditClick = viewModel::onEditExercise,
+                            onEditAlternativeClick = viewModel::onEditAlternative,
                             onAddAlternativeClick = viewModel::onAddAlternativeClick,
                         )
                     }
@@ -190,11 +197,7 @@ fun PlanVersionDetailScreen(
 
     // Delete confirmation dialog
     exerciseToDelete?.let { exercise ->
-        val displayName = if (exercise.alternativeNames.isEmpty()) {
-            exercise.name
-        } else {
-            (listOf(exercise.name) + exercise.alternativeNames).joinToString(" ó ")
-        }
+        val displayName = slotDisplayName(exercise)
         AlertDialog(
             onDismissRequest = viewModel::onDismissDeleteDialog,
             title = { Text(stringResource(R.string.unassign_dialog_title)) },
@@ -232,6 +235,7 @@ fun PlanVersionDetailScreen(
             onExerciseSelected = viewModel::onExerciseSelected,
             onSetsChanged = viewModel::onSetsChanged,
             onRepsSelected = viewModel::onRepsSelected,
+            onSuggestedEquipmentSelected = viewModel::onSuggestedEquipmentSelected,
             onConfirmAssign = viewModel::onConfirmAssign,
         )
     }
@@ -242,6 +246,7 @@ fun PlanVersionDetailScreen(
             state = editState,
             onSetsChanged = viewModel::onEditSetsChanged,
             onRepsSelected = viewModel::onEditRepsSelected,
+            onSuggestedEquipmentSelected = viewModel::onEditSuggestedEquipmentSelected,
             onConfirm = viewModel::onConfirmEdit,
             onDismiss = viewModel::onDismissEdit,
         )
@@ -253,6 +258,7 @@ fun PlanVersionDetailScreen(
             state = addAlternativeState,
             onDismiss = viewModel::onDismissAddAlternative,
             onExerciseSelected = viewModel::onAlternativeExerciseSelected,
+            onSuggestedEquipmentSelected = viewModel::onAlternativeSuggestedEquipmentSelected,
             onConfirm = viewModel::onConfirmAddAlternative,
         )
     }
@@ -264,15 +270,12 @@ private fun PlanExerciseList(
     onExerciseClick: (Long) -> Unit,
     onDeleteClick: (PlanExerciseItem) -> Unit,
     onEditClick: (PlanExerciseItem) -> Unit,
+    onEditAlternativeClick: (PlanExerciseItem, PlanAlternativeItem) -> Unit,
     onAddAlternativeClick: (PlanExerciseItem) -> Unit,
 ) {
     LazyColumn {
         itemsIndexed(exercises) { index, exercise ->
-            val headline = if (exercise.alternativeNames.isEmpty()) {
-                exercise.name
-            } else {
-                (listOf(exercise.name) + exercise.alternativeNames).joinToString(" ó ")
-            }
+            val headline = slotDisplayName(exercise)
             ListItem(
                 headlineContent = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -332,6 +335,22 @@ private fun PlanExerciseList(
                             ),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
+                        // Un renglón por sugerencia. En un puesto dual son varios, porque
+                        // cada ejercicio lleva la suya (CA-41.05).
+                        SuggestedEquipmentLine(
+                            exerciseName = exercise.name,
+                            equipmentName = exercise.suggestedEquipmentName,
+                            showExerciseName = exercise.alternatives.isNotEmpty(),
+                            onClick = { onEditClick(exercise) },
+                        )
+                        exercise.alternatives.forEach { alternative ->
+                            SuggestedEquipmentLine(
+                                exerciseName = alternative.name,
+                                equipmentName = alternative.suggestedEquipmentName,
+                                showExerciseName = true,
+                                onClick = { onEditAlternativeClick(exercise, alternative) },
+                            )
+                        }
                     }
                 },
                 trailingContent = {
@@ -376,6 +395,7 @@ private fun AssignExerciseSheet(
     onExerciseSelected: (Long) -> Unit,
     onSetsChanged: (String) -> Unit,
     onRepsSelected: (String) -> Unit,
+    onSuggestedEquipmentSelected: (Long) -> Unit,
     onConfirmAssign: () -> Unit,
 ) {
     val bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -492,11 +512,20 @@ private fun AssignExerciseSheet(
                         )
                     }
 
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    SuggestedEquipmentSelector(
+                        options = sheetState.equipmentOptionsForSelection,
+                        selectedId = sheetState.selectedSuggestedEquipmentId,
+                        onSelected = onSuggestedEquipmentSelected,
+                    )
+
                     Spacer(modifier = Modifier.height(24.dp))
 
                     FilledTonalButton(
                         onClick = onConfirmAssign,
-                        enabled = !sheetState.isAssigning &&
+                        // Sin sugerencia no se persiste la asignación (CA-41.08).
+                        enabled = sheetState.canAssign &&
                             (sheetState.sets.toIntOrNull() ?: 0) > 0,
                         modifier = Modifier.fillMaxWidth(),
                     ) {
@@ -513,6 +542,7 @@ private fun EditPlanAssignmentDialog(
     state: EditPlanAssignmentState,
     onSetsChanged: (Int) -> Unit,
     onRepsSelected: (String) -> Unit,
+    onSuggestedEquipmentSelected: (Long) -> Unit,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -593,6 +623,14 @@ private fun EditPlanAssignmentDialog(
                         modifier = Modifier.weight(1f),
                     )
                 }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                SuggestedEquipmentSelector(
+                    options = state.equipmentOptions,
+                    selectedId = state.suggestedEquipmentTypeId,
+                    onSelected = onSuggestedEquipmentSelected,
+                )
             }
         },
         confirmButton = {
@@ -651,6 +689,7 @@ private fun AddAlternativeSheet(
     state: AddAlternativeSheetState,
     onDismiss: () -> Unit,
     onExerciseSelected: (Long) -> Unit,
+    onSuggestedEquipmentSelected: (Long) -> Unit,
     onConfirm: () -> Unit,
 ) {
     val bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -698,9 +737,16 @@ private fun AddAlternativeSheet(
                     }
                 }
             }
+            SuggestedEquipmentSelector(
+                options = state.equipmentOptionsForSelection,
+                selectedId = state.selectedSuggestedEquipmentId,
+                onSelected = onSuggestedEquipmentSelected,
+                modifier = Modifier.padding(vertical = 16.dp),
+            )
+
             FilledTonalButton(
                 onClick = onConfirm,
-                enabled = state.selectedExerciseId != null && !state.isAssigning,
+                enabled = state.canAssign,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 16.dp),
@@ -708,5 +754,101 @@ private fun AddAlternativeSheet(
                 Text(stringResource(R.string.add_alternative_button))
             }
         }
+    }
+}
+
+/**
+ * Nombre del puesto: el del ejercicio, o los del puesto dual unidos por «ó».
+ *
+ * El puesto dual se presenta como una entrada y no como dos porque es **un** puesto de la
+ * sesión: el ejecutante hace uno de los dos, no los dos.
+ */
+private fun slotDisplayName(exercise: PlanExerciseItem): String =
+    if (exercise.alternatives.isEmpty()) {
+        exercise.name
+    } else {
+        (listOf(exercise.name) + exercise.alternatives.map { it.name }).joinToString(" ó ")
+    }
+
+/**
+ * Renglón del implemento sugerido para un ejercicio del puesto.
+ *
+ * Cuando el puesto es dual el renglón antepone el nombre del ejercicio, porque si no dos
+ * implementos distintos quedarían sin dueño visible.
+ */
+@Composable
+private fun SuggestedEquipmentLine(
+    exerciseName: String,
+    equipmentName: String,
+    showExerciseName: Boolean,
+    onClick: () -> Unit,
+) {
+    Text(
+        text = if (showExerciseName) {
+            "$exerciseName · $equipmentName"
+        } else {
+            equipmentName
+        },
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.primary,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        modifier = Modifier
+            .heightIn(min = 32.dp)
+            .clickable(onClick = onClick)
+            .wrapContentHeight(Alignment.CenterVertically),
+    )
+}
+
+/**
+ * Selector del implemento sugerido, acotado a las opciones del ejercicio (CA-41.08).
+ *
+ * Radio y no desplegable: las listas son de tres o cuatro implementos y el punto de la CA
+ * es que se vea **qué se puede elegir y qué no**. Un desplegable esconde justamente eso.
+ *
+ * Con [options] vacío no se pinta nada: es el estado previo a elegir ejercicio, no un
+ * ejercicio sin implementos — eso último no existe desde HU-39.
+ */
+@Composable
+private fun SuggestedEquipmentSelector(
+    options: List<EquipmentType>,
+    selectedId: Long?,
+    onSelected: (Long) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    if (options.isEmpty()) return
+    Column(modifier = modifier.fillMaxWidth()) {
+        Text(
+            text = stringResource(R.string.plan_suggested_equipment_label),
+            style = MaterialTheme.typography.labelLarge,
+            modifier = Modifier.padding(bottom = 8.dp),
+        )
+        options.forEach { option ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 48.dp)
+                    .selectable(
+                        selected = option.id == selectedId,
+                        onClick = { onSelected(option.id) },
+                        role = Role.RadioButton,
+                    ),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                RadioButton(
+                    selected = option.id == selectedId,
+                    // La fila entera es el área de toque; el radio no la duplica.
+                    onClick = null,
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(text = option.name, style = MaterialTheme.typography.bodyMedium)
+            }
+        }
+        Text(
+            text = stringResource(R.string.plan_suggested_equipment_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 4.dp),
+        )
     }
 }

@@ -173,7 +173,6 @@
     <!-- Exercise Detail D2 -->
     <string name="exercise_field_name">Nombre</string>
     <string name="exercise_field_equipment">Equipamiento admitido</string>
-    <string name="exercise_field_muscle_zone">Zona muscular</string>
     <string name="exercise_detail_not_found">Ejercicio no encontrado</string>
     <string name="exercise_equipment_selected_count_format">%1$d de %2$d seleccionados</string>
     <string name="exercise_equipment_error_empty">Elige al menos un equipamiento</string>
@@ -181,6 +180,32 @@
     <string name="exercise_equipment_error_has_sets_format">No se puede quitar «%1$s»: hay series
         registradas con ese equipamiento.</string>
     <string name="exercise_equipment_has_sets_description">Tiene series registradas</string>
+    <string name="exercise_equipment_error_suggested_by_plan_format">No se puede quitar «%1$s»: el plan
+        lo sugiere en %2$s.</string>
+
+    <!-- Zonas musculares con jerarquía (HU-41) -->
+    <string name="exercise_field_primary_muscle_zones">Zonas principales</string>
+    <string name="exercise_field_secondary_muscle_zones">Zonas secundarias</string>
+    <string name="exercise_field_optional_suffix">(opcional)</string>
+    <string name="muscle_zone_add_primary">+ Añadir zona principal</string>
+    <string name="muscle_zone_add_secondary">+ Añadir zona secundaria</string>
+    <string name="muscle_zone_picker_title_primary">Añadir zona principal</string>
+    <string name="muscle_zone_picker_title_secondary">Añadir zona secundaria</string>
+    <string name="muscle_zone_picker_search">Buscar zona</string>
+    <string name="muscle_zone_picker_hint">Solo los músculos que este ejercicio trabaja</string>
+    <string name="muscle_zone_picker_already_other_field">Ya elegida en el otro campo</string>
+    <string name="muscle_zone_remove_description">Quitar zona</string>
+    <string name="muscle_zone_error_no_primary">Elige al menos una zona principal</string>
+    <string name="muscle_zone_error_in_both_lists">Una zona no puede ser principal y secundaria a la vez</string>
+    <string name="muscle_zone_empty_secondary">Ninguna</string>
+
+    <!-- Equipamiento sugerido del plan (HU-41) -->
+    <string name="plan_suggested_equipment_label">Equipamiento sugerido</string>
+    <string name="plan_suggested_equipment_hint">Solo los implementos que este ejercicio admite</string>
+    <string name="plan_suggested_equipment_not_admitted_format">«%1$s» no está entre los implementos
+        que %2$s admite.</string>
+    <string name="register_set_equipment_from_plan">sugerido por el plan</string>
+    <string name="register_set_equipment_last_used">último implemento usado</string>
     <string name="exercise_history_link">Ver historial de este ejercicio \u2192</string>
     <string name="exercise_media_description">Demostración del ejercicio</string>
     <string name="change_image_description">Cambiar imagen</string>

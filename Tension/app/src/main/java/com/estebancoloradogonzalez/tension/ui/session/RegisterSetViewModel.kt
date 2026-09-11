@@ -115,6 +115,7 @@ class RegisterSetViewModel @Inject constructor(
                     isBodyweight = info.isBodyweight,
                     equipmentOptions = info.equipmentOptions,
                     selectedEquipmentTypeId = info.preselectedEquipmentTypeId,
+                    preselectionOrigin = info.preselectionOrigin,
                     showChronometer = showChronometer,
                     minSeconds = minSeconds,
                     maxSeconds = maxSeconds,
@@ -184,7 +185,12 @@ class RegisterSetViewModel @Inject constructor(
         if (_uiState.value.selectedEquipmentTypeId == equipmentTypeId) return
 
         _uiState.update { state ->
-            state.copy(selectedEquipmentTypeId = equipmentTypeId, equipmentError = null)
+            // El rótulo desaparece al elegir a mano: ya no es una preselección.
+            state.copy(
+                selectedEquipmentTypeId = equipmentTypeId,
+                preselectionOrigin = null,
+                equipmentError = null,
+            )
         }
 
         prefillJob?.cancel()

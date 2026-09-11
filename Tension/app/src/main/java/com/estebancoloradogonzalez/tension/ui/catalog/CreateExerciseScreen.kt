@@ -9,8 +9,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -25,8 +23,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -48,11 +44,12 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.estebancoloradogonzalez.tension.R
 import com.estebancoloradogonzalez.tension.ui.catalog.components.EquipmentMultiSelector
+import com.estebancoloradogonzalez.tension.ui.catalog.components.MuscleZoneHierarchySelector
 import com.estebancoloradogonzalez.tension.ui.catalog.components.ProgressionDifficultySelector
 import com.estebancoloradogonzalez.tension.ui.components.ExerciseImagePlaceholder
 import com.estebancoloradogonzalez.tension.ui.components.TensionTopAppBar
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateExerciseScreen(
     onNavigateBack: () -> Unit,
@@ -172,35 +169,17 @@ fun CreateExerciseScreen(
                         error = uiState.equipmentError,
                     )
 
-                    // Muscle zones — multi-select chips
-                    Text(
-                        text = stringResource(R.string.exercise_field_muscle_zone),
-                        style = MaterialTheme.typography.labelLarge,
+                    // Zonas musculares con jerarquía: dos campos, el error donde se incumple
+                    MuscleZoneHierarchySelector(
+                        allZones = uiState.muscleZones,
+                        primaryZoneIds = uiState.primaryMuscleZoneIds,
+                        secondaryZoneIds = uiState.secondaryMuscleZoneIds,
+                        onPrimaryZoneAdded = viewModel::onPrimaryMuscleZoneAdded,
+                        onPrimaryZoneRemoved = viewModel::onPrimaryMuscleZoneRemoved,
+                        onSecondaryZoneAdded = viewModel::onSecondaryMuscleZoneAdded,
+                        onSecondaryZoneRemoved = viewModel::onSecondaryMuscleZoneRemoved,
+                        error = uiState.muscleZoneError,
                     )
-                    if (uiState.muscleZoneError != null) {
-                        Text(
-                            text = uiState.muscleZoneError!!,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.error,
-                        )
-                    }
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
-                    ) {
-                        uiState.muscleZones.forEach { zone ->
-                            val selected = zone.id in uiState.selectedMuscleZoneIds
-                            FilterChip(
-                                selected = selected,
-                                onClick = { viewModel.onMuscleZoneToggled(zone.id) },
-                                label = { Text(zone.name) },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                                ),
-                            )
-                        }
-                    }
 
                     // Progression difficulty — MEDIUM preselected
                     Text(

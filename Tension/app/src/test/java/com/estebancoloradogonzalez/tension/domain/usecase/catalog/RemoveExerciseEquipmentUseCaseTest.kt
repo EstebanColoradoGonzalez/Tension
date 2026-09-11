@@ -1,6 +1,7 @@
 package com.estebancoloradogonzalez.tension.domain.usecase.catalog
 
 import com.estebancoloradogonzalez.tension.domain.repository.ExerciseRepository
+import com.estebancoloradogonzalez.tension.domain.repository.PlanRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.just
@@ -8,6 +9,7 @@ import io.mockk.mockk
 import io.mockk.runs
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Before
 import org.junit.Test
 
 private const val EXERCISE_ID = 10L
@@ -16,7 +18,15 @@ private const val POLEA = 3L
 class RemoveExerciseEquipmentUseCaseTest {
 
     private val repository: ExerciseRepository = mockk()
-    private val useCase = RemoveExerciseEquipmentUseCase(repository)
+    private val planRepository: PlanRepository = mockk()
+    private val useCase = RemoveExerciseEquipmentUseCase(repository, planRepository)
+
+    @Before
+    fun setUp() {
+        // Por defecto ningún plan sugiere el implemento: los casos de HU-39 se comprueban
+        // sin el motivo que HU-41 añadió, y el que sí lo ejercita lo redefine.
+        coEvery { planRepository.getRoutinesSuggestingEquipment(any(), any()) } returns emptyList()
+    }
 
     // CA-39.09 — no se puede quitar la última opción
 
@@ -72,4 +82,42 @@ class RemoveExerciseEquipmentUseCaseTest {
             assertEquals(RemoveExerciseEquipmentUseCase.Result.LastOption, result)
             coVerify(exactly = 0) { repository.countSetsWithEquipment(any(), any()) }
         }
+
+    // CA-41.08 — el plan lo sugiere
+
+    @Test
+    fun `given the plan suggests it, when removing it, then it is rejected naming the routine`() =
+        runTest {
+            coEvery { repository.countEquipmentOfExercise(EXERCISE_ID) } returns 3
+            coEvery { repository.countSetsWithEquipment(EXERCISE_ID, POLEA) } returns 0
+            coEvery {
+                planRepository.getRoutinesSuggestingEquipment(EXERCISE_ID, POLEA)
+            } returns listOf("Pull — Foco Trapecios y Espalda Media")
+
+            val result = useCase(EXERCISE_ID, POLEA)
+
+            assertEquals(
+                RemoveExerciseEquipmentUseCase.Result.SuggestedByPlan(
+                    listOf("Pull — Foco Trapecios y Espalda Media"),
+                ),
+                result,
+            )
+            coVerify(exactly = 0) { repository.removeEquipmentFromExercise(any(), any()) }
+        }
+
+    @Test
+    fun `the last option wins over the plan suggestion`() = runTest {
+        // El orden de comprobación es el del coste de reparación: quitar la última opción
+        // no tiene arreglo, cambiar la sugerencia del plan sí. El motivo que se devuelve es
+        // el primero, y debe ser el irreparable.
+        coEvery { repository.countEquipmentOfExercise(EXERCISE_ID) } returns 1
+        coEvery {
+            planRepository.getRoutinesSuggestingEquipment(EXERCISE_ID, POLEA)
+        } returns listOf("Pull — Foco Trapecios y Espalda Media")
+
+        assertEquals(
+            RemoveExerciseEquipmentUseCase.Result.LastOption,
+            useCase(EXERCISE_ID, POLEA),
+        )
+    }
 }

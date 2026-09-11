@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.estebancoloradogonzalez.tension.R
+import com.estebancoloradogonzalez.tension.domain.model.PreselectionOrigin
 import com.estebancoloradogonzalez.tension.domain.model.WeightUnit
 import com.estebancoloradogonzalez.tension.ui.components.CounterText
 import com.estebancoloradogonzalez.tension.ui.components.EntityNameText
@@ -145,6 +146,24 @@ fun RegisterSetScreen(
                 onSelected = viewModel::onEquipmentSelected,
                 error = uiState.equipmentError,
             )
+
+            // Por qué nace con ese implemento. Sin rótulo cuando es la primera opción del
+            // catálogo: no hay nada que explicar (CA-41.05).
+            val originLabel = when (uiState.preselectionOrigin) {
+                PreselectionOrigin.PLAN_SUGGESTION ->
+                    stringResource(R.string.register_set_equipment_from_plan)
+                PreselectionOrigin.LAST_USED ->
+                    stringResource(R.string.register_set_equipment_last_used)
+                PreselectionOrigin.FIRST_OPTION, null -> null
+            }
+            if (originLabel != null) {
+                Text(
+                    text = originLabel,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
 

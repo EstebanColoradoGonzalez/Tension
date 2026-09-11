@@ -15,14 +15,32 @@ data class ExerciseWithDetails(
     val name: String,
     /** Implementos admitidos, separados por [AGGREGATE_SEPARATOR] y en orden de catálogo. */
     val equipmentTypes: String?,
+    /**
+     * Ids de los mismos implementos, en el mismo orden y separados igual.
+     *
+     * Viajan junto a los nombres —y no en una consulta aparte— porque el selector de
+     * equipamiento sugerido del plan necesita identificar la opción, no solo mostrarla, y
+     * emparejar por nombre rompería el día que dos implementos se llamen parecido.
+     */
+    val equipmentTypeIds: String?,
     val isBodyweight: Int,
     val isIsometric: Int,
     val isToTechnicalFailure: Int,
     val isCustom: Int,
     val mediaResource: String?,
     val progressionDifficulty: String,
-    /** Zonas musculares, separadas por [AGGREGATE_SEPARATOR]. */
-    val muscleZones: String?,
+    /** Zonas que ejecutan el movimiento, separadas por [AGGREGATE_SEPARATOR]. Nunca vacía. */
+    val primaryMuscleZones: String?,
+    /** Zonas que asisten, separadas por [AGGREGATE_SEPARATOR]. Puede venir nula. */
+    val secondaryMuscleZones: String?,
+    /**
+     * Grupo de agregación del ejercicio: el de su **primera zona principal**.
+     *
+     * El `ORDER BY` no es decorativo. Antes de HU-41 la subconsulta hacía `LIMIT 1` sin
+     * orden y acertaba por casualidad, porque casi todo ejercicio tenía una sola zona. Con
+     * hasta cuatro, sin orden SQLite elegiría una cualquiera y el grupo dependería del
+     * plan de ejecución.
+     */
     val muscleGroup: String?,
 )
 
@@ -56,6 +74,12 @@ interface ExerciseDao {
                 WHERE ee.exercise_id = e.id
                 ORDER BY et.id
             )) AS equipmentTypes,
+            (SELECT GROUP_CONCAT(id, '|') FROM (
+                SELECT et.id AS id FROM exercise_equipment ee
+                INNER JOIN equipment_type et ON ee.equipment_type_id = et.id
+                WHERE ee.exercise_id = e.id
+                ORDER BY et.id
+            )) AS equipmentTypeIds,
             e.is_bodyweight AS isBodyweight,
             e.is_isometric AS isIsometric,
             e.is_to_technical_failure AS isToTechnicalFailure,
@@ -65,12 +89,20 @@ interface ExerciseDao {
             (SELECT GROUP_CONCAT(name, '|') FROM (
                 SELECT mz.name AS name FROM exercise_muscle_zone emz
                 INNER JOIN muscle_zone mz ON emz.muscle_zone_id = mz.id
-                WHERE emz.exercise_id = e.id
-                ORDER BY mz.id
-            )) AS muscleZones,
+                WHERE emz.exercise_id = e.id AND emz.is_primary = 1
+                ORDER BY mz.sort_order
+            )) AS primaryMuscleZones,
+            (SELECT GROUP_CONCAT(name, '|') FROM (
+                SELECT mz.name AS name FROM exercise_muscle_zone emz
+                INNER JOIN muscle_zone mz ON emz.muscle_zone_id = mz.id
+                WHERE emz.exercise_id = e.id AND emz.is_primary = 0
+                ORDER BY mz.sort_order
+            )) AS secondaryMuscleZones,
             (SELECT mz2.muscle_group FROM exercise_muscle_zone emz2
              INNER JOIN muscle_zone mz2 ON emz2.muscle_zone_id = mz2.id
-             WHERE emz2.exercise_id = e.id LIMIT 1) AS muscleGroup
+             WHERE emz2.exercise_id = e.id
+             ORDER BY emz2.is_primary DESC, mz2.sort_order ASC
+             LIMIT 1) AS muscleGroup
         FROM exercise e
         ORDER BY e.name ASC
         """,
@@ -88,6 +120,12 @@ interface ExerciseDao {
                 WHERE ee.exercise_id = e.id
                 ORDER BY et.id
             )) AS equipmentTypes,
+            (SELECT GROUP_CONCAT(id, '|') FROM (
+                SELECT et.id AS id FROM exercise_equipment ee
+                INNER JOIN equipment_type et ON ee.equipment_type_id = et.id
+                WHERE ee.exercise_id = e.id
+                ORDER BY et.id
+            )) AS equipmentTypeIds,
             e.is_bodyweight AS isBodyweight,
             e.is_isometric AS isIsometric,
             e.is_to_technical_failure AS isToTechnicalFailure,
@@ -97,12 +135,20 @@ interface ExerciseDao {
             (SELECT GROUP_CONCAT(name, '|') FROM (
                 SELECT mz.name AS name FROM exercise_muscle_zone emz
                 INNER JOIN muscle_zone mz ON emz.muscle_zone_id = mz.id
-                WHERE emz.exercise_id = e.id
-                ORDER BY mz.id
-            )) AS muscleZones,
+                WHERE emz.exercise_id = e.id AND emz.is_primary = 1
+                ORDER BY mz.sort_order
+            )) AS primaryMuscleZones,
+            (SELECT GROUP_CONCAT(name, '|') FROM (
+                SELECT mz.name AS name FROM exercise_muscle_zone emz
+                INNER JOIN muscle_zone mz ON emz.muscle_zone_id = mz.id
+                WHERE emz.exercise_id = e.id AND emz.is_primary = 0
+                ORDER BY mz.sort_order
+            )) AS secondaryMuscleZones,
             (SELECT mz2.muscle_group FROM exercise_muscle_zone emz2
              INNER JOIN muscle_zone mz2 ON emz2.muscle_zone_id = mz2.id
-             WHERE emz2.exercise_id = e.id LIMIT 1) AS muscleGroup
+             WHERE emz2.exercise_id = e.id
+             ORDER BY emz2.is_primary DESC, mz2.sort_order ASC
+             LIMIT 1) AS muscleGroup
         FROM exercise e
         WHERE e.id = :exerciseId
         """,
@@ -123,6 +169,12 @@ interface ExerciseDao {
                 WHERE ee.exercise_id = e.id
                 ORDER BY et.id
             )) AS equipmentTypes,
+            (SELECT GROUP_CONCAT(id, '|') FROM (
+                SELECT et.id AS id FROM exercise_equipment ee
+                INNER JOIN equipment_type et ON ee.equipment_type_id = et.id
+                WHERE ee.exercise_id = e.id
+                ORDER BY et.id
+            )) AS equipmentTypeIds,
             e.is_bodyweight AS isBodyweight,
             e.is_isometric AS isIsometric,
             e.is_to_technical_failure AS isToTechnicalFailure,
@@ -132,12 +184,20 @@ interface ExerciseDao {
             (SELECT GROUP_CONCAT(name, '|') FROM (
                 SELECT mz.name AS name FROM exercise_muscle_zone emz
                 INNER JOIN muscle_zone mz ON emz.muscle_zone_id = mz.id
-                WHERE emz.exercise_id = e.id
-                ORDER BY mz.id
-            )) AS muscleZones,
+                WHERE emz.exercise_id = e.id AND emz.is_primary = 1
+                ORDER BY mz.sort_order
+            )) AS primaryMuscleZones,
+            (SELECT GROUP_CONCAT(name, '|') FROM (
+                SELECT mz.name AS name FROM exercise_muscle_zone emz
+                INNER JOIN muscle_zone mz ON emz.muscle_zone_id = mz.id
+                WHERE emz.exercise_id = e.id AND emz.is_primary = 0
+                ORDER BY mz.sort_order
+            )) AS secondaryMuscleZones,
             (SELECT mz2.muscle_group FROM exercise_muscle_zone emz2
              INNER JOIN muscle_zone mz2 ON emz2.muscle_zone_id = mz2.id
-             WHERE emz2.exercise_id = e.id LIMIT 1) AS muscleGroup
+             WHERE emz2.exercise_id = e.id
+             ORDER BY emz2.is_primary DESC, mz2.sort_order ASC
+             LIMIT 1) AS muscleGroup
         FROM exercise e
         WHERE e.id NOT IN (
               SELECT exercise_id FROM plan_assignment WHERE routine_version_id = :routineVersionId
@@ -155,6 +215,26 @@ interface ExerciseDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAllMuscleZones(zones: List<ExerciseMuscleZoneEntity>)
+
+    @Query("SELECT * FROM exercise_muscle_zone WHERE exercise_id = :exerciseId")
+    fun getMuscleZonesByExercise(exerciseId: Long): Flow<List<ExerciseMuscleZoneEntity>>
+
+    @Query("DELETE FROM exercise_muscle_zone WHERE exercise_id = :exerciseId")
+    suspend fun deleteMuscleZonesByExercise(exerciseId: Long)
+
+    /**
+     * Reemplaza por completo las zonas del ejercicio.
+     *
+     * Borrar y volver a insertar, en vez de calcular el delta: la tabla no tiene más
+     * columnas que la jerarquía, no cuelga nada de ella y un cambio de principal a
+     * secundaria es de todos modos un `UPDATE` de la misma fila. El caso de uso ya
+     * garantizó que hay al menos una principal antes de llamar.
+     */
+    @Transaction
+    suspend fun replaceMuscleZones(exerciseId: Long, zones: List<ExerciseMuscleZoneEntity>) {
+        deleteMuscleZonesByExercise(exerciseId)
+        insertAllMuscleZones(zones.map { it.copy(exerciseId = exerciseId) })
+    }
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAllEquipment(equipment: List<ExerciseEquipmentEntity>)

@@ -1,6 +1,7 @@
 package com.estebancoloradogonzalez.tension.ui.session
 
 import com.estebancoloradogonzalez.tension.domain.model.EquipmentType
+import com.estebancoloradogonzalez.tension.domain.model.PreselectionOrigin
 import com.estebancoloradogonzalez.tension.domain.model.WeightUnit
 import com.estebancoloradogonzalez.tension.domain.rules.ExternalLoadRule
 
@@ -27,6 +28,12 @@ data class RegisterSetUiState(
     /** Implementos que el ejercicio admite, en orden de catálogo. */
     val equipmentOptions: List<EquipmentType> = emptyList(),
     val selectedEquipmentTypeId: Long? = null,
+    /**
+     * De dónde salió la preselección, para rotularla. Pasa a `null` en cuanto el
+     * ejecutante elige a mano: a partir de ahí el implemento es suyo y no hay nada que
+     * explicar.
+     */
+    val preselectionOrigin: PreselectionOrigin? = null,
     val equipmentError: String? = null,
     val weightError: String? = null,
     val repsError: String? = null,

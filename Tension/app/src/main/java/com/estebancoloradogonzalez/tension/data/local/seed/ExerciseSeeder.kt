@@ -6,8 +6,8 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import com.estebancoloradogonzalez.tension.data.local.seed.model.SeedExercise
 
 /**
- * Inserta el catálogo base de ejercicios, sus zonas musculares y sus opciones de
- * equipamiento.
+ * Inserta el catálogo base de ejercicios, sus zonas musculares con jerarquía y sus
+ * opciones de equipamiento.
  *
  * Los datos residen en [ExerciseCatalog]; aquí solo se mapean a `ContentValues`.
  */
@@ -16,8 +16,11 @@ object ExerciseSeeder {
     fun seed(db: SupportSQLiteDatabase) {
         ExerciseCatalog.ALL.forEach { exercise ->
             insertExercise(db, exercise)
-            exercise.muscleZoneIds.forEach { muscleZoneId ->
-                insertExerciseMuscleZone(db, exercise.id, muscleZoneId)
+            exercise.primaryMuscleZoneIds.forEach { muscleZoneId ->
+                insertExerciseMuscleZone(db, exercise.id, muscleZoneId, isPrimary = true)
+            }
+            exercise.secondaryMuscleZoneIds.forEach { muscleZoneId ->
+                insertExerciseMuscleZone(db, exercise.id, muscleZoneId, isPrimary = false)
             }
             exercise.equipmentTypeIds.forEach { equipmentTypeId ->
                 insertExerciseEquipment(db, exercise.id, equipmentTypeId)
@@ -39,10 +42,16 @@ object ExerciseSeeder {
         db.insert("exercise", SQLiteDatabase.CONFLICT_REPLACE, values)
     }
 
-    private fun insertExerciseMuscleZone(db: SupportSQLiteDatabase, exerciseId: Long, muscleZoneId: Long) {
+    private fun insertExerciseMuscleZone(
+        db: SupportSQLiteDatabase,
+        exerciseId: Long,
+        muscleZoneId: Long,
+        isPrimary: Boolean,
+    ) {
         val values = ContentValues().apply {
             put("exercise_id", exerciseId)
             put("muscle_zone_id", muscleZoneId)
+            put("is_primary", isPrimary.toFlag())
         }
         db.insert("exercise_muscle_zone", SQLiteDatabase.CONFLICT_REPLACE, values)
     }

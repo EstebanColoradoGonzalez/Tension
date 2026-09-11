@@ -15,8 +15,10 @@ data class RegisterSetInfo(
     /** Opciones que el ejercicio admite, en orden de catálogo. Nunca vacío. */
     val equipmentOptions: List<EquipmentType>,
     /**
-     * Implemento de la última serie registrada del ejercicio, o la primera opción
-     * admitida cuando no hay ninguna (CA-39.04).
+     * Implemento con el que nace el selector, resuelto por la precedencia de
+     * [PreselectionOrigin] (CA-41.05, CA-39.04).
      */
     val preselectedEquipmentTypeId: Long,
+    /** Por qué ese implemento y no otro. Gobierna el rótulo bajo el selector. */
+    val preselectionOrigin: PreselectionOrigin,
 )

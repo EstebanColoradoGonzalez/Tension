@@ -6,6 +6,12 @@ import com.estebancoloradogonzalez.tension.domain.model.MuscleZone
 import com.estebancoloradogonzalez.tension.domain.model.ProgressionDifficulty
 import kotlinx.coroutines.flow.Flow
 
+/** Zonas de un ejercicio, ya partidas por jerarquía. */
+data class ExerciseMuscleZoneIds(
+    val primary: List<Long>,
+    val secondary: List<Long>,
+)
+
 interface ExerciseRepository {
     fun getAllExercises(): Flow<List<Exercise>>
     fun getExerciseById(id: Long): Flow<Exercise?>
@@ -17,10 +23,26 @@ interface ExerciseRepository {
     /** Ids de los implementos que el ejercicio admite, en orden de catálogo. */
     fun getEquipmentIdsOfExercise(exerciseId: Long): Flow<List<Long>>
 
+    /** Zonas del ejercicio partidas por jerarquía: principales y secundarias. */
+    fun getMuscleZoneIdsOfExercise(exerciseId: Long): Flow<ExerciseMuscleZoneIds>
+
+    /**
+     * Reemplaza por completo las zonas del ejercicio.
+     *
+     * El caso de uso valida antes: al menos una principal y ninguna zona en las dos listas
+     * (CA-41.09).
+     */
+    suspend fun setMuscleZones(
+        exerciseId: Long,
+        primaryMuscleZoneIds: List<Long>,
+        secondaryMuscleZoneIds: List<Long>,
+    )
+
     suspend fun createExercise(
         name: String,
         equipmentTypeIds: List<Long>,
-        muscleZoneIds: List<Long>,
+        primaryMuscleZoneIds: List<Long>,
+        secondaryMuscleZoneIds: List<Long>,
         isBodyweight: Boolean,
         isIsometric: Boolean,
         isToTechnicalFailure: Boolean,

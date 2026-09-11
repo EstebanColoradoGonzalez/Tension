@@ -26,7 +26,7 @@ import org.junit.Test
 class BackupRepositoryImplTest {
 
     /** Espejo del valor privado del impl: el formato inmediatamente anterior. */
-    private val PREVIOUS_SCHEMA_VERSION = 13
+    private val PREVIOUS_SCHEMA_VERSION = 14
 
     private lateinit var database: TensionDatabase
     private lateinit var context: Context
@@ -272,11 +272,12 @@ class BackupRepositoryImplTest {
     }
 
     @Test
-    fun `the backup format is 14`() {
-        // Sube porque `exercise_progression` gana `equipment_type_id` en su clave primaria:
-        // un respaldo 13 no dice con qué implemento se acumuló cada estado, y la CA prohíbe
-        // reconstruirlo.
-        assertEquals(14, BackupRepositoryImpl.SCHEMA_VERSION)
+    fun `the backup format is 15`() {
+        // Sube porque HU-41 añade tres columnas `NOT NULL` que no se derivan de nada: la
+        // jerarquía de `exercise_muscle_zone`, el implemento sugerido de `plan_assignment`
+        // y el orden del catálogo de zonas. Un respaldo 14 no las trae, y CA-41.10 prohíbe
+        // inventarlas.
+        assertEquals(15, BackupRepositoryImpl.SCHEMA_VERSION)
     }
 
     @Test
@@ -284,7 +285,7 @@ class BackupRepositoryImplTest {
         val result = repository.validateBackup(buildValidBackupJson())
 
         assertTrue(result.isValid)
-        assertEquals(14, result.metadata?.schemaVersion)
+        assertEquals(15, result.metadata?.schemaVersion)
         assertNull(result.errorMessage)
     }
 

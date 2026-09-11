@@ -1239,8 +1239,8 @@ object Migrations {
      * (**ADR-019**): durante la beta, el cambio de esquema se resuelve sobre instalación
      * fresca y el reinicio lo hace el ejecutante desinstalando y reinstalando, no la
      * aplicación. Sube de forma deliberada, historia por historia, y por eso es una
-     * constante con nombre y no una ausencia silenciosa. HU-39 lleva el esquema a la 20
-     * sin migración (CA-39.11).
+     * constante con nombre y no una ausencia silenciosa. HU-39 lleva el esquema a la 20,
+     * HU-40 a la 21 y HU-41 a la 22, las tres sin migración (CA-39.11, CA-41.10).
      */
     const val LAST_MIGRATED_VERSION = 19
 

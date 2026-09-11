@@ -1,5 +1,6 @@
 package com.estebancoloradogonzalez.tension.domain.usecase.catalog
 
+import com.estebancoloradogonzalez.tension.domain.model.EquipmentType
 import com.estebancoloradogonzalez.tension.domain.model.Exercise
 import com.estebancoloradogonzalez.tension.domain.model.ProgressionDifficulty
 import com.estebancoloradogonzalez.tension.domain.repository.ExerciseRepository
@@ -30,8 +31,12 @@ class GetExerciseDetailUseCaseTest {
         val exercise = Exercise(
             id = 1,
             name = "Press de banca",
-            equipmentTypes = listOf("Máquina", "Barra"),
-            muscleZones = listOf("Pecho Medio"),
+            equipmentOptions = listOf(
+                EquipmentType(id = 1, name = "Máquina"),
+                EquipmentType(id = 4, name = "Barra"),
+            ),
+            primaryMuscleZones = listOf("Pectoral Medio"),
+            secondaryMuscleZones = emptyList(),
             muscleGroup = null,
             isBodyweight = false,
             isIsometric = false,

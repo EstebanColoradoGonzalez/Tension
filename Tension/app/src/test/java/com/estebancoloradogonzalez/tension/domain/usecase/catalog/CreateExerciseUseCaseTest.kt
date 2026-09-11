@@ -17,11 +17,13 @@ class CreateExerciseUseCaseTest {
     private suspend fun create(
         name: String = "Elevación Lateral",
         equipmentTypeIds: List<Long> = listOf(6L, 3L),
-        muscleZoneIds: List<Long> = listOf(7L),
+        primaryMuscleZoneIds: List<Long> = listOf(23L),
+        secondaryMuscleZoneIds: List<Long> = emptyList(),
     ) = useCase(
         name = name,
         equipmentTypeIds = equipmentTypeIds,
-        muscleZoneIds = muscleZoneIds,
+        primaryMuscleZoneIds = primaryMuscleZoneIds,
+        secondaryMuscleZoneIds = secondaryMuscleZoneIds,
         isBodyweight = false,
         isIsometric = false,
         isToTechnicalFailure = false,
@@ -33,7 +35,9 @@ class CreateExerciseUseCaseTest {
     fun `given several implements, when creating, then all of them are persisted`() = runTest {
         coEvery { repository.exerciseExistsByName("Elevación Lateral") } returns false
         coEvery {
-            repository.createExercise(any(), any(), any(), any(), any(), any(), any(), any())
+            repository.createExercise(
+                any(), any(), any(), any(), any(), any(), any(), any(), any(),
+            )
         } returns 42L
 
         val id = create()
@@ -43,7 +47,8 @@ class CreateExerciseUseCaseTest {
             repository.createExercise(
                 name = "Elevación Lateral",
                 equipmentTypeIds = listOf(6L, 3L),
-                muscleZoneIds = listOf(7L),
+                primaryMuscleZoneIds = listOf(23L),
+                secondaryMuscleZoneIds = emptyList(),
                 isBodyweight = false,
                 isIsometric = false,
                 isToTechnicalFailure = false,
@@ -66,7 +71,7 @@ class CreateExerciseUseCaseTest {
     fun `given no muscle zone, when creating, then it is rejected`() = runTest {
         coEvery { repository.exerciseExistsByName(any()) } returns false
 
-        create(muscleZoneIds = emptyList())
+        create(primaryMuscleZoneIds = emptyList())
     }
 
     @Test(expected = IllegalArgumentException::class)
@@ -88,7 +93,9 @@ class CreateExerciseUseCaseTest {
     fun `given repeated implements, when creating, then duplicates are dropped`() = runTest {
         coEvery { repository.exerciseExistsByName(any()) } returns false
         coEvery {
-            repository.createExercise(any(), any(), any(), any(), any(), any(), any(), any())
+            repository.createExercise(
+                any(), any(), any(), any(), any(), any(), any(), any(), any(),
+            )
         } returns 1L
 
         create(equipmentTypeIds = listOf(6L, 3L, 6L))
@@ -97,7 +104,8 @@ class CreateExerciseUseCaseTest {
             repository.createExercise(
                 name = any(),
                 equipmentTypeIds = listOf(6L, 3L),
-                muscleZoneIds = any(),
+                primaryMuscleZoneIds = any(),
+                secondaryMuscleZoneIds = any(),
                 isBodyweight = any(),
                 isIsometric = any(),
                 isToTechnicalFailure = any(),
@@ -111,7 +119,9 @@ class CreateExerciseUseCaseTest {
     fun `given a padded name, when creating, then it is trimmed`() = runTest {
         coEvery { repository.exerciseExistsByName("Aperturas") } returns false
         coEvery {
-            repository.createExercise(any(), any(), any(), any(), any(), any(), any(), any())
+            repository.createExercise(
+                any(), any(), any(), any(), any(), any(), any(), any(), any(),
+            )
         } returns 1L
 
         create(name = "  Aperturas  ")

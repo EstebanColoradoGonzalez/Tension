@@ -1,5 +1,6 @@
 package com.estebancoloradogonzalez.tension.ui.catalog
 
+import android.content.Context
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -7,10 +8,14 @@ import com.estebancoloradogonzalez.tension.domain.repository.PlanRepository
 import com.estebancoloradogonzalez.tension.domain.usecase.plan.AddAlternativeToSlotUseCase
 import com.estebancoloradogonzalez.tension.domain.util.RepsDisplayMapper
 import com.estebancoloradogonzalez.tension.domain.usecase.plan.AssignExerciseToVersionUseCase
+import com.estebancoloradogonzalez.tension.domain.usecase.catalog.GetExerciseEquipmentOptionsUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.plan.GetPlanVersionDetailUseCase
+import com.estebancoloradogonzalez.tension.domain.usecase.plan.SetSuggestedEquipmentUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.plan.UnassignExerciseFromVersionUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.plan.UpdatePlanAssignmentUseCase
+import com.estebancoloradogonzalez.tension.R
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -30,7 +35,10 @@ class PlanVersionDetailViewModel @Inject constructor(
     private val addAlternativeToSlotUseCase: AddAlternativeToSlotUseCase,
     private val unassignExerciseFromVersionUseCase: UnassignExerciseFromVersionUseCase,
     private val updatePlanAssignmentUseCase: UpdatePlanAssignmentUseCase,
+    private val setSuggestedEquipmentUseCase: SetSuggestedEquipmentUseCase,
+    private val getExerciseEquipmentOptionsUseCase: GetExerciseEquipmentOptionsUseCase,
     private val planRepository: PlanRepository,
+    @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
     private val routineVersionId: Long = checkNotNull(savedStateHandle["routineVersionId"])
@@ -47,6 +55,8 @@ class PlanVersionDetailViewModel @Inject constructor(
                         exerciseId = pe.exerciseId,
                         name = pe.name,
                         equipmentSummary = pe.equipmentTypes.joinToString(" · "),
+                        suggestedEquipmentName = pe.suggestedEquipmentName,
+                        suggestedEquipmentTypeId = pe.suggestedEquipmentTypeId,
                         muscleZonesSummary = pe.muscleZones.joinToString(", "),
                         sets = pe.sets,
                         repsDisplay = repsDisplay,
@@ -65,7 +75,16 @@ class PlanVersionDetailViewModel @Inject constructor(
                     .map { (_, slotItems) ->
                         val primary = slotItems.first()
                         primary.copy(
-                            alternativeNames = slotItems.drop(1).map { it.name },
+                            // Cada alternativa lleva su propia sugerencia: comparten
+                            // puesto y prescripción, no implemento (CA-41.05).
+                            alternatives = slotItems.drop(1).map { alt ->
+                                PlanAlternativeItem(
+                                    exerciseId = alt.exerciseId,
+                                    name = alt.name,
+                                    suggestedEquipmentName = alt.suggestedEquipmentName,
+                                    suggestedEquipmentTypeId = alt.suggestedEquipmentTypeId,
+                                )
+                            },
                         )
                     }
                 PlanVersionDetailUiState(
@@ -146,7 +165,21 @@ class PlanVersionDetailViewModel @Inject constructor(
     }
 
     fun onExerciseSelected(exerciseId: Long) {
-        _sheetState.update { it.copy(selectedExerciseId = exerciseId) }
+        _sheetState.update { state ->
+            val options = state.availableExercises
+                .firstOrNull { it.id == exerciseId }?.equipmentOptions.orEmpty()
+            // Se propone la primera opción del ejercicio, que es la regla con la que se
+            // resolvieron las 35 del seed. Sigue siendo editable, y obligatoria: sin ella
+            // el botón no se habilita (CA-41.08).
+            state.copy(
+                selectedExerciseId = exerciseId,
+                selectedSuggestedEquipmentId = options.firstOrNull()?.id,
+            )
+        }
+    }
+
+    fun onSuggestedEquipmentSelected(equipmentTypeId: Long) {
+        _sheetState.update { it.copy(selectedSuggestedEquipmentId = equipmentTypeId) }
     }
 
     fun onSetsChanged(sets: String) {
@@ -161,13 +194,20 @@ class PlanVersionDetailViewModel @Inject constructor(
         val state = _sheetState.value
         if (state.isAssigning) return
         val exerciseId = state.selectedExerciseId ?: return
+        val suggestedEquipmentId = state.selectedSuggestedEquipmentId ?: return
         val sets = state.sets.toIntOrNull() ?: return
         if (sets <= 0) return
 
         _sheetState.update { it.copy(isAssigning = true) }
         viewModelScope.launch {
             try {
-                assignExerciseToVersionUseCase(routineVersionId, exerciseId, sets, state.reps)
+                assignExerciseToVersionUseCase(
+                    routineVersionId = routineVersionId,
+                    exerciseId = exerciseId,
+                    sets = sets,
+                    reps = state.reps,
+                    suggestedEquipmentTypeId = suggestedEquipmentId,
+                )
             } catch (e: IllegalArgumentException) {
                 _userMessage.value = e.message
             } catch (_: Exception) {
@@ -183,13 +223,56 @@ class PlanVersionDetailViewModel @Inject constructor(
     }
 
     fun onEditExercise(exercise: PlanExerciseItem) {
-        _editState.value = EditPlanAssignmentState(
-            isVisible = true,
+        openEditDialog(
             exerciseId = exercise.exerciseId,
             exerciseName = exercise.name,
             sets = exercise.sets,
             reps = exercise.repsRaw,
+            suggestedEquipmentTypeId = exercise.suggestedEquipmentTypeId,
         )
+    }
+
+    /**
+     * Editar la alternativa de un puesto dual entra por aquí y no por [onEditExercise]:
+     * comparte series y repeticiones con el primario —y el caso de uso las propaga al
+     * slot— pero su implemento sugerido es suyo (CA-41.05).
+     */
+    fun onEditAlternative(primary: PlanExerciseItem, alternative: PlanAlternativeItem) {
+        openEditDialog(
+            exerciseId = alternative.exerciseId,
+            exerciseName = alternative.name,
+            sets = primary.sets,
+            reps = primary.repsRaw,
+            suggestedEquipmentTypeId = alternative.suggestedEquipmentTypeId,
+        )
+    }
+
+    private fun openEditDialog(
+        exerciseId: Long,
+        exerciseName: String,
+        sets: Int,
+        reps: String,
+        suggestedEquipmentTypeId: Long,
+    ) {
+        viewModelScope.launch {
+            // Las opciones se piden al abrir y no se guardan en el item de la lista: el
+            // ejercicio pudo ganar o perder implementos desde que la pantalla se pintó, y
+            // el selector debe ofrecer los de ahora (CA-41.08).
+            val options = getExerciseEquipmentOptionsUseCase(exerciseId).first()
+            _editState.value = EditPlanAssignmentState(
+                isVisible = true,
+                exerciseId = exerciseId,
+                exerciseName = exerciseName,
+                sets = sets,
+                reps = reps,
+                suggestedEquipmentTypeId = suggestedEquipmentTypeId,
+                equipmentOptions = options,
+            )
+        }
+    }
+
+    fun onEditSuggestedEquipmentSelected(equipmentTypeId: Long) {
+        _editState.update { it.copy(suggestedEquipmentTypeId = equipmentTypeId) }
     }
 
     fun onEditSetsChanged(sets: Int) {
@@ -212,6 +295,26 @@ class PlanVersionDetailViewModel @Inject constructor(
                     state.sets,
                     state.reps,
                 )
+                // La sugerencia se escribe aparte porque no se propaga al slot, a
+                // diferencia de series y repeticiones.
+                //
+                // Su rechazo se traduce aquí y no se deja escapar: los `require` del
+                // dominio llevan mensaje en inglés y de uso interno, y dejarlos llegar a
+                // la pantalla mostraría al ejecutante un texto que no es para él.
+                try {
+                    setSuggestedEquipmentUseCase(
+                        routineVersionId = routineVersionId,
+                        exerciseId = state.exerciseId,
+                        equipmentTypeId = state.suggestedEquipmentTypeId,
+                    )
+                } catch (_: IllegalArgumentException) {
+                    _userMessage.value = context.getString(
+                        R.string.plan_suggested_equipment_not_admitted_format,
+                        state.equipmentOptions
+                            .firstOrNull { it.id == state.suggestedEquipmentTypeId }?.name.orEmpty(),
+                        state.exerciseName,
+                    )
+                }
             } catch (e: IllegalArgumentException) {
                 _userMessage.value = e.message
             } catch (_: Exception) {
@@ -241,6 +344,7 @@ class PlanVersionDetailViewModel @Inject constructor(
                         name = e.name,
                         equipmentSummary = e.equipmentTypes.joinToString(" · "),
                         muscleZonesSummary = e.muscleZones.joinToString(", "),
+                        equipmentOptions = e.equipmentOptions,
                     )
                 },
             )
@@ -248,17 +352,34 @@ class PlanVersionDetailViewModel @Inject constructor(
     }
 
     fun onAlternativeExerciseSelected(exerciseId: Long) {
-        _addAlternativeState.update { it.copy(selectedExerciseId = exerciseId) }
+        _addAlternativeState.update { state ->
+            val options = state.availableExercises
+                .firstOrNull { it.id == exerciseId }?.equipmentOptions.orEmpty()
+            state.copy(
+                selectedExerciseId = exerciseId,
+                selectedSuggestedEquipmentId = options.firstOrNull()?.id,
+            )
+        }
+    }
+
+    fun onAlternativeSuggestedEquipmentSelected(equipmentTypeId: Long) {
+        _addAlternativeState.update { it.copy(selectedSuggestedEquipmentId = equipmentTypeId) }
     }
 
     fun onConfirmAddAlternative() {
         val state = _addAlternativeState.value
         if (state.isAssigning) return
         val exerciseId = state.selectedExerciseId ?: return
+        val suggestedEquipmentId = state.selectedSuggestedEquipmentId ?: return
         _addAlternativeState.update { it.copy(isAssigning = true) }
         viewModelScope.launch {
             try {
-                addAlternativeToSlotUseCase(routineVersionId, state.slot, exerciseId)
+                addAlternativeToSlotUseCase(
+                    routineVersionId = routineVersionId,
+                    slot = state.slot,
+                    exerciseId = exerciseId,
+                    suggestedEquipmentTypeId = suggestedEquipmentId,
+                )
             } catch (e: IllegalArgumentException) {
                 _userMessage.value = e.message
             } catch (_: Exception) {

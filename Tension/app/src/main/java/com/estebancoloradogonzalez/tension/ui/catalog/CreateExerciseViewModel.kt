@@ -59,11 +59,37 @@ class CreateExerciseViewModel @Inject constructor(
         }
     }
 
-    fun onMuscleZoneToggled(id: Long) {
+    fun onPrimaryMuscleZoneAdded(id: Long) {
         _uiState.update { state ->
-            val newSet = state.selectedMuscleZoneIds.toMutableSet()
-            if (newSet.contains(id)) newSet.remove(id) else newSet.add(id)
-            state.copy(selectedMuscleZoneIds = newSet, muscleZoneError = null)
+            if (id in state.primaryMuscleZoneIds) return@update state
+            state.copy(
+                primaryMuscleZoneIds = state.primaryMuscleZoneIds + id,
+                // Una zona no puede estar en los dos campos (CA-41.09). El diálogo ya no
+                // la deja elegir, así que esto es la red, no la puerta.
+                secondaryMuscleZoneIds = state.secondaryMuscleZoneIds - id,
+                muscleZoneError = null,
+            )
+        }
+    }
+
+    fun onPrimaryMuscleZoneRemoved(id: Long) {
+        _uiState.update { state ->
+            state.copy(primaryMuscleZoneIds = state.primaryMuscleZoneIds - id)
+        }
+    }
+
+    fun onSecondaryMuscleZoneAdded(id: Long) {
+        _uiState.update { state ->
+            if (id in state.secondaryMuscleZoneIds || id in state.primaryMuscleZoneIds) {
+                return@update state
+            }
+            state.copy(secondaryMuscleZoneIds = state.secondaryMuscleZoneIds + id)
+        }
+    }
+
+    fun onSecondaryMuscleZoneRemoved(id: Long) {
+        _uiState.update { state ->
+            state.copy(secondaryMuscleZoneIds = state.secondaryMuscleZoneIds - id)
         }
     }
 
@@ -109,8 +135,10 @@ class CreateExerciseViewModel @Inject constructor(
             }
             hasError = true
         }
-        if (state.selectedMuscleZoneIds.isEmpty()) {
-            _uiState.update { it.copy(muscleZoneError = "Selecciona al menos una zona muscular") }
+        if (state.primaryMuscleZoneIds.isEmpty()) {
+            _uiState.update {
+                it.copy(muscleZoneError = context.getString(R.string.muscle_zone_error_no_primary))
+            }
             hasError = true
         }
         if (hasError) return
@@ -121,7 +149,8 @@ class CreateExerciseViewModel @Inject constructor(
                 createExerciseUseCase(
                     name = state.name,
                     equipmentTypeIds = state.selectedEquipmentTypeIds.toList(),
-                    muscleZoneIds = state.selectedMuscleZoneIds.toList(),
+                    primaryMuscleZoneIds = state.primaryMuscleZoneIds,
+                    secondaryMuscleZoneIds = state.secondaryMuscleZoneIds,
                     isBodyweight = state.isBodyweight,
                     isIsometric = state.isIsometric,
                     isToTechnicalFailure = state.isToTechnicalFailure,

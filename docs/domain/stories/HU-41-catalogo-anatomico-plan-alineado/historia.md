@@ -10,23 +10,26 @@
 
 El catálogo muscular del sistema tiene una granularidad que no alcanza para describir lo que un ejercicio hace. `Elevación Lateral` y `Press Militar` figuran ambos como trabajo de «Hombro», cuando uno aísla el deltoides lateral y el otro el anterior. `Curl Martillo` y `Curl de Predicador` figuran ambos como «Bíceps», cuando el primero trabaja braquial y braquiorradial y el segundo la cabeza corta. Y la relación de un ejercicio con sus zonas es **plana**: no distingue el músculo que ejecuta el movimiento del que solo asiste.
 
-Esta historia sustituye ese catálogo por **33 zonas con granularidad anatómica** —los tres deltoides y el manguito rotador en lugar de un genérico «Hombro»; las cabezas del bíceps y del tríceps; braquial y braquiorradial; las porciones del pectoral— y añade **jerarquía explícita** entre zona principal y secundaria. Los 37 ejercicios se reclasifican por completo bajo criterio biomecánico: el músculo que ejecuta el movimiento, no la máquina ni la ubicación aparente.
+Esta historia sustituye ese catálogo por **33 zonas con granularidad anatómica** —los tres deltoides y el manguito rotador en lugar de un genérico «Hombro»; las cabezas del bíceps y del tríceps; braquial y braquiorradial; las porciones del pectoral— y añade **jerarquía explícita** entre zona principal y secundaria. Los 37 ejercicios existentes se reclasifican por completo bajo criterio biomecánico: el músculo que ejecuta el movimiento, no la máquina ni la ubicación aparente.
 
 La granularidad fina se acomoda **íntegramente dentro de los 14 grupos musculares existentes**: no se añade ninguno. Es lo que permite que los KPIs de tonelaje y volumen por grupo muscular sigan agregando exactamente como hoy, ganando precisión sin cambiar de definición.
 
 La historia cubre además el **delta del plan por defecto**, que arrastra el mismo criterio de fidelidad:
 
 - **Miércoles y sábado** cambian de orden: *Aductores* vuelve al primer puesto en ambos.
-- **Viernes** sustituye *Remo Unilateral Polea Alta* por *Remo al Mentón* en el cuarto puesto.
+- **Viernes** sustituye *Remo Unilateral Polea Alta* por *Trapecios con Apoyo en Banco Inclinado* en el cuarto puesto. Es el **único ejercicio que la historia añade al catálogo**, que pasa de 37 a 38.
 - Las **35 asignaciones** ganan su **equipamiento sugerido**, que preselecciona el selector al registrar la serie sin imponerlo.
 
 Con el equipamiento sugerido, el plan deja de ser agnóstico del implemento y propone el que El Ejecutante realmente usa en cada puesto. La sugerencia **sugiere, no impone**: se puede cambiar, y una vez cambiada, el último implemento usado toma el relevo en las series siguientes.
+
+> **Cambio de alcance (2026-09-11).** El cuarto puesto del viernes lo ocupa *Trapecios con Apoyo en Banco Inclinado*, ejercicio nuevo, y no *Remo al Mentón* como decía la redacción original. Afecta a CA-41.03, CA-41.06 y CA-41.07, y sube el catálogo de 37 a 38. Queda registrado en `cambios.md` y en `refinamiento.md` (D13).
 
 ### Frontera de alcance
 
 - **Las opciones de equipamiento de cada ejercicio** ya vienen de [`HU-39`](../HU-39-equipamiento-multiple-por-ejercicio/historia.md) (CA-39.06). Esta historia añade las **zonas musculares** y la **sugerencia del plan**, no la lista de implementos admitidos.
 - **`Core` no se crea como zona.** No es un músculo sino una región; los movimientos anti-rotación se catalogan por `Oblicuos` y `Recto Abdominal`.
-- **Ningún ejercicio se elimina.** *Remo Unilateral Polea Alta* sale del plan por defecto pero permanece en el Diccionario.
+- **Ningún ejercicio se elimina.** *Remo Unilateral Polea Alta* sale del plan por defecto pero permanece en el Diccionario. *Remo al Mentón*, que una versión anterior de esta historia metía en el plan, tampoco entra y sigue disponible igual.
+- **Se añade un ejercicio**: *Trapecios con Apoyo en Banco Inclinado*, para el cuarto puesto del viernes. Es la única alta del catálogo desde `HU-29`.
 - **La dificultad de progresión no se modifica** en ningún ejercicio.
 - **La relación de rutinas con los días de la semana no cambia.** Los días que nombran las tablas se refieren a la relación `week_day` establecida en `HU-36`, no al nombre de la rutina.
 - **La consolidación de progresión por par** es alcance de [`HU-40`](../HU-40-progresion-por-equipamiento/historia.md). Esta historia solo aporta el reparto de tonelaje por zona.
@@ -96,11 +99,11 @@ Con el equipamiento sugerido, el plan deja de ser agnóstico del implemento y pr
 - **Y** la jerarquía se declara en la creación y edición de ejercicios (`D5-T1`, `D2-T1`), tanto seed como personalizados
 - **Y** el criterio de clasificación es **biomecánico**: el músculo que ejecuta el movimiento, no la máquina ni la ubicación aparente
 
-#### CA-41.03 — Los 37 ejercicios y sus zonas musculares
+#### CA-41.03 — Los 38 ejercicios y sus zonas musculares
 
 - **Dado** que la aplicación se instala por primera vez
 - **Cuando** se siembra la relación de ejercicios con zonas musculares
-- **Entonces** los 37 ejercicios quedan clasificados exactamente así:
+- **Entonces** los 38 ejercicios quedan clasificados exactamente así:
 
 | # | Ejercicio | Zona(s) principal(es) | Zona(s) secundaria(s) |
 |---|---|---|---|
@@ -141,11 +144,13 @@ Con el equipamiento sugerido, el plan deja de ser agnóstico del implemento y pr
 | 35 | Dominadas | Dorsal Ancho | Bíceps Braquial, Trapecio Inferior |
 | 36 | Remo Unilateral Polea Baja | Dorsal Ancho | Bíceps Braquial, Romboides |
 | 37 | Remo Unilateral Polea Alta | Dorsal Ancho, Espalda Alta | Bíceps Braquial |
+| 38 | Trapecios con Apoyo en Banco Inclinado ✦ **nuevo** | Trapecio, Trapecio Inferior | Romboides, Deltoides Posterior |
 
 - **Y** ningún ejercicio queda sin zona principal
 - **Y** ninguna zona figura a la vez como principal y secundaria del mismo ejercicio
-- **Y** las **opciones de equipamiento** de cada ejercicio, sembradas por `HU-39` (CA-39.06), **no se modifican**
-- **Y** la **dificultad de progresión** de cada ejercicio **no se modifica**
+- **Y** las **opciones de equipamiento** de los 37 ejercicios existentes, sembradas por `HU-39` (CA-39.06), **no se modifican**
+- **Y** la **dificultad de progresión** de los 37 existentes **no se modifica**
+- **Y** el ejercicio 38 se da de alta con `Mancuerna`, `Barra` y `Máquina Smith` como implementos admitidos y dificultad de progresión **media**
 
 #### CA-41.04 — Tonelaje por grupo muscular con todas las zonas
 
@@ -182,13 +187,14 @@ Con el equipamiento sugerido, el plan deja de ser agnóstico del implemento y pr
 | Rutina | Cambio |
 |---|---|
 | **Lower — Foco Cuádriceps** (miércoles) | *Aductores* pasa del cuarto al **primer** puesto; el resto conserva su orden relativo |
-| **Pull — Foco Trapecios y Espalda Media** (viernes) | *Remo Unilateral Polea Alta* **sale** del cuarto puesto y **entra Remo al Mentón** en su lugar |
+| **Pull — Foco Trapecios y Espalda Media** (viernes) | *Remo Unilateral Polea Alta* **sale** del cuarto puesto y **entra Trapecios con Apoyo en Banco Inclinado** en su lugar |
 | **Lower — Foco Isquiotibiales y Glúteo** (sábado) | *Aductores* pasa del cuarto al **primer** puesto; el resto conserva su orden relativo |
 
 - **Y** las rutinas de **lunes, martes y jueves** conservan su composición y su orden
 - **Y** el plan sigue teniendo **6 rutinas, 1 versión cada una y 35 asignaciones**
 - **Y** los **cuatro puestos duales** se conservan: lunes puesto 2, martes puesto 1, miércoles puesto 3 y viernes puesto 2
 - **Y** *Remo Unilateral Polea Alta* **permanece en el Diccionario** como ejercicio disponible para asignación manual o alternativa de puesto
+- **Y** con ello quedan **ocho ejercicios fuera del plan por defecto y dentro del Diccionario**: *Cruce de Polea Alta*, *Curl de Concentración*, *Curl de Martillo Cruzado*, *Press Pallof*, *Sentadilla Sumo*, *Remo al Mentón*, *Zancadas (Lunges)* y *Remo Unilateral Polea Alta*
 - **Y** la relación de rutinas con los días de la semana **no cambia**
 - **Y** todas las asignaciones conservan el rango de repeticiones **8-12**
 
@@ -227,7 +233,7 @@ Con el equipamiento sugerido, el plan deja de ser agnóstico del implemento y pr
 | | 2 | Face Pull *(primario del puesto)* | 3 | Polea |
 | | 2 | Vuelos Posteriores (Pájaros) *(alternativa del puesto)* | 3 | Mancuerna |
 | | 3 | Remo Horizontal | 3 | Polea |
-| | 4 | Remo al Mentón | 3 | Barra |
+| | 4 | Trapecios con Apoyo en Banco Inclinado | 3 | Mancuerna |
 | | 5 | Curl de Predicador | 3 | Mancuerna |
 | | 6 | Crunch Abdominal | 3 | Polea |
 | **Lower — Isquiotibiales y Glúteo** (sábado) | 1 | Aductores | 3 | Máquina |
@@ -366,7 +372,7 @@ Ninguno. El sistema es local y sin integraciones.
 - [ ] Validaciones funcionando correctamente
 - [ ] Mensajes implementados
 - [ ] Catálogo de zonas sembrado exactamente como declara CA-41.01 (33 zonas, 3 retiradas, 14 grupos sin cambio)
-- [ ] Los 37 ejercicios clasificados exactamente como declara CA-41.03, con al menos una zona principal cada uno
+- [ ] Los 38 ejercicios clasificados exactamente como declara CA-41.03, con al menos una zona principal cada uno
 - [ ] Plan por defecto sembrado con el delta de CA-41.06 y las 35 sugerencias de CA-41.07
 - [ ] Verificado que toda sugerencia del plan es una opción admitida por su ejercicio
 - [ ] Verificado que el tonelaje por grupo muscular cuenta todas las zonas sin ponderación

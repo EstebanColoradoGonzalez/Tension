@@ -42,6 +42,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.estebancoloradogonzalez.tension.R
 import com.estebancoloradogonzalez.tension.domain.model.ProgressionDifficulty
 import com.estebancoloradogonzalez.tension.ui.catalog.components.EquipmentMultiSelector
+import com.estebancoloradogonzalez.tension.ui.catalog.components.MuscleZoneHierarchySelector
+import com.estebancoloradogonzalez.tension.ui.catalog.components.MuscleZoneHierarchySummary
 import com.estebancoloradogonzalez.tension.ui.catalog.components.ProgressionDifficultySelector
 import com.estebancoloradogonzalez.tension.ui.components.ExerciseImagePlaceholder
 import com.estebancoloradogonzalez.tension.ui.components.TensionTopAppBar
@@ -104,6 +106,10 @@ fun ExerciseDetailScreen(
                     onChangeImage = { imagePickerLauncher.launch("image/*") },
                     onProgressionDifficultySelected = viewModel::onProgressionDifficultySelected,
                     onEquipmentToggled = viewModel::onEquipmentToggled,
+                    onPrimaryZoneAdded = viewModel::onPrimaryZoneAdded,
+                    onPrimaryZoneRemoved = viewModel::onPrimaryZoneRemoved,
+                    onSecondaryZoneAdded = viewModel::onSecondaryZoneAdded,
+                    onSecondaryZoneRemoved = viewModel::onSecondaryZoneRemoved,
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(innerPadding),
@@ -120,6 +126,10 @@ private fun ExerciseDetailContent(
     onChangeImage: () -> Unit,
     onProgressionDifficultySelected: (ProgressionDifficulty) -> Unit,
     onEquipmentToggled: (Long) -> Unit,
+    onPrimaryZoneAdded: (Long) -> Unit,
+    onPrimaryZoneRemoved: (Long) -> Unit,
+    onSecondaryZoneAdded: (Long) -> Unit,
+    onSecondaryZoneRemoved: (Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -154,9 +164,24 @@ private fun ExerciseDetailContent(
                 error = exercise.equipmentError,
             )
             Spacer(modifier = Modifier.height(16.dp))
-            DetailField(
-                label = stringResource(R.string.exercise_field_muscle_zone),
-                value = exercise.muscleZones,
+            // Principales y secundarias como bloques distintos: la jerarquía se ve, que es
+            // para lo que existe (CA-41.02).
+            MuscleZoneHierarchySummary(
+                primaryZones = exercise.primaryMuscleZones,
+                secondaryZones = exercise.secondaryMuscleZones,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            // Editable en el sitio, igual que el equipamiento: persiste al instante y el
+            // flujo de Room repinta. Un rechazo no escribe, así que el campo vuelve solo.
+            MuscleZoneHierarchySelector(
+                allZones = exercise.muscleZoneOptions,
+                primaryZoneIds = exercise.selectedPrimaryZoneIds,
+                secondaryZoneIds = exercise.selectedSecondaryZoneIds,
+                onPrimaryZoneAdded = onPrimaryZoneAdded,
+                onPrimaryZoneRemoved = onPrimaryZoneRemoved,
+                onSecondaryZoneAdded = onSecondaryZoneAdded,
+                onSecondaryZoneRemoved = onSecondaryZoneRemoved,
+                error = exercise.muscleZoneError,
             )
 
             Spacer(modifier = Modifier.height(16.dp))

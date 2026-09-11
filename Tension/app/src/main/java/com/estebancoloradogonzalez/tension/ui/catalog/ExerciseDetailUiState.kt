@@ -1,6 +1,7 @@
 package com.estebancoloradogonzalez.tension.ui.catalog
 
 import com.estebancoloradogonzalez.tension.domain.model.EquipmentType
+import com.estebancoloradogonzalez.tension.domain.model.MuscleZone
 import com.estebancoloradogonzalez.tension.domain.model.ProgressionDifficulty
 
 sealed interface ExerciseDetailUiState {
@@ -20,7 +21,15 @@ data class ExerciseDetailItem(
     /** Opciones que no se pueden retirar porque tienen series registradas (CA-39.10). */
     val equipmentWithSets: Set<Long> = emptySet(),
     val equipmentError: String? = null,
-    val muscleZones: String,
+    /** Zonas que ejecutan el movimiento, para el bloque destacado de la ficha. */
+    val primaryMuscleZones: List<String>,
+    /** Zonas que asisten. Puede estar vacía. */
+    val secondaryMuscleZones: List<String>,
+    /** Catálogo completo, ya ordenado, para el diálogo de selección. */
+    val muscleZoneOptions: List<MuscleZone> = emptyList(),
+    val selectedPrimaryZoneIds: List<Long> = emptyList(),
+    val selectedSecondaryZoneIds: List<Long> = emptyList(),
+    val muscleZoneError: String? = null,
     val isCustom: Boolean,
     val mediaResource: String?,
     val progressionDifficulty: ProgressionDifficulty,

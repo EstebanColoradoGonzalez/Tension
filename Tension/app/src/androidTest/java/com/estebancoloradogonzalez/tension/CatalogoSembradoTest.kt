@@ -236,6 +236,110 @@ class CatalogoSembradoTest {
         }
     }
 
+    // ============================================================
+    // HU-41 — jerarquía de zonas y equipamiento sugerido del plan
+    // ============================================================
+
+    /**
+     * Invariantes, no cifras: las tablas cerradas de CA-41.01, CA-41.03 y CA-41.07 las
+     * verifican los tests JVM contra el texto de la historia. Lo que aquí no puede fallar
+     * sin que algo esté roto es que el sembrado deje el esquema coherente.
+     */
+    @Test
+    fun toda_relacion_de_zona_declara_su_jerarquia() {
+        assertEquals(
+            "Hay relaciones ejercicio-zona con is_primary fuera de {0,1}",
+            0,
+            contar("SELECT COUNT(*) FROM exercise_muscle_zone WHERE is_primary NOT IN (0, 1)"),
+        )
+    }
+
+    @Test
+    fun ningun_ejercicio_queda_sin_zona_principal() {
+        assertEquals(
+            "Hay ejercicios sin ninguna zona principal",
+            0,
+            contar(
+                """
+                SELECT COUNT(*) FROM exercise e
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM exercise_muscle_zone emz
+                    WHERE emz.exercise_id = e.id AND emz.is_primary = 1
+                )
+                """,
+            ),
+        )
+    }
+
+    /**
+     * La PK `(exercise_id, muscle_zone_id)` hace irrepresentable que una zona sea principal
+     * y secundaria a la vez (CA-41.09). Esto comprueba que la PK sigue siendo esa: si
+     * alguien la ampliara con `is_primary`, la contradicción pasaría a ser posible y este
+     * caso lo vería.
+     */
+    @Test
+    fun una_zona_no_puede_ser_principal_y_secundaria_del_mismo_ejercicio() {
+        assertEquals(
+            0,
+            contar(
+                """
+                SELECT COUNT(*) FROM (
+                    SELECT exercise_id, muscle_zone_id
+                    FROM exercise_muscle_zone
+                    GROUP BY exercise_id, muscle_zone_id
+                    HAVING COUNT(*) > 1
+                )
+                """,
+            ),
+        )
+    }
+
+    @Test
+    fun ninguna_zona_queda_huerfana_de_grupo_muscular() {
+        assertEquals(
+            0,
+            contar("SELECT COUNT(*) FROM muscle_zone WHERE muscle_group IS NULL OR muscle_group = ''"),
+        )
+        assertEquals(
+            "El orden del catálogo debe ser único: es el que gobierna el selector",
+            contar("SELECT COUNT(*) FROM muscle_zone"),
+            contar("SELECT COUNT(DISTINCT sort_order) FROM muscle_zone"),
+        )
+    }
+
+    @Test
+    fun ninguna_asignacion_del_plan_queda_sin_equipamiento_sugerido() {
+        assertEquals(
+            0,
+            contar("SELECT COUNT(*) FROM plan_assignment WHERE suggested_equipment_type_id IS NULL"),
+        )
+    }
+
+    /**
+     * La verificación cruzada de CA-41.08 sobre la base ya sembrada: toda sugerencia debe
+     * estar entre los implementos que su ejercicio admite.
+     *
+     * Su gemela JVM cruza las mismas dos tablas en los datos semilla. Esta comprueba que
+     * el sembrado las escribió como las declaran, que es el otro modo de romperlo.
+     */
+    @Test
+    fun toda_sugerencia_del_plan_es_una_opcion_admitida_por_su_ejercicio() {
+        assertEquals(
+            "Hay asignaciones que sugieren un implemento que el ejercicio no admite",
+            0,
+            contar(
+                """
+                SELECT COUNT(*) FROM plan_assignment pa
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM exercise_equipment ee
+                    WHERE ee.exercise_id = pa.exercise_id
+                      AND ee.equipment_type_id = pa.suggested_equipment_type_id
+                )
+                """,
+            ),
+        )
+    }
+
     private fun contar(sql: String): Int = contar(db.openHelper.readableDatabase, sql)
 
     private fun contar(db: SupportSQLiteDatabase, sql: String): Int =

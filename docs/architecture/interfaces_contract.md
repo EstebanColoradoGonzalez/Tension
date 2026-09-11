@@ -404,7 +404,9 @@
 #### `D2-T1`: Consultar Detalle de Ejercicio
 
 - **Tipo de Trigger (Entrada):** `Acción del ejecutante: toca un ejercicio en D1, D4, E1 o F3 para ver su ficha completa.`
-- **Descripción:** El sistema recupera los datos completos del ejercicio seleccionado incluyendo **todos** los implementos que admite, las zonas musculares asociadas y la ruta de media visual.
+- **Descripción:** El sistema recupera los datos completos del ejercicio seleccionado incluyendo **todos** los implementos que admite, sus zonas musculares **con jerarquía** y la ruta de media visual.
+- **Las zonas se presentan en dos bloques visiblemente distintos** (HU-41): *Zona principal* —la que ejecuta el movimiento— primero y destacada, y *Zonas secundarias* —las que asisten— después y en menor peso visual. Un ejercicio tiene al menos una principal y puede no tener ninguna secundaria; en ese caso el bloque muestra «Ninguna» en lugar de desaparecer, para que la ficha no cambie de forma según el ejercicio.
+- **La jerarquía es editable desde la ficha**, con el mismo patrón que el equipamiento, la imagen y la dificultad: **persiste al instante, sin botón de guardar**. Un intento rechazado —quedarse sin principal, o poner una zona en los dos campos— **no escribe nada**, así que el campo vuelve a lo que había y el error aparece junto a él.
 
 **Payload / Parámetros (Input):**
 
@@ -490,6 +492,9 @@
 - **Tipo de Trigger (Entrada):** `Acción del ejecutante: toca el botón "Crear" en D5 (Crear Ejercicio) con datos válidos.`
 - **Descripción:** El sistema valida la unicidad de `name` —el nombre es único **por sí solo** desde HU-39: el implemento no forma parte de la identidad del ejercicio— y persiste el nuevo ejercicio con `is_custom = 1`. Crea las entradas correspondientes en `exercise_muscle_zone` y en `exercise_equipment`, en la misma transacción. Si se seleccionó imagen, la copia al almacenamiento interno.
 - **El equipamiento se elige en una lista de casillas** con los 15 tipos del catálogo, en su orden declarado, con un contador de seleccionados al pie. Se exige **al menos uno** para poder guardar, y el botón permanece deshabilitado mientras la selección esté vacía.
+- **Las zonas musculares se eligen en dos campos separados** (HU-41): *Zonas principales*, obligatorio, y *Zonas secundarias*, opcional. Cada uno lista lo ya elegido como filas con acción de quitar, más un botón **«+ Añadir zona»** que abre un diálogo con las **33 zonas agrupadas por sus 14 grupos musculares**, en orden anatómico y con buscador. Son dos campos y no una lista única con marca porque **la obligatoriedad se lee donde se incumple**: el aviso de «al menos una principal» vive en el campo que lo exige, y con 33 zonas un error al pie del formulario quedaría lejos del sitio donde hay que arreglarlo.
+- **Una zona no puede ser principal y secundaria a la vez.** El diálogo muestra las ya elegidas en el otro campo marcadas y no seleccionables —esconderlas dejaría al ejecutante buscando una zona que parece no existir— y la clave primaria de `exercise_muscle_zone` hace el estado contradictorio irrepresentable.
+- El botón de guardar permanece **deshabilitado** mientras no haya al menos una zona principal.
 
 **Payload / Parámetros (Input):**
 
@@ -497,7 +502,8 @@
 {
   "name": "TEXT // Obligatorio. No vacío. Único por sí solo en el catálogo.",
   "equipment_type_ids": ["INTEGER"] ,
-  "muscle_zone_ids": ["INTEGER"] ,
+  "primary_muscle_zone_ids": ["INTEGER"] // Obligatorio. Al menos una. Sin intersección con las secundarias.,
+  "secondary_muscle_zone_ids": ["INTEGER"] // Opcional. Puede venir vacía.,
   "is_bodyweight": "BOOLEAN // Opcional. Default false.",
   "is_isometric": "BOOLEAN // Opcional. Default false. Si true, is_bodyweight debe ser true.",
   "is_to_technical_failure": "BOOLEAN // Opcional. Default false. Si true, is_bodyweight debe ser true. Mutuamente excluyente con is_isometric.",
@@ -624,6 +630,29 @@
 
 ---
 
+#### `D6-T1a`: Editar el Equipamiento Sugerido de una Asignación
+
+- **Tipo de Trigger (Entrada):** `Acción del ejecutante: toca el renglón del implemento sugerido de una asignación en D4 y confirma otro en el diálogo.`
+- **Descripción:** El sistema fija `plan_assignment.suggested_equipment_type_id` (HU-41). El selector ofrece **solo los implementos que el ejercicio admite**, resueltos al abrir el diálogo y no al pintar la lista: el ejercicio pudo ganar o perder opciones desde entonces. La capa Domain vuelve a comprobarlo antes de escribir.
+- **No se propaga al puesto**, a diferencia de series y repeticiones: las alternativas de un puesto dual comparten prescripción pero no implemento, porque son ejercicios distintos con opciones distintas. Cada uno se edita por separado desde su propio renglón.
+
+**Payload / Parámetros (Input):**
+
+```json
+{
+  "routine_version_id": "INTEGER // Obligatorio.",
+  "exercise_id": "INTEGER // Obligatorio.",
+  "equipment_type_id": "INTEGER // Obligatorio. Debe pertenecer a exercise_equipment del ejercicio."
+}
+```
+
+**Respuesta / Salida (Output Esperado):**
+
+- **Estado de Éxito:** `Sugerencia actualizada. D4 repinta el renglón.`
+- **Estado de Error:** `ERR_SUGGESTION_NOT_ADMITTED` — el implemento no está entre los que el ejercicio admite. No se escribe nada.
+
+---
+
 #### `D6-T1`: Crear o Editar Rutina
 
 - **Tipo de Trigger (Entrada):** `Acción del ejecutante: toca el botón de guardar en D6 (Crear/Editar Rutina).`
@@ -716,7 +745,9 @@
 
   El formulario E2 ofrece un **selector de unidad de captura** (`Kg` / `Lb`) junto al campo de peso, más controles de incremento y decremento cuyo paso depende de la unidad activa (0.5 Kg en kilogramos, 1 lb en libras). El selector se preselecciona con la unidad de la última serie registrada **del mismo par** —la unidad es la etiqueta de la máquina, y dos implementos son dos máquinas— y se oculta cuando no hay carga externa que capturar. La conversión a kilogramos ocurre en la capa de presentación antes de invocar el trigger: `weight_kg` llega **siempre en la unidad canónica**.
 
-  El formulario ofrece además un **selector de equipamiento**, situado sobre el campo de peso porque lo gobierna. Está limitado a los implementos que el ejercicio admite (`exercise_equipment`) y se preselecciona con el de la última serie registrada del mismo ejercicio; si no hay ninguna, con la primera opción admitida. Cuando el ejercicio admite **una sola** opción se presenta resuelto, como etiqueta y sin interacción: un control que se puede tocar para no elegir nada informa menos que un texto. El equipamiento es **obligatorio** y dos series del mismo ejercicio en la misma sesión pueden llevar implementos distintos. La serie sigue siendo inmutable tras su creación: el equipamiento registrado no se corrige después.
+  El formulario ofrece además un **selector de equipamiento**, situado sobre el campo de peso porque lo gobierna. Está limitado a los implementos que el ejercicio admite (`exercise_equipment`) y **desde HU-41 su preselección sigue tres niveles**, en orden: (1) el implemento de la última serie registrada **de este ejercicio en esta sesión** —el último cambio manda—, (2) el **equipamiento sugerido por el plan** para ese puesto, si el ejercicio tiene asignación en la versión de rutina de la sesión y la sugerencia sigue admitida, y (3) CA-39.04 sin cambios: el último implemento usado en cualquier sesión y, si nunca se usó, la primera opción admitida. Cada nivel comprueba que el candidato **siga admitido**, o el selector nacería con un valor que no está entre sus opciones.
+
+  **Un rótulo bajo el selector dice de dónde viene la preselección**: *sugerido por el plan* en el nivel 2 y *último implemento usado* en el 1 y el 3. En el nivel 3 con la primera opción admitida no hay rótulo: es el estado más común de un ejercicio nuevo y no hay nada que explicar. El rótulo **desaparece en cuanto el ejecutante elige a mano**: a partir de ahí el implemento es suyo y un aviso que siguiera diciendo «sugerido por el plan» sería falso. La sugerencia sugiere, no impone. Cuando el ejercicio admite **una sola** opción se presenta resuelto, como etiqueta y sin interacción: un control que se puede tocar para no elegir nada informa menos que un texto. El equipamiento es **obligatorio** y dos series del mismo ejercicio en la misma sesión pueden llevar implementos distintos. La serie sigue siendo inmutable tras su creación: el equipamiento registrado no se corrige después.
 
   **El implemento decide si hay carga externa que capturar** (`ExternalLoadRule`), y lo decide él y no solo la marca del ejercicio: `Peso Corporal` registra 0 en cualquier ejercicio; `Peso Añadido` es lo único que habilita la captura sobre un ejercicio de peso corporal, y exige un valor **estrictamente mayor que 0** porque representa exclusivamente la carga externa; sobre un ejercicio de peso corporal, `Barra Fija` —la dominada estricta— y `Máquina` —la asistida, cuya carga es un contrapeso que **resta** esfuerzo y que registrado como peso invertiría el significado del dato— registran 0. Sobre cualquier otro ejercicio, `Máquina` sí es carga. Cuando la captura está deshabilitada, el campo de peso permanece visible y bloqueado en 0 y el selector de unidad se oculta.
 
@@ -1085,6 +1116,7 @@
 
 - **Tipo de Trigger (Entrada):** `Acción del ejecutante: toca "Volumen por Grupo Muscular" en G1.`
 - **Descripción:** El sistema calcula el tonelaje acumulado y la distribución de volumen del microciclo seleccionado, más la evolución del tonelaje a lo largo de todos los microciclos.
+- **Todas las zonas del ejercicio cuentan, principales y secundarias, sin ponderación** (HU-41). La jerarquía es informativa para el ejecutante, no un peso de cálculo: una serie de un ejercicio de tres zonas aporta su tonelaje **íntegro** a cada uno de los tres grupos. Es la misma agregación de antes de HU-41 — lo que cambió es que las zonas son más finas. **El eje sigue siendo los 14 grupos musculares**, que no cambian: la granularidad fina cabe íntegra dentro de ellos y ningún KPI cambió de definición.
 
 **Payload / Parámetros (Input):**
 
@@ -1160,6 +1192,8 @@
 
 - **Tipo de Trigger (Entrada):** `Acción del ejecutante: toca "Tendencia de Progresión" en G1.`
 - **Descripción:** El sistema evalúa la trayectoria de tonelaje y tasa de progresión de cada grupo muscular en los últimos microciclos completos.
+- **Todas las zonas del ejercicio cuentan, principales y secundarias, sin ponderación** (HU-41). La jerarquía es informativa para el ejecutante, no un peso de cálculo: una serie de un ejercicio de tres zonas aporta su tonelaje **íntegro** a cada uno de los tres grupos. Es la misma agregación de antes de HU-41 — lo que cambió es que las zonas son más finas. **El eje sigue siendo los 14 grupos musculares**, que no cambian: la granularidad fina cabe íntegra dentro de ellos y ningún KPI cambió de definición.
+- La alerta `TONNAGE_DROP` sigue evaluándose **sobre los mismos grupos**, con la misma ventana y el mismo umbral. Lo que HU-41 sí corrigió es el grupo al que se atribuye una caída: hasta entonces se elegía con `LIMIT 1` **sin orden**, correcto solo por casualidad porque casi todo ejercicio tenía una zona. Ahora es el de su **primera zona principal**, y por tanto determinista.
 
 **Payload / Parámetros (Input):**
 
@@ -1455,6 +1489,8 @@ Los valores viven en un único punto del código, `AlertThresholdRule`. Esta tab
 
 - **Tipo de Trigger (Entrada):** `Acción del ejecutante: toca "Exportar datos" en J2 tras leer la advertencia de contenido no cifrado.`
 - **Descripción:** El sistema serializa todos los datos de la base de datos local en formato JSON con metadatos de versión y genera un archivo de backup en el almacenamiento del dispositivo. El proceso debe completarse en menos de 10 segundos para historial de hasta 2 años.
+- **Formato `schemaVersion: 15` desde HU-41.** El respaldo incluye el catálogo de zonas con su orden, la **jerarquía principal/secundaria** de cada ejercicio y el **equipamiento sugerido** de cada asignación del plan. Ninguna tabla nueva entra al volcado: el mecanismo recorre columnas por cursor y las tres columnas viajan solas.
+- **Los formatos anteriores se rechazan**, el 14 incluido: le faltan tres columnas `NOT NULL` que no se derivan de nada —la jerarquía y la sugerencia son decisiones, no cálculos—, y la restauración debe reproducir el catálogo y el plan **sin recalcularlos**.
 
 **Payload / Parámetros (Input):**
 
@@ -1660,6 +1696,11 @@ Los valores viven en un único punto del código, `AlertThresholdRule`. Esta tab
 | `ERR_BACKUP_FORMAT_INVALID` | El archivo de backup seleccionado no tiene el formato JSON esperado o está corrupto | Mostrar mensaje de error en J3. No ejecutar restauración. |
 | `ERR_BACKUP_VERSION_UNSUPPORTED` | La versión del esquema del backup es incompatible con la versión actual | Mostrar mensaje de error con la versión detectada. No ejecutar restauración. |
 | `ERR_EXERCISE_NAME_DUPLICATE` | Se intenta crear un ejercicio con un nombre ya existente | Mostrar error en D5 vía Snackbar. Desde HU-39 el nombre es único **por sí solo**: el implemento no forma parte de la identidad del ejercicio, así que un nombre repetido con otro equipamiento tampoco se admite. |
+| `ERR_PRIMARY_ZONE_REQUIRED` | Se intenta guardar un ejercicio sin ninguna zona muscular principal (`D5-T1`, `D2-T1`) | El botón de guardar ya está deshabilitado sin principales. Si llega a la capa de datos, mostrar error inline **en el campo de zonas principales**, que es donde se incumple: «Elige al menos una zona principal». Las secundarias son opcionales. |
+| `ERR_ZONE_IN_BOTH_LISTS` | Se intenta poner una zona como principal y secundaria del mismo ejercicio (`D5-T1`, `D2-T1`) | El diálogo ya la ofrece marcada y no seleccionable. Si llega a la capa de datos, mostrar error inline: la clave primaria de `exercise_muscle_zone` hace el estado irrepresentable, así que el rechazo protege el mensaje, no el dato. |
+| `ERR_SUGGESTION_NOT_ADMITTED` | Se intenta fijar como equipamiento sugerido del plan uno que el ejercicio no admite (`D6-T1a`, `D4-T2`) | El selector solo ofrece las opciones admitidas. Si llega a la capa de datos, rechazar sin escribir y nombrar el implemento y el ejercicio. |
+| `ERR_SUGGESTION_REQUIRED` | Se intenta asignar un ejercicio al plan sin elegir equipamiento sugerido (`D4-T2`) | El botón de asignar ya está deshabilitado sin sugerencia. La columna es `NOT NULL`: no se persiste la asignación sin ella. |
+| `ERR_EQUIPMENT_SUGGESTED_BY_PLAN` | Se intenta retirar de un ejercicio una opción de equipamiento que alguna asignación del plan tiene como sugerencia (`D2-T1`) | Impedir mientras esa asignación exista, y **nombrar la rutina**: un «no se puede» sin decir dónde obliga a buscar a mano. Se comprueba después de la última opción y de las series registradas, por orden de coste de reparación. |
 | `ERR_EQUIPMENT_REQUIRED` | Se intenta guardar un ejercicio sin equipamiento (`D5-T1`), retirar la última opción de uno existente (`D2-T3`) o registrar una serie sin implemento (`E2-T1`) | El botón correspondiente ya está deshabilitado con la selección vacía. Si llega a la capa de datos, mostrar error inline en el campo de equipamiento: el atributo es obligatorio y no admite lista vacía. |
 | `ERR_EQUIPMENT_HAS_SETS` | Se intenta retirar de un ejercicio un equipamiento con el que ya hay series registradas (`D2-T3`) | La casilla se presenta con candado. Mostrar mensaje inline que nombra el implemento: la serie es inmutable y no puede quedar apuntando a un equipamiento que el ejercicio dejó de admitir. |
 | `ERR_BACKUP_NO_EQUIPMENT` | El respaldo seleccionado se generó con un formato anterior a 13 y no incluye el equipamiento de las series | Mostrar mensaje explícito en J3 nombrando la causa. No ejecutar restauración, ni total ni parcial. |

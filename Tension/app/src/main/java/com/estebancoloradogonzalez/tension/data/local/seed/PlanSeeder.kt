@@ -62,6 +62,7 @@ object PlanSeeder {
             put("reps", assignment.reps)
             put("sort_order", assignment.sortOrder)
             put("slot", assignment.slot)
+            put("suggested_equipment_type_id", assignment.suggestedEquipmentTypeId)
         }
         db.insert("plan_assignment", SQLiteDatabase.CONFLICT_REPLACE, values)
     }

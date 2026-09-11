@@ -167,9 +167,10 @@ Plataforma: mobile / portrait (390 px) · Material 3 · targets ≥ 48 dp
 |  3  Remo Horizontal                      |
 |     Polea · 3 series · 8-12          ⋮   |
 |  ─────────────────────────────────────   |
-|  4  Remo al Mentón               ✦ nuevo |  ← sustituye a
-|     Barra · 3 series · 8-12          ⋮   |    Remo Unilateral
-|  ─────────────────────────────────────   |    Polea Alta
+|  4  Trapecios con Apoyo          ✦ nuevo |  ← sustituye a
+|     en Banco Inclinado                   |    Remo Unilateral
+|     Mancuerna · 3 series · 8-12      ⋮   |    Polea Alta
+|  ─────────────────────────────────────   |
 |  5  Curl de Predicador                   |
 |     Mancuerna · 3 series · 8-12      ⋮   |
 |  ─────────────────────────────────────   |
@@ -181,11 +182,12 @@ Plataforma: mobile / portrait (390 px) · Material 3 · targets ≥ 48 dp
 
    +────────────────────────────────────+
    |  Equipamiento sugerido             |
-   |  Remo al Mentón                    |
+   |  Trapecios con Apoyo en Banco      |
+   |  Inclinado                         |
    |  ────────────────────────────────  |
-   |  (●) Barra                         |
-   |  (○) Polea                         |
-   |  (○) Mancuerna                     |
+   |  (●) Mancuerna                     |
+   |  (○) Barra                         |
+   |  (○) Máquina Smith                 |
    |  ────────────────────────────────  |
    |  ⓘ Solo los implementos que este   |
    |    ejercicio admite                |
@@ -194,14 +196,14 @@ Plataforma: mobile / portrait (390 px) · Material 3 · targets ≥ 48 dp
 
   Estado error — sugerencia fuera de las opciones (CA-41.08):
 
-   ⚠ «Máquina Smith» no está entre los implementos que
-     Remo al Mentón admite.
+   ⚠ «Polea» no está entre los implementos que
+     Trapecios con Apoyo en Banco Inclinado admite.
 
   Y al revés — quitar del ejercicio un implemento que el plan
   sugiere:
 
-   ⚠ No se puede quitar «Barra»: el plan lo sugiere para
-     Remo al Mentón el viernes.
+   ⚠ No se puede quitar «Mancuerna»: el plan lo sugiere en
+     Pull — Foco Trapecios y Espalda Media.
 
 
 ────────────────────────────────────────────────────────────────
@@ -210,23 +212,23 @@ Plataforma: mobile / portrait (390 px) · Material 3 · targets ≥ 48 dp
 
   Primera serie del ejercicio en la sesión:
 
-|  Remo al Mentón                          |
+|  Trapecios con Apoyo en Banco Inclinado  |
 |  Serie 1 de 3 · 8-12 reps                |
 |                                          |
 |  Equipamiento (*)                        |
 |  +──────────────────────────────────────+|
-|  | ▼ Barra                              ||
+|  | ▼ Mancuerna                          ||
 |  +──────────────────────────────────────+|
 |  ⓘ sugerido por el plan                  |
 
-  El Ejecutante lo cambia a Polea y registra. Serie siguiente:
+  El Ejecutante lo cambia a Barra y registra. Serie siguiente:
 
-|  Remo al Mentón                          |
+|  Trapecios con Apoyo en Banco Inclinado  |
 |  Serie 2 de 3 · 8-12 reps                |
 |                                          |
 |  Equipamiento (*)                        |
 |  +──────────────────────────────────────+|
-|  | ▼ Polea                              ||
+|  | ▼ Barra                              ||
 |  +──────────────────────────────────────+|
 |  ⓘ último implemento usado                |  el último cambio
 |                                          |  manda
@@ -270,11 +272,13 @@ Plataforma: mobile / portrait (390 px) · Material 3 · targets ≥ 48 dp
 
     antes                          después
     ─────────────────────────      ─────────────────────────
-    4 Remo Unilateral         3 ►  4 Remo al Mentón       3  ◄
-      Polea Alta                     Barra
+    4 Remo Unilateral         3 ►  4 Trapecios con Apoyo  3  ◄
+      Polea Alta                       en Banco Inclinado
+                                       Mancuerna          ✦ nuevo
 
     ⓘ Remo Unilateral Polea Alta permanece en el Diccionario
-      como alternativa de puesto o asignación manual
+      como alternativa de puesto o asignación manual. Remo al
+      Mentón tampoco entra al plan y sigue disponible igual.
 
   LUNES · MARTES · JUEVES        sin cambio de composición
 

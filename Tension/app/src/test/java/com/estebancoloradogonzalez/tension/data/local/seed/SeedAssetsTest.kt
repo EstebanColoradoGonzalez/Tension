@@ -27,9 +27,9 @@ class SeedAssetsTest {
     }
 
     @Test
-    fun `exercises folder contains exactly 37 png files`() {
+    fun `exercises folder contains exactly 38 png files`() {
         val pngFiles = exercisesDir.listFiles { file -> file.extension == "png" }.orEmpty()
-        assertEquals(37, pngFiles.size)
+        assertEquals(38, pngFiles.size)
     }
 
     @Test

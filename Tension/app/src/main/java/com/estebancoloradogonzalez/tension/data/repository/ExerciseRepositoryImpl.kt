@@ -13,6 +13,7 @@ import com.estebancoloradogonzalez.tension.domain.model.EquipmentType
 import com.estebancoloradogonzalez.tension.domain.model.Exercise
 import com.estebancoloradogonzalez.tension.domain.model.MuscleZone
 import com.estebancoloradogonzalez.tension.domain.model.ProgressionDifficulty
+import com.estebancoloradogonzalez.tension.domain.repository.ExerciseMuscleZoneIds
 import com.estebancoloradogonzalez.tension.domain.repository.ExerciseRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -50,6 +51,7 @@ class ExerciseRepositoryImpl @Inject constructor(
                     id = entity.id,
                     name = entity.name,
                     muscleGroup = entity.muscleGroup,
+                    sortOrder = entity.sortOrder,
                 )
             }
         }
@@ -71,6 +73,7 @@ class ExerciseRepositoryImpl @Inject constructor(
                     id = entity.id,
                     name = entity.name,
                     muscleGroup = entity.muscleGroup,
+                    sortOrder = entity.sortOrder,
                 )
             }
         }
@@ -78,10 +81,30 @@ class ExerciseRepositoryImpl @Inject constructor(
     override fun getEquipmentIdsOfExercise(exerciseId: Long): Flow<List<Long>> =
         exerciseDao.getEquipmentIdsByExercise(exerciseId)
 
+    override fun getMuscleZoneIdsOfExercise(exerciseId: Long): Flow<ExerciseMuscleZoneIds> =
+        exerciseDao.getMuscleZonesByExercise(exerciseId).map { relations ->
+            ExerciseMuscleZoneIds(
+                primary = relations.filter { it.isPrimary == 1 }.map { it.muscleZoneId },
+                secondary = relations.filter { it.isPrimary == 0 }.map { it.muscleZoneId },
+            )
+        }
+
+    override suspend fun setMuscleZones(
+        exerciseId: Long,
+        primaryMuscleZoneIds: List<Long>,
+        secondaryMuscleZoneIds: List<Long>,
+    ) {
+        exerciseDao.replaceMuscleZones(
+            exerciseId = exerciseId,
+            zones = muscleZoneRelations(primaryMuscleZoneIds, secondaryMuscleZoneIds),
+        )
+    }
+
     override suspend fun createExercise(
         name: String,
         equipmentTypeIds: List<Long>,
-        muscleZoneIds: List<Long>,
+        primaryMuscleZoneIds: List<Long>,
+        secondaryMuscleZoneIds: List<Long>,
         isBodyweight: Boolean,
         isIsometric: Boolean,
         isToTechnicalFailure: Boolean,
@@ -99,9 +122,7 @@ class ExerciseRepositoryImpl @Inject constructor(
         )
         return exerciseDao.insertExerciseWithRelations(
             exercise = entity,
-            muscleZones = muscleZoneIds.map { zoneId ->
-                ExerciseMuscleZoneEntity(exerciseId = 0, muscleZoneId = zoneId)
-            },
+            muscleZones = muscleZoneRelations(primaryMuscleZoneIds, secondaryMuscleZoneIds),
             equipment = equipmentTypeIds.map { equipmentId ->
                 ExerciseEquipmentEntity(exerciseId = 0, equipmentTypeId = equipmentId)
             },
@@ -143,12 +164,28 @@ class ExerciseRepositoryImpl @Inject constructor(
     override suspend fun countSetsWithEquipment(exerciseId: Long, equipmentTypeId: Long): Int =
         exerciseSetDao.countSetsByExerciseAndEquipment(exerciseId, equipmentTypeId)
 
+    /**
+     * El `exerciseId = 0` es el marcador que `insertExerciseWithRelations` y
+     * `replaceMuscleZones` reemplazan por el id real: al crear todavía no existe, y al
+     * editar lo reponen de todos modos.
+     */
+    private fun muscleZoneRelations(
+        primaryMuscleZoneIds: List<Long>,
+        secondaryMuscleZoneIds: List<Long>,
+    ): List<ExerciseMuscleZoneEntity> =
+        primaryMuscleZoneIds.map { zoneId ->
+            ExerciseMuscleZoneEntity(exerciseId = 0, muscleZoneId = zoneId, isPrimary = 1)
+        } + secondaryMuscleZoneIds.map { zoneId ->
+            ExerciseMuscleZoneEntity(exerciseId = 0, muscleZoneId = zoneId, isPrimary = 0)
+        }
+
     private fun ExerciseWithDetails.toDomainModel() =
         Exercise(
             id = id,
             name = name,
-            equipmentTypes = equipmentTypes.toAggregatedList(),
-            muscleZones = muscleZones.toAggregatedList(),
+            equipmentOptions = equipmentOptions(),
+            primaryMuscleZones = primaryMuscleZones.toAggregatedList(),
+            secondaryMuscleZones = secondaryMuscleZones.toAggregatedList(),
             muscleGroup = muscleGroup,
             isBodyweight = isBodyweight == 1,
             isIsometric = isIsometric == 1,
@@ -158,6 +195,18 @@ class ExerciseRepositoryImpl @Inject constructor(
             progressionDifficulty = ProgressionDifficulty.fromCode(progressionDifficulty),
         )
 }
+
+/**
+ * Empareja los implementos del ejercicio con sus identificadores.
+ *
+ * Las dos columnas se agregan en la misma consulta, en el mismo orden y con el mismo
+ * separador, así que `zip` las vuelve a unir. Si alguna llegara desalineada el resultado
+ * quedaría truncado y no desplazado, que es el modo de fallo menos dañino.
+ */
+internal fun ExerciseWithDetails.equipmentOptions(): List<EquipmentType> =
+    equipmentTypeIds.toAggregatedList()
+        .mapNotNull { it.toLongOrNull() }
+        .zip(equipmentTypes.toAggregatedList()) { id, name -> EquipmentType(id = id, name = name) }
 
 /**
  * Deshace la agregación que hacen las consultas de catálogo y de plan.

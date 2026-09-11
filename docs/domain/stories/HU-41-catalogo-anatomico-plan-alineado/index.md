@@ -2,7 +2,7 @@
 story_number: 41
 title: 'Catálogo anatómico y plan por defecto alineado'
 slug: 'catalogo-anatomico-plan-alineado'
-estado: 'Borrador (PO)'
+estado: 'Lista para Revisión'
 autor: 'Esteban Colorado González'
 fecha_creacion: '2026-09-06'
 es_resultado_slicing: true
@@ -21,10 +21,10 @@ slicing_justificacion: 'Score INVEST 4/6 de la historia original. Corte vertical
 | Fase                    | Estado        | Fecha      | Responsable                    |
 | ----------------------- | ------------- | ---------- | ------------------------------ |
 | Creación HU             | ✅ Completada | 2026-09-06 | Esteban Colorado González (PO) |
-| Análisis Arquitectónico | ⏳ Pendiente  |            | Arquitecto                     |
-| Refinamiento Técnico    | ⏳ Pendiente  |            | Developer                      |
-| Estimación              | ⏳ Pendiente  |            | Developer                      |
-| Desarrollo              | ⏳ Pendiente  |            | Developer                      |
+| Análisis Arquitectónico | ⏭️ Omitida    | 2026-09-11 | Ruta dev-rápido                 |
+| Refinamiento Técnico    | ✅ Completada | 2026-09-11 | Esteban Colorado González (Dev) |
+| Estimación              | ⏭️ Omitida    | 2026-09-11 | Ruta dev-rápido                 |
+| Desarrollo              | ✅ Completada | 2026-09-11 | Esteban Colorado González (Dev) |
 | Revisión                | ⏳ Pendiente  |            | Revisor                        |
 
 ## Archivos de esta Historia
@@ -43,6 +43,8 @@ slicing_justificacion: 'Score INVEST 4/6 de la historia original. Corte vertical
 | Fase        | Inicio           | Fin |
 | ----------- | ---------------- | --- |
 | Creación HU | 2026-09-06 23:23 | 2026-09-07 00:49 |
+| Refinamiento Técnico | 2026-09-11 15:26 | 2026-09-11 15:52 |
+| Desarrollo | 2026-09-11 15:53 | 2026-09-11 16:58 |
 
 ---
 

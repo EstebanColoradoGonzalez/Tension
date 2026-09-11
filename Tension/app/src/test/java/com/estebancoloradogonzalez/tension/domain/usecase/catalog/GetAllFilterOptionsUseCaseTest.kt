@@ -30,8 +30,8 @@ class GetAllFilterOptionsUseCaseTest {
             EquipmentType(id = 16, name = "Banda Elástica"),
         )
         val muscleZones = listOf(
-            MuscleZone(id = 1, name = "Pecho Medio", muscleGroup = "Pecho"),
-            MuscleZone(id = 16, name = "Espalda Alta", muscleGroup = "Espalda"),
+            MuscleZone(id = 1, name = "Pecho Medio", muscleGroup = "Pecho", sortOrder = 1),
+            MuscleZone(id = 16, name = "Espalda Alta", muscleGroup = "Espalda", sortOrder = 16),
         )
 
         every { exerciseRepository.getAllEquipmentTypes() } returns flowOf(equipmentTypes)

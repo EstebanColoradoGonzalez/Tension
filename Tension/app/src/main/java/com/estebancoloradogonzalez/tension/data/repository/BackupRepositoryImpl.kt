@@ -27,7 +27,7 @@ class BackupRepositoryImpl @Inject constructor(
 ) : BackupRepository {
 
     companion object {
-        const val SCHEMA_VERSION = 14
+        const val SCHEMA_VERSION = 15
 
         const val APP_VERSION = "1.0"
 
@@ -48,6 +48,13 @@ class BackupRepositoryImpl @Inject constructor(
          * primaria junto a `exercise_id`. Aceptarlo obligaria a inventar un implemento por
          * fila, y la CA exige que la restauracion reproduzca el estado del motor par por
          * par **sin recalcularlo**.
+         *
+         * El 14 cae por lo mismo (CA-41.10). Le faltan tres columnas `NOT NULL` que HU-41
+         * anadio: `exercise_muscle_zone.is_primary`, `plan_assignment.suggested_equipment_type_id`
+         * y `muscle_zone.sort_order`. Las dos primeras no se derivan de nada —la jerarquia
+         * y la sugerencia son decisiones, no calculos— y la CA exige que la restauracion
+         * reproduzca el catalogo y el plan **sin recalcularlos**. Ninguna tabla nueva entra
+         * en el orden: el mecanismo vuelca columnas por cursor y las tres viajan solas.
          */
         private val ACCEPTED_SCHEMA_VERSIONS = setOf(SCHEMA_VERSION)
 

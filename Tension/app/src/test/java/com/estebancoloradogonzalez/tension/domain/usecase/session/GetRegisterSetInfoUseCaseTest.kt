@@ -1,6 +1,7 @@
 package com.estebancoloradogonzalez.tension.domain.usecase.session
 
 import com.estebancoloradogonzalez.tension.domain.model.EquipmentType
+import com.estebancoloradogonzalez.tension.domain.model.PreselectionOrigin
 import com.estebancoloradogonzalez.tension.domain.model.RegisterSetInfo
 import com.estebancoloradogonzalez.tension.domain.model.WeightUnit
 import com.estebancoloradogonzalez.tension.domain.repository.SessionRepository
@@ -36,6 +37,7 @@ class GetRegisterSetInfoUseCaseTest {
                 EquipmentType(id = 6L, name = "Mancuerna"),
             ),
             preselectedEquipmentTypeId = 6L,
+            preselectionOrigin = PreselectionOrigin.LAST_USED,
         )
         coEvery { repository.getRegisterSetInfo(1L) } returns expected
 

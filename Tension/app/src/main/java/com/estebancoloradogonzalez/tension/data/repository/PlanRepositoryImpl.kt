@@ -1,6 +1,7 @@
 package com.estebancoloradogonzalez.tension.data.repository
 
 import com.estebancoloradogonzalez.tension.data.local.dao.ExerciseDao
+import com.estebancoloradogonzalez.tension.data.local.dao.ExerciseWithDetails
 import com.estebancoloradogonzalez.tension.data.local.dao.PlanAssignmentDao
 import com.estebancoloradogonzalez.tension.data.local.dao.RoutineDao
 import com.estebancoloradogonzalez.tension.data.local.dao.RoutineVersionDao
@@ -77,7 +78,10 @@ class PlanRepositoryImpl @Inject constructor(
                             exerciseId = pa.exerciseId,
                             name = pa.exerciseName,
                             equipmentTypes = pa.equipmentTypes.toAggregatedList(),
-                            muscleZones = pa.muscleZones.toAggregatedList(),
+                            primaryMuscleZones = pa.primaryMuscleZones.toAggregatedList(),
+                            secondaryMuscleZones = pa.secondaryMuscleZones.toAggregatedList(),
+                            suggestedEquipmentTypeId = pa.suggestedEquipmentTypeId,
+                            suggestedEquipmentName = pa.suggestedEquipmentName,
                             sets = pa.sets,
                             reps = pa.reps,
                             isBodyweight = pa.isBodyweight == 1,
@@ -101,6 +105,7 @@ class PlanRepositoryImpl @Inject constructor(
         exerciseId: Long,
         sets: Int,
         reps: String,
+        suggestedEquipmentTypeId: Long,
     ) {
         val nextSortOrder = (planAssignmentDao.getMaxSortOrder(routineVersionId) ?: 0) + 1
         val nextSlot = (planAssignmentDao.getMaxSlot(routineVersionId) ?: 0) + 1
@@ -112,6 +117,7 @@ class PlanRepositoryImpl @Inject constructor(
                 reps = reps,
                 sortOrder = nextSortOrder,
                 slot = nextSlot,
+                suggestedEquipmentTypeId = suggestedEquipmentTypeId,
             ),
         )
     }
@@ -120,8 +126,10 @@ class PlanRepositoryImpl @Inject constructor(
         routineVersionId: Long,
         slot: Int,
         exerciseId: Long,
+        suggestedEquipmentTypeId: Long,
     ) {
-        // Inherit sets/reps from first exercise in this slot
+        // Hereda series y repeticiones del primer ejercicio del slot. El implemento
+        // sugerido NO se hereda: es propio de cada ejercicio (CA-41.05).
         val existing = planAssignmentDao.getAlternativesForSlot(routineVersionId, slot)
         val sets = existing.firstOrNull()?.sets ?: 4
         val reps = existing.firstOrNull()?.reps ?: "8-12"
@@ -134,6 +142,7 @@ class PlanRepositoryImpl @Inject constructor(
                 reps = reps,
                 sortOrder = nextSortOrder,
                 slot = slot,
+                suggestedEquipmentTypeId = suggestedEquipmentTypeId,
             ),
         )
     }
@@ -144,7 +153,10 @@ class PlanRepositoryImpl @Inject constructor(
                 exerciseId = pa.exerciseId,
                 name = pa.exerciseName,
                 equipmentTypes = pa.equipmentTypes.toAggregatedList(),
-                muscleZones = pa.muscleZones.toAggregatedList(),
+                primaryMuscleZones = pa.primaryMuscleZones.toAggregatedList(),
+                secondaryMuscleZones = pa.secondaryMuscleZones.toAggregatedList(),
+                suggestedEquipmentTypeId = pa.suggestedEquipmentTypeId,
+                suggestedEquipmentName = pa.suggestedEquipmentName,
                 sets = pa.sets,
                 reps = pa.reps,
                 isBodyweight = pa.isBodyweight == 1,
@@ -181,12 +193,27 @@ class PlanRepositoryImpl @Inject constructor(
         }
     }
 
-    private fun com.estebancoloradogonzalez.tension.data.local.dao.ExerciseWithDetails.toDomainModel() =
+    override suspend fun setSuggestedEquipment(
+        routineVersionId: Long,
+        exerciseId: Long,
+        equipmentTypeId: Long,
+    ) {
+        planAssignmentDao.updateSuggestedEquipment(routineVersionId, exerciseId, equipmentTypeId)
+    }
+
+    override suspend fun getRoutinesSuggestingEquipment(
+        exerciseId: Long,
+        equipmentTypeId: Long,
+    ): List<String> =
+        planAssignmentDao.getRoutineNamesSuggestingEquipment(exerciseId, equipmentTypeId)
+
+    private fun ExerciseWithDetails.toDomainModel() =
         Exercise(
             id = id,
             name = name,
-            equipmentTypes = equipmentTypes.toAggregatedList(),
-            muscleZones = muscleZones.toAggregatedList(),
+            equipmentOptions = equipmentOptions(),
+            primaryMuscleZones = primaryMuscleZones.toAggregatedList(),
+            secondaryMuscleZones = secondaryMuscleZones.toAggregatedList(),
             muscleGroup = muscleGroup,
             isBodyweight = isBodyweight == 1,
             isIsometric = isIsometric == 1,

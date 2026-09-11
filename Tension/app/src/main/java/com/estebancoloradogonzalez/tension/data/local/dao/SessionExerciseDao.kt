@@ -133,7 +133,7 @@ interface SessionExerciseDao {
                 SELECT mz.name AS name FROM exercise_muscle_zone emz
                 INNER JOIN muscle_zone mz ON emz.muscle_zone_id = mz.id
                 WHERE emz.exercise_id = se.exercise_id
-                ORDER BY mz.id
+                ORDER BY emz.is_primary DESC, mz.sort_order
             )) AS muscleZones,
             COALESCE(pa.sets, 4) AS sets,
             COALESCE(pa.reps, '8-12') AS reps,
@@ -145,7 +145,9 @@ interface SessionExerciseDao {
             (SELECT COUNT(*) FROM exercise_set es WHERE es.session_exercise_id = se.id) AS completedSets,
             (SELECT mz2.muscle_group FROM exercise_muscle_zone emz2
              INNER JOIN muscle_zone mz2 ON emz2.muscle_zone_id = mz2.id
-             WHERE emz2.exercise_id = se.exercise_id LIMIT 1) AS muscleGroup,
+             WHERE emz2.exercise_id = se.exercise_id
+             ORDER BY emz2.is_primary DESC, mz2.sort_order ASC
+             LIMIT 1) AS muscleGroup,
             se.is_finalized AS isFinalized,
             se.pending_selection AS pendingSelection,
             se.slot AS slot,
@@ -207,7 +209,9 @@ interface SessionExerciseDao {
             e.progression_difficulty AS progressionDifficulty,
             (SELECT mz.muscle_group FROM exercise_muscle_zone emz
              INNER JOIN muscle_zone mz ON emz.muscle_zone_id = mz.id
-             WHERE emz.exercise_id = se.exercise_id LIMIT 1) AS muscleGroup
+             WHERE emz.exercise_id = se.exercise_id
+             ORDER BY emz.is_primary DESC, mz.sort_order ASC
+             LIMIT 1) AS muscleGroup
         FROM session_exercise se
         INNER JOIN exercise e ON se.exercise_id = e.id
         WHERE se.session_id = :sessionId AND se.exercise_id IS NOT NULL
@@ -221,9 +225,18 @@ interface SessionExerciseDao {
         FROM exercise_muscle_zone emz
         INNER JOIN muscle_zone mz ON emz.muscle_zone_id = mz.id
         WHERE emz.exercise_id = :exerciseId
+        ORDER BY emz.is_primary DESC, mz.sort_order ASC
         LIMIT 1
         """,
     )
+    /**
+     * Grupo de agregación del ejercicio, del que cuelga la alerta `TONNAGE_DROP`.
+     *
+     * El nombre prometía «principal» desde antes de que la jerarquía existiera: hasta
+     * HU-41 el `LIMIT 1` no tenía `ORDER BY` y devolvía un grupo arbitrario, correcto solo
+     * porque casi todo ejercicio tenía una zona. Con la jerarquía el nombre pasa a ser
+     * cierto: primero las principales, y entre ellas la primera del catálogo.
+     */
     suspend fun getPrimaryMuscleGroupByExercise(exerciseId: Long): String?
 
     @Query(
@@ -300,7 +313,9 @@ interface SessionExerciseDao {
             ) THEN 1 ELSE 0 END AS isMastered,
             (SELECT mz.muscle_group FROM exercise_muscle_zone emz
              INNER JOIN muscle_zone mz ON emz.muscle_zone_id = mz.id
-             WHERE emz.exercise_id = se.exercise_id LIMIT 1) AS muscleGroup,
+             WHERE emz.exercise_id = se.exercise_id
+             ORDER BY emz.is_primary DESC, mz.sort_order ASC
+             LIMIT 1) AS muscleGroup,
             (SELECT SUM(es3.reps)
              FROM exercise_set es3
              WHERE es3.session_exercise_id = (
@@ -404,6 +419,13 @@ interface SessionExerciseDao {
     )
     suspend fun getPairSessionRangeByPeriod(startDate: String): List<ExercisePairSessionRange>
 
+    /**
+     * Clasificaciones por grupo muscular, base de la tendencia de progresión (`G3-T1`).
+     *
+     * **Todas las zonas del ejercicio cuentan, sin ponderación** (CA-41.04): el ejercicio
+     * aporta su clasificación a cada grupo que toca. La jerarquía de HU-41 no filtra aquí,
+     * igual que no filtra en el tonelaje ni en el volumen.
+     */
     @Query(
         """
         SELECT

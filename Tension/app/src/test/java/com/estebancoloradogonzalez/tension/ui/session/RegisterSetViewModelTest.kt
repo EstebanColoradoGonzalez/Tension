@@ -3,6 +3,7 @@ package com.estebancoloradogonzalez.tension.ui.session
 import android.content.Context
 import androidx.lifecycle.SavedStateHandle
 import com.estebancoloradogonzalez.tension.domain.model.EquipmentType
+import com.estebancoloradogonzalez.tension.domain.model.PreselectionOrigin
 import com.estebancoloradogonzalez.tension.domain.model.RegisterSetInfo
 import com.estebancoloradogonzalez.tension.domain.model.WeightUnit
 import com.estebancoloradogonzalez.tension.domain.rules.ExternalLoadRule
@@ -72,6 +73,7 @@ class RegisterSetViewModelTest {
         isIsometric: Boolean = false,
         equipmentOptions: List<EquipmentType> = listOf(barra),
         preselectedEquipmentTypeId: Long = equipmentOptions.first().id,
+        preselectionOrigin: PreselectionOrigin = PreselectionOrigin.LAST_USED,
     ) = RegisterSetInfo(
         sessionExerciseId = sessionExerciseId,
         exerciseId = 10L,
@@ -86,6 +88,7 @@ class RegisterSetViewModelTest {
         captureUnit = captureUnit,
         equipmentOptions = equipmentOptions,
         preselectedEquipmentTypeId = preselectedEquipmentTypeId,
+        preselectionOrigin = preselectionOrigin,
     )
 
     private fun createViewModel(): RegisterSetViewModel {
@@ -661,5 +664,57 @@ class RegisterSetViewModelTest {
                 mancuerna.name,
             )
         }
+    }
+
+    // ----- CA-41.05: el rótulo que explica la preselección -----
+
+    @Test
+    fun `given the plan suggests the implement, when loading, then the origin says so`() = runTest {
+        coEvery { getRegisterSetInfoUseCase(sessionExerciseId) } returns info(
+            equipmentOptions = listOf(barra, mancuerna),
+            preselectedEquipmentTypeId = barra.id,
+            preselectionOrigin = PreselectionOrigin.PLAN_SUGGESTION,
+        )
+
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        assertEquals(barra.id, viewModel.uiState.value.selectedEquipmentTypeId)
+        assertEquals(PreselectionOrigin.PLAN_SUGGESTION, viewModel.uiState.value.preselectionOrigin)
+    }
+
+    @Test
+    fun `given the executant picks another implement, then the origin label disappears`() = runTest {
+        // El último cambio manda: a partir de aquí el implemento es suyo, y un rótulo que
+        // siguiera diciendo «sugerido por el plan» sería falso.
+        coEvery { getRegisterSetInfoUseCase(sessionExerciseId) } returns info(
+            equipmentOptions = listOf(barra, mancuerna),
+            preselectedEquipmentTypeId = barra.id,
+            preselectionOrigin = PreselectionOrigin.PLAN_SUGGESTION,
+        )
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        viewModel.onEquipmentSelected(mancuerna.id)
+        advanceUntilIdle()
+
+        assertEquals(mancuerna.id, viewModel.uiState.value.selectedEquipmentTypeId)
+        assertNull(viewModel.uiState.value.preselectionOrigin)
+    }
+
+    @Test
+    fun `given the first admitted option, when loading, then there is no label to show`() = runTest {
+        // Ni historial ni sugerencia aplicable: el estado más común de un ejercicio nuevo,
+        // y el único sin nada que explicar.
+        coEvery { getRegisterSetInfoUseCase(sessionExerciseId) } returns info(
+            equipmentOptions = listOf(barra, mancuerna),
+            preselectedEquipmentTypeId = barra.id,
+            preselectionOrigin = PreselectionOrigin.FIRST_OPTION,
+        )
+
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        assertEquals(PreselectionOrigin.FIRST_OPTION, viewModel.uiState.value.preselectionOrigin)
     }
 }

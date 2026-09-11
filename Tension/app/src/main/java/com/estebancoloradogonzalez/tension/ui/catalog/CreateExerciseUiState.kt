@@ -10,7 +10,10 @@ data class CreateExerciseUiState(
     val equipmentTypes: List<EquipmentType> = emptyList(),
     val selectedEquipmentTypeIds: Set<Long> = emptySet(),
     val muscleZones: List<MuscleZone> = emptyList(),
-    val selectedMuscleZoneIds: Set<Long> = emptySet(),
+    /** Zonas que ejecutan el movimiento. Obligatorio: al menos una (CA-41.09). */
+    val primaryMuscleZoneIds: List<Long> = emptyList(),
+    /** Zonas que asisten. Opcional, y nunca comparte una zona con las principales. */
+    val secondaryMuscleZoneIds: List<Long> = emptyList(),
     val isBodyweight: Boolean = false,
     val isIsometric: Boolean = false,
     val isToTechnicalFailure: Boolean = false,
@@ -23,9 +26,13 @@ data class CreateExerciseUiState(
     val saveSuccess: Boolean = false,
     val saveError: String? = null,
 ) {
+    /**
+     * El botón permanece deshabilitado mientras no haya una zona principal (CA-41.09).
+     * Las secundarias no entran: son opcionales.
+     */
     val canSave: Boolean
         get() = name.isNotBlank() &&
             selectedEquipmentTypeIds.isNotEmpty() &&
-            selectedMuscleZoneIds.isNotEmpty() &&
+            primaryMuscleZoneIds.isNotEmpty() &&
             !isSaving
 }

@@ -68,6 +68,7 @@ class ProgresionPorEquipamientoTest {
             exerciseProgressionDao = db.exerciseProgressionDao(),
             exerciseOneRmDao = db.exerciseOneRmDao(),
             sessionExerciseProgressionDao = db.sessionExerciseProgressionDao(),
+            sessionWithdrawalDao = db.sessionWithdrawalDao(),
             alertDao = db.alertDao(),
             database = db,
             deloadDao = db.deloadDao(),
@@ -75,6 +76,14 @@ class ProgresionPorEquipamientoTest {
             equipmentTypeDao = db.equipmentTypeDao(),
             profileDao = db.profileDao(),
             currentDateProvider = CurrentDateProvider(),
+        )
+
+        // `rotation_state` no lo siembra PrepopulateCallback: lo crea el alta de perfil
+        // (ProfileRepositoryImpl), que en una base de prueba no ocurre. Sin esta fila
+        // `closeSession` no llega a avanzar la rotacion.
+        db.openHelper.writableDatabase.execSQL(
+            "INSERT OR IGNORE INTO rotation_state (id, microcycle_position, microcycle_count) " +
+                "VALUES (1, 1, 0)",
         )
 
         routineVersionId = leerLong(

@@ -2,7 +2,7 @@
 
 > Este documento define la arquitectura estructural de la memoria del sistema y el ciclo de vida de sus entidades. Actúa simultáneamente como Modelo Entidad-Relación, Diccionario de Datos y Máquina de Estados. Se utiliza una sintaxis declarativa (pseudo-código estilo Prisma/TypeScript) para definir las estructuras, utilizando los comentarios inline como el diccionario de datos.
 >
-> **Versión de esquema:** 23 (migraciones registradas: v1 → v2 → … → v18 → v19). **Ni v20, ni v21, ni v22, ni v23 tienen migración**: v20 (HU-39) retira `exercise.equipment_type_id`, introduce `exercise_equipment` y añade `exercise_set.equipment_type_id`; v21 (HU-40) reclave `exercise_progression` por el par `(exercise_id, equipment_type_id)` e introduce `session_exercise_progression`; v22 (HU-41) añade `muscle_zone.sort_order`, `exercise_muscle_zone.is_primary` y `plan_assignment.suggested_equipment_type_id`; v23 (HU-42) introduce `exercise_one_rm`. La excepción documentada a RNF19 (ADR-019) resuelve los cuatro cambios sobre instalación fresca. Una base anterior no puede abrir el build vigente — el reinicio lo realiza el ejecutante desinstalando y reinstalando, no la aplicación, y el historial anterior se pierde como consecuencia aceptada.
+> **Versión de esquema:** 24 (migraciones registradas: v1 → v2 → … → v18 → v19). **Ni v20, ni v21, ni v22, ni v23, ni v24 tienen migración**: v20 (HU-39) retira `exercise.equipment_type_id`, introduce `exercise_equipment` y añade `exercise_set.equipment_type_id`; v21 (HU-40) reclave `exercise_progression` por el par `(exercise_id, equipment_type_id)` e introduce `session_exercise_progression`; v22 (HU-41) añade `muscle_zone.sort_order`, `exercise_muscle_zone.is_primary` y `plan_assignment.suggested_equipment_type_id`; v23 (HU-42) introduce `exercise_one_rm`; v24 (HU-43) añade `session_exercise.is_extra`, `prescribed_sets` y `prescribed_reps`, e introduce `session_withdrawal`. La excepción documentada a RNF19 (ADR-019) resuelve los cinco cambios sobre instalación fresca. Una base anterior no puede abrir el build vigente — el reinicio lo realiza el ejecutante desinstalando y reinstalando, no la aplicación, y el historial anterior se pierde como consecuencia aceptada.
 >
 > El código declara la frontera en `Migrations.LAST_MIGRATED_VERSION` (**19**): por debajo de ella la cadena de migraciones es continua y sin huecos, y el salto de ahí a la versión del esquema es la excepción de ADR-019, que sube historia por historia de forma deliberada. Las migraciones `16→17`, `17→18` y `18→19`, ausentes durante tres versiones, se repusieron después de dejar la aplicación incapaz de abrir cualquier base existente.
 
@@ -230,12 +230,49 @@ model session_exercise {
   exercise_id               INTEGER  @fk(exercise.id) @optional              // FK → exercise. Ejercicio efectivamente ejecutado: el del plan o la alternativa del slot. ON DELETE RESTRICT.
   is_finalized              INTEGER  @notNull @default(0)                    // Booleano. 1 = ejercicio finalizado (explícitamente o al cerrar sesión). Determina estado Completado.
   pending_selection         INTEGER  @notNull @default(0)                    // Columna legacy. Siempre 0. Mantenida por compatibilidad de esquema (v12).
-  slot                      INTEGER  @notNull @default(0)                    // Número de puesto (slot) correspondiente a plan_assignment.slot. Permite identificar alternativas disponibles.
+  slot                      INTEGER  @notNull @default(0)                    // Número de puesto (slot) correspondiente a plan_assignment.slot. Permite identificar alternativas disponibles. Sin significado cuando is_extra = 1.
   progression_classification TEXT    @optional                               // Clasificación asignada al cierre: "POSITIVE_PROGRESSION", "MAINTENANCE", "REGRESSION". NULL si sin historial previo. Ver Enum ProgressionClassification.
-  // CONSTRAINT: UNIQUE(session_id, exercise_id).
+  is_extra                  INTEGER  @notNull @default(0)                    // Booleano (v24, HU-43). 1 = añadido por el ejecutante a la sesión en curso; 0 = traído por el plan. Marca para ORDENAR (los añadidos van al final), SEÑALAR y CONTAR el presupuesto de retiro. **Nunca para excluir**: las series del añadido cuentan para progresión, tonelaje, KPIs y 1RM como cualquier otra (CA-43.08).
+  prescribed_sets           INTEGER  @optional                               // Series propias del añadido (v24, HU-43). NULL en las filas del plan: las suyas viven en plan_assignment. 3 por defecto (CA-43.03).
+  prescribed_reps           TEXT     @optional                               // Rango propio del añadido (v24, HU-43). NULL en las filas del plan. Mismo vocabulario que plan_assignment.reps: "8-12", "30-45_SEC", "TO_TECHNICAL_FAILURE" — ajustado al modo del ejercicio.
+  // CONSTRAINT: UNIQUE(session_id, exercise_id). Desde HU-43 también impide añadir dos veces el mismo ejercicio a la sesión (CA-43.01).
   // INTEGRIDAD: el intercambio por la alternativa del slot solo es posible con 0 series registradas.
+  // INTEGRIDAD (v24, HU-43): un ejercicio añadido no ocupa puesto, y por tanto no tiene
+  // alternativas intercambiables. Toda expresión que dependa de `slot` —el LEFT JOIN a
+  // plan_assignment y el conteo de alternativas del puesto— va guardada por is_extra = 0:
+  // los puestos del plan empiezan también en 0, así que sin la guarda el añadido heredaría
+  // en silencio las series y las alternativas del primer puesto.
+  // INTEGRIDAD (v24, HU-43): retirar un ejercicio BORRA su fila, y solo es posible con 0
+  // series registradas. El retiro de un ejercicio del plan deja constancia en
+  // session_withdrawal; quitar un añadido es deshacer y no deja ninguna.
   // NOTA (v16, HU-34): original_exercise_id se retiró junto con la sustitución por
   // grupo muscular, su único escritor. La fila ya no distingue plan de ejecutado.
+}
+
+// ==========================================
+// ENTIDAD: session_withdrawal
+// PROPÓSITO: Retiro temporal de un ejercicio del plan
+// en una sesión concreta (v24, HU-43).
+// El ejercicio retirado se BORRA de session_exercise
+// —tiene 0 series, así que no se destruye nada
+// inmutable, y el borrado lo saca de golpe del cierre,
+// la clasificación, el tonelaje y el historial—, pero
+// el retiro en sí debe sobrevivir: sostiene la
+// invariante de CA-43.05 y da nombre al aviso del
+// historial (CA-43.08).
+// ==========================================
+model session_withdrawal {
+  id                        INTEGER  @id @autoincrement                      // PK. Identificador único.
+  session_id                INTEGER  @fk(session.id) @notNull                // FK → session. ON DELETE CASCADE: el retiro es un dato de la sesión y desaparece con ella.
+  exercise_id               INTEGER  @fk(exercise.id) @notNull               // FK → exercise. ON DELETE RESTRICT. Índice propio.
+  // CONSTRAINT: UNIQUE(session_id, exercise_id).
+  // INTEGRIDAD: solo se escribe al retirar un ejercicio que trajo el plan. Un ejercicio
+  // del plan solo puede retirarse una vez por sesión, porque si vuelve, vuelve como añadido
+  // (is_extra = 1) y quitarlo entonces es deshacer, no retirar. De ahí que el índice único
+  // se sostenga.
+  // INVARIANTE (CA-43.05): COUNT(session_exercise WHERE is_extra = 1) >= COUNT(session_withdrawal),
+  // por sesión y en todo momento. Reponer NO borra la fila: la aritmética depende de que
+  // siga contada. Lo que deja de estar pendiente es el aviso, no el retiro.
 }
 
 // ==========================================
@@ -497,6 +534,9 @@ model alert {
 | `exercise` | `1 : N` | `exercise_one_rm` | "Acumula un récord por implemento" | RESTRICT: un ejercicio no se puede eliminar si tiene algún 1RM registrado. |
 | `equipment_type` | `1 : N` | `exercise_one_rm` | "Identifica el par del récord" | RESTRICT: un tipo de equipamiento no se puede eliminar si algún 1RM lo referencia. |
 | `exercise_set` | `—` | `exercise_one_rm` | **Sin relación declarada** | `exercise_one_rm` no apunta a la serie que lo produjo. La dependencia es de **lectura** —el récord se calcula al persistir la serie— y no de integridad: una FK haría que borrar la serie arrastrara un máximo que, sin retro-cálculo, ya no se podría reconstruir. La dirección es única, como en `tree_state`: el 1RM lee del historial y ninguna entidad del sistema lee del 1RM. |
+| `session` | `1 : N` | `session_withdrawal` | "Registra retiros temporales" | CASCADE: si se elimina una sesión, sus retiros se eliminan. El retiro es un dato de la sesión, del mismo orden que una serie. |
+| `exercise` | `1 : N` | `session_withdrawal` | "Fue retirado de sesiones" | RESTRICT: un ejercicio no se puede eliminar si alguna sesión registra haberlo retirado. |
+| `plan_assignment` | `—` | `session_withdrawal` | **Sin relación declarada** | El retiro **no toca el plan**. `session_withdrawal` no apunta a la asignación retirada, y no podría: el ajuste es temporal y el plan por defecto queda intacto (CA-43.08). La siguiente sesión de esa rutina vuelve a proponer su composición original. |
 | `tree_state` | `—` | `—` | **Sin relaciones** | `tree_state` no declara ninguna clave foránea. Se **deriva** de `session` por cálculo, no por referencia: la dependencia es de lectura y no de integridad, y una FK a `session` la convertiría en integridad haciendo que borrar una sesión arrastrara el árbol. La dirección es única — el árbol lee del historial y ninguna entidad del sistema lee del árbol. |
 
 ---
@@ -820,6 +860,8 @@ La clasificación consolidada de cada sesión se persiste en `session_exercise.p
 - **`day_skip` (0 filas):** No se siembra. La tabla nace vacía y solo tiene fila el día que el ejecutante declara que no entrena.
 
 - **`tree_state` (0 filas):** No se siembra, a diferencia de `rotation_state`. El árbol es **enteramente derivable** del historial, y sembrarlo exigiría un seeder para un dato que el primer recálculo produce solo. Mientras la fila no existe, la lectura devuelve el estado de partida — `SEED`, salud 100, sin fecha de última sesión —, que es exactamente lo que corresponde a un ejecutante que aún no ha entrenado. La fila nace en el primer recálculo, que ocurre al abrir la app.
+
+- **`session_withdrawal` (0 filas):** No se siembra. Nace vacía y solo crece cuando el ejecutante retira un ejercicio de una sesión en curso, dentro del presupuesto que sus añadidos le dan (CA-43.04). Una base recién instalada no tiene ninguna sesión, así que no hay nada que rellenar ni retro-calcular. El detalle de una sesión sin filas aquí no muestra ningún aviso de retiro, que es exactamente lo correcto: no se retiró nada.
 
 - **`exercise_one_rm` (0 filas):** No se siembra, por la misma razón que `tree_state` y con una consecuencia distinta. La tabla nace vacía y **solo hacia adelante**: cada fila aparece la primera vez que una serie del par cumple la condición de referencia. No hay retro-cálculo — el cambio de esquema se resuelve por instalación fresca (ADR-019), así que al llegar la historia no existe historial previo que rellenar. Mientras no haya ninguna fila, la vista de 1RM presenta su estado vacío explicativo en lugar de una lista en blanco.
 

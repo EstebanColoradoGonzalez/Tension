@@ -2,7 +2,7 @@
 story_number: 43
 title: 'Ajustar la sesión del día'
 slug: 'ajustar-sesion-del-dia'
-estado: 'Borrador (PO)'
+estado: 'Lista para Revisión'
 autor: 'Esteban Colorado González'
 fecha_creacion: '2026-09-06'
 es_resultado_slicing: true
@@ -21,10 +21,10 @@ slicing_justificacion: 'Score INVEST 4/6 de la historia original. Corte vertical
 | Fase                    | Estado        | Fecha      | Responsable                    |
 | ----------------------- | ------------- | ---------- | ------------------------------ |
 | Creación HU             | ✅ Completada | 2026-09-06 | Esteban Colorado González (PO) |
-| Análisis Arquitectónico | ⏳ Pendiente  |            | Arquitecto                     |
-| Refinamiento Técnico    | ⏳ Pendiente  |            | Developer                      |
-| Estimación              | ⏳ Pendiente  |            | Developer                      |
-| Desarrollo              | ⏳ Pendiente  |            | Developer                      |
+| Análisis Arquitectónico | ✅ Absorbida por dev-rápido | 2026-09-11 | Esteban Colorado González (Developer) |
+| Refinamiento Técnico    | ✅ Completada | 2026-09-11 | Esteban Colorado González (Developer) |
+| Estimación              | ➖ No aplica (dev-rápido) |            | Developer                      |
+| Desarrollo              | ✅ Completada | 2026-09-11 | Esteban Colorado González (Developer) |
 | Revisión                | ⏳ Pendiente  |            | Revisor                        |
 
 ## Archivos de esta Historia
@@ -43,6 +43,8 @@ slicing_justificacion: 'Score INVEST 4/6 de la historia original. Corte vertical
 | Fase        | Inicio           | Fin |
 | ----------- | ---------------- | --- |
 | Creación HU | 2026-09-06 23:23 | 2026-09-07 00:49 |
+| Refinamiento Técnico | 2026-09-11 20:47 | 2026-09-11 21:05 |
+| Desarrollo | 2026-09-11 21:05 | 2026-09-11 21:26 |
 
 ---
 

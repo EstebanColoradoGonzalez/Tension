@@ -2,11 +2,13 @@ package com.estebancoloradogonzalez.tension.ui.catalog
 
 import android.content.Context
 import android.net.Uri
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.estebancoloradogonzalez.tension.R
 import com.estebancoloradogonzalez.tension.data.local.storage.ImageStorageHelper
 import com.estebancoloradogonzalez.tension.domain.model.ProgressionDifficulty
+import com.estebancoloradogonzalez.tension.domain.usecase.catalog.CreateAndAddExerciseToSessionUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.catalog.CreateExerciseUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.catalog.GetAllFilterOptionsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -23,11 +25,22 @@ import javax.inject.Inject
 class CreateExerciseViewModel @Inject constructor(
     private val getAllFilterOptionsUseCase: GetAllFilterOptionsUseCase,
     private val createExerciseUseCase: CreateExerciseUseCase,
+    private val createAndAddExerciseToSessionUseCase: CreateAndAddExerciseToSessionUseCase,
     private val imageStorageHelper: ImageStorageHelper,
     @ApplicationContext private val context: Context,
+    savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(CreateExerciseUiState())
+    /**
+     * Sesión desde la que se abrió el formulario, si vino de una (CA-43.02).
+     *
+     * El destino es el mismo que el del Diccionario; lo único que cambia es qué ocurre
+     * después de guardar. El formulario no se recorta ni se reordena.
+     */
+    private val sessionId: Long? = savedStateHandle.get<Long>(SESSION_ID_ARG)
+        ?.takeIf { it > 0 }
+
+    private val _uiState = MutableStateFlow(CreateExerciseUiState(isFromSession = sessionId != null))
     val uiState: StateFlow<CreateExerciseUiState> = _uiState.asStateFlow()
 
     init {
@@ -146,17 +159,33 @@ class CreateExerciseViewModel @Inject constructor(
         _uiState.update { it.copy(isSaving = true, saveError = null) }
         viewModelScope.launch {
             try {
-                createExerciseUseCase(
-                    name = state.name,
-                    equipmentTypeIds = state.selectedEquipmentTypeIds.toList(),
-                    primaryMuscleZoneIds = state.primaryMuscleZoneIds,
-                    secondaryMuscleZoneIds = state.secondaryMuscleZoneIds,
-                    isBodyweight = state.isBodyweight,
-                    isIsometric = state.isIsometric,
-                    isToTechnicalFailure = state.isToTechnicalFailure,
-                    mediaResource = state.imageUri,
-                    progressionDifficulty = state.progressionDifficulty,
-                )
+                val session = sessionId
+                if (session == null) {
+                    createExerciseUseCase(
+                        name = state.name,
+                        equipmentTypeIds = state.selectedEquipmentTypeIds.toList(),
+                        primaryMuscleZoneIds = state.primaryMuscleZoneIds,
+                        secondaryMuscleZoneIds = state.secondaryMuscleZoneIds,
+                        isBodyweight = state.isBodyweight,
+                        isIsometric = state.isIsometric,
+                        isToTechnicalFailure = state.isToTechnicalFailure,
+                        mediaResource = state.imageUri,
+                        progressionDifficulty = state.progressionDifficulty,
+                    )
+                } else {
+                    createAndAddExerciseToSessionUseCase(
+                        sessionId = session,
+                        name = state.name,
+                        equipmentTypeIds = state.selectedEquipmentTypeIds.toList(),
+                        primaryMuscleZoneIds = state.primaryMuscleZoneIds,
+                        secondaryMuscleZoneIds = state.secondaryMuscleZoneIds,
+                        isBodyweight = state.isBodyweight,
+                        isIsometric = state.isIsometric,
+                        isToTechnicalFailure = state.isToTechnicalFailure,
+                        mediaResource = state.imageUri,
+                        progressionDifficulty = state.progressionDifficulty,
+                    )
+                }
                 _uiState.update { it.copy(isSaving = false, saveSuccess = true) }
             } catch (e: IllegalArgumentException) {
                 _uiState.update {
@@ -178,5 +207,9 @@ class CreateExerciseViewModel @Inject constructor(
 
     fun onDismissSaveError() {
         _uiState.update { it.copy(saveError = null) }
+    }
+
+    companion object {
+        const val SESSION_ID_ARG = "sessionId"
     }
 }

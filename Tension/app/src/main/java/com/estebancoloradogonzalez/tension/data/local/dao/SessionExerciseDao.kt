@@ -28,6 +28,8 @@ data class SessionExerciseWithDetails(
     val pendingSelection: Int,
     val slot: Int,
     val alternativesInSlot: Int,
+    /** Si lo añadió el ejecutante en lugar de traerlo el plan (HU-43). */
+    val isExtra: Int,
 )
 
 data class SetExerciseInfo(
@@ -80,6 +82,8 @@ data class SessionDetailExerciseDto(
     val classification: String?,
     val setCount: Int,
     val isDeload: Boolean,
+    /** Añadido a aquella sesión, no traído por el plan (HU-43). */
+    val isExtra: Boolean,
 )
 
 data class ExerciseHistoryEntryDto(
@@ -106,6 +110,39 @@ interface SessionExerciseDao {
     @Query("SELECT * FROM session_exercise WHERE session_id = :sessionId")
     fun getBySessionId(sessionId: Long): Flow<List<SessionExerciseEntity>>
 
+    @Query("SELECT * FROM session_exercise WHERE id = :sessionExerciseId")
+    suspend fun getById(sessionExerciseId: Long): SessionExerciseEntity?
+
+    /** Cuántos ejercicios añadió el ejecutante. Es el término izquierdo de la invariante. */
+    @Query("SELECT COUNT(*) FROM session_exercise WHERE session_id = :sessionId AND is_extra = 1")
+    suspend fun countExtrasInSession(sessionId: Long): Int
+
+    @Query("SELECT COUNT(*) FROM session_exercise WHERE session_id = :sessionId AND is_extra = 1")
+    fun observeExtraCountInSession(sessionId: Long): Flow<Int>
+
+    @Query(
+        """
+        SELECT EXISTS(
+            SELECT 1 FROM session_exercise
+            WHERE session_id = :sessionId AND exercise_id = :exerciseId
+        )
+        """,
+    )
+    suspend fun existsInSession(sessionId: Long, exerciseId: Long): Boolean
+
+    /**
+     * Retira el ejercicio de la sesión.
+     *
+     * Solo se invoca sobre filas con **0 series** (CA-43.06), de modo que el `CASCADE` de
+     * `exercise_set` nunca llega a borrar nada: la serie es inmutable y esa inmutabilidad es
+     * justo la razón de la restricción, no una consecuencia de ella.
+     */
+    @Query("DELETE FROM session_exercise WHERE id = :sessionExerciseId")
+    suspend fun deleteById(sessionExerciseId: Long)
+
+    @Insert
+    suspend fun insert(exercise: SessionExerciseEntity): Long
+
     /**
      * Exercises of the active session, as the session screen lists them.
      *
@@ -116,6 +153,18 @@ interface SessionExerciseDao {
      * consistent with the disjunction of CA-40.04 — because this screen does not know which
      * implement the next set will use. The load that actually governs the prefilled field
      * is the pair's, and it is resolved in `getRegisterSetInfo`.
+     *
+     * Desde HU-43 todo lo que depende de `slot` va guardado por `is_extra = 0`, y no es una
+     * precaución retórica: los puestos del plan empiezan en `0`, que es también el valor por
+     * defecto de la columna, así que sin las guardas un ejercicio añadido heredaría por el
+     * `LEFT JOIN` las series y repeticiones del puesto 0 y por la subconsulta sus
+     * alternativas — las dos cosas que CA-43.01 y CA-43.03 prohíben, y ninguna de las dos
+     * lanza excepción. `prescribed_sets` y `prescribed_reps` van delante del plan en el
+     * `COALESCE`: quien tiene prescripción propia no pide prestada la de nadie.
+     *
+     * El orden antepone `is_extra` porque el añadido entra **al final** de la lista, fuera
+     * de la estructura de puestos (CA-43.01), y `se.id` desempata los añadidos por orden de
+     * llegada.
      */
     @Query(
         """
@@ -135,8 +184,8 @@ interface SessionExerciseDao {
                 WHERE emz.exercise_id = se.exercise_id
                 ORDER BY emz.is_primary DESC, mz.sort_order
             )) AS muscleZones,
-            COALESCE(pa.sets, 4) AS sets,
-            COALESCE(pa.reps, '8-12') AS reps,
+            COALESCE(se.prescribed_sets, pa.sets, 4) AS sets,
+            COALESCE(se.prescribed_reps, pa.reps, '8-12') AS reps,
             COALESCE(e.is_bodyweight, 0) AS isBodyweight,
             COALESCE(e.is_isometric, 0) AS isIsometric,
             COALESCE(e.is_to_technical_failure, 0) AS isToTechnicalFailure,
@@ -151,13 +200,17 @@ interface SessionExerciseDao {
             se.is_finalized AS isFinalized,
             se.pending_selection AS pendingSelection,
             se.slot AS slot,
-            (SELECT COUNT(*) FROM plan_assignment pa_alt
-             WHERE pa_alt.routine_version_id = s.routine_version_id
-               AND pa_alt.slot = se.slot) AS alternativesInSlot
+            CASE WHEN se.is_extra = 1 THEN 0 ELSE (
+                SELECT COUNT(*) FROM plan_assignment pa_alt
+                WHERE pa_alt.routine_version_id = s.routine_version_id
+                  AND pa_alt.slot = se.slot
+            ) END AS alternativesInSlot,
+            se.is_extra AS isExtra
         FROM session_exercise se
         LEFT JOIN exercise e ON se.exercise_id = e.id
         INNER JOIN session s ON se.session_id = s.id
         LEFT JOIN plan_assignment pa ON pa.routine_version_id = s.routine_version_id
+            AND se.is_extra = 0
             AND pa.exercise_id = CASE
                 WHEN se.exercise_id IS NOT NULL
                     THEN se.exercise_id
@@ -170,7 +223,7 @@ interface SessionExerciseDao {
             END
         WHERE se.session_id = :sessionId
         GROUP BY se.id
-        ORDER BY se.slot ASC
+        ORDER BY se.is_extra ASC, se.slot ASC, se.id ASC
         """,
     )
     fun getBySessionIdWithDetails(sessionId: Long): Flow<List<SessionExerciseWithDetails>>
@@ -184,13 +237,14 @@ interface SessionExerciseDao {
             e.is_bodyweight AS isBodyweight,
             e.is_isometric AS isIsometric,
             e.is_to_technical_failure AS isToTechnicalFailure,
-            COALESCE(pa.sets, 4) AS totalSets,
-            COALESCE(pa.reps, '8-12') AS reps,
+            COALESCE(se.prescribed_sets, pa.sets, 4) AS totalSets,
+            COALESCE(se.prescribed_reps, pa.reps, '8-12') AS reps,
             s.deload_id AS deloadId
         FROM session_exercise se
         INNER JOIN exercise e ON se.exercise_id = e.id
         INNER JOIN session s ON se.session_id = s.id
         LEFT JOIN plan_assignment pa ON pa.routine_version_id = s.routine_version_id
+            AND se.is_extra = 0
             AND pa.exercise_id = se.exercise_id
         WHERE se.id = :sessionExerciseId
         """,
@@ -302,6 +356,7 @@ interface SessionExerciseDao {
             ) AS totalReps,
             (SELECT COUNT(*) FROM exercise_set es WHERE es.session_exercise_id = se.id) AS setCount,
             COALESCE(
+                se.prescribed_sets,
                 (SELECT pa.sets FROM plan_assignment pa
                  WHERE pa.routine_version_id = s.routine_version_id
                    AND pa.exercise_id = se.exercise_id),
@@ -337,7 +392,7 @@ interface SessionExerciseDao {
         WHERE se.session_id = :sessionId
         GROUP BY se.id
         HAVING setCount > 0
-        ORDER BY se.slot ASC, COALESCE(
+        ORDER BY se.is_extra ASC, se.slot ASC, COALESCE(
           (SELECT pa2.sort_order FROM plan_assignment pa2
            WHERE pa2.routine_version_id = s.routine_version_id
            AND pa2.exercise_id = se.exercise_id),
@@ -454,14 +509,15 @@ interface SessionExerciseDao {
             e.name AS exerciseName,
             se.progression_classification AS classification,
             (SELECT COUNT(*) FROM exercise_set es WHERE es.session_exercise_id = se.id) AS setCount,
-            CASE WHEN s.deload_id IS NOT NULL THEN 1 ELSE 0 END AS isDeload
+            CASE WHEN s.deload_id IS NOT NULL THEN 1 ELSE 0 END AS isDeload,
+            se.is_extra AS isExtra
         FROM session_exercise se
         INNER JOIN exercise e ON se.exercise_id = e.id
         INNER JOIN session s ON se.session_id = s.id
         WHERE se.session_id = :sessionId
         GROUP BY se.id
         HAVING setCount > 0
-        ORDER BY se.slot ASC, COALESCE(
+        ORDER BY se.is_extra ASC, se.slot ASC, COALESCE(
           (SELECT pa2.sort_order FROM plan_assignment pa2
            WHERE pa2.routine_version_id = s.routine_version_id
            AND pa2.exercise_id = se.exercise_id),

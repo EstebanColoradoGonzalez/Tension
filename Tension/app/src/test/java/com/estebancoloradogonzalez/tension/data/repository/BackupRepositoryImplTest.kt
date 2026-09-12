@@ -26,7 +26,7 @@ import org.junit.Test
 class BackupRepositoryImplTest {
 
     /** Espejo del valor privado del impl: el formato inmediatamente anterior. */
-    private val PREVIOUS_SCHEMA_VERSION = 15
+    private val PREVIOUS_SCHEMA_VERSION = 16
 
     private lateinit var database: TensionDatabase
     private lateinit var context: Context
@@ -306,11 +306,41 @@ class BackupRepositoryImplTest {
     }
 
     @Test
-    fun `the backup format is 16`() {
-        // Sube porque HU-42 añade `exercise_one_rm`, una tabla entera que no se deriva de
-        // nada: el 1RM es un récord acumulado y CA-42.08 exige restaurarlo **sin
-        // recalcularlo** desde el historial. Un respaldo 15 no la trae.
-        assertEquals(16, BackupRepositoryImpl.SCHEMA_VERSION)
+    fun `the backup format is 17`() {
+        // Sube porque HU-43 añade `session_withdrawal`, y `validateBackup` rechaza por
+        // incompleto cualquier respaldo al que le falte una tabla del orden: en cuanto la
+        // tabla entra, ningún v16 pasa. El motivo de fondo también se sostiene solo: el
+        // ajuste de la sesión no se deriva del plan, así que no se puede reconstruir.
+        assertEquals(17, BackupRepositoryImpl.SCHEMA_VERSION)
+    }
+
+    @Test
+    fun `exportToJson carries the session withdrawal table`() = runTest {
+        BackupRepositoryImpl.TABLE_ORDER_INSERT.forEach { table ->
+            every { db.query("SELECT * FROM $table") } returns createEmptyCursor()
+        }
+
+        val data = JSONObject(repository.exportToJson()).getJSONObject("data")
+
+        assertTrue(data.has("session_withdrawal"))
+    }
+
+    @Test
+    fun `session withdrawal is inserted after the tables it points at`() {
+        val order = BackupRepositoryImpl.TABLE_ORDER_INSERT
+        assertTrue(order.indexOf("session_withdrawal") > order.indexOf("session"))
+        assertTrue(order.indexOf("session_withdrawal") > order.indexOf("exercise"))
+    }
+
+    @Test
+    fun `validateBackup rejects a current backup missing the session withdrawal table`() {
+        val json = JSONObject(buildValidBackupJson())
+        json.getJSONObject("data").remove("session_withdrawal")
+
+        val result = repository.validateBackup(json.toString())
+
+        assertFalse(result.isValid)
+        assertNotNull(result.errorMessage)
     }
 
     @Test
@@ -318,7 +348,7 @@ class BackupRepositoryImplTest {
         val result = repository.validateBackup(buildValidBackupJson())
 
         assertTrue(result.isValid)
-        assertEquals(16, result.metadata?.schemaVersion)
+        assertEquals(17, result.metadata?.schemaVersion)
         assertNull(result.errorMessage)
     }
 
@@ -577,7 +607,7 @@ class BackupRepositoryImplTest {
         return json.toString()
     }
 
-/** Respaldo del formato inmediatamente anterior: sin `session_exercise_progression`. */
+    /** Respaldo del formato inmediatamente anterior: sin `session_withdrawal`. */
     private fun buildPreviousFormatBackupJson(): String {
         val json = JSONObject()
         json.put("metadata", JSONObject().apply {
@@ -588,7 +618,7 @@ class BackupRepositoryImplTest {
         })
         val data = JSONObject()
         BackupRepositoryImpl.TABLE_ORDER_INSERT
-            .filter { it != "session_exercise_progression" }
+            .filter { it != "session_withdrawal" }
             .forEach { data.put(it, org.json.JSONArray()) }
         json.put("data", data)
         return json.toString()

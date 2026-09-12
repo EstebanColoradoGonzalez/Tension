@@ -2,11 +2,13 @@ package com.estebancoloradogonzalez.tension.domain.repository
 
 import com.estebancoloradogonzalez.tension.data.repository.model.SessionSummaryData
 import com.estebancoloradogonzalez.tension.domain.model.ActiveSession
+import com.estebancoloradogonzalez.tension.domain.model.AddableExercise
 import com.estebancoloradogonzalez.tension.domain.model.DeloadState
 import com.estebancoloradogonzalez.tension.domain.model.ExerciseHistoryData
 import com.estebancoloradogonzalez.tension.domain.model.PrefilledLoad
 import com.estebancoloradogonzalez.tension.domain.model.RegisterSetInfo
 import com.estebancoloradogonzalez.tension.domain.model.RotationState
+import com.estebancoloradogonzalez.tension.domain.model.SessionAdjustment
 import com.estebancoloradogonzalez.tension.domain.model.SessionDetail
 import com.estebancoloradogonzalez.tension.domain.model.SessionExerciseDetail
 import com.estebancoloradogonzalez.tension.domain.model.SessionHistoryItem
@@ -44,6 +46,33 @@ interface SessionRepository {
     )
     suspend fun finalizeExercise(sessionExerciseId: Long)
     suspend fun switchAlternativeInSession(sessionExerciseId: Long, exerciseId: Long)
+
+    /**
+     * El Diccionario completo, con los que ya están en la sesión marcados (CA-43.01).
+     *
+     * No los filtra: la hoja los muestra atenuados y con su causa. Ver [AddableExercise].
+     */
+    fun getAddableExercises(sessionId: Long): Flow<List<AddableExercise>>
+
+    /**
+     * Añade un ejercicio del Diccionario a la sesión en curso (CA-43.01).
+     *
+     * Entra al final, **sin puesto** y por tanto sin alternativas intercambiables, con la
+     * prescripción por defecto de CA-43.03. El plan no se toca. Devuelve el id de la fila
+     * de `session_exercise` creada.
+     */
+    suspend fun addExerciseToSession(sessionId: Long, exerciseId: Long): Long
+
+    /**
+     * Retira un ejercicio de la sesión en curso (CA-43.04, CA-43.05, CA-43.06).
+     *
+     * Lanza si el veredicto de `SessionAdjustmentRule` no es favorable. La interfaz ya
+     * deshabilita la acción con su causa; esta guarda cubre la ruta de datos.
+     */
+    suspend fun withdrawFromSession(sessionExerciseId: Long)
+
+    /** Añadidos, retirados y retiros sin reponer de la sesión en curso (HU-43). */
+    fun getSessionAdjustment(sessionId: Long): Flow<SessionAdjustment>
     suspend fun closeSession(sessionId: Long)
     suspend fun getSessionSummaryData(sessionId: Long): SessionSummaryData
     suspend fun activateDeload()

@@ -22,6 +22,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -228,6 +229,30 @@ private fun SessionDetailContent(
             )
             HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
         }
+
+        // El historial registra lo ejecutado, y no haber ejecutado algo que estaba previsto
+        // tambien es informacion: sin esta linea, la sesion aparenta haber tenido un plan
+        // mas corto del que tuvo (CA-43.08).
+        if (detail.withdrawnExerciseNames.isNotEmpty()) {
+            item {
+                Text(
+                    text = if (detail.withdrawnExerciseNames.size == 1) {
+                        stringResource(
+                            R.string.session_detail_withdrawn_one,
+                            detail.withdrawnExerciseNames.first(),
+                        )
+                    } else {
+                        stringResource(
+                            R.string.session_detail_withdrawn_many,
+                            detail.withdrawnExerciseNames.joinToString(", "),
+                        )
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                )
+            }
+        }
     }
 }
 
@@ -251,6 +276,21 @@ private fun ExerciseDetailCard(
             text = exercise.exerciseName,
             style = MaterialTheme.typography.titleMedium,
         )
+
+        if (exercise.isExtra) {
+            Surface(
+                shape = RoundedCornerShape(4.dp),
+                color = MaterialTheme.colorScheme.tertiaryContainer,
+                modifier = Modifier.padding(top = 2.dp),
+            ) {
+                Text(
+                    text = stringResource(R.string.session_exercise_added_badge),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onTertiaryContainer,
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                )
+            }
+        }
 
         Spacer(modifier = Modifier.height(4.dp))
 

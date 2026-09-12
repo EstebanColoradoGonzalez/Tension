@@ -20,6 +20,7 @@ import com.estebancoloradogonzalez.tension.data.local.dao.RoutineVersionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.SessionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.SessionExerciseDao
 import com.estebancoloradogonzalez.tension.data.local.dao.SessionExerciseProgressionDao
+import com.estebancoloradogonzalez.tension.data.local.dao.SessionWithdrawalDao
 import com.estebancoloradogonzalez.tension.data.local.dao.SetExerciseInfo
 import com.estebancoloradogonzalez.tension.data.local.dao.WeekDayDao
 import com.estebancoloradogonzalez.tension.data.local.database.TensionDatabase
@@ -34,9 +35,11 @@ import com.estebancoloradogonzalez.tension.data.local.entity.ExerciseSetEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.SessionEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.SessionExerciseEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.SessionExerciseProgressionEntity
+import com.estebancoloradogonzalez.tension.data.local.entity.SessionWithdrawalEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.WeekDayEntity
 import com.estebancoloradogonzalez.tension.data.repository.model.SessionSummaryData
 import com.estebancoloradogonzalez.tension.domain.model.ActiveSession
+import com.estebancoloradogonzalez.tension.domain.model.AddableExercise
 import com.estebancoloradogonzalez.tension.domain.model.DailyRoutineOverride
 import com.estebancoloradogonzalez.tension.domain.model.DayOutcome
 import com.estebancoloradogonzalez.tension.domain.model.DeloadState
@@ -53,6 +56,7 @@ import com.estebancoloradogonzalez.tension.domain.model.ProgressionClassificatio
 import com.estebancoloradogonzalez.tension.domain.model.RegisterSetInfo
 import com.estebancoloradogonzalez.tension.domain.model.RotationResolver
 import com.estebancoloradogonzalez.tension.domain.model.RotationState
+import com.estebancoloradogonzalez.tension.domain.model.SessionAdjustment
 import com.estebancoloradogonzalez.tension.domain.model.SessionDetail
 import com.estebancoloradogonzalez.tension.domain.model.SessionDetailExercise
 import com.estebancoloradogonzalez.tension.domain.model.SessionExerciseDetail
@@ -65,6 +69,7 @@ import com.estebancoloradogonzalez.tension.domain.model.UpcomingSession
 import com.estebancoloradogonzalez.tension.domain.model.WeekDay
 import com.estebancoloradogonzalez.tension.domain.model.ProgressionDifficulty
 import com.estebancoloradogonzalez.tension.domain.model.WeightUnit
+import com.estebancoloradogonzalez.tension.domain.model.WithdrawnExercise
 import com.estebancoloradogonzalez.tension.domain.repository.SessionRepository
 import com.estebancoloradogonzalez.tension.domain.rules.AdherenceRule
 import com.estebancoloradogonzalez.tension.domain.rules.AlertNarrativeRule
@@ -81,6 +86,8 @@ import com.estebancoloradogonzalez.tension.domain.rules.LoadIncrementResolver
 import com.estebancoloradogonzalez.tension.domain.rules.OneRmRule
 import com.estebancoloradogonzalez.tension.domain.rules.PrefilledLoadRule
 import com.estebancoloradogonzalez.tension.domain.rules.RoutineFatigueRule
+import com.estebancoloradogonzalez.tension.domain.rules.SessionAdjustmentRule
+import com.estebancoloradogonzalez.tension.domain.rules.WithdrawalVerdict
 import com.estebancoloradogonzalez.tension.domain.rules.PlateauThresholdRule
 import com.estebancoloradogonzalez.tension.domain.rules.ProgressionClassificationRule
 import com.estebancoloradogonzalez.tension.domain.rules.ProgressionConsolidationRule
@@ -116,6 +123,7 @@ class SessionRepositoryImpl @Inject constructor(
     private val exerciseProgressionDao: ExerciseProgressionDao,
     private val exerciseOneRmDao: ExerciseOneRmDao,
     private val sessionExerciseProgressionDao: SessionExerciseProgressionDao,
+    private val sessionWithdrawalDao: SessionWithdrawalDao,
     private val alertDao: AlertDao,
     private val database: TensionDatabase,
     private val deloadDao: DeloadDao,
@@ -422,6 +430,7 @@ class SessionRepositoryImpl @Inject constructor(
                     pendingSelection = isPending,
                     slot = detail.slot,
                     hasAlternatives = detail.alternativesInSlot > 1,
+                    isExtra = detail.isExtra == 1,
                 )
             }
         }
@@ -711,6 +720,144 @@ class SessionRepositoryImpl @Inject constructor(
 
     override suspend fun switchAlternativeInSession(sessionExerciseId: Long, exerciseId: Long) {
         sessionExerciseDao.switchAlternativeExercise(sessionExerciseId, exerciseId)
+    }
+
+    override fun getAddableExercises(sessionId: Long): Flow<List<AddableExercise>> {
+        return combine(
+            exerciseDao.getAll(),
+            sessionExerciseDao.getBySessionId(sessionId),
+        ) { catalog, inSession ->
+            val present = inSession.mapNotNull { it.exerciseId }.toSet()
+            catalog.map { dto ->
+                AddableExercise(
+                    exerciseId = dto.id,
+                    name = dto.name,
+                    equipmentSummary = dto.equipmentTypes.toAggregatedList().joinToString(" · "),
+                    muscleZonesSummary = (
+                        dto.primaryMuscleZones.toAggregatedList() +
+                            dto.secondaryMuscleZones.toAggregatedList()
+                        ).joinToString(", "),
+                    isAlreadyInSession = dto.id in present,
+                )
+            }
+        }
+    }
+
+    /**
+     * Añade un ejercicio a la sesión en curso (CA-43.01, CA-43.03).
+     *
+     * `slot` queda en 0 y es **indiferente**: desde HU-43 todo lo que depende del puesto va
+     * guardado por `is_extra = 0` en las consultas, porque los puestos del plan empiezan
+     * también en 0 y sin esas guardas el añadido heredaría las series y las alternativas del
+     * primer puesto. El añadido está fuera de la estructura de puestos, y esa es la razón de
+     * que no tenga alternativas intercambiables: no se elige, es consecuencia.
+     *
+     * La prescripción se decide aquí y se persiste en la fila, en vez de resolverse en cada
+     * consulta: [SessionAdjustmentRule] es el único sitio que sabe qué son 3 x 8-12 y cómo se
+     * ajustan al modo del ejercicio.
+     */
+    override suspend fun addExerciseToSession(sessionId: Long, exerciseId: Long): Long {
+        return database.withTransaction {
+            val session = sessionDao.getById(sessionId).first()
+                ?: throw IllegalStateException("Session not found: $sessionId")
+            if (session.status != "IN_PROGRESS") {
+                throw IllegalStateException("Cannot adjust a session that is not in progress")
+            }
+            // El indice unico (session_id, exercise_id) ya lo impediria; el rechazo explicito
+            // dice que paso, en vez de dejar que lo diga un codigo de error de SQLite.
+            if (sessionExerciseDao.existsInSession(sessionId, exerciseId)) {
+                throw IllegalStateException("Exercise is already in this session")
+            }
+            val exercise = exerciseDao.getByIdOnce(exerciseId)
+                ?: throw IllegalArgumentException("Exercise not found: $exerciseId")
+
+            sessionExerciseDao.insert(
+                SessionExerciseEntity(
+                    sessionId = sessionId,
+                    exerciseId = exerciseId,
+                    progressionClassification = null,
+                    pendingSelection = 0,
+                    slot = 0,
+                    isExtra = 1,
+                    prescribedSets = SessionAdjustmentRule.DEFAULT_SETS,
+                    prescribedReps = SessionAdjustmentRule.defaultReps(
+                        isIsometric = exercise.isIsometric == 1,
+                        isToTechnicalFailure = exercise.isToTechnicalFailure == 1,
+                    ),
+                ),
+            )
+        }
+    }
+
+    /**
+     * Retira un ejercicio de la sesión en curso (CA-43.04, CA-43.05, CA-43.06).
+     *
+     * La fila **se borra**. Con 0 series no hay nada inmutable que destruir, y borrarla saca
+     * al ejercicio de golpe del cierre, de la clasificación, del tonelaje y del historial sin
+     * tocar ninguna de esas consultas.
+     *
+     * Retirar uno del plan deja constancia en `session_withdrawal`; quitar un añadido es
+     * *deshacer* y no deja ninguna. El veredicto se vuelve a evaluar aquí, con los conteos
+     * releídos dentro de la transacción: la interfaz deshabilita la acción con su causa, y
+     * esta guarda cubre la ruta de datos.
+     */
+    override suspend fun withdrawFromSession(sessionExerciseId: Long) {
+        database.withTransaction {
+            val row = sessionExerciseDao.getById(sessionExerciseId)
+                ?: throw IllegalArgumentException("Session exercise not found: $sessionExerciseId")
+            val session = sessionDao.getById(row.sessionId).first()
+                ?: throw IllegalStateException("Session not found: " + row.sessionId)
+            if (session.status != "IN_PROGRESS") {
+                throw IllegalStateException("Cannot adjust a session that is not in progress")
+            }
+
+            val completedSets = exerciseSetDao.countSetsForSessionExercise(sessionExerciseId)
+            val addedCount = sessionExerciseDao.countExtrasInSession(row.sessionId)
+            val withdrawnCount = sessionWithdrawalDao.countBySession(row.sessionId)
+            val isExtra = row.isExtra == 1
+
+            val verdict = if (isExtra) {
+                SessionAdjustmentRule.verdictForAddedExercise(
+                    addedCount = addedCount,
+                    withdrawnCount = withdrawnCount,
+                    completedSets = completedSets,
+                )
+            } else {
+                SessionAdjustmentRule.verdictForPlanExercise(
+                    addedCount = addedCount,
+                    withdrawnCount = withdrawnCount,
+                    completedSets = completedSets,
+                )
+            }
+            if (verdict != WithdrawalVerdict.Allowed) {
+                throw IllegalStateException("Exercise cannot be withdrawn: $verdict")
+            }
+
+            if (!isExtra) {
+                val exerciseId = row.exerciseId
+                    ?: throw IllegalStateException("A pending slot has no exercise to withdraw")
+                sessionWithdrawalDao.insert(
+                    SessionWithdrawalEntity(sessionId = row.sessionId, exerciseId = exerciseId),
+                )
+            }
+            sessionExerciseDao.deleteById(sessionExerciseId)
+        }
+    }
+
+    override fun getSessionAdjustment(sessionId: Long): Flow<SessionAdjustment> {
+        return combine(
+            sessionExerciseDao.observeExtraCountInSession(sessionId),
+            sessionWithdrawalDao.observeCountBySession(sessionId),
+            sessionWithdrawalDao.observePendingBySession(sessionId),
+        ) { added, withdrawn, pending ->
+            SessionAdjustment(
+                addedCount = added,
+                withdrawnCount = withdrawn,
+                pendingWithdrawals = pending.map {
+                    WithdrawnExercise(exerciseId = it.exerciseId, name = it.exerciseName)
+                },
+            )
+        }
     }
 
     override suspend fun closeSession(sessionId: Long) {
@@ -1305,8 +1452,13 @@ class SessionRepositoryImpl @Inject constructor(
                 classification = dto.classification?.let { parseClassification(it) },
                 sets = sets,
                 isDeload = dto.isDeload,
+                isExtra = dto.isExtra,
             )
         }
+        // Los retiros repuestos no se anuncian: el ejercicio acabó estando en la sesión, y
+        // decir que se retiró sería cierto y engañoso a la vez (CA-43.08).
+        val withdrawnNames = sessionWithdrawalDao.getPendingBySession(sessionId)
+            .map { it.exerciseName }
 
         return SessionDetail(
             sessionId = sessionId,
@@ -1318,6 +1470,7 @@ class SessionRepositoryImpl @Inject constructor(
             totalExercises = summaryInfo.totalExercises,
             completedExercises = summaryInfo.completedExercises,
             exercises = exercises,
+            withdrawnExerciseNames = withdrawnNames,
         )
     }
 

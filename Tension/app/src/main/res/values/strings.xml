@@ -619,4 +619,36 @@
     <string name="one_rm_empty_title">Todavía no hay ningún 1RM</string>
     <string name="one_rm_empty_message">El 1RM se estima con una serie de 10 repeticiones y
         RIR 1. Cuando registres una así, aparecerá aquí.</string>
+
+    <!-- Ajustar la sesión del día (HU-43) -->
+    <string name="session_add_exercise">+ Añadir ejercicio</string>
+    <string name="session_add_sheet_title">Añadir a esta sesión</string>
+    <string name="session_add_sheet_search">Buscar ejercicio</string>
+    <string name="session_add_sheet_note">El ajuste es temporal: solo afecta a esta sesión. El
+        plan de entrenamiento no se modifica.</string>
+    <string name="session_add_sheet_already">ya está</string>
+    <string name="session_add_sheet_empty">Ningún ejercicio coincide con la búsqueda.</string>
+    <string name="session_add_create_new">+ Crear ejercicio nuevo</string>
+    <string name="session_exercise_menu">Más acciones</string>
+    <string name="session_withdraw">Retirar de la sesión</string>
+    <string name="session_withdraw_blocked_sets">Ya tiene %1$d series registradas</string>
+    <string name="session_withdraw_blocked_sets_one">Ya tiene 1 serie registrada</string>
+    <string name="session_withdraw_blocked_budget">Añade un ejercicio primero</string>
+    <string name="session_withdraw_blocked_budget_more">Añade otro ejercicio primero</string>
+    <string name="session_withdraw_blocked_invariant">Repón «%1$s» primero</string>
+    <string name="session_withdraw_dialog_title">Retirar «%1$s»</string>
+    <string name="session_withdraw_dialog_message">Se quita solo de esta sesión. Tu plan no
+        cambia: la próxima vez volverá a aparecer.</string>
+    <string name="session_withdraw_dialog_message_extra">Se quita de esta sesión. El ejercicio
+        sigue en el Diccionario.</string>
+    <string name="session_withdraw_dialog_confirm">Retirar</string>
+    <string name="session_withdraw_dialog_cancel">Cancelar</string>
+    <string name="session_exercise_added_badge">añadido a esta sesión</string>
+    <string name="session_detail_withdrawn_one">%1$s se retiró de esta sesión</string>
+    <string name="session_detail_withdrawn_many">Se retiraron de esta sesión: %1$s</string>
+    <string name="create_exercise_save_and_add">Guardar y añadir</string>
+    <string name="import_backup_no_session_adjustment">Este respaldo se generó con una versión
+        anterior de la aplicación y no registra el ajuste de la sesión: qué ejercicios se
+        añadieron y cuáles se retiraron. Ese dato no se deduce del plan, así que no se puede
+        importar. Exporta un respaldo nuevo desde esta versión.</string>
 </resources>

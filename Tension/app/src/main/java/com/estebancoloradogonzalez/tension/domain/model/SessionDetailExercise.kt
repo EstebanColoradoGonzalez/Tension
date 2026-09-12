@@ -6,4 +6,6 @@ data class SessionDetailExercise(
     val classification: ProgressionClassification?,
     val sets: List<SetData>,
     val isDeload: Boolean = false,
+    /** Añadido a aquella sesión, no traído por el plan (CA-43.08). */
+    val isExtra: Boolean = false,
 )

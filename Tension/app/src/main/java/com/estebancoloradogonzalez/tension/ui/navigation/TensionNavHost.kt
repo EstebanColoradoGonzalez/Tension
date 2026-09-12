@@ -97,6 +97,9 @@ fun TensionNavHost(
                 !currentRoute.startsWith("active-session") &&
                 !currentRoute.startsWith("register-set") &&
                 !currentRoute.startsWith("session-summary") &&
+                !(currentRoute.startsWith("create-exercise") &&
+                    navController.previousBackStackEntry?.destination?.route
+                        ?.startsWith("active-session") == true) &&
                 !(currentRoute.startsWith("exercise-detail") &&
                     navController.previousBackStackEntry?.destination?.route
                         ?.startsWith("active-session") == true) &&
@@ -202,12 +205,20 @@ fun TensionNavHost(
                                 }
                             },
                             onNavigateToCreateExercise = {
-                                navController.navigate(NavigationRoutes.CREATE_EXERCISE)
+                                navController.navigate(NavigationRoutes.createExerciseRoute())
                             },
                         )
                     }
 
-                    composable(NavigationRoutes.CREATE_EXERCISE) {
+                    composable(
+                        route = NavigationRoutes.CREATE_EXERCISE,
+                        arguments = listOf(
+                            navArgument("sessionId") {
+                                type = NavType.LongType
+                                defaultValue = 0L
+                            },
+                        ),
+                    ) {
                         CreateExerciseScreen(
                             onNavigateBack = { navController.popBackStack() },
                         )
@@ -382,8 +393,15 @@ fun TensionNavHost(
                         arguments = listOf(
                             navArgument("sessionId") { type = NavType.LongType },
                         ),
-                    ) {
+                    ) { backStackEntry ->
+                        val activeSessionId = backStackEntry.arguments?.getLong("sessionId") ?: 0L
                         ActiveSessionScreen(
+                            sessionId = activeSessionId,
+                            onNavigateToCreateExercise = { sessionId ->
+                                navController.navigate(
+                                    NavigationRoutes.createExerciseRoute(sessionId),
+                                )
+                            },
                             onNavigateToRegisterSet = { sessionExerciseId ->
                                 navController.navigate(
                                     NavigationRoutes.registerSetRoute(sessionExerciseId),

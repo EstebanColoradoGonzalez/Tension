@@ -27,7 +27,7 @@ class BackupRepositoryImpl @Inject constructor(
 ) : BackupRepository {
 
     companion object {
-        const val SCHEMA_VERSION = 16
+        const val SCHEMA_VERSION = 17
 
         const val APP_VERSION = "1.0"
 
@@ -62,6 +62,14 @@ class BackupRepositoryImpl @Inject constructor(
          * una serie ya purgada o restaurada parcialmente, y la CA exige que el respaldo lo
          * reproduzca **sin recalcularlo**. Aceptar un v15 dejaria la vista de 1RM vacia
          * sobre un historial lleno de series que si calificaron.
+         *
+         * El 16 cae por partida doble (HU-43). No lleva `session_withdrawal`, y `validateBackup`
+         * recorre [TABLE_ORDER_INSERT] rechazando por incompleto cualquier respaldo al que le
+         * falte una tabla de la lista: en cuanto la tabla entra en el orden, ningun v16 pasa.
+         * Y el motivo de fondo se sostiene solo: **el ajuste de la sesion no se deriva de
+         * nada**. Un v16 no dice que ejercicio se anadio ni cual se retiro, asi que el
+         * historial restaurado presentaria sesiones cuya composicion no coincide con la de su
+         * plan sin poder explicar por que.
          */
         private val ACCEPTED_SCHEMA_VERSIONS = setOf(SCHEMA_VERSION)
 
@@ -101,6 +109,9 @@ class BackupRepositoryImpl @Inject constructor(
             "plan_assignment",
             "session",
             "session_exercise",
+            // El retiro temporal de un ejercicio del plan. Lleva FK a session y a exercise,
+            // asi que va detras de las dos (HU-43).
+            "session_withdrawal",
             "exercise_set",
             // La clasificacion por implemento de cada sesion. Lleva FK a session_exercise y
             // a equipment_type, asi que va detras de las dos.
@@ -206,11 +217,12 @@ class BackupRepositoryImpl @Inject constructor(
                     SCHEMA_VERSION,
                     schemaVersion,
                 )
-                // El formato inmediatamente anterior tiene una causa propia y concreta: le
-                // falta el 1RM, que no se recalcula. Los mas antiguos siguen cayendo por la
-                // ausencia del equipamiento de las series, que es lo primero que les falta.
+                // El formato inmediatamente anterior tiene una causa propia y concreta: no
+                // registra el ajuste de la sesion, que no se deduce del plan. Los mas
+                // antiguos siguen cayendo por la ausencia del equipamiento de las series,
+                // que es lo primero que les falta.
                 schemaVersion == PREVIOUS_SCHEMA_VERSION ->
-                    context.getString(R.string.import_backup_no_one_rm)
+                    context.getString(R.string.import_backup_no_session_adjustment)
                 else -> context.getString(R.string.import_backup_no_equipment)
             }
             return BackupValidationResult(

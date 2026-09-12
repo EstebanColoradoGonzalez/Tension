@@ -82,6 +82,7 @@ class MiUnRmEstimadoTest {
             exerciseProgressionDao = db.exerciseProgressionDao(),
             exerciseOneRmDao = db.exerciseOneRmDao(),
             sessionExerciseProgressionDao = db.sessionExerciseProgressionDao(),
+            sessionWithdrawalDao = db.sessionWithdrawalDao(),
             alertDao = db.alertDao(),
             database = db,
             deloadDao = db.deloadDao(),

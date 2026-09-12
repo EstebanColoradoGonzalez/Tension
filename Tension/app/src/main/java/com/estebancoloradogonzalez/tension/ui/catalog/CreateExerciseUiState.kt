@@ -25,6 +25,11 @@ data class CreateExerciseUiState(
     val muscleZoneError: String? = null,
     val saveSuccess: Boolean = false,
     val saveError: String? = null,
+    /**
+     * El formulario se abrió desde la sesión activa: al guardar, el ejercicio queda en el
+     * Diccionario **y** añadido a la sesión, en un solo gesto (CA-43.02).
+     */
+    val isFromSession: Boolean = false,
 ) {
     /**
      * El botón permanece deshabilitado mientras no haya una zona principal (CA-41.09).

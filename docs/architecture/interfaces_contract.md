@@ -516,6 +516,10 @@
 
 - **Estado de Éxito:** `Ejercicio creado. Navegación de retorno a D1. El ejercicio aparece en el diccionario con badge 'Personalizado'.`
 
+> **Invocable desde la sesión activa (HU-43).** `E1-T2` abre **este mismo formulario**, con los mismos campos y las mismas validaciones, pasándole la sesión de origen. Lo único que cambia es la etiqueta del botón —«Guardar y añadir»— y qué ocurre al guardar: el ejercicio queda en el Diccionario **y** añadido a la sesión, en un solo gesto.
+>
+> **El destino es asimétrico y deliberado:** el ejercicio **no entra al plan**, pero **sí queda en el Diccionario**, disponible para asignarlo más adelante si resulta que merece un puesto fijo. Permanece allí aunque la sesión se cierre, se abandone o el ejercicio se retire de ella — así un descubrimiento del día no se pierde. Por eso la creación y el añadido **no comparten transacción**: envolverlos produciría justo el resultado prohibido, un ejercicio creado que se desvanece si el añadido falla.
+
 ```json
 {
   "exercise_id": "INTEGER // ID del ejercicio creado",
@@ -730,6 +734,68 @@
 
 - **Estado de Éxito:** `session_exercise.exercise_id actualizado. Vista E1 refleja el nuevo ejercicio seleccionado. La carga objetivo se recalcula para el nuevo ejercicio.`
 
+> **HU-43 no lo sustituye.** El ajuste de la sesión —`E1-T2` y `E1-T3`— resuelve una necesidad distinta: entrenar algo que el plan no trajo. El intercambio de alternativa sigue siendo el único mecanismo para cambiar **dentro de un puesto**, y solo los ejercicios del plan tienen puesto. Un ejercicio añadido queda fuera de esa estructura y por tanto **no ofrece este trigger**.
+
+---
+
+#### `E1-T2`: Añadir Ejercicio a la Sesión
+
+- **Tipo de Trigger (Entrada):** `Acción del ejecutante: toca «+ Añadir ejercicio» al final de la lista de E1 y elige un ejercicio del Diccionario, o crea uno nuevo con D5-T1 desde la misma hoja.`
+- **Descripción:** El sistema inserta un `session_exercise` con `is_extra = 1` en la sesión en curso. El ejercicio entra **al final** de la lista y **sin puesto**: queda fuera de la estructura de `slot` y, en consecuencia, sin alternativas intercambiables. No lo elige el ejecutante — es lo que implica no venir del plan.
+
+  **El ajuste es temporal.** El plan por defecto no se modifica en ningún punto de esta cadena: ni la composición, ni el orden, ni los puestos, ni las alternativas. La siguiente sesión de esa misma rutina vuelve a proponer su composición original.
+
+  **Prescripción por defecto: 3 series de 8 a 12 repeticiones**, por el enfoque de hipertrofia del sistema, y la misma para un ejercicio del Diccionario y para uno creado en el momento. El rango se ajusta al modo del ejercicio con la misma regla que el plan: los isométricos en segundos (`30-45_SEC`) y los de fallo técnico sin límite superior (`TO_TECHNICAL_FAILURE`). Se **persiste** en `session_exercise.prescribed_sets` y `prescribed_reps` en lugar de derivarse en cada consulta, de modo que la regla decide una vez y la fila queda diciendo con qué se comprometió el ejecutante.
+
+  **Un ejercicio que ya está en la sesión no se puede añadir otra vez.** Entrenar el mismo movimiento con otro implemento se resuelve con el selector de equipamiento de `E2-T1`, no duplicando el ejercicio. La hoja de selección los muestra **atenuados y etiquetados**, no ocultos: esconderlos dejaría buscando algo que sí existe.
+
+  **Reponer es añadir.** No hay trigger de reposición: un ejercicio retirado vuelve por este mismo camino, eligiéndolo del Diccionario, y vuelve **al final de la lista y con la prescripción por defecto**, no a su puesto ni a la prescripción que el plan le daba.
+
+- **Precondición:** la sesión está `IN_PROGRESS`. Después de cerrarla la acción no existe.
+
+**Payload / Parámetros (Input):**
+
+```json
+{
+  "session_id": "INTEGER",
+  "exercise_id": "INTEGER // Obligatorio. No puede estar ya en la sesión."
+}
+```
+
+**Respuesta / Salida (Output Esperado):**
+
+- **Estado de Éxito:** `session_exercise creado con is_extra = 1. E1 lo muestra al final de la lista, con su marca de añadido, sin número de puesto y sin ícono de intercambio. El presupuesto de retiro sube en uno.`
+- **Estados de Error:** `ERR_EXERCISE_ALREADY_IN_SESSION`, `ERR_SESSION_NOT_IN_PROGRESS`.
+
+---
+
+#### `E1-T3`: Retirar Ejercicio de la Sesión
+
+- **Tipo de Trigger (Entrada):** `Acción del ejecutante: abre el menú contextual (⋮) de un ejercicio en E1 y toca «Retirar de la sesión». Confirma en el diálogo.`
+- **Descripción:** El sistema **borra** la fila de `session_exercise`. Con 0 series no hay nada inmutable que destruir, y el borrado saca al ejercicio de golpe del cierre, de la clasificación, del tonelaje y del historial. Si el ejercicio lo trajo el plan, el retiro queda registrado en `session_withdrawal` **antes** del borrado y en la misma transacción; si era un añadido, quitarlo es *deshacer* y no deja constancia.
+
+  **Presupuesto — uno entra, uno puede salir (CA-43.04):** se pueden retirar tantos ejercicios del plan como ejercicios se hayan añadido. Sin ningún añadido no se puede retirar nada, y la acción se presenta **deshabilitada con su causa**.
+
+  **Invariante (CA-43.05):** el número de añadidos **nunca** queda por debajo del de retirados. De ahí que deshacer un añadido exija reponer primero el ejercicio que su incorporación permitió retirar, y que el mensaje lo **nombre**. El nombre siempre existe: el veredicto negativo implica que queda al menos un retiro sin reponer.
+
+  **Nada con series registradas se retira (CA-43.06),** ni del plan ni añadido, y por la misma razón: la serie es inmutable y fuente de verdad histórica, así que retirar el ejercicio implicaría borrar registros. La causa de las series se evalúa **antes** que la del presupuesto — es la única que no se levanta añadiendo nada.
+
+- **Precondición:** la sesión está `IN_PROGRESS` y el ejercicio tiene 0 series.
+- **Presentación:** la acción se muestra siempre; cuando no se puede ejecutar aparece deshabilitada con la causa como línea de apoyo. Decirlo antes de tocar es lo que convierte la restricción en explicación.
+
+**Payload / Parámetros (Input):**
+
+```json
+{
+  "session_exercise_id": "INTEGER"
+}
+```
+
+**Respuesta / Salida (Output Esperado):**
+
+- **Estado de Éxito:** `Fila de session_exercise eliminada. Si era del plan, session_withdrawal registra el retiro. E1 refleja la lista sin el ejercicio y recalcula el presupuesto.`
+- **Estados de Error:** `ERR_WITHDRAW_HAS_SETS`, `ERR_WITHDRAW_BUDGET_EXHAUSTED`, `ERR_WITHDRAW_BREAKS_INVARIANT`, `ERR_SESSION_NOT_IN_PROGRESS`.
+
 ---
 
 #### `E2-T1`: Registrar Serie de Ejercicio
@@ -798,6 +864,10 @@
 
   **La meseta se declara por conjunción:** el ejercicio entra en meseta —y se emite `PLATEAU`— solo cuando **todos** sus pares han alcanzado el umbral efectivo. Un implemento todavía en progresión desmiente la meseta. `ROUTINE_REQUIRES_DELOAD` cuenta como estancado únicamente el ejercicio cuya condición consolidada se cumple.
 
+  **Los ejercicios añadidos cuentan para la completitud (HU-43).** El status se decide comparando ejercicios finalizados contra ejercicios de la sesión, y un añadido es un `session_exercise` más: haberlo añadido es haberlo comprometido. Un añadido sin ninguna serie deja la sesión en `INCOMPLETE` aunque todo lo que trajo el plan esté completo. La vía para no penalizar la completitud es **retirarlo antes de cerrar** (`E1-T3`), cuando la invariante lo permita. Un ejercicio **retirado** no se considera en ningún término de esa comparación: su fila ya no existe.
+
+  **El ajuste no altera la rotación.** `rotation_state` avanza exactamente igual que en una sesión sin ajustar, y el conteo de microciclos tampoco cambia. Las series de los ejercicios añadidos entran en el motor de progresión, el tonelaje, los KPIs y el 1RM **como cualquier otra**: ninguna consulta de agregación filtra por `is_extra`.
+
 **Payload / Parámetros (Input):**
 
 ```json
@@ -819,6 +889,7 @@
     {
       "exercise_id": "INTEGER",
       "name": "TEXT",
+      "is_extra": "BOOLEAN // true = añadido a aquella sesión, no traído por el plan (HU-43).",
       "progression_classification": "TEXT | null",
       "prescribed_load_next": "REAL | null",
       "action_signal": "TEXT // 'INCREASE_LOAD', 'MAINTAIN', 'DELOAD_RECOMMENDED', 'NO_HISTORY', 'MASTERED'"
@@ -919,7 +990,7 @@
 #### `F2-T1`: Consultar Detalle de Sesión Pasada
 
 - **Tipo de Trigger (Entrada):** `Acción del ejecutante: toca una sesión en F1.`
-- **Descripción:** El sistema recupera la sesión completa con sus ejercicios y series. Refleja el ejercicio que realmente se ejecutó — el del plan, o la alternativa del slot si el ejecutante la intercambió (HU-26) — y, por cada serie, **con qué implemento** se ejecutó. El implemento se presenta en su propia línea bajo el peso, las repeticiones y el RIR: dos series del mismo ejercicio en la misma sesión pueden llevar implementos distintos, y la diferencia tiene que verse de un barrido. El tonelaje del ejercicio suma todas las series, cualquiera que fuera el implemento.
+- **Descripción:** El sistema recupera la sesión completa con sus ejercicios y series. Refleja el ejercicio que realmente se ejecutó — el del plan, la alternativa del slot si el ejecutante la intercambió (HU-26), o uno **añadido** a aquella sesión (HU-43) — y, por cada serie, **con qué implemento** se ejecutó. El implemento se presenta en su propia línea bajo el peso, las repeticiones y el RIR: dos series del mismo ejercicio en la misma sesión pueden llevar implementos distintos, y la diferencia tiene que verse de un barrido. El tonelaje del ejercicio suma todas las series, cualquiera que fuera el implemento.
 
 **Payload / Parámetros (Input):**
 
@@ -939,6 +1010,7 @@
   "version_number": "INTEGER",
   "status": "TEXT",
   "tonnage_total": "REAL",
+  "withdrawn_exercise_names": ["TEXT"],
   "exercises": [
     {
       "exercise_id": "INTEGER",

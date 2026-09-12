@@ -1,18 +1,28 @@
 package com.estebancoloradogonzalez.tension.ui.session
 
+import android.content.Context
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.estebancoloradogonzalez.tension.R
 import com.estebancoloradogonzalez.tension.domain.model.DeloadState
+import com.estebancoloradogonzalez.tension.domain.model.SessionAdjustment
 import com.estebancoloradogonzalez.tension.domain.model.ExerciseSessionStatus
 import com.estebancoloradogonzalez.tension.domain.usecase.deload.GetDeloadStateUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.session.CloseSessionUseCase
 import com.estebancoloradogonzalez.tension.domain.util.LoadDisplayMapper
 import com.estebancoloradogonzalez.tension.domain.usecase.session.GetSessionExercisesUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.session.FinalizeExerciseUseCase
+import com.estebancoloradogonzalez.tension.domain.usecase.session.AddExerciseToSessionUseCase
+import com.estebancoloradogonzalez.tension.domain.usecase.session.GetAddableExercisesUseCase
+import com.estebancoloradogonzalez.tension.domain.usecase.session.GetSessionAdjustmentUseCase
+import com.estebancoloradogonzalez.tension.domain.usecase.session.WithdrawFromSessionUseCase
+import com.estebancoloradogonzalez.tension.domain.rules.SessionAdjustmentRule
+import com.estebancoloradogonzalez.tension.domain.rules.WithdrawalVerdict
 import com.estebancoloradogonzalez.tension.domain.repository.PlanRepository
 import com.estebancoloradogonzalez.tension.domain.repository.SessionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -32,6 +42,11 @@ class ActiveSessionViewModel @Inject constructor(
     private val sessionRepository: SessionRepository,
     private val planRepository: PlanRepository,
     private val getDeloadStateUseCase: GetDeloadStateUseCase,
+    private val getSessionAdjustmentUseCase: GetSessionAdjustmentUseCase,
+    private val getAddableExercisesUseCase: GetAddableExercisesUseCase,
+    private val addExerciseToSessionUseCase: AddExerciseToSessionUseCase,
+    private val withdrawFromSessionUseCase: WithdrawFromSessionUseCase,
+    @ApplicationContext private val context: Context,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -46,6 +61,12 @@ class ActiveSessionViewModel @Inject constructor(
 
     private val _alternativeSelectionState = MutableStateFlow(AlternativeSelectionUiState())
     val alternativeSelectionState: StateFlow<AlternativeSelectionUiState> = _alternativeSelectionState.asStateFlow()
+
+    private val _addExerciseSheetState = MutableStateFlow(AddExerciseSheetState())
+    val addExerciseSheetState: StateFlow<AddExerciseSheetState> = _addExerciseSheetState.asStateFlow()
+
+    private val _withdrawDialogState = MutableStateFlow(WithdrawDialogState())
+    val withdrawDialogState: StateFlow<WithdrawDialogState> = _withdrawDialogState.asStateFlow()
 
     init {
         viewModelScope.launch {
@@ -65,9 +86,10 @@ class ActiveSessionViewModel @Inject constructor(
             combine(
                 getSessionExercisesUseCase(sessionId),
                 sessionRepository.getSessionRoutineVersion(sessionId),
-            ) { exercises, routineVersion ->
-                exercises to routineVersion
-            }.collect { (exercises, routineVersion) ->
+                getSessionAdjustmentUseCase(sessionId),
+            ) { exercises, routineVersion, adjustment ->
+                Triple(exercises, routineVersion, adjustment)
+            }.collect { (exercises, routineVersion, adjustment) ->
                 _uiState.update { current ->
                     current.copy(
                         isLoading = false,
@@ -75,6 +97,8 @@ class ActiveSessionViewModel @Inject constructor(
                         deloadProgress = deloadProgressText,
                         routineName = routineVersion?.first ?: "",
                         versionNumber = routineVersion?.second ?: 0,
+                        addedCount = adjustment.addedCount,
+                        withdrawnCount = adjustment.withdrawnCount,
                         exercises = exercises.map { detail ->
                             val statusLabel = when (detail.status) {
                                 ExerciseSessionStatus.NOT_STARTED -> "No Iniciado"
@@ -107,6 +131,12 @@ class ActiveSessionViewModel @Inject constructor(
                                 isFinalized = detail.isFinalized,
                                 slot = detail.slot,
                                 hasAlternatives = detail.hasAlternatives,
+                                isExtra = detail.isExtra,
+                                withdrawalBlockReason = withdrawalBlockReason(
+                                    isExtra = detail.isExtra,
+                                    completedSets = detail.completedSets,
+                                    adjustment = adjustment,
+                                ),
                             )
                         },
                     )
@@ -198,5 +228,125 @@ class ActiveSessionViewModel @Inject constructor(
 
     fun onDismissAlternativeSelection() {
         _alternativeSelectionState.value = AlternativeSelectionUiState()
+    }
+
+    /**
+     * Por qué este ejercicio no puede retirarse, ya redactado. `null` habilita la acción.
+     *
+     * El veredicto lo decide [SessionAdjustmentRule] —incluido el orden de evaluación, que
+     * antepone las series al presupuesto—; aquí solo se traduce a la línea que el menú
+     * muestra bajo la acción deshabilitada. Decirlo antes de tocar, y no después en un
+     * `Snackbar`, es lo que convierte la restricción en explicación.
+     */
+    private fun withdrawalBlockReason(
+        isExtra: Boolean,
+        completedSets: Int,
+        adjustment: SessionAdjustment,
+    ): String? {
+        val verdict = if (isExtra) {
+            SessionAdjustmentRule.verdictForAddedExercise(
+                addedCount = adjustment.addedCount,
+                withdrawnCount = adjustment.withdrawnCount,
+                completedSets = completedSets,
+            )
+        } else {
+            SessionAdjustmentRule.verdictForPlanExercise(
+                addedCount = adjustment.addedCount,
+                withdrawnCount = adjustment.withdrawnCount,
+                completedSets = completedSets,
+            )
+        }
+        return when (verdict) {
+            is WithdrawalVerdict.Allowed -> null
+            is WithdrawalVerdict.HasSets -> if (verdict.count == 1) {
+                context.getString(R.string.session_withdraw_blocked_sets_one)
+            } else {
+                context.getString(R.string.session_withdraw_blocked_sets, verdict.count)
+            }
+            // "Otro" en cuanto ya se anadio algo: con presupuesto agotado y un anadido
+            // hecho, pedir "un ejercicio" sonaria a que no se ha anadido ninguno.
+            is WithdrawalVerdict.BudgetExhausted -> if (adjustment.addedCount == 0) {
+                context.getString(R.string.session_withdraw_blocked_budget)
+            } else {
+                context.getString(R.string.session_withdraw_blocked_budget_more)
+            }
+            // El nombre siempre existe: el veredicto implica que queda un retiro sin
+            // reponer. La demostracion vive en el KDoc de la regla.
+            is WithdrawalVerdict.WouldBreakInvariant -> context.getString(
+                R.string.session_withdraw_blocked_invariant,
+                adjustment.pendingWithdrawals.firstOrNull()?.name.orEmpty(),
+            )
+        }
+    }
+
+    fun onAddExerciseRequested() {
+        _addExerciseSheetState.value = AddExerciseSheetState(isVisible = true)
+        viewModelScope.launch {
+            getAddableExercisesUseCase(sessionId).collect { catalog ->
+                _addExerciseSheetState.update { current ->
+                    if (!current.isVisible) return@update current
+                    current.copy(
+                        exercises = catalog.map {
+                            AddableExerciseUiItem(
+                                exerciseId = it.exerciseId,
+                                name = it.name,
+                                equipmentSummary = it.equipmentSummary,
+                                muscleZonesSummary = it.muscleZonesSummary,
+                                isAlreadyInSession = it.isAlreadyInSession,
+                            )
+                        },
+                    )
+                }
+            }
+        }
+    }
+
+    fun onAddQueryChanged(query: String) {
+        _addExerciseSheetState.update { it.copy(query = query) }
+    }
+
+    fun onExerciseChosen(exerciseId: Long) {
+        if (_addExerciseSheetState.value.isAdding) return
+        viewModelScope.launch {
+            _addExerciseSheetState.update { it.copy(isAdding = true) }
+            try {
+                addExerciseToSessionUseCase(sessionId, exerciseId)
+                _addExerciseSheetState.value = AddExerciseSheetState()
+            } catch (e: Exception) {
+                _addExerciseSheetState.update { it.copy(isAdding = false) }
+                _uiState.update { it.copy(errorMessage = e.message) }
+            }
+        }
+    }
+
+    fun onDismissAddExercise() {
+        _addExerciseSheetState.value = AddExerciseSheetState()
+    }
+
+    fun onWithdrawRequested(exercise: ExerciseUiItem) {
+        if (exercise.withdrawalBlockReason != null) return
+        _withdrawDialogState.value = WithdrawDialogState(
+            isVisible = true,
+            sessionExerciseId = exercise.sessionExerciseId,
+            exerciseName = exercise.name,
+            isExtra = exercise.isExtra,
+        )
+    }
+
+    fun onWithdrawConfirmed() {
+        val state = _withdrawDialogState.value
+        if (!state.isVisible) return
+        _withdrawDialogState.value = WithdrawDialogState()
+        viewModelScope.launch {
+            try {
+                withdrawFromSessionUseCase(state.sessionExerciseId)
+            } catch (e: Exception) {
+                _uiState.update { it.copy(errorMessage = e.message) }
+            }
+        }
+    }
+
+    fun onDismissWithdrawDialog() {
+        _withdrawDialogState.value = WithdrawDialogState()
     }
 }

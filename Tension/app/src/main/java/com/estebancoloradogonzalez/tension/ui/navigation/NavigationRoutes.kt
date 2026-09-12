@@ -10,7 +10,15 @@ object NavigationRoutes {
     const val SETTINGS = "settings"
     const val EXERCISE_DICTIONARY = "exercise-dictionary"
     const val EXERCISE_DETAIL = "exercise-detail/{exerciseId}"
-    const val CREATE_EXERCISE = "create-exercise"
+    /**
+     * El formulario de creación, con el mismo destino desde el Diccionario y desde la
+     * sesión activa (CA-43.02).
+     *
+     * El argumento es opcional a propósito: duplicar la pantalla para cambiar qué ocurre al
+     * guardar habría sido la peor lectura de la exigencia de que el formulario sea "el mismo,
+     * sin recortes".
+     */
+    const val CREATE_EXERCISE = "create-exercise?sessionId={sessionId}"
     const val TRAINING_PLAN = "training-plan"
     const val ROUTINE_LIST = "routine-list"
     const val ROUTINE_VERSIONS = "routine-versions/{routineId}"
@@ -33,6 +41,8 @@ object NavigationRoutes {
     const val SESSION_PREVIEW = "session-preview/{routineVersionId}/{routineName}/{versionNumber}"
     const val TREE = "tree"
 
+    fun createExerciseRoute(sessionId: Long? = null) =
+        if (sessionId == null) "create-exercise" else "create-exercise?sessionId=$sessionId"
     fun exerciseDetailRoute(exerciseId: Long) = "exercise-detail/$exerciseId"
     fun exerciseHistoryRoute(exerciseId: Long) = "exercise-history/$exerciseId"
     fun planVersionDetailRoute(routineVersionId: Long) = "plan-version-detail/$routineVersionId"

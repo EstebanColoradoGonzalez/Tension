@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.outlined.PhotoCamera
 import androidx.compose.material3.AlertDialog
@@ -30,6 +31,8 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -45,6 +48,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -59,6 +64,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.estebancoloradogonzalez.tension.R
 import com.estebancoloradogonzalez.tension.ui.components.EntityNameText
+import com.estebancoloradogonzalez.tension.ui.session.components.AddExerciseSheet
 import com.estebancoloradogonzalez.tension.domain.model.ExerciseSessionStatus
 import com.estebancoloradogonzalez.tension.ui.theme.LocalTensionSemanticColors
 
@@ -67,11 +73,15 @@ fun ActiveSessionScreen(
     onNavigateToRegisterSet: (Long) -> Unit,
     onNavigateToExerciseDetail: (Long) -> Unit,
     onNavigateToSessionSummary: (Long) -> Unit,
+    onNavigateToCreateExercise: (Long) -> Unit,
     onNavigateToHome: () -> Unit,
+    sessionId: Long,
     viewModel: ActiveSessionViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val alternativeSelectionState by viewModel.alternativeSelectionState.collectAsStateWithLifecycle()
+    val addExerciseSheetState by viewModel.addExerciseSheetState.collectAsStateWithLifecycle()
+    val withdrawDialogState by viewModel.withdrawDialogState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(uiState.errorMessage) {
@@ -123,7 +133,21 @@ fun ActiveSessionScreen(
                         onViewDetail = { exercise.exerciseId?.let { onNavigateToExerciseDetail(it) } },
                         onFinalize = { viewModel.onFinalizeExercise(exercise.sessionExerciseId) },
                         onSelectAlternative = { viewModel.onSelectAlternative(exercise) },
+                        onWithdraw = { viewModel.onWithdrawRequested(exercise) },
                     )
+                }
+
+                // El boton va al FINAL de la lista, tras el ultimo ejercicio: su posicion
+                // refuerza que el anadido entra al final y fuera de los puestos (CA-43.01).
+                item {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedButton(
+                        onClick = { viewModel.onAddExerciseRequested() },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !uiState.isClosing,
+                    ) {
+                        Text(text = stringResource(R.string.session_add_exercise))
+                    }
                 }
 
                 item {
@@ -162,6 +186,27 @@ fun ActiveSessionScreen(
         SnackbarHost(
             hostState = snackbarHostState,
             modifier = Modifier.align(Alignment.BottomCenter),
+        )
+    }
+
+    if (withdrawDialogState.isVisible) {
+        WithdrawExerciseDialog(
+            state = withdrawDialogState,
+            onConfirm = viewModel::onWithdrawConfirmed,
+            onDismiss = viewModel::onDismissWithdrawDialog,
+        )
+    }
+
+    if (addExerciseSheetState.isVisible) {
+        AddExerciseSheet(
+            state = addExerciseSheetState,
+            onQueryChanged = viewModel::onAddQueryChanged,
+            onExerciseChosen = viewModel::onExerciseChosen,
+            onCreateNew = {
+                viewModel.onDismissAddExercise()
+                onNavigateToCreateExercise(sessionId)
+            },
+            onDismiss = viewModel::onDismissAddExercise,
         )
     }
 
@@ -274,6 +319,7 @@ private fun ExerciseRow(
     onViewDetail: () -> Unit,
     onFinalize: () -> Unit,
     onSelectAlternative: () -> Unit,
+    onWithdraw: () -> Unit,
 ) {
     val isDark = isSystemInDarkTheme()
     when {
@@ -283,6 +329,7 @@ private fun ExerciseRow(
             onRegister = onRegister,
             onViewDetail = onViewDetail,
             onSelectAlternative = onSelectAlternative,
+            onWithdraw = onWithdraw,
         )
         exercise.status == ExerciseSessionStatus.IN_PROGRESS -> InProgressExerciseRow(
             exercise = exercise,
@@ -291,14 +338,121 @@ private fun ExerciseRow(
             onRegister = onRegister,
             onFinalize = onFinalize,
             onViewDetail = onViewDetail,
+            onWithdraw = onWithdraw,
         )
         else -> CompletedExerciseRow(
             exercise = exercise,
             isDark = isDark,
             onRegister = onRegister,
             onViewDetail = onViewDetail,
+            onWithdraw = onWithdraw,
         )
     }
+}
+
+/**
+ * El menu contextual del ejercicio, con la unica accion que HU-43 anade (CA-43.04).
+ *
+ * Vive junto al ejercicio que va a desaparecer y no en un modo de edicion ni en la barra
+ * superior: asi no hay que elegir el objetivo en una segunda lista, ni entrar y salir de un
+ * modo. Cuando la accion no se puede ejecutar **se muestra con su causa** en lugar de
+ * ocultarse; decirlo antes de tocar es lo que convierte la restriccion en explicacion.
+ */
+@Composable
+private fun ExerciseOverflowMenu(
+    exercise: ExerciseUiItem,
+    onWithdraw: () -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Box {
+        IconButton(
+            onClick = { expanded = true },
+            modifier = Modifier.size(48.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Filled.MoreVert,
+                contentDescription = stringResource(R.string.session_exercise_menu),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(24.dp),
+            )
+        }
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+        ) {
+            val blockReason = exercise.withdrawalBlockReason
+            DropdownMenuItem(
+                enabled = blockReason == null,
+                text = {
+                    Column {
+                        Text(text = stringResource(R.string.session_withdraw))
+                        if (blockReason != null) {
+                            Text(
+                                text = blockReason,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                },
+                onClick = {
+                    expanded = false
+                    onWithdraw()
+                },
+            )
+        }
+    }
+}
+
+/** Marca del ejercicio anadido: la lista distingue lo que trajo el plan de lo que no. */
+@Composable
+private fun AddedToSessionBadge() {
+    Surface(
+        shape = RoundedCornerShape(4.dp),
+        color = MaterialTheme.colorScheme.tertiaryContainer,
+        modifier = Modifier.padding(top = 2.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.session_exercise_added_badge),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onTertiaryContainer,
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+        )
+    }
+}
+
+@Composable
+private fun WithdrawExerciseDialog(
+    state: WithdrawDialogState,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(text = stringResource(R.string.session_withdraw_dialog_title, state.exerciseName))
+        },
+        text = {
+            Text(
+                text = if (state.isExtra) {
+                    stringResource(R.string.session_withdraw_dialog_message_extra)
+                } else {
+                    stringResource(R.string.session_withdraw_dialog_message)
+                },
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text(text = stringResource(R.string.session_withdraw_dialog_confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = stringResource(R.string.session_withdraw_dialog_cancel))
+            }
+        },
+    )
 }
 
 @Composable
@@ -308,6 +462,7 @@ private fun NotStartedExerciseRow(
     onRegister: () -> Unit,
     onViewDetail: () -> Unit,
     onSelectAlternative: () -> Unit,
+    onWithdraw: () -> Unit,
 ) {
     OutlinedCard(
         modifier = Modifier.fillMaxWidth(),
@@ -346,6 +501,9 @@ private fun NotStartedExerciseRow(
                             ),
                         )
                     }
+                }
+                if (exercise.isExtra) {
+                    AddedToSessionBadge()
                 }
                 Text(
                     text = exercise.statusDisplayText,
@@ -394,6 +552,7 @@ private fun NotStartedExerciseRow(
                             modifier = Modifier.size(24.dp),
                         )
                     }
+                    ExerciseOverflowMenu(exercise = exercise, onWithdraw = onWithdraw)
                 }
             }
         }
@@ -408,6 +567,7 @@ private fun InProgressExerciseRow(
     onRegister: () -> Unit,
     onFinalize: () -> Unit,
     onViewDetail: () -> Unit,
+    onWithdraw: () -> Unit,
 ) {
     val bgColor = if (isDark) Color(0xFF1A2733) else Color(0xFFE3F2FD)
     val indicatorColor = if (isDark) Color(0xFF64B5F6) else Color(0xFF1565C0)
@@ -447,6 +607,9 @@ private fun InProgressExerciseRow(
                             ),
                         )
                     }
+                }
+                if (exercise.isExtra) {
+                    AddedToSessionBadge()
                 }
                 Text(
                     text = exercise.statusDisplayText,
@@ -496,6 +659,7 @@ private fun InProgressExerciseRow(
                             modifier = Modifier.size(24.dp),
                         )
                     }
+                    ExerciseOverflowMenu(exercise = exercise, onWithdraw = onWithdraw)
                 }
             }
         }
@@ -508,6 +672,7 @@ private fun CompletedExerciseRow(
     isDark: Boolean,
     onRegister: () -> Unit,
     onViewDetail: () -> Unit,
+    onWithdraw: () -> Unit,
 ) {
     val bgColor = if (isDark) Color(0xFF1A2E1A) else Color(0xFFE8F5E9)
     val indicatorColor = if (isDark) Color(0xFF81C784) else Color(0xFF2E7D32)
@@ -550,6 +715,9 @@ private fun CompletedExerciseRow(
                         )
                     }
                 }
+                if (exercise.isExtra) {
+                    AddedToSessionBadge()
+                }
                 Text(
                     text = exercise.statusDisplayText,
                     style = MaterialTheme.typography.bodyMedium,
@@ -579,6 +747,7 @@ private fun CompletedExerciseRow(
                             modifier = Modifier.size(24.dp),
                         )
                     }
+                    ExerciseOverflowMenu(exercise = exercise, onWithdraw = onWithdraw)
                 }
             }
         }

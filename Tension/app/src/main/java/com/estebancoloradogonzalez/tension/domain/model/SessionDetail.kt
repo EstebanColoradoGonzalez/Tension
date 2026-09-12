@@ -10,4 +10,10 @@ data class SessionDetail(
     val totalExercises: Int,
     val completedExercises: Int,
     val exercises: List<SessionDetailExercise>,
+    /**
+     * Ejercicios que el plan trajo y que el ejecutante retiró de aquella sesión sin
+     * reponerlos (CA-43.08). El historial registra lo ejecutado, y no haber ejecutado algo
+     * que estaba previsto también es información.
+     */
+    val withdrawnExerciseNames: List<String> = emptyList(),
 )

@@ -19,4 +19,6 @@ data class SessionExerciseDetail(
     val pendingSelection: Boolean,
     val slot: Int,
     val hasAlternatives: Boolean = false,
+    /** Añadido por el ejecutante a esta sesión, fuera de la estructura de puestos (HU-43). */
+    val isExtra: Boolean = false,
 )

@@ -257,7 +257,15 @@ fun CreateExerciseScreen(
                                 color = MaterialTheme.colorScheme.onPrimary,
                             )
                         } else {
-                            Text(stringResource(R.string.create_exercise_button))
+                            Text(
+                                stringResource(
+                                    if (uiState.isFromSession) {
+                                        R.string.create_exercise_save_and_add
+                                    } else {
+                                        R.string.create_exercise_button
+                                    },
+                                ),
+                            )
                         }
                     }
 

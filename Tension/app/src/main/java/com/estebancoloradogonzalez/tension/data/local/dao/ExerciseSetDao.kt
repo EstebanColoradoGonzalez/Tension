@@ -21,6 +21,10 @@ interface ExerciseSetDao {
     )
     suspend fun countSetsInSession(sessionId: Long): Int
 
+    /** Series ya registradas del ejercicio en la sesion. Cero es la frontera del retiro (CA-43.06). */
+    @Query("SELECT COUNT(*) FROM exercise_set WHERE session_exercise_id = :sessionExerciseId")
+    suspend fun countSetsForSessionExercise(sessionExerciseId: Long): Int
+
     @Insert
     suspend fun insert(set: ExerciseSetEntity): Long
 

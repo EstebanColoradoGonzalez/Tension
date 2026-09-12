@@ -66,6 +66,7 @@ class ProgresionPorEquipamientoTest {
             deloadFrozenVersionDao = db.deloadFrozenVersionDao(),
             exerciseSetDao = db.exerciseSetDao(),
             exerciseProgressionDao = db.exerciseProgressionDao(),
+            exerciseOneRmDao = db.exerciseOneRmDao(),
             sessionExerciseProgressionDao = db.sessionExerciseProgressionDao(),
             alertDao = db.alertDao(),
             database = db,

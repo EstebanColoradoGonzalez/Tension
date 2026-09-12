@@ -8,6 +8,7 @@ import com.estebancoloradogonzalez.tension.data.local.dao.DeloadDao
 import com.estebancoloradogonzalez.tension.data.local.dao.DeloadFrozenVersionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.EquipmentTypeDao
 import com.estebancoloradogonzalez.tension.data.local.dao.ExerciseDao
+import com.estebancoloradogonzalez.tension.data.local.dao.ExerciseOneRmDao
 import com.estebancoloradogonzalez.tension.data.local.dao.ExerciseProgressionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.ExerciseSetDao
 import com.estebancoloradogonzalez.tension.data.local.dao.PlanAssignmentDao
@@ -27,6 +28,7 @@ import com.estebancoloradogonzalez.tension.data.local.entity.DailyRoutineOverrid
 import com.estebancoloradogonzalez.tension.data.local.entity.DaySkipEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.DeloadEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.DeloadFrozenVersionEntity
+import com.estebancoloradogonzalez.tension.data.local.entity.ExerciseOneRmEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.ExerciseProgressionEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.ExerciseSetEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.SessionEntity
@@ -76,6 +78,7 @@ import com.estebancoloradogonzalez.tension.domain.rules.NextTrainingDayRule
 import com.estebancoloradogonzalez.tension.domain.rules.DoubleThresholdRule
 import com.estebancoloradogonzalez.tension.domain.rules.ExternalLoadRule
 import com.estebancoloradogonzalez.tension.domain.rules.LoadIncrementResolver
+import com.estebancoloradogonzalez.tension.domain.rules.OneRmRule
 import com.estebancoloradogonzalez.tension.domain.rules.PrefilledLoadRule
 import com.estebancoloradogonzalez.tension.domain.rules.RoutineFatigueRule
 import com.estebancoloradogonzalez.tension.domain.rules.PlateauThresholdRule
@@ -111,6 +114,7 @@ class SessionRepositoryImpl @Inject constructor(
     private val deloadFrozenVersionDao: DeloadFrozenVersionDao,
     private val exerciseSetDao: ExerciseSetDao,
     private val exerciseProgressionDao: ExerciseProgressionDao,
+    private val exerciseOneRmDao: ExerciseOneRmDao,
     private val sessionExerciseProgressionDao: SessionExerciseProgressionDao,
     private val alertDao: AlertDao,
     private val database: TensionDatabase,
@@ -672,6 +676,32 @@ class SessionRepositoryImpl @Inject constructor(
                     equipmentTypeId = equipmentTypeId,
                 ),
             )
+
+            // El 1RM del par, si esta serie es la de referencia (CA-42.03). Se decide sobre
+            // el peso **persistido** y sobre `hasExternalLoad`, ya resueltos arriba: es el
+            // mismo dato que queda en la fila, no el que se tecleó.
+            //
+            // Va dentro de esta transacción, y no en un paso best-effort posterior como el
+            // recálculo del árbol, porque el 1RM **no se puede reconstruir**: no hay
+            // retro-cálculo, el respaldo lo restaura en lugar de recalcularlo (CA-42.08) y
+            // una serie ya registrada no vuelve a pasar por aquí. Un fallo tras insertar la
+            // serie sería un máximo perdido para siempre; así, o se persisten las dos cosas
+            // o no se persiste ninguna.
+            if (OneRmRule.qualifies(reps, rir, hasExternalLoad, persistedWeightKg)) {
+                val estimated = OneRmRule.estimate(persistedWeightKg, reps)
+                val currentRecord = exerciseOneRmDao.getValue(info.exerciseId, equipmentTypeId)
+                // Estrictamente mayor: un valor igual o menor conserva el guardado, y repetir
+                // una sesión idéntica no escribe nada en absoluto (CA-42.04).
+                if (currentRecord == null || estimated > currentRecord) {
+                    exerciseOneRmDao.upsert(
+                        ExerciseOneRmEntity(
+                            exerciseId = info.exerciseId,
+                            equipmentTypeId = equipmentTypeId,
+                            oneRmKg = estimated,
+                        ),
+                    )
+                }
+            }
         }
     }
 

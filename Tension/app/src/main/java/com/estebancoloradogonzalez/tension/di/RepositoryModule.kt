@@ -4,6 +4,7 @@ import com.estebancoloradogonzalez.tension.data.repository.AlertRepositoryImpl
 import com.estebancoloradogonzalez.tension.data.repository.BackupRepositoryImpl
 import com.estebancoloradogonzalez.tension.data.repository.ExerciseRepositoryImpl
 import com.estebancoloradogonzalez.tension.data.repository.MetricsRepositoryImpl
+import com.estebancoloradogonzalez.tension.data.repository.OneRmRepositoryImpl
 import com.estebancoloradogonzalez.tension.data.repository.PlanRepositoryImpl
 import com.estebancoloradogonzalez.tension.data.repository.ProfileRepositoryImpl
 import com.estebancoloradogonzalez.tension.data.repository.RoutineRepositoryImpl
@@ -14,6 +15,7 @@ import com.estebancoloradogonzalez.tension.domain.repository.AlertRepository
 import com.estebancoloradogonzalez.tension.domain.repository.BackupRepository
 import com.estebancoloradogonzalez.tension.domain.repository.ExerciseRepository
 import com.estebancoloradogonzalez.tension.domain.repository.MetricsRepository
+import com.estebancoloradogonzalez.tension.domain.repository.OneRmRepository
 import com.estebancoloradogonzalez.tension.domain.repository.PlanRepository
 import com.estebancoloradogonzalez.tension.domain.repository.ProfileRepository
 import com.estebancoloradogonzalez.tension.domain.repository.RoutineRepository
@@ -89,4 +91,10 @@ abstract class RepositoryModule {
     abstract fun bindTreeRepository(
         impl: TreeRepositoryImpl,
     ): TreeRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindOneRmRepository(
+        impl: OneRmRepositoryImpl,
+    ): OneRmRepository
 }

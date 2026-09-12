@@ -14,9 +14,13 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -41,6 +45,7 @@ import com.estebancoloradogonzalez.tension.ui.theme.TensionThemeExtended
 private val CARD_SHAPE = RoundedCornerShape(12.dp)
 private val CARD_PADDING = 16.dp
 private val ROW_MIN_HEIGHT = 48.dp
+private val ENTRY_MIN_HEIGHT = 48.dp
 
 /** Thematic header that opens a group of indicator cards. */
 @Composable
@@ -108,6 +113,64 @@ fun MetricCard(
                 text = period,
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+/**
+ * Entry from the metrics panel to one of its detail screens.
+ *
+ * The three entries of Flow G — 1RM, muscle volume and progression trend — are siblings and
+ * are rendered by this one composable so they cannot drift apart. Each carries a title, a
+ * line saying what is behind it and the chevron that announces navigation; the row is at
+ * least [ENTRY_MIN_HEIGHT] tall, which is the minimum touch target (RNF06).
+ *
+ * The description is not decoration. HU-35 established that a metric without context is not
+ * understood, and an entry named only «1RM estimado» would be the same problem one screen
+ * earlier.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MetricNavigationEntry(
+    title: String,
+    description: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth(),
+        shape = CARD_SHAPE,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        ),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = ENTRY_MIN_HEIGHT)
+                .padding(CARD_PADDING),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }

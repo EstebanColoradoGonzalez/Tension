@@ -382,8 +382,13 @@
     <string name="metrics_load_velocity_title">Velocidad de carga</string>
     <string name="metrics_load_velocity_description">Carga que sumas de media en cada
         sesión</string>
-    <string name="metrics_link_volume">Volumen por Grupo Muscular →</string>
-    <string name="metrics_link_trend">Tendencia de Progresión →</string>
+    <!-- Accesos del panel de Métricas a sus pantallas de detalle -->
+    <string name="metrics_entry_one_rm_title">1RM estimado</string>
+    <string name="metrics_entry_one_rm_description">Tu fuerza máxima por implemento</string>
+    <string name="metrics_entry_volume_title">Volumen por grupo muscular</string>
+    <string name="metrics_entry_volume_description">Cómo repartes las series entre grupos</string>
+    <string name="metrics_entry_trend_title">Tendencia de progresión</string>
+    <string name="metrics_entry_trend_description">Hacia dónde va tu carga por grupo</string>
 
     <!-- Volume G2 -->
     <string name="volume_title">Volumen por Grupo Muscular</string>
@@ -482,6 +487,9 @@
         está corrupto.</string>
     <string name="import_backup_no_equipment">Este respaldo se generó con una versión anterior de la
         aplicación y no incluye el equipamiento de las series. No puede restaurarse.</string>
+    <string name="import_backup_no_one_rm">Este respaldo se generó con una versión anterior de la
+        aplicación y no incluye el 1RM estimado, que es un récord acumulado y no se recalcula
+        desde el historial. No puede restaurarse.</string>
     <string name="import_backup_invalid_json">El archivo no contiene JSON válido</string>
     <string name="import_backup_invalid_format">Formato de respaldo no reconocido</string>
     <string name="import_backup_incompatible_version">Versión de respaldo incompatible (esperada:
@@ -604,4 +612,11 @@
     <string name="tree_last_session_today">Último entrenamiento: hoy</string>
     <string name="tree_last_session_yesterday">Último entrenamiento: ayer</string>
     <string name="tree_last_session_days">Último entrenamiento: hace %1$d días</string>
+    <!-- 1RM Estimado (Flujo O) -->
+    <string name="one_rm_title">1RM estimado</string>
+    <!-- Kilogramos y libras a la vez, sin conmutador: ambos rótulos de los implementos. -->
+    <string name="one_rm_value_format">%1$s kg · %2$s lb</string>
+    <string name="one_rm_empty_title">Todavía no hay ningún 1RM</string>
+    <string name="one_rm_empty_message">El 1RM se estima con una serie de 10 repeticiones y
+        RIR 1. Cuando registres una así, aparecerá aquí.</string>
 </resources>

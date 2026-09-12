@@ -27,7 +27,7 @@ class BackupRepositoryImpl @Inject constructor(
 ) : BackupRepository {
 
     companion object {
-        const val SCHEMA_VERSION = 15
+        const val SCHEMA_VERSION = 16
 
         const val APP_VERSION = "1.0"
 
@@ -55,8 +55,18 @@ class BackupRepositoryImpl @Inject constructor(
          * y la sugerencia son decisiones, no calculos— y la CA exige que la restauracion
          * reproduzca el catalogo y el plan **sin recalcularlos**. Ninguna tabla nueva entra
          * en el orden: el mecanismo vuelca columnas por cursor y las tres viajan solas.
+         *
+         * El 15 cae por el mismo argumento, y esta vez sobre una tabla entera (CA-42.08):
+         * no lleva `exercise_one_rm`. El 1RM es un **record acumulado**, no un derivado
+         * reconstruible: recalcularlo desde las series podria perder un maximo alcanzado en
+         * una serie ya purgada o restaurada parcialmente, y la CA exige que el respaldo lo
+         * reproduzca **sin recalcularlo**. Aceptar un v15 dejaria la vista de 1RM vacia
+         * sobre un historial lleno de series que si calificaron.
          */
         private val ACCEPTED_SCHEMA_VERSIONS = setOf(SCHEMA_VERSION)
+
+        /** El formato inmediatamente anterior, el unico con un motivo de rechazo propio. */
+        private const val PREVIOUS_SCHEMA_VERSION = SCHEMA_VERSION - 1
 
         // INSERT order: parents first (FK dependencies satisfied)
         val TABLE_ORDER_INSERT = listOf(
@@ -82,6 +92,9 @@ class BackupRepositoryImpl @Inject constructor(
             // Los implementos admitidos del ejercicio. Lleva FK a exercise y a
             // equipment_type, asi que va detras de las dos, junto a su gemela.
             "exercise_equipment",
+            // El 1RM estimado por par. Lleva FK a exercise y a equipment_type, como
+            // exercise_equipment, y va junto a ella por la misma razon.
+            "exercise_one_rm",
             "routine_version",
             "routine_current_version",
             "deload_frozen_version",
@@ -187,14 +200,18 @@ class BackupRepositoryImpl @Inject constructor(
             // version: lo que le falta al archivo es el equipamiento de las series
             // (CA-39.12). Un formato *posterior* —un respaldo de un build mas nuevo— no
             // tiene esa causa y se rechaza por version, que es lo unico que se sabe de el.
-            val message = if (schemaVersion > SCHEMA_VERSION) {
-                context.getString(
+            val message = when {
+                schemaVersion > SCHEMA_VERSION -> context.getString(
                     R.string.import_backup_incompatible_version,
                     SCHEMA_VERSION,
                     schemaVersion,
                 )
-            } else {
-                context.getString(R.string.import_backup_no_equipment)
+                // El formato inmediatamente anterior tiene una causa propia y concreta: le
+                // falta el 1RM, que no se recalcula. Los mas antiguos siguen cayendo por la
+                // ausencia del equipamiento de las series, que es lo primero que les falta.
+                schemaVersion == PREVIOUS_SCHEMA_VERSION ->
+                    context.getString(R.string.import_backup_no_one_rm)
+                else -> context.getString(R.string.import_backup_no_equipment)
             }
             return BackupValidationResult(
                 isValid = false,

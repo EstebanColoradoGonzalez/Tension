@@ -46,6 +46,7 @@ import com.estebancoloradogonzalez.tension.ui.metrics.MetricsScreen
 import com.estebancoloradogonzalez.tension.ui.metrics.TrendScreen
 import com.estebancoloradogonzalez.tension.ui.metrics.VolumeScreen
 import com.estebancoloradogonzalez.tension.ui.onboarding.RegisterProfileScreen
+import com.estebancoloradogonzalez.tension.ui.onerm.OneRmScreen
 import com.estebancoloradogonzalez.tension.ui.preview.SessionPreviewScreen
 import com.estebancoloradogonzalez.tension.ui.profile.ProfileScreen
 import com.estebancoloradogonzalez.tension.ui.profile.WeightHistoryScreen
@@ -341,6 +342,9 @@ fun TensionNavHost(
 
                     composable(NavigationRoutes.METRICS) {
                         MetricsScreen(
+                            onNavigateToOneRm = {
+                                navController.navigate(NavigationRoutes.ONE_RM)
+                            },
                             onNavigateToVolume = {
                                 navController.navigate(NavigationRoutes.MUSCLE_VOLUME)
                             },
@@ -352,6 +356,12 @@ fun TensionNavHost(
                                     NavigationRoutes.exerciseHistoryRoute(exerciseId),
                                 )
                             },
+                        )
+                    }
+
+                    composable(NavigationRoutes.ONE_RM) {
+                        OneRmScreen(
+                            onNavigateBack = { navController.popBackStack() },
                         )
                     }
 

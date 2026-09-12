@@ -21,7 +21,6 @@ import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -46,6 +45,7 @@ import com.estebancoloradogonzalez.tension.ui.components.MetricCardPair
 import com.estebancoloradogonzalez.tension.ui.components.MetricEntityRow
 import com.estebancoloradogonzalez.tension.ui.components.MetricInsufficientBlock
 import com.estebancoloradogonzalez.tension.ui.components.MetricListCard
+import com.estebancoloradogonzalez.tension.ui.components.MetricNavigationEntry
 import com.estebancoloradogonzalez.tension.ui.components.MetricRequirement
 import com.estebancoloradogonzalez.tension.ui.components.MetricRequirementKind
 import com.estebancoloradogonzalez.tension.ui.components.MetricSectionHeader
@@ -55,6 +55,7 @@ import com.estebancoloradogonzalez.tension.ui.theme.TensionThemeExtended
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MetricsScreen(
+    onNavigateToOneRm: () -> Unit,
     onNavigateToVolume: () -> Unit,
     onNavigateToTrend: () -> Unit,
     onNavigateToExerciseHistory: (Long) -> Unit,
@@ -104,6 +105,7 @@ fun MetricsScreen(
                     state = state,
                     onChangeProgressionPeriod = viewModel::changeProgressionPeriod,
                     onChangeRirPeriod = viewModel::changeRirPeriod,
+                    onNavigateToOneRm = onNavigateToOneRm,
                     onNavigateToVolume = onNavigateToVolume,
                     onNavigateToTrend = onNavigateToTrend,
                     onNavigateToExerciseHistory = onNavigateToExerciseHistory,
@@ -119,6 +121,7 @@ private fun MetricsContent(
     state: MetricsUiState.Content,
     onChangeProgressionPeriod: (Int) -> Unit,
     onChangeRirPeriod: (Int) -> Unit,
+    onNavigateToOneRm: () -> Unit,
     onNavigateToVolume: () -> Unit,
     onNavigateToTrend: () -> Unit,
     onNavigateToExerciseHistory: (Long) -> Unit,
@@ -174,31 +177,32 @@ private fun MetricsContent(
             )
         }
 
-        // Quick links
+        // Accesos a las pantallas de detalle. Los tres son hermanos y se componen con el
+        // mismo elemento para que no puedan divergir. El del 1RM se compone **siempre**,
+        // con o sin sesiones registradas: el estado vacío lo resuelve la pantalla de
+        // destino (CA-42.01).
         item {
-            TextButton(
-                onClick = onNavigateToVolume,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(
-                    text = stringResource(R.string.metrics_link_volume),
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
+            MetricNavigationEntry(
+                title = stringResource(R.string.metrics_entry_one_rm_title),
+                description = stringResource(R.string.metrics_entry_one_rm_description),
+                onClick = onNavigateToOneRm,
+            )
         }
 
         item {
-            TextButton(
+            MetricNavigationEntry(
+                title = stringResource(R.string.metrics_entry_volume_title),
+                description = stringResource(R.string.metrics_entry_volume_description),
+                onClick = onNavigateToVolume,
+            )
+        }
+
+        item {
+            MetricNavigationEntry(
+                title = stringResource(R.string.metrics_entry_trend_title),
+                description = stringResource(R.string.metrics_entry_trend_description),
                 onClick = onNavigateToTrend,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(
-                    text = stringResource(R.string.metrics_link_trend),
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
+            )
         }
 
         item { Spacer(modifier = Modifier.height(8.dp)) }

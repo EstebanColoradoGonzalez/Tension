@@ -9,6 +9,7 @@ import com.estebancoloradogonzalez.tension.data.local.dao.DeloadDao
 import com.estebancoloradogonzalez.tension.data.local.dao.DeloadFrozenVersionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.EquipmentTypeDao
 import com.estebancoloradogonzalez.tension.data.local.dao.ExerciseDao
+import com.estebancoloradogonzalez.tension.data.local.dao.ExerciseOneRmDao
 import com.estebancoloradogonzalez.tension.data.local.dao.ExerciseProgressionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.ExerciseSetDao
 import com.estebancoloradogonzalez.tension.data.local.dao.MuscleZoneDao
@@ -166,5 +167,10 @@ object DatabaseModule {
     @Provides
     fun provideTreeStateDao(database: TensionDatabase): TreeStateDao {
         return database.treeStateDao()
+    }
+
+    @Provides
+    fun provideExerciseOneRmDao(database: TensionDatabase): ExerciseOneRmDao {
+        return database.exerciseOneRmDao()
     }
 }

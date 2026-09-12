@@ -749,6 +749,8 @@
 
   **Un rótulo bajo el selector dice de dónde viene la preselección**: *sugerido por el plan* en el nivel 2 y *último implemento usado* en el 1 y el 3. En el nivel 3 con la primera opción admitida no hay rótulo: es el estado más común de un ejercicio nuevo y no hay nada que explicar. El rótulo **desaparece en cuanto el ejecutante elige a mano**: a partir de ahí el implemento es suyo y un aviso que siguiera diciendo «sugerido por el plan» sería falso. La sugerencia sugiere, no impone. Cuando el ejercicio admite **una sola** opción se presenta resuelto, como etiqueta y sin interacción: un control que se puede tocar para no elegir nada informa menos que un texto. El equipamiento es **obligatorio** y dos series del mismo ejercicio en la misma sesión pueden llevar implementos distintos. La serie sigue siendo inmutable tras su creación: el equipamiento registrado no se corrige después.
 
+  **Efecto colateral persistido, sin nada visible (HU-42).** Si la serie es la **de referencia** —exactamente 10 repeticiones, RIR exactamente 1, sobre carga externa y con peso mayor que 0—, el sistema calcula `1RM = Peso / [1.0278 − (0.0278 × Reps)]`, que a 10 repeticiones equivale a `Peso × 1.3337`, y lo persiste en `exercise_one_rm` para el **par** de la serie, **solo si supera el valor guardado**. El cálculo corre **dentro de la misma transacción** que inserta la serie, y no como un paso posterior best-effort al modo del árbol (`N1-T1`): el 1RM es un récord acumulado que no se puede reconstruir —no hay retro-cálculo y el respaldo lo restaura sin recalcularlo—, así que una escritura perdida sería un máximo perdido para siempre. E2 **no cambia**: no se avisa, no se navega y no se muestra el resultado; el ejecutante lo consulta en `O1` cuando quiere. Nada de lo que este trigger decide depende del 1RM, que se escribe y no se lee.
+
   **El implemento decide si hay carga externa que capturar** (`ExternalLoadRule`), y lo decide él y no solo la marca del ejercicio: `Peso Corporal` registra 0 en cualquier ejercicio; `Peso Añadido` es lo único que habilita la captura sobre un ejercicio de peso corporal, y exige un valor **estrictamente mayor que 0** porque representa exclusivamente la carga externa; sobre un ejercicio de peso corporal, `Barra Fija` —la dominada estricta— y `Máquina` —la asistida, cuya carga es un contrapeso que **resta** esfuerzo y que registrado como peso invertiría el significado del dato— registran 0. Sobre cualquier otro ejercicio, `Máquina` sí es carga. Cuando la captura está deshabilitada, el campo de peso permanece visible y bloqueado en 0 y el selector de unidad se oculta.
 
 **Payload / Parámetros (Input):**
@@ -1109,6 +1111,33 @@
 ```
 
 **Agrupación en secciones (CA-35.02):** `ADHERENCIA` (adherencia semanal), `INTENSIDAD` (RIR promedio por módulo) y `PROGRESIÓN` (tasa de progresión y velocidad de carga).
+
+**Accesos a las pantallas de detalle:** bajo las secciones, `G1` presenta tres entradas hermanas —`G1-T4` (1RM estimado), `G2-T1` (volumen por grupo muscular) y `G3-T1` (tendencia de progresión)—, compuestas con el mismo elemento para que no puedan divergir. Ninguna de las tres añade pestaña a la barra de navegación inferior.
+
+---
+
+#### `G1-T4`: Abrir el 1RM Estimado
+
+- **Tipo de Trigger (Entrada):** `Acción del ejecutante: toca la entrada "1RM estimado" en G1.`
+- **Descripción:** Navega a `O1`. **La entrada se compone siempre**, incluso sin ninguna sesión registrada y sin ninguna serie que haya calificado: el estado vacío lo resuelve la pantalla de destino, no este trigger. Condicionar la entrada a que haya datos obligaría a `G1` a consultar el 1RM para decidir si se dibuja, que es precisamente la lectura que la frontera de HU-42 no admite.
+- **Área táctil:** al menos 48 × 48 dp (RNF06).
+- **Sin efecto de estado:** no escribe, no calcula y no altera ningún KPI. La entrada **no** se añade a `B1` (Inicio) ni a la barra de navegación inferior.
+
+**Payload / Parámetros (Input):**
+
+```json
+{}
+```
+
+**Respuesta / Salida (Output Esperado):**
+
+- **Estado de Éxito:** `Navegación a O1. Ningún cambio de estado del sistema.`
+
+```json
+{
+  "navigation": "O1"
+}
+```
 
 ---
 
@@ -1489,8 +1518,8 @@ Los valores viven en un único punto del código, `AlertThresholdRule`. Esta tab
 
 - **Tipo de Trigger (Entrada):** `Acción del ejecutante: toca "Exportar datos" en J2 tras leer la advertencia de contenido no cifrado.`
 - **Descripción:** El sistema serializa todos los datos de la base de datos local en formato JSON con metadatos de versión y genera un archivo de backup en el almacenamiento del dispositivo. El proceso debe completarse en menos de 10 segundos para historial de hasta 2 años.
-- **Formato `schemaVersion: 15` desde HU-41.** El respaldo incluye el catálogo de zonas con su orden, la **jerarquía principal/secundaria** de cada ejercicio y el **equipamiento sugerido** de cada asignación del plan. Ninguna tabla nueva entra al volcado: el mecanismo recorre columnas por cursor y las tres columnas viajan solas.
-- **Los formatos anteriores se rechazan**, el 14 incluido: le faltan tres columnas `NOT NULL` que no se derivan de nada —la jerarquía y la sugerencia son decisiones, no cálculos—, y la restauración debe reproducir el catálogo y el plan **sin recalcularlos**.
+- **Formato `schemaVersion: 16` desde HU-42.** El respaldo incluye `exercise_one_rm` —el 1RM de cada par `(ejercicio, equipamiento)`—, que entra al volcado detrás de `exercise` y de `equipment_type`, como sus claves foráneas exigen. El formato 15 de HU-41 ya incluía el catálogo de zonas con su orden, la **jerarquía principal/secundaria** de cada ejercicio y el **equipamiento sugerido** de cada asignación del plan.
+- **Los formatos anteriores se rechazan**, el 15 incluido, y con un mensaje que nombra su causa propia: no lleva el 1RM. El 1RM es un **récord acumulado**, no un derivado reconstruible —recalcularlo desde las series podría perder un máximo alcanzado en una serie ya purgada o restaurada parcialmente—, y CA-42.08 exige que el respaldo lo reproduzca **sin recalcularlo**. Aceptar un v15 dejaría la vista de `O1` vacía sobre un historial lleno de series que sí calificaron. Los formatos más antiguos siguen cayendo por lo primero que les falta: el equipamiento de las series (CA-39.12).
 
 **Payload / Parámetros (Input):**
 
@@ -1500,15 +1529,16 @@ Los valores viven en un único punto del código, `AlertThresholdRule`. Esta tab
 
 **Respuesta / Salida (Output Esperado):**
 
-- **Estado de Éxito:** `Archivo JSON generado con todos los datos. Metadatos incluyen versión del esquema (14) y fecha de exportación. Opciones para compartir el archivo vía apps del sistema.`
+- **Estado de Éxito:** `Archivo JSON generado con todos los datos. Metadatos incluyen versión del esquema (16) y fecha de exportación. Opciones para compartir el archivo vía apps del sistema.`
 - **Ampliación de HU-39:** el respaldo incluye `exercise_equipment` —las opciones de equipamiento de cada ejercicio— y el `equipment_type_id` de cada fila de `exercise_set`, que viaja con el resto de sus columnas. La tabla se inserta después de `exercise` y de `equipment_type`, como su clave foránea exige.
 - **Ampliación de HU-40:** el respaldo incluye la **progresión de cada par** —estado, carga prescrita y contador de sesiones sin progresión de cada `(ejercicio, equipamiento)`— y la tabla `session_exercise_progression` con la clasificación por implemento de cada sesión. Esta última se inserta después de `session_exercise` y de `equipment_type`. Un respaldo restaurado reproduce el estado del motor **par por par, sin recalcularlo**.
+- **Ampliación de HU-42:** el respaldo incluye `exercise_one_rm`. Un respaldo restaurado reproduce los récords **tal cual, sin recalcularlos** desde el historial. Un archivo del formato vigente al que le falte la tabla se rechaza por incompleto, igual que si le faltara cualquier otra.
 
 ```json
 {
   "file_path": "TEXT // Ruta del archivo generado",
   "file_size_kb": "INTEGER",
-  "schema_version": 14,
+  "schema_version": 16,
   "export_date": "TEXT // ISO 8601",
   "record_counts": {
     "sessions": "INTEGER",
@@ -1655,6 +1685,103 @@ Los valores viven en un único punto del código, `AlertThresholdRule`. Esta tab
 {
   "navigation": "ninguna",
   "state_change": "ninguno"
+}
+```
+
+---
+
+### 2.12. Módulo: `Flujo O — 1RM Estimado`
+
+*Flujo de una sola pantalla, alcanzable exclusivamente desde `G1-T4`. **No produce efectos sobre ningún otro contenedor:** no escribe nada, no genera alertas, no modifica ningún KPI y ningún componente del motor de decisión lee su estado. Sigue el modelo de aislamiento que ADR-020 declaró para el árbol, con una diferencia que conviene tener presente: el valor que presenta **no es derivable en caliente**, se acumula al registrar cada serie (`E2-T1`) y por eso el respaldo lo transporta en lugar de recalcularlo.*
+
+---
+
+#### `O1-T1`: Consultar el 1RM Estimado
+
+- **Tipo de Trigger (Entrada):** `Automático: al componerse O1.`
+- **Descripción:** Presenta el 1RM de cada par `(ejercicio, equipamiento)` que tiene récord, **una tarjeta por ejercicio** y en orden **alfabético** por nombre. No recalcula nada: el récord ya está persistido desde la serie que lo produjo, así que aquí solo se lee.
+  - **Solo lo entrenado, y solo lo que califica.** La lista son exactamente las filas de `exercise_one_rm`. Un ejercicio del Diccionario sin ninguna serie no aparece; un ejercicio entrenado cuyas series nunca cumplieron la condición tampoco; y un implemento entrenado sin serie que califique **no se presenta como opción**, aunque otro implemento del mismo ejercicio sí tenga valor. **Nunca se muestra un cero ni un guion:** si no hay dato, no hay fila.
+  - **Implementos dentro de la tarjeta.** Se presentan en el orden declarado del catálogo de equipamiento, el mismo de `D5-T1`. El primero queda activo al abrir. Un ejercicio con **un solo** implemento con récord lo presenta como etiqueta no interactiva y muestra su valor directamente, sin exigir selección.
+  - **Doble unidad siempre.** El valor se presenta en kilogramos **y** en libras a la vez, sin conmutador, con el factor vigente del sistema (0.45359237). La presentación **no depende** de la `capture_unit` con la que se registró la serie.
+  - **Solo el número.** No se presenta el peso, ni las repeticiones, ni la fecha de la serie que produjo el récord.
+- **Estado vacío:** cuando no hay ninguna fila —sin sesiones, o con sesiones cuyas series nunca calificaron— la pantalla **enuncia la condición de cálculo** (10 repeticiones con RIR 1) en lugar de dejar una lista en blanco. El vacío real se distingue de la carga: el mensaje no se presenta antes de saber si hay datos.
+
+**Payload / Parámetros (Input):**
+
+```json
+{}
+```
+
+**Respuesta / Salida (Output Esperado):**
+
+- **Estado de Éxito:** `O1 presenta una tarjeta por ejercicio con récord, con sus implementos y el valor del activo.`
+
+```json
+{
+  "exercises": [
+    {
+      "exercise_id": "INTEGER",
+      "exercise_name": "TEXT",
+      "equipment": [
+        {
+          "equipment_type_id": "INTEGER",
+          "equipment_type_name": "TEXT",
+          "one_rm_kg": "REAL // Canónico. Las libras se derivan en presentación."
+        }
+      ]
+    }
+  ],
+  "navigation": "ninguna"
+}
+```
+
+---
+
+#### `O1-T2`: Seleccionar Implemento dentro de una Tarjeta
+
+- **Tipo de Trigger (Entrada):** `Acción del ejecutante: toca un chip de implemento en una tarjeta de O1. Solo disponible cuando el ejercicio tiene dos o más implementos con récord.`
+- **Descripción:** Cambia el valor que la tarjeta muestra, **en su sitio**. No navega, no escribe y no recompone la lista: un ejercicio sigue siendo una tarjeta y la lista no se multiplica por implemento. La selección es estado de presentación y **no se persiste**; al volver a entrar, cada tarjeta arranca de nuevo en su primer implemento.
+
+**Payload / Parámetros (Input):**
+
+```json
+{
+  "exercise_id": "INTEGER",
+  "equipment_type_id": "INTEGER"
+}
+```
+
+**Respuesta / Salida (Output Esperado):**
+
+- **Estado de Éxito:** `La tarjeta presenta el 1RM del par elegido. Ningún cambio de estado del sistema, ninguna navegación, ninguna escritura.`
+
+```json
+{
+  "navigation": "ninguna",
+  "state_change": "ninguno"
+}
+```
+
+---
+
+#### `O1-T3`: Volver a Métricas
+
+- **Tipo de Trigger (Entrada):** `Acción del ejecutante: retroceso nativo de la barra superior de O1.`
+- **Descripción:** **Única acción de navegación de la pantalla.** O1 no tiene formularios, ni modales, ni acciones destructivas: aquí no se decide nada, solo se mira.
+
+**Payload / Parámetros (Input):**
+
+```json
+{}
+```
+
+**Respuesta / Salida (Output Esperado):**
+
+- **Estado de Éxito:** `Navegación a G1. Ningún cambio de estado del sistema.`
+
+```json
+{
+  "navigation": "G1"
 }
 ```
 

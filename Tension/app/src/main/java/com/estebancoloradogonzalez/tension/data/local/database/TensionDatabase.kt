@@ -10,6 +10,7 @@ import com.estebancoloradogonzalez.tension.data.local.dao.DeloadDao
 import com.estebancoloradogonzalez.tension.data.local.dao.DeloadFrozenVersionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.EquipmentTypeDao
 import com.estebancoloradogonzalez.tension.data.local.dao.ExerciseDao
+import com.estebancoloradogonzalez.tension.data.local.dao.ExerciseOneRmDao
 import com.estebancoloradogonzalez.tension.data.local.dao.ExerciseProgressionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.ExerciseSetDao
 import com.estebancoloradogonzalez.tension.data.local.dao.MuscleZoneDao
@@ -34,6 +35,7 @@ import com.estebancoloradogonzalez.tension.data.local.entity.EquipmentTypeEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.ExerciseEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.ExerciseEquipmentEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.ExerciseMuscleZoneEntity
+import com.estebancoloradogonzalez.tension.data.local.entity.ExerciseOneRmEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.ExerciseProgressionEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.ExerciseSetEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.MuscleZoneEntity
@@ -76,8 +78,9 @@ import com.estebancoloradogonzalez.tension.data.local.entity.WeightRecordEntity
         DeloadEntity::class,
         DeloadFrozenVersionEntity::class,
         TreeStateEntity::class,
+        ExerciseOneRmEntity::class,
     ],
-    version = 22,
+    version = 23,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -104,4 +107,5 @@ abstract class TensionDatabase : RoomDatabase() {
     abstract fun deloadDao(): DeloadDao
     abstract fun deloadFrozenVersionDao(): DeloadFrozenVersionDao
     abstract fun treeStateDao(): TreeStateDao
+    abstract fun exerciseOneRmDao(): ExerciseOneRmDao
 }

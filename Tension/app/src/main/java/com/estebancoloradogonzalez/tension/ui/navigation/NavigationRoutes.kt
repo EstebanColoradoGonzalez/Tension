@@ -21,6 +21,7 @@ object NavigationRoutes {
     const val METRICS = "metrics"
     const val MUSCLE_VOLUME = "muscle-volume"
     const val PROGRESSION_TREND = "progression-trend"
+    const val ONE_RM = "one-rm"
     const val ACTIVE_SESSION = "active-session/{sessionId}"
     const val REGISTER_SET = "register-set/{sessionExerciseId}"
     const val SESSION_SUMMARY = "session-summary/{sessionId}"

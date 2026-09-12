@@ -2,7 +2,7 @@
 
 > Este documento define la arquitectura estructural de la memoria del sistema y el ciclo de vida de sus entidades. Actúa simultáneamente como Modelo Entidad-Relación, Diccionario de Datos y Máquina de Estados. Se utiliza una sintaxis declarativa (pseudo-código estilo Prisma/TypeScript) para definir las estructuras, utilizando los comentarios inline como el diccionario de datos.
 >
-> **Versión de esquema:** 22 (migraciones registradas: v1 → v2 → … → v18 → v19). **Ni v20, ni v21, ni v22 tienen migración**: v20 (HU-39) retira `exercise.equipment_type_id`, introduce `exercise_equipment` y añade `exercise_set.equipment_type_id`; v21 (HU-40) reclave `exercise_progression` por el par `(exercise_id, equipment_type_id)` e introduce `session_exercise_progression`; v22 (HU-41) añade `muscle_zone.sort_order`, `exercise_muscle_zone.is_primary` y `plan_assignment.suggested_equipment_type_id`. La excepción documentada a RNF19 (ADR-019) resuelve ambos cambios sobre instalación fresca. Una base anterior no puede abrir el build vigente — el reinicio lo realiza el ejecutante desinstalando y reinstalando, no la aplicación, y el historial anterior se pierde como consecuencia aceptada.
+> **Versión de esquema:** 23 (migraciones registradas: v1 → v2 → … → v18 → v19). **Ni v20, ni v21, ni v22, ni v23 tienen migración**: v20 (HU-39) retira `exercise.equipment_type_id`, introduce `exercise_equipment` y añade `exercise_set.equipment_type_id`; v21 (HU-40) reclave `exercise_progression` por el par `(exercise_id, equipment_type_id)` e introduce `session_exercise_progression`; v22 (HU-41) añade `muscle_zone.sort_order`, `exercise_muscle_zone.is_primary` y `plan_assignment.suggested_equipment_type_id`; v23 (HU-42) introduce `exercise_one_rm`. La excepción documentada a RNF19 (ADR-019) resuelve los cuatro cambios sobre instalación fresca. Una base anterior no puede abrir el build vigente — el reinicio lo realiza el ejecutante desinstalando y reinstalando, no la aplicación, y el historial anterior se pierde como consecuencia aceptada.
 >
 > El código declara la frontera en `Migrations.LAST_MIGRATED_VERSION` (**19**): por debajo de ella la cadena de migraciones es continua y sin huecos, y el salto de ahí a la versión del esquema es la excepción de ADR-019, que sube historia por historia de forma deliberada. Las migraciones `16→17`, `17→18` y `18→19`, ausentes durante tres versiones, se repusieron después de dejar la aplicación incapaz de abrir cualquier base existente.
 
@@ -14,7 +14,7 @@
 
 - **Manejo de Tiempos y Fechas:** `Todas las fechas se almacenan como TEXT en formato ISO 8601. Fechas simples usan "YYYY-MM-DD"; marcas de tiempo completas usan "YYYY-MM-DDTHH:MM:SS". Ningún valor de fecha se almacena como INTEGER epoch ni como tipo nativo de la base de datos.`
 - **Manejo de Estados Lógicos (Booleanos):** `El motor de persistencia (SQLite) no tiene tipo BOOLEAN nativo. Todos los valores lógicos binarios se almacenan como INTEGER NOT NULL con DEFAULT 0, donde 0 = false y 1 = true. Ninguna columna lógica admite NULL — un valor nulo en una columna booleana es un estado inválido.`
-- **Manejo de Valores de Alta Precisión (Peso en Kg):** `Los valores de peso corporal y carga de ejercicio se almacenan como REAL (punto flotante de 64 bits). El incremento mínimo del sistema es 0.5 Kg, por lo que la precisión de REAL es suficiente sin recurrir a enteros escalados. Los valores calculados derivados (tonelaje, promedios, tendencias) NO se persisten — se computan en la capa de aplicación a partir de los datos base en cada consulta.`
+- **Manejo de Valores de Alta Precisión (Peso en Kg):** `Los valores de peso corporal y carga de ejercicio se almacenan como REAL (punto flotante de 64 bits). El incremento mínimo del sistema es 0.5 Kg, por lo que la precisión de REAL es suficiente sin recurrir a enteros escalados. Los valores calculados derivados (tonelaje, promedios, tendencias) NO se persisten — se computan en la capa de aplicación a partir de los datos base en cada consulta. **La única excepción es `exercise_one_rm.one_rm_kg`**, y lo es porque no es un agregado sino un **récord**: el máximo histórico de las series que califican. Recalcularlo desde `exercise_set` podría perder un máximo alcanzado en una serie ya purgada o restaurada parcialmente, y por eso el respaldo lo restaura en lugar de recalcularlo (HU-42, CA-42.08).`
 - **Kilogramo como Unidad Canónica:** `El kilogramo es la única unidad de almacenamiento, cálculo, agregación y comparación del sistema. El ejecutante puede capturar la carga de cada ejercicio en libras (exercise_set.capture_unit), pero esa unidad es exclusivamente una preferencia de captura y presentación: la conversión a kilogramos ocurre en la frontera de captura, con el factor fijo 1 lb = 0.45359237 kg y 2 decimales de precisión. El valor convertido NO se redondea al múltiplo de 0.5 Kg — el incremento del sistema rige los controles de ajuste, no la precisión del dato. Ninguna regla del motor, consulta agregada ni métrica consulta la unidad de captura; solo el detalle de la serie individual la muestra.`
 - **Convenciones de Nomenclatura de Esquema:** `Nombres de tablas y columnas en snake_case en inglés (ej: routine_version, exercise_id). Claves primarias autoincrement: id INTEGER PRIMARY KEY AUTOINCREMENT. Claves foráneas: sufijo _id para referencias a PKs enteras. Datos de catálogo (seed) usan ON DELETE RESTRICT; datos transaccionales usan ON DELETE CASCADE donde aplica.`
 - **Cardinalidad de Instancias:** `El sistema es single-user. Las tablas profile, rotation_state, daily_routine_override, day_skip y tree_state son de fila única (id = 1 siempre). Todas las demás tablas crecen indefinidamente con el historial del ejecutante.`
@@ -389,6 +389,27 @@ model tree_state {
 }
 
 // ==========================================
+// ENTIDAD: exercise_one_rm
+// PROPÓSITO: 1RM estimado del par (ejercicio, equipamiento).
+// Nace la primera vez que una serie del par cumple la
+// condición de referencia —exactamente 10 repeticiones con
+// RIR exactamente 1, sobre carga externa— y desde entonces
+// guarda el máximo histórico de esas series. LA TABLA ES LA
+// LISTA: sus filas son exactamente lo que la vista muestra,
+// así que un par sin serie que califique no existe aquí y no
+// se presenta ni con cero ni con guion.
+// FUNCIONALIDAD PURAMENTE VISUAL Y AISLADA: se deriva de
+// exercise_set y ningún componente de decisión, alerta o KPI
+// lee esta tabla. La dependencia es unidireccional, igual que
+// la de tree_state.
+// ==========================================
+model exercise_one_rm {
+  exercise_id       INTEGER  @notNull @relation(exercise.id, onDelete: RESTRICT)        // PK compuesta. El ejercicio del par.
+  equipment_type_id INTEGER  @notNull @relation(equipment_type.id, onDelete: RESTRICT)  // PK compuesta. El implemento del par: 20 Kg en polea y 20 Kg en mancuerna no son la misma fuerza, así que un solo número por ejercicio mezclaría magnitudes incomparables.
+  one_rm_kg         REAL     @notNull @check("> 0")                                     // El récord, en kilogramos. Fórmula 1RM = Peso / [1.0278 − (0.0278 × Reps)], que a 10 repeticiones es Peso × 1.3337. Nunca decrece: una serie que califica solo lo actualiza si es mayor. Sin columna de fecha — la vista muestra el número y nada más, y una marca de tiempo cambiaría al repetir una sesión idéntica.
+}
+
+// ==========================================
 // ENTIDAD: deload
 // PROPÓSITO: Ciclo de descarga (Deload).
 // Se activa cuando el motor detecta fatiga acumulada
@@ -473,6 +494,9 @@ model alert {
 | `routine` | `1 : N` | `deload_frozen_version` | "Tiene versiones congeladas en descargas" | RESTRICT: una rutina no se puede eliminar si tiene versiones congeladas en un ciclo de descarga. |
 | `exercise` | `1 : N` | `alert (exercise_id)` | "Genera alertas de progresión" | RESTRICT: un ejercicio no se puede eliminar si tiene alertas asociadas. |
 | `routine` | `1 : N` | `alert (routine_id)` | "Genera alertas de rutina" | CASCADE: si se elimina una rutina, sus alertas se eliminan. |
+| `exercise` | `1 : N` | `exercise_one_rm` | "Acumula un récord por implemento" | RESTRICT: un ejercicio no se puede eliminar si tiene algún 1RM registrado. |
+| `equipment_type` | `1 : N` | `exercise_one_rm` | "Identifica el par del récord" | RESTRICT: un tipo de equipamiento no se puede eliminar si algún 1RM lo referencia. |
+| `exercise_set` | `—` | `exercise_one_rm` | **Sin relación declarada** | `exercise_one_rm` no apunta a la serie que lo produjo. La dependencia es de **lectura** —el récord se calcula al persistir la serie— y no de integridad: una FK haría que borrar la serie arrastrara un máximo que, sin retro-cálculo, ya no se podría reconstruir. La dirección es única, como en `tree_state`: el 1RM lee del historial y ninguna entidad del sistema lee del 1RM. |
 | `tree_state` | `—` | `—` | **Sin relaciones** | `tree_state` no declara ninguna clave foránea. Se **deriva** de `session` por cálculo, no por referencia: la dependencia es de lectura y no de integridad, y una FK a `session` la convertiría en integridad haciendo que borrar una sesión arrastrara el árbol. La dirección es única — el árbol lee del historial y ninguna entidad del sistema lee del árbol. |
 
 ---
@@ -796,6 +820,8 @@ La clasificación consolidada de cada sesión se persiste en `session_exercise.p
 - **`day_skip` (0 filas):** No se siembra. La tabla nace vacía y solo tiene fila el día que el ejecutante declara que no entrena.
 
 - **`tree_state` (0 filas):** No se siembra, a diferencia de `rotation_state`. El árbol es **enteramente derivable** del historial, y sembrarlo exigiría un seeder para un dato que el primer recálculo produce solo. Mientras la fila no existe, la lectura devuelve el estado de partida — `SEED`, salud 100, sin fecha de última sesión —, que es exactamente lo que corresponde a un ejecutante que aún no ha entrenado. La fila nace en el primer recálculo, que ocurre al abrir la app.
+
+- **`exercise_one_rm` (0 filas):** No se siembra, por la misma razón que `tree_state` y con una consecuencia distinta. La tabla nace vacía y **solo hacia adelante**: cada fila aparece la primera vez que una serie del par cumple la condición de referencia. No hay retro-cálculo — el cambio de esquema se resuelve por instalación fresca (ADR-019), así que al llegar la historia no existe historial previo que rellenar. Mientras no haya ninguna fila, la vista de 1RM presenta su estado vacío explicativo en lugar de una lista en blanco.
 
 - **`routine_current_version` (1 fila por rutina del plan):** Se inicializa con `current_version_number=1` para cada rutina que el ejecutante crea al configurar su plan.
 

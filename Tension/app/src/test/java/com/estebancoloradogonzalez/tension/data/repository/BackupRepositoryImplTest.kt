@@ -26,7 +26,7 @@ import org.junit.Test
 class BackupRepositoryImplTest {
 
     /** Espejo del valor privado del impl: el formato inmediatamente anterior. */
-    private val PREVIOUS_SCHEMA_VERSION = 14
+    private val PREVIOUS_SCHEMA_VERSION = 15
 
     private lateinit var database: TensionDatabase
     private lateinit var context: Context
@@ -271,13 +271,46 @@ class BackupRepositoryImplTest {
         )
     }
 
+    // ----- CA-42.08: el 1RM de cada par viaja en el respaldo y no se recalcula -----
+
     @Test
-    fun `the backup format is 15`() {
-        // Sube porque HU-41 añade tres columnas `NOT NULL` que no se derivan de nada: la
-        // jerarquía de `exercise_muscle_zone`, el implemento sugerido de `plan_assignment`
-        // y el orden del catálogo de zonas. Un respaldo 14 no las trae, y CA-41.10 prohíbe
-        // inventarlas.
-        assertEquals(15, BackupRepositoryImpl.SCHEMA_VERSION)
+    fun `exportToJson carries the one rm table`() = runTest {
+        BackupRepositoryImpl.TABLE_ORDER_INSERT.forEach { table ->
+            every { db.query("SELECT * FROM $table") } returns createEmptyCursor()
+        }
+
+        val data = JSONObject(repository.exportToJson()).getJSONObject("data")
+
+        assertTrue(data.has("exercise_one_rm"))
+    }
+
+    @Test
+    fun `one rm is inserted after the tables it points at`() {
+        val order = BackupRepositoryImpl.TABLE_ORDER_INSERT
+        assertTrue(order.indexOf("exercise_one_rm") > order.indexOf("exercise"))
+        assertTrue(order.indexOf("exercise_one_rm") > order.indexOf("equipment_type"))
+    }
+
+    // Un respaldo del formato actual sin la tabla esta incompleto: el 1RM no se reconstruye
+    // desde las series, asi que aceptarlo dejaria la vista vacia sobre un historial lleno.
+
+    @Test
+    fun `validateBackup rejects a current backup missing the one rm table`() {
+        val json = JSONObject(buildValidBackupJson())
+        json.getJSONObject("data").remove("exercise_one_rm")
+
+        val result = repository.validateBackup(json.toString())
+
+        assertFalse(result.isValid)
+        assertNotNull(result.errorMessage)
+    }
+
+    @Test
+    fun `the backup format is 16`() {
+        // Sube porque HU-42 añade `exercise_one_rm`, una tabla entera que no se deriva de
+        // nada: el 1RM es un récord acumulado y CA-42.08 exige restaurarlo **sin
+        // recalcularlo** desde el historial. Un respaldo 15 no la trae.
+        assertEquals(16, BackupRepositoryImpl.SCHEMA_VERSION)
     }
 
     @Test
@@ -285,7 +318,7 @@ class BackupRepositoryImplTest {
         val result = repository.validateBackup(buildValidBackupJson())
 
         assertTrue(result.isValid)
-        assertEquals(15, result.metadata?.schemaVersion)
+        assertEquals(16, result.metadata?.schemaVersion)
         assertNull(result.errorMessage)
     }
 
@@ -300,7 +333,7 @@ class BackupRepositoryImplTest {
 
     @Test
     fun `validateBackup rejects every older format`() {
-        listOf(11, 10, 8).forEach { version ->
+        listOf(14, 13, 11, 10, 8).forEach { version ->
             val result = repository.validateBackup(buildBackupJsonWithSchemaVersion(version))
 
             assertFalse("La version $version deberia rechazarse", result.isValid)

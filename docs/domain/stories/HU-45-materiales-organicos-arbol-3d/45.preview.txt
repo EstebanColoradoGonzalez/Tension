@@ -1,0 +1,192 @@
+╔══════════════════════════════════════════════════════════════╗
+║  ⚠️  PROTOTIPO — PROPUESTA PENDIENTE DE VALIDACIÓN CON DISEÑO  ║
+╚══════════════════════════════════════════════════════════════╝
+
+HU #45 — El árbol se siente vivo
+Plataforma: mobile / portrait (390 px) · Material 3 · targets ≥ 48 dp
+
+Esta historia NO crea pantallas ni rutas, NI controles, NI textos.
+Cambia ÚNICAMENTE los MATERIALES del modelo que HU-44 deja
+generando. La vara de esta rebanada es el ACABADO (CA-45.01/02)
+y la VARA FINAL de la visión fotorrealista (CA-45.07).
+
+
+────────────────────────────────────────────────────────────────
+ QUÉ CAMBIA Y QUÉ NO
+────────────────────────────────────────────────────────────────
+
+        ANTES (HU-44)                     DESPUÉS (HU-45)
+
+  +─────────────────────────+      +─────────────────────────+
+  |  <   Tu árbol           |      |  <   Tu árbol           |  = igual
+  +─────────────────────────+      +─────────────────────────+
+  |                         |      |                         |
+  |    ┌ ─ ─ ─ ─ ─ ─ ┐      |      |    ┌ ─ ─ ─ ─ ─ ─ ┐      |
+  |    │   ╲  │  ╱    │     |  ──> |    │   ╲  │  ╱    │     |  ← CAMBIA
+  |    │  ╲ ╱│╲ ╱     │     |      |    │  ╲ ╱│╲ ╱     │     |    solo la
+  |    │  ╲╱ │ ╲╱     │     |      |    │  ╲╱ │ ╲╱     │     |    PIEL:
+  |    │   ╱│╲        │     |      |    │   ╱│╲        │     |
+  |    └ ─ ─ ─ ─ ─ ─ ┘      |      |    └ ─ ─ ─ ─ ─ ─ ┘      |
+  |   silueta orgánica      |      |   silueta orgánica       |  = igual
+  |   color PLANO           |      |   (HU-44) + corteza con  |
+  |                         |      |   RELIEVE y follaje con  |
+  |      ── Maduro ──       |      |   VARIACIÓN TONAL        |
+  |           100           |      |      ── Maduro ──       |  = igual
+  |         Salud           |      |           100           |  = igual
+  +─────────────────────────+      +─────────────────────────+
+
+  La TARJETA DE INICIO no se toca. La GEOMETRÍA no se toca
+  (es de HU-44). Cálculo, puente, navegación y respaldo:
+  intactos.
+
+
+────────────────────────────────────────────────────────────────
+ MATERIALES PROCEDURALES  ·  SHADERS DE RUIDO (CA-45.01)
+────────────────────────────────────────────────────────────────
+
+  En HIGH, el ruido (Perlin/Simplex) hace el trabajo que en
+  un motor de escritorio harían texturas:
+
+  CORTEZA                                FOLLAJE
+
+     ▒▒▒▒▒▒▒                              ╭╮╭╮  ╭╮╭╮
+    ▓▒░▒▓▒░▒▓                           ╭╮  ╭╮╭╮  ╭╮
+    ▒▓▒░▒▓▒░▒    ← relieve real          ╰╯╭╮╭╮  ╭╮╰╯
+    ░▒▓▒░▒▓▒░     (displacement o        ╭╮╭╮  ╭╮╭╮╰╯
+    bump mapping)                        ╰╯╭╮╭╮
+    grietas, nudos y                      ← variación TONAL:
+    vetas, no un color plano              verde-oliva / verde-
+                                          claro / verde-azulado,
+  LA PIEL                               no un único tono
+
+  · El resultado debe leerse como material con presencia
+    física, no como pintura lisa
+  · SHADERS MATEMÁTICOS PRIORITARIOS: cada textura .webp debe
+    justificar un detalle que el ruido no logra (CA-45.05)
+
+
+────────────────────────────────────────────────────────────────
+ MARCHITAMIENTO ORGÁNICO  ·  CA-45.02
+────────────────────────────────────────────────────────────────
+
+  No es un tinte que se oscurece: es un PROCESO de secado.
+  El follaje transiciona de forma CONTINUA:
+
+  SALUD 100              SALUD 50                SALUD 0
+
+   ╭╮╭╮ ╭╮              ╭╮╭╮ ╭╮                ╭╮
+   ╭╮  ╭╮╭╮             ╰╯╭╮  ╭╮               ╭╮╭╮
+   ╰╯╭╮╭╮ ╭╮            ╭╮╰╯╭╮  ╭╮           ╭╮ ╭╮╭╮
+   ╭╮  ╭╮╭╮╰╯            ╭╮╭╮ ╭╮╰╯            ╭╮╭╮
+  verde vibrante        verde apagado,       marrón SECO Y
+  saturado, pleno       bordes amarillentos  QUEBRADIZO,
+                        y hojas cayendo      volumen mínimo,
+                                              ramas caídas
+
+  ── la transición es fluida en el rango completo 100→0 ──
+  ── sin saltos de material ni de textura ──
+
+
+────────────────────────────────────────────────────────────────
+ DEGRADACIÓN ESTRICTA DE SHADERS  ·  CA-45.03
+────────────────────────────────────────────────────────────────
+
+  La calidad (TreeRenderQuality en Kotlin + sonda en JS)
+  decide CÓMO se pinta. En LOW se apaga lo caro:
+
+  HIGH                          MEDIUM                    LOW
+
+  ruido completo                ruido reducido              SIN ruido:
+  bump/displacement ON          bump reducido               bump OFF
+  variación tonal completa      variación media             Lambert
+  texturas .webp máx.           texturas .webp              plano por
+  (si existen)                  (si existen)                estado
+  SOMBRAS ON                    sombras on                  SOMBRAS OFF
+
+  · LOW sigue siendo el árbol de HU-44 reconocible — con
+    silueta y estado legibles —, NUNCA un render a medio
+    compilar
+  · GAMA BAJA: 30–60 FPS en rotación. El presupuesto MANDA
+    sobre la fidelidad: antes rápido que bonito
+  · La sonda sigue pudiendo bajar un escalón de calidad
+
+
+────────────────────────────────────────────────────────────────
+ FALLBACK NATIVO  ·  CA-45.04
+────────────────────────────────────────────────────────────────
+
+  Si el dispositivo no puede COMPILAR los shaders avanzados
+  (o no hay WebGL adecuado), la red de seguridad es la de
+  HU-37 — no un render degradado a medio compilar:
+
++──────────────────────────────────────────+
+|  <   Tu árbol                            |
++──────────────────────────────────────────+
+|                                          |
+|         ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐        |
+|         │   [ 🖼 ícono ]         |       |  ← el vectorial
+|         │   de HU-37, teñido     |       |    de HU-37
+|         │   por salud            |       |
+|         └ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘        |
+|                                          |
+|              ── Maduro ──                |  todo el bloque de
+|                   100                    |  estado sigue
+|                  Salud                   |  funcionando
+|   Último entrenamiento: ayer             |
++──────────────────────────────────────────+
+
+  En SILENCIO. Sin mensaje de error, sin pantalla en blanco.
+  El mecanismo de detección es el existente de HU-38.
+
+
+────────────────────────────────────────────────────────────────
+ PRESUPUESTOS  ·  CA-45.05 / CA-45.06 / CA-45.07 / CA-45.08
+────────────────────────────────────────────────────────────────
+
+  · Assets: CERO .glb/.gltf, sin red (RNF09). Shaders
+    matemáticos primero. Texturas .webp SOLO si se justifican,
+    < 100 KB EN TOTAL, como archivos físicos en assets/tree/,
+    cargados asíncronamente — Base64 en el JS: PROHIBIDO
+  · Carga + render inicial < 1 s (gama media), sin degradar
+    el arranque de la app ni la tarjeta de Inicio
+  · 12 capturas (4 etapas × 3 bandas de salud) generadas con
+    tools/capturar-arbol.ps1 y APROBADAS POR EL PO — VARA
+    FINAL de la estética del árbol evolucionado:
+
+      ETAPA ╲ SALUD     ALTA        MEDIA       BAJA
+      ─────────────────────────────────────────────────
+      Semilla            ·  cap 01  ·  cap 02  ·  cap 03
+      Brote              ·  cap 04  ·  cap 05  ·  cap 06
+      Joven              ·  cap 07  ·  cap 08  ·  cap 09
+      Maduro             ·  cap 10  ·  cap 11 ·  cap 12
+
+    (El juego previo de HU-44 validó la silueta; este valida
+    el acabado — el PO pagará dos rondas de aprobación.)
+
+  · Incremento del APK medido en bytes y AUDITADO contra el
+    presupuesto de < 100 KB
+
+
+────────────────────────────────────────────────────────────────
+ NOTAS PARA DISEÑO / IMPLEMENTACIÓN
+────────────────────────────────────────────────────────────────
+
+  · El riesgo principal de esta rebanada es el RENDIMIENTO de
+    los shaders de ruido en gama baja — el más costoso del
+    proyecto. La salida declarada es la degradación estricta
+    (CA-45.03) y el fallback nativo ante fallo de
+    compilación (CA-45.04).
+
+  · La geometría (HU-44), la cámara, el puente, el fondo
+    transparente (RNF23), el cálculo, la persistencia y el
+    respaldo se comportan IGUAL que hoy (CA-45.09).
+
+  · Ningún texto nuevo. Se conservan íntegras las tablas de
+    textos y las bandas de salud definidas en HU-37.
+
+  · Solo portrait (RNF07). Pantallas de 5" a 7" (RNF21).
+
+
+╔══════════════════════════════════════════════════════════════╗
+║  ⚠️  PROTOTIPO — PROPUESTA PENDIENTE DE VALIDACIÓN CON DISEÑO  ║
+╚══════════════════════════════════════════════════════════════╝

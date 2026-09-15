@@ -1,0 +1,182 @@
+╔══════════════════════════════════════════════════════════════╗
+║  ⚠️  PROTOTIPO — PROPUESTA PENDIENTE DE VALIDACIÓN CON DISEÑO  ║
+╚══════════════════════════════════════════════════════════════╝
+
+HU #44 — El árbol deja de ser geométrico
+Plataforma: mobile / portrait (390 px) · Material 3 · targets ≥ 48 dp
+
+Esta historia NO crea pantallas ni rutas, NI controles, NI textos.
+Cambia ÚNICAMENTE la GEOMETRÍA del modelo dentro del área que dejó
+HU-38. La vara de esta rebanada es la SILUETA (CA-44.01…03).
+
+
+────────────────────────────────────────────────────────────────
+ QUÉ CAMBIA Y QUÉ NO
+────────────────────────────────────────────────────────────────
+
+        ANTES (HU-38)                     DESPUÉS (HU-44)
+
+  +─────────────────────────+      +─────────────────────────+
+  |  <   Tu árbol           |      |  <   Tu árbol           |  = igual
+  +─────────────────────────+      +─────────────────────────+
+  |                         |      |                         |
+  |    ┌ ─ ─ ─ ─ ─ ─ ┐      |      |    ┌ ─ ─ ─ ─ ─ ─ ┐      |
+  |    │ ◢███◣        │     |  ──> |    │   ╲  │  ╱    │     |  ← CAMBIA
+  |    │ ◢█████◣      │     |      |    │  ╲ ╱│╲ ╱     │     |    solo la
+  |    │  ║║         │     |      |    │  ╲╱ │ ╲╱      │     |    geometría
+  |    └ ─ ─ ─ ─ ─ ─ ┘      |      |    │   ╱│╲       │     |
+  |   copa: icosaedros      |      |    │ ╱  │  ╲      │     |
+  |   tronco: cilindro      |      |    └ ─ ─ ─ ─ ─ ─ ┘      |
+  |                         |      |   copa: volumen orgánico |  = igual
+  |      ── Maduro ──       |      |      ── Maduro ──       |  = igual
+  |           100           |      |           100           |  = igual
+  |         Salud           |      |         Salud           |  = igual
+  +─────────────────────────+      +─────────────────────────+
+
+  La TARJETA DE INICIO no se toca. Sigue siendo nativa, con el
+  ícono vectorial, de forma permanente (RNF01).
+
+  En esta rebanada los materiales son COLOR PLANO/SENCILLO por
+  etapa y salud — sin relieve ni ruido. El acabado llega en
+  HU-45.
+
+
+────────────────────────────────────────────────────────────────
+ LAS CUATRO ETAPAS  ·  MISMO NIVEL DE FIDELIDAD (CA-44.02)
+────────────────────────────────────────────────────────────────
+
+  El tamaño lo fija la ETAPA. Un solo generador, cuatro
+  siluetas — sin mezclar estilos de arte.
+
+  SEMILLA                BROTO                 JOVEN                 MADURO
+
+     · · · · ·            ·                     ╲  │  ╱               ╲ ╱ │ ╲ ╱
+      · ▒▒ ·             ─┤├─                    ╲ ╱ │ ╲ ╱             ╱ ╲ ╱ │ ╲ ╱
+     ▄▄▄▄▄▄▄▄▄             │                      │  │  │              │ ╱ │ │ ╲ │
+    ▐ montículo ▌          └                        │                    │   │
+    ▌ de tierra  ▌        tallo joven               │                    │   │
+    ▐ con brote ▌        con hojas pequeñas      volumen pleno       copa completa
+     ▘▘▘▘▘▘▘▘▘            de verdad
+
+  · Semilla: montículo de tierra + semilla/brote orgánico
+  · Brote: planta joven natural, no un cono
+  · Joven / Maduro: ramificación irregular, ramas de longitud
+    distinta, copa asimétrica — nada de prismas ni esferas
+
+
+────────────────────────────────────────────────────────────────
+ ESTADOS DE SALUD SOBRE LA NUEVA SILUETA (CA-44.03)
+────────────────────────────────────────────────────────────────
+
+  El aspecto lo fija la SALUD, en transición CONTINUA, igual
+  que en HU-38 — ahora pintado sobre la geometría orgánica.
+
+  SALUD 100                SALUD 50               SALUD 0
+
+     ╲ ╱ │ ╲ ╱               ╲ │ ╲                  ╲   ╱
+      ╱ ╲│ ╱ ╲                ╱  ╲                   ╲ ╱
+      │  │  │                 │   (follaje reducido,   │
+      │  │  │                 verde amarillento)       │
+    follaje pleno            ramas empezando          sin follaje
+    verde vivo               a caer                   ramas caídas
+
+  ── entre 100 y 0 NO hay saltos: volumen y tinte interpolan ──
+
+
+────────────────────────────────────────────────────────────────
+ DEGRADACIÓN POR CALIDAD  ·  LOW = NUEVO ÁRBOL SIMPLIFICADO
+ (CA-44.04)
+────────────────────────────────────────────────────────────────
+
+  El Low-Poly ANTERIOR no sobrevive (CA-44.07): no conviven dos
+  generadores. LOW no es el árbol viejo — es el mismo árbol
+  orgánico con MENOS geometría:
+
+  HIGH (referencia)              LOW (gama baja)
+
+     ╲ ╱ │ ╲ ╱                     ╲ │ ╱
+      ╱ ╲│ ╱ ╲                      ╱ ╲
+      │  │  │                    ───┤   ← menos ramificación,
+      │  │  │                       menos segmentos, menos
+    ramas secundarias             volumen de follaje
+    y terciarias
+
+  · La silueta sigue leyendo como árbol natural y su estado
+  · La sonda de rendimiento sigue pudiendo bajar un escalón
+  · GAMA BAJA: 30–60 FPS en rotación — el presupuesto manda
+    sobre la fidelidad
+
+
+────────────────────────────────────────────────────────────────
+ FALLBACK NATIVO  ·  CA-44.05
+────────────────────────────────────────────────────────────────
+
+  WebView ausente o incapaz de renderizar. Se sustituye en
+  SILENCIO por la representación de HU-37. NO hay mensaje de
+  error. NO hay pantalla en blanco.
+
++──────────────────────────────────────────+
+|  <   Tu árbol                            |
++──────────────────────────────────────────+
+|                                          |
+|         ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐        |
+|         │   [ 🖼 ícono ]         |       |  ← el vectorial
+|         │   de HU-37, teñido     |       |    de HU-37
+|         │   por salud            |       |
+|         └ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘        |
+|                                          |
+|              ── Maduro ──                |  todo el bloque de
+|                   100                    |  estado sigue
+|                  Salud                   |  funcionando
+|   Último entrenamiento: ayer             |
+|   Vienes entrenando. Tu árbol lo         |
+|   refleja.                               |
++──────────────────────────────────────────+
+
+
+────────────────────────────────────────────────────────────────
+ PRESUPUESTOS  ·  CA-44.06 / CA-44.08 / CA-44.09
+────────────────────────────────────────────────────────────────
+
+  · Carga + render inicial < 1 s (gama media), sin degradar
+    el arranque de la app ni la tarjeta de Inicio
+  · Cero .glb / .gltf, sin red (RNF09)
+  · 12 capturas (4 etapas × 3 bandas de salud) generadas con
+    tools/capturar-arbol.ps1 y APROBADAS POR EL PO — vara de
+    la silueta:
+
+      ETAPA ╲ SALUD     ALTA        MEDIA       BAJA
+      ─────────────────────────────────────────────────
+      Semilla            ·  cap 01  ·  cap 02  ·  cap 03
+      Brote              ·  cap 04  ·  cap 05  ·  cap 06
+      Joven              ·  cap 07  ·  cap 08  ·  cap 09
+      Maduro             ·  cap 10  ·  cap 11 ·  cap 12
+
+  · Incremento del APK medido en bytes y registrado
+
+
+────────────────────────────────────────────────────────────────
+ NOTAS PARA DISEÑO / IMPLEMENTACIÓN
+────────────────────────────────────────────────────────────────
+
+  · La geometría se genera 100% por código (ramificación
+    procedural). NO hay .glb ni .gltf. El wireframe solo
+    indica proporción y silueta — NO el acabado final, que
+    depende del generador (por eso la vara es la aprobación
+    de capturas, CA-44.08).
+
+  · Fondo transparente sobre el fondo nativo, correcto en
+    modo claro y oscuro (RNF23).
+
+  · Ningún texto nuevo. Se conservan íntegras las tablas de
+    textos y las bandas de salud definidas en HU-37.
+
+  · Solo portrait (RNF07). Pantallas de 5" a 7" (RNF21).
+
+  · La cámara (rotación, zoom/paneo acotados, reinicio al
+    reentrar) se comporta IGUAL que en HU-38 (CA-44.10).
+
+
+╔══════════════════════════════════════════════════════════════╗
+║  ⚠️  PROTOTIPO — PROPUESTA PENDIENTE DE VALIDACIÓN CON DISEÑO  ║
+╚══════════════════════════════════════════════════════════════╝

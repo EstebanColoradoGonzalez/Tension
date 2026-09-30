@@ -101,3 +101,31 @@
 | **Modificado** | `docs/architecture/interfaces_contract.md` | `D2-T1`, `D5-T1`, `D6-T1a` (nuevo), `E2-T1`, `G2-T1`, `G3-T1`, `J2-T1` y cinco errores nuevos (T50) |
 | **Modificado** | `docs/architecture/architecture_blueprint.md` | Esquema 22, ADR-019 con v22, `MuscleZoneCatalog` y su nota de orden (T51) |
 | **Modificado** | `docs/domain/stories/story_mapping_index.md`, `HU-41-…/index.md`, `cambios.md` | Estado, fases, métricas y el cambio de alcance (T52) |
+
+---
+
+## Corrección post-entrega — 2026-09-30
+
+**Defecto reportado.** El plan sugería `Barra` en los dos press de banca y El Ejecutante los hace con mancuerna, así que cambiaba el selector en cada serie de cada sesión — justo el ajuste manual repetido que la historia venía a eliminar.
+
+**Causa.** La tabla de CA-41.07 se resolvió con la regla del *valor atómico de la primera opción listada*, que para `Press de Banca Inclinado` y `Press de Banca Plano` —ambos `Barra, Mancuerna, Máquina, Máquina Smith`— dio `Barra`. La regla describía las tablas que aportó el requerimiento, no la práctica real. Es la misma confusión que el desarrollo ya había detectado al retirar un test que afirmaba esa regla como invariante.
+
+**Alcance de la corrección.** Tres de las 35 asignaciones. `Mancuerna` ya era opción admitida de ambos ejercicios (CA-39.06), así que la invariante de CA-41.08 se sigue cumpliendo sin tocar `ExerciseCatalog`.
+
+| Rutina (día) | # | Ejercicio | Antes | Ahora |
+|---|---|---|---|---|
+| Push — Deltoides Lateral y Medio (lunes) | 2 | Press de Banca Inclinado *(primario)* | Barra | **Mancuerna** |
+| Push — Deltoides Lateral y Medio (lunes) | 3 | Press de Banca Plano | Barra | **Mancuerna** |
+| Push — Tríceps (jueves) | 2 | Press de Banca Plano | Barra | **Mancuerna** |
+
+`Press Militar`, alternativa del mismo puesto dual del lunes, **conserva `Barra`**: el puesto dual no comparte sugerencia, y el defecto no lo alcanza.
+
+| Tipo | Archivo | Cambio |
+|---|---|---|
+| **Modificado** | `data/local/seed/DefaultPlan.kt` | Las tres asignaciones a `MANCUERNA`. El KDoc dejó de afirmar que la sugerencia es la primera opción listada del ejercicio — nunca lo fue como regla, y ahora tampoco lo es en los dos press |
+| **Modificado** | `test/…/data/local/seed/DefaultPlanTest.kt` | Las tres filas de la tabla de CA-41.07 |
+| **Modificado** | `HU-41-…/historia.md` | CA-41.07 |
+
+**Sin migración.** Solo cambia el sembrado de instalación fresca (ADR-019); el esquema sigue en 24 y el respaldo en su versión vigente. Una base ya instalada conserva su sugerencia y se corrige desde la gestión del plan (`D6-T1`).
+
+**Verificación.** 952 tests unitarios en verde, lint 108 warnings y 0 errores.

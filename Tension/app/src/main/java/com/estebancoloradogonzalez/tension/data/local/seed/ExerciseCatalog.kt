@@ -352,9 +352,11 @@ object ExerciseCatalog {
             mediaResource = "curl_martillo_mancuernas",
             progressionDifficulty = ProgressionDifficulty.HIGH,
         ),
+        // Renombrado desde "Rompecráneos": el nombre oficial del movimiento es press
+        // francés; "rompecráneos" es el apodo. El asset conserva el slug antiguo.
         SeedExercise(
             31,
-            "Rompecráneos",
+            "Press Francés",
             listOf(BARRA, MANCUERNA, POLEA),
             primaryMuscleZoneIds = listOf(TRICEPS_BRAQUIAL),
             secondaryMuscleZoneIds = emptyList(),

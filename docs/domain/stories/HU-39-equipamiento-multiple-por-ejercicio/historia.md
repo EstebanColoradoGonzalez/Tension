@@ -142,7 +142,7 @@ Su valor propio es inmediato y verificable sin las hermanas: el registro y el hi
 | 28 | Aperturas | Mancuerna, Polea, Máquina |
 | 29 | Pull-Over | Mancuerna, Polea, Barra, Máquina |
 | 30 | Curl Martillo | Mancuerna, Polea |
-| 31 | Rompecráneos | Barra, Mancuerna, Polea |
+| 31 | Press Francés | Barra, Mancuerna, Polea |
 | 32 | Remo Horizontal | Barra, Mancuerna, Polea, Máquina |
 | 33 | Zancadas (Lunges) | Peso Corporal, Mancuerna, Barra, Máquina Smith |
 | 34 | Press Militar | Barra, Mancuerna, Máquina, Máquina Smith |

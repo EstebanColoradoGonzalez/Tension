@@ -822,7 +822,7 @@ La clasificación consolidada de cada sesión se persiste en `session_exercise.p
   | Aperturas | Mancuerna, Polea, Máquina | 0 | 0 | 0 |
   | Pull-Over | Mancuerna, Polea, Barra, Máquina | 0 | 0 | 0 |
   | Curl Martillo | Mancuerna, Polea | 0 | 0 | 0 |
-  | Rompecráneos | Barra, Mancuerna, Polea | 0 | 0 | 0 |
+  | Press Francés | Barra, Mancuerna, Polea | 0 | 0 | 0 |
   | Remo Horizontal | Barra, Mancuerna, Polea, Máquina | 0 | 0 | 0 |
   | Zancadas (Lunges) | Peso Corporal, Mancuerna, Barra, Máquina Smith | 0 | 0 | 0 |
   | Press Militar | Barra, Mancuerna, Máquina, Máquina Smith | 0 | 0 | 0 |
@@ -871,7 +871,7 @@ La clasificación consolidada de cada sesión se persiste en `session_exercise.p
   - **Rutina 1 — Push — Foco Deltoides Lateral y Medio (lunes):** Elevación Lateral (4s, *Mancuerna*), Press de Banca Inclinado (*Barra*) **o** Press Militar (*Barra*) (slot dual, 3s), Press de Banca Plano (3s, *Barra*), Aperturas (3s, *Máquina*).
   - **Rutina 2 — Pull — Foco Dorsal Ancho (martes):** Jalón al Pecho (*Polea*) **o** Dominadas (*Barra Fija*) (slot dual, 4s — **no comparten sugerencia**: la dominada no se hace en polea), Curl Martillo (3s, *Mancuerna*), Remo Unilateral Polea Baja (3s, *Polea*), Curl Bayesian en Banco Inclinado (3s, *Mancuerna*), Pull-Over (3s, *Polea*), Crunch Abdominal (3s, *Polea*).
   - **Rutina 3 — Lower — Foco Cuádriceps (miércoles):** Aductores (3s, *Máquina*), Extensión de Cuádriceps (4s, *Máquina*), Sentadilla Hack (*Máquina*) **o** Prensa Inclinada (*Máquina*) (slot dual, 3s), Sentadilla Búlgara (3s, *Mancuerna*), Elevación de Pantorrilla (3s, *Máquina*). *HU-41 trajo `Aductores` del cuarto al primer puesto.*
-  - **Rutina 4 — Push — Foco Tríceps (jueves):** Extensión de Tríceps sobre Cabeza (4s, *Mancuerna*), Press de Banca Plano (3s, *Barra*), Aperturas (3s, *Máquina*), Extensión de Tríceps (Pushdown) (3s, *Polea*), Rompecráneos (3s, *Mancuerna*).
+  - **Rutina 4 — Push — Foco Tríceps (jueves):** Extensión de Tríceps sobre Cabeza (4s, *Mancuerna*), Press de Banca Plano (3s, *Barra*), Aperturas (3s, *Máquina*), Extensión de Tríceps (Pushdown) (3s, *Polea*), Press Francés (3s, *Mancuerna*).
   - **Rutina 5 — Pull — Foco Trapecios y Espalda Media (viernes):** Remo T Inclinado (4s, *Máquina*), Face Pull (*Polea*) **o** Vuelos Posteriores (*Mancuerna*) (slot dual, 3s), Remo Horizontal (3s, *Polea*), **Trapecios con Apoyo en Banco Inclinado** (3s, *Mancuerna*), Curl de Predicador (3s, *Mancuerna*), Crunch Abdominal (3s, *Polea*). *HU-41 sustituyó `Remo Unilateral Polea Alta` por el ejercicio nuevo en el cuarto puesto.*
   - **Rutina 6 — Lower — Foco Isquiotibiales y Glúteo (sábado):** Aductores (3s, *Máquina*), Curl de Isquiotibiales Sentado (4s, *Máquina*), Peso Muerto Rumano (3s, *Mancuerna*), Hip Thrust (3s, *Mancuerna*), Elevación de Pantorrilla (3s, *Máquina*). *HU-41 trajo `Aductores` del cuarto al primer puesto.*
   - **Slots duales (4):** Rutina 1 slot 2, Rutina 2 slot 1, Rutina 3 **slot 3** (corrido por el adelanto de `Aductores`), Rutina 5 slot 2. El primer ejercicio del par es el primario y el segundo la alternativa; ambos comparten series y repeticiones, **pero no el equipamiento sugerido** — son ejercicios distintos con opciones distintas.

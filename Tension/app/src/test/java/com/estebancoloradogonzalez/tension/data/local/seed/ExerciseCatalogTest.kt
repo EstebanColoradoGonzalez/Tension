@@ -155,7 +155,7 @@ class ExerciseCatalogTest {
             "Pull-Over" to (listOf("Dorsal Ancho") to listOf("Pectoral Inferior")),
             "Curl Martillo" to
                 (listOf("Braquial", "Braquiorradial") to listOf("Bíceps Braquial")),
-            "Rompecráneos" to (listOf("Tríceps Braquial") to emptyList()),
+            "Press Francés" to (listOf("Tríceps Braquial") to emptyList()),
             "Remo Horizontal" to
                 (listOf("Dorsal Ancho") to listOf("Trapecio", "Romboides", "Bíceps Braquial")),
             "Zancadas (Lunges)" to (listOf("Cuádriceps", "Glúteo Mayor") to emptyList()),
@@ -613,7 +613,7 @@ class ExerciseCatalogTest {
         "Extensión de Tríceps (Pushdown)",
         "Extensión de Tríceps sobre Cabeza",
         "Face Pull",
-        "Rompecráneos",
+        "Press Francés",
         "Vuelos Posteriores (Pájaros)",
     )
 

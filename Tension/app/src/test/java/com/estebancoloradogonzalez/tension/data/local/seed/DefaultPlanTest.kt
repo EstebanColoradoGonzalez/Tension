@@ -119,7 +119,7 @@ class DefaultPlanTest {
                 Triple(19L, 3, 2), // Press de Banca Plano
                 Triple(28L, 3, 3), // Aperturas
                 Triple(12L, 3, 4), // Extensión de Tríceps en Polea (Pushdown)
-                Triple(31L, 3, 5), // Rompecráneos
+                Triple(31L, 3, 5), // Press Francés
             ),
             routine(4),
         )
@@ -192,9 +192,9 @@ class DefaultPlanTest {
         val expected = listOf(
             // Lunes — Push Deltoides Lateral y Medio
             Triple(1L, "Elevación Lateral", "Mancuerna"),
-            Triple(1L, "Press de Banca Inclinado", "Barra"),
+            Triple(1L, "Press de Banca Inclinado", "Mancuerna"),
             Triple(1L, "Press Militar", "Barra"),
-            Triple(1L, "Press de Banca Plano", "Barra"),
+            Triple(1L, "Press de Banca Plano", "Mancuerna"),
             Triple(1L, "Aperturas", "Máquina"),
             // Martes — Pull Dorsal Ancho
             Triple(2L, "Jalón al Pecho", "Polea"),
@@ -213,10 +213,10 @@ class DefaultPlanTest {
             Triple(3L, "Elevación de Pantorrilla de Pie", "Máquina"),
             // Jueves — Push Tríceps
             Triple(4L, "Extensión de Tríceps sobre Cabeza", "Mancuerna"),
-            Triple(4L, "Press de Banca Plano", "Barra"),
+            Triple(4L, "Press de Banca Plano", "Mancuerna"),
             Triple(4L, "Aperturas", "Máquina"),
             Triple(4L, "Extensión de Tríceps (Pushdown)", "Polea"),
-            Triple(4L, "Rompecráneos", "Mancuerna"),
+            Triple(4L, "Press Francés", "Mancuerna"),
             // Viernes — Pull Trapecios y Espalda Media
             Triple(5L, "Remo T Inclinado", "Máquina"),
             Triple(5L, "Face Pull", "Polea"),

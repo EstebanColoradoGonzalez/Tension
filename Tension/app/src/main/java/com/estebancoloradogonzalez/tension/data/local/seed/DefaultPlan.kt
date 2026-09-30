@@ -19,9 +19,11 @@ import com.estebancoloradogonzalez.tension.data.local.seed.model.SeedRoutine
  * distintos con opciones distintas.
  *
  * Desde HU-41 cada asignación lleva su **equipamiento sugerido**, que preselecciona el
- * selector al registrar la serie sin imponerlo. La sugerencia es el valor atómico de la
- * primera opción que el ejercicio lista en [ExerciseCatalog], y siempre una de las que
- * admite. HU-41 trajo además tres cambios de composición: `Aductores` pasa al primer
+ * selector al registrar la serie sin imponerlo. La sugerencia es el implemento que El
+ * Ejecutante usa de verdad en ese puesto —no necesariamente la primera opción que el
+ * ejercicio lista en [ExerciseCatalog]— y siempre una de las que admite. Los dos press
+ * de banca, plano e inclinado, se sugieren con «Mancuerna» aunque admitan barra.
+ * HU-41 trajo además tres cambios de composición: `Aductores` pasa al primer
  * puesto del miércoles y del sábado, y el cuarto puesto del viernes deja de ser
  * `Remo Unilateral Polea Alta` para ser `Trapecios con Apoyo en Banco Inclinado`.
  */
@@ -47,9 +49,9 @@ object DefaultPlan {
     val ASSIGNMENTS: List<SeedAssignment> = listOf(
         // ===== Rutina 1 — Push Foco Deltoides Lateral y Medio =====
         pa(rv = 1, exerciseId = 10, sets = 4, sortOrder = 1, slot = 1, eq = MANCUERNA), // Elevación Lateral
-        pa(rv = 1, exerciseId = 18, sets = 3, sortOrder = 2, slot = 2, eq = BARRA), // Press de Banca Inclinado (primario)
+        pa(rv = 1, exerciseId = 18, sets = 3, sortOrder = 2, slot = 2, eq = MANCUERNA), // Press de Banca Inclinado (primario)
         pa(rv = 1, exerciseId = 34, sets = 3, sortOrder = 3, slot = 2, eq = BARRA), // Press Militar (alternativa)
-        pa(rv = 1, exerciseId = 19, sets = 3, sortOrder = 4, slot = 3, eq = BARRA), // Press de Banca Plano
+        pa(rv = 1, exerciseId = 19, sets = 3, sortOrder = 4, slot = 3, eq = MANCUERNA), // Press de Banca Plano
         pa(rv = 1, exerciseId = 28, sets = 3, sortOrder = 5, slot = 4, eq = MAQUINA), // Aperturas
 
         // ===== Rutina 2 — Pull Foco Dorsal Ancho =====
@@ -73,10 +75,10 @@ object DefaultPlan {
 
         // ===== Rutina 4 — Push Foco Tríceps =====
         pa(rv = 4, exerciseId = 13, sets = 4, sortOrder = 1, slot = 1, eq = MANCUERNA), // Extensión de Tríceps sobre Cabeza
-        pa(rv = 4, exerciseId = 19, sets = 3, sortOrder = 2, slot = 2, eq = BARRA), // Press de Banca Plano
+        pa(rv = 4, exerciseId = 19, sets = 3, sortOrder = 2, slot = 2, eq = MANCUERNA), // Press de Banca Plano
         pa(rv = 4, exerciseId = 28, sets = 3, sortOrder = 3, slot = 3, eq = MAQUINA), // Aperturas
         pa(rv = 4, exerciseId = 12, sets = 3, sortOrder = 4, slot = 4, eq = POLEA), // Extensión de Tríceps (Pushdown)
-        pa(rv = 4, exerciseId = 31, sets = 3, sortOrder = 5, slot = 5, eq = MANCUERNA), // Rompecráneos
+        pa(rv = 4, exerciseId = 31, sets = 3, sortOrder = 5, slot = 5, eq = MANCUERNA), // Press Francés
 
         // ===== Rutina 5 — Pull Foco Trapecios y Espalda Media =====
         // HU-41: el cuarto puesto deja de ser Remo Unilateral Polea Alta (37) y pasa a ser

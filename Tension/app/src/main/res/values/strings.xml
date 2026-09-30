@@ -300,9 +300,9 @@
     <string name="deload_title">Gestión de Descarga</string>
     <string name="deload_no_active">No hay descarga activa</string>
     <string name="deload_required_title">%1$s requiere descarga</string>
-    <string name="deload_required_detail">\u2265 50%% de los ejercicios están en meseta o regresión</string>
+    <string name="deload_required_detail">\u2265 50% de los ejercicios están en meseta o regresión</string>
     <string name="deload_protocol_title">Al activar la descarga:</string>
-    <string name="deload_protocol_load">\u00B7 Carga al 60%%</string>
+    <string name="deload_protocol_load">\u00B7 Carga al 60%</string>
     <string name="deload_protocol_sets">\u00B7 4 series</string>
     <string name="deload_protocol_reps">\u00B7 8 repeticiones</string>
     <string name="deload_protocol_rir">\u00B7 RIR 2</string>
@@ -311,18 +311,18 @@
     <string name="deload_protocol_bodyweight">\u00B7 Peso corporal: 8 reps, RIR 2 (sin ajuste
         de carga)</string>
     <string name="deload_protocol_isometric">\u00B7 Isométricos: 30 seg, RIR 2</string>
-    <string name="deload_protocol_reset">\u00B7 Al finalizar: reinicio al 90%% de carga pre-descarga</string>
+    <string name="deload_protocol_reset">\u00B7 Al finalizar: reinicio al 90% de carga pre-descarga</string>
     <string name="deload_activate">Activar Descarga</string>
     <string name="deload_active_title">Descarga activa</string>
     <string name="deload_progress_format">Progreso: %1$d/%2$d sesiones</string>
     <string name="deload_remaining_format">Sesiones restantes: %1$d</string>
-    <string name="deload_params_load">Carga: 60%%</string>
+    <string name="deload_params_load">Carga: 60%</string>
     <string name="deload_params_sets">Series: 4</string>
     <string name="deload_params_reps">Reps: 8</string>
     <string name="deload_params_rir">RIR objetivo: 2</string>
     <string name="deload_frozen_version_item">%1$s \u2011 Versión %2$d</string>
     <string name="deload_completed_title">Descarga completada</string>
-    <string name="deload_reset_loads_title">Cargas de reinicio (90%% pre-descarga):</string>
+    <string name="deload_reset_loads_title">Cargas de reinicio (90% pre-descarga):</string>
     <string name="deload_reset_pair_format">%1$s · %2$s: %3$.1f Kg</string>
     <string name="alert_detail_stalled_equipment_title">Implementos estancados</string>
     <string name="alert_detail_stalled_equipment_format">· %1$s — %2$d sesiones</string>

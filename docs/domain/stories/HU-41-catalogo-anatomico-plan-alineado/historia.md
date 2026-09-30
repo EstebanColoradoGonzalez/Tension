@@ -137,7 +137,7 @@ Con el equipamiento sugerido, el plan deja de ser agnóstico del implemento y pr
 | 28 | Aperturas | Pectoral Mayor | Deltoides Anterior |
 | 29 | Pull-Over | Dorsal Ancho | Pectoral Inferior |
 | 30 | Curl Martillo | Braquial, Braquiorradial | Bíceps Braquial |
-| 31 | Rompecráneos | Tríceps Braquial | — |
+| 31 | Press Francés | Tríceps Braquial | — |
 | 32 | Remo Horizontal | Dorsal Ancho | Trapecio, Romboides, Bíceps Braquial |
 | 33 | Zancadas (Lunges) | Cuádriceps, Glúteo Mayor | — |
 | 34 | Press Militar | Deltoides Anterior, Deltoides Lateral | Tríceps Braquial |
@@ -207,9 +207,9 @@ Con el equipamiento sugerido, el plan deja de ser agnóstico del implemento y pr
 | Rutina (día) | # | Ejercicio | Series | Equipamiento sugerido |
 |---|---|---|---|---|
 | **Push — Deltoides Lateral y Medio** (lunes) | 1 | Elevación Lateral | 4 | Mancuerna |
-| | 2 | Press de Banca Inclinado *(primario del puesto)* | 3 | Barra |
+| | 2 | Press de Banca Inclinado *(primario del puesto)* | 3 | Mancuerna |
 | | 2 | Press Militar *(alternativa del puesto)* | 3 | Barra |
-| | 3 | Press de Banca Plano | 3 | Barra |
+| | 3 | Press de Banca Plano | 3 | Mancuerna |
 | | 4 | Aperturas | 3 | Máquina |
 | **Pull — Dorsal Ancho** (martes) | 1 | Jalón al Pecho *(primario del puesto)* | 4 | Polea |
 | | 1 | Dominadas *(alternativa del puesto)* | 4 | Barra Fija |
@@ -225,10 +225,10 @@ Con el equipamiento sugerido, el plan deja de ser agnóstico del implemento y pr
 | | 4 | Sentadilla Búlgara | 3 | Mancuerna |
 | | 5 | Elevación de Pantorrilla de Pie | 3 | Máquina |
 | **Push — Tríceps** (jueves) | 1 | Extensión de Tríceps sobre Cabeza | 4 | Mancuerna |
-| | 2 | Press de Banca Plano | 3 | Barra |
+| | 2 | Press de Banca Plano | 3 | Mancuerna |
 | | 3 | Aperturas | 3 | Máquina |
 | | 4 | Extensión de Tríceps (Pushdown) | 3 | Polea |
-| | 5 | Rompecráneos | 3 | Mancuerna |
+| | 5 | Press Francés | 3 | Mancuerna |
 | **Pull — Trapecios y Espalda Media** (viernes) | 1 | Remo T Inclinado | 4 | Máquina |
 | | 2 | Face Pull *(primario del puesto)* | 3 | Polea |
 | | 2 | Vuelos Posteriores (Pájaros) *(alternativa del puesto)* | 3 | Mancuerna |

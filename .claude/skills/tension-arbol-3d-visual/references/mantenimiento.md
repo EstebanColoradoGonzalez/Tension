@@ -52,6 +52,22 @@ contra el actual dice exactamente qué se añadió.
 - **Nombres de variable en PowerShell.** No distingue mayúsculas: un `$destino` para una ruta de
   archivo pisa un `$Destino` que llevara el destino de `adb`. Costó una corrida con PNG de cero
   bytes.
+- **Capturar con la pantalla del emulador apagada.** Android sigue corriendo —la jerarquía se
+  vuelca, los toques llegan, la app navega— pero `screencap` devuelve negro. El medidor lee el
+  negro puro como madera (`max(R,G,B)=0 < 120` y `R≥G≥B`) y devuelve un CSV **con aspecto
+  correcto**: `473×473`, `FillAlto 100%`, márgenes `0` en todos. Costó una corrida de diez
+  capturas el 2026-09-30. Ya no puede repetirse: `Enable-Pantalla` la enciende y fija
+  `svc power stayon true` antes del bucle, y `Test-CapturaConContenido` aborta en el primer
+  fotograma de un solo color. **Si el guard se toca, se toca sabiendo esto.**
+- **Confundir pantalla negra con fallo de render.** Ventana entera del emulador en negro =
+  emulador. Solo el recuadro del árbol en negro = WebGL, el JS o la geometría. La distinción
+  decide si se investiga el código o el entorno, y equivocarse manda la sesión al sitio
+  contrario.
+- **Subir la resolución de una malla para que se vea más orgánica.** Casi nunca es la palanca.
+  Lo que convirtió cuatro lóbulos lisos en masa de follaje fue pasar de 36 a 60 grumos **más
+  pequeños y más dispersos**, con la misma malla unitaria; subir filas y columnas habría costado
+  presupuesto sin arreglar nada. Lo mismo con la curvatura: con dos tramos por rama, subir el
+  ángulo solo da un codo más abierto — hace falta **una articulación más**, no más grados.
 
 ---
 

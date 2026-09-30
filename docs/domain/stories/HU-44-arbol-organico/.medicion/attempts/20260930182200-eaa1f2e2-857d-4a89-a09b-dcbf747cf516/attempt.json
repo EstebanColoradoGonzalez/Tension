@@ -1,0 +1,12 @@
+{
+  "attempt_id": "20260930182200-eaa1f2e2-857d-4a89-a09b-dcbf747cf516",
+  "story_id": "HU-44",
+  "status": "PENDING_STRATEGY",
+  "started_at": "2026-09-30T18:22:00.458Z",
+  "updated_at": "2026-09-30T18:22:00.559Z",
+  "rieles": 1,
+  "work_dir": "docs\\domain\\stories\\HU-44-arbol-organico\\.medicion\\attempts\\20260930182200-eaa1f2e2-857d-4a89-a09b-dcbf747cf516\\work",
+  "official_artifacts_modified": false,
+  "reason_code": "STRATEGY_NOT_APPROVED",
+  "detail": "No existe measurement-strategy.json"
+}

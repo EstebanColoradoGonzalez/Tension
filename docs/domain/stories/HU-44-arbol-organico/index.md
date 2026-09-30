@@ -2,16 +2,23 @@
 story_number: 44
 title: 'El árbol deja de ser geométrico'
 slug: 'arbol-organico'
-estado: 'Borrador (PO)'
+estado: 'Lista para Revisión'
 autor: 'Esteban Colorado González'
 fecha_creacion: '2026-09-14'
 es_resultado_slicing: true
 historia_origen: 'HU-44 — Evolución fotorrealista del árbol 3D (versión previa a la partición, 12 CAs)'
 historias_hermanas: ['HU-45']
-tracker_tool:
+tracker_tool: ninguna
 tracker_key:
-tracker_status: "pendiente"
+tracker_status: "ninguna"
 sprint: ""
+dev_responsable: "esteban.colorado"
+dev_ia_session_minutes: 66
+dev_manual_minutes: 40
+dev_total_minutes: 106
+dev_closed_at: "2026-09-30 17:15"
+ca_44_08_aprobada: true
+ca_44_08_evidencia: "tools/capturas/tira-hu44-v3-{alta,media,marchito}.png"
 orden_implementacion: '1 de 2 — debe implementarse antes que HU-45'
 slicing_justificacion: 'Score INVEST 5/6 de la historia original. Falla Small (esfuerzo estimado 5–8 días: 4 etapas × 3 niveles de calidad, sintonía de shaders en gama baja y bucle de aprobación estética). Corte por capas de datos —fidelidad progresiva del mismo entregable—: esta hija entrega la silueta orgánica natural (el dolor central: dejar de parecer un juguete geométrico) con valor íntegro; HU-45 añade los materiales procedurales que lo hacen sentir vivo.'
 ---
@@ -26,9 +33,9 @@ slicing_justificacion: 'Score INVEST 5/6 de la historia original. Falla Small (e
 | ----------------------- | ------------- | ---------- | ------------------------------ |
 | Creación HU             | ✅ Completada | 2026-09-14 | Esteban Colorado González (PO) |
 | Análisis Arquitectónico | ⏳ Pendiente  |            | Arquitecto                     |
-| Refinamiento Técnico    | ⏳ Pendiente  |            | Developer                      |
+| Refinamiento Técnico    | ✅ Completada | 2026-09-30 | esteban.colorado               |
 | Estimación              | ⏳ Pendiente  |            | Developer                      |
-| Desarrollo              | ⏳ Pendiente  |            | Developer                      |
+| Desarrollo              | ✅ Completada (Dev-Rápido) | 2026-09-30 | esteban.colorado |
 | Revisión                | ⏳ Pendiente  |            | Revisor                        |
 
 ## Archivos de esta Historia
@@ -47,6 +54,7 @@ slicing_justificacion: 'Score INVEST 5/6 de la historia original. Falla Small (e
 | Fase        | Inicio           | Fin              |
 | ----------- | ---------------- | ---------------- |
 | Creación HU | 2026-09-14 14:16 | 2026-09-14 14:49 |
+| Desarrollo  | 2026-09-30 13:09 | 2026-09-30 17:15 |
 
 ---
 

@@ -1,6 +1,6 @@
 # Escenarios
 
-Catálogo en `Tension/app/src/androidTest/.../testdata/TreeTestScenarios.kt`. **21 escenarios**
+Catálogo en `Tension/app/src/androidTest/.../testdata/TreeTestScenarios.kt`. **23 escenarios**
 con fechas relativas al día de ejecución, así que ninguno caduca.
 
 Cada uno se define con dos números —sesiones cerradas y días desde la última— porque son las
@@ -20,6 +20,8 @@ dos únicas lecturas de las que sale el estado del árbol (ver `modelo.md` §1).
 | `14` | **Maduro salud 0** | Árbol desnudo pero ramificado |
 | `20` | Brote salud 0 | Tallito pelado |
 | `21` | Joven salud 0 | Arbolito desnudo |
+| `22` | Brote salud 50 | Banda media de su edad — no existía antes de HU-44 |
+| `23` | Maduro salud 50 | Copa a medio reducir: donde la transición continua se lee mejor |
 
 ## Las ternas que hay que pedir en pareja
 
@@ -29,6 +31,7 @@ dos únicas lecturas de las que sale el estado del árbol (ver `modelo.md` §1).
 | `20,21,14` | Misma salud (0) sobre tres edades. **El marchitado respeta la forma de cada una** |
 | `12,14` | La ortogonalidad: misma etapa, salud opuesta. El corazón de las dos historias |
 | `08,12,14` | Los tres estados de follaje que describe CA-38.02, en orden |
+| `01` · `03,22,20` · `07,08,21` · `12,23,14` | **El juego de aceptación de HU-44** (CA-44.08): cada etapa en sus bandas alta, media y baja/marchita. Son **10 y no 12**: la Semilla solo existe con 0 sesiones cerradas, y sin última sesión la salud es 100 siempre |
 
 ## Matriz completa
 
@@ -55,6 +58,8 @@ dos únicas lecturas de las que sale el estado del árbol (ver `modelo.md` §1).
 | 19 | Ausencia extrema | 60 | −200 | MATURE | 0 | robustez |
 | 20 | Brote marchito | 5 | −14 | SPROUT | 0 | CA-37.04 · CA-38.02 |
 | 21 | Joven marchito | 15 | −14 | YOUNG | 0 | CA-37.04 · CA-38.02 |
+| 22 | Brote a media salud | 5 | −8 | SPROUT | 50 | CA-37.03 · CA-38.02 · CA-44.08 |
+| 23 | Maduro a media salud | 45 | −8 | MATURE | 50 | CA-37.03 · CA-38.02 · CA-44.08 |
 
 Los escenarios `02`, `04`–`06`, `09`–`11`, `13`, `15`–`19` existen sobre todo para la
 comprobación automática de los cálculos (`seed-arbol.ps1 -Todos`), no para lo visual.

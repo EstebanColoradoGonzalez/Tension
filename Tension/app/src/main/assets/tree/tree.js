@@ -1,8 +1,11 @@
 /*
- * Árbol de entrenamiento en 3D — generación procedural (HU-38).
+ * Árbol de entrenamiento en 3D — generación procedural (HU-38, HU-44).
  *
- * El árbol se construye entero por código con primitivas de Three.js. No hay ningún modelo
- * externo: ni .glb ni .gltf, ni texturas (frontera técnica declarada por el PO).
+ * El árbol se construye entero por código y **sin una sola primitiva de Three.js**: las mallas
+ * de tronco, ramas, follaje, uniones y montículo las genera este archivo vértice a vértice
+ * (HU-44, CA-44.07). No hay ningún modelo externo: ni .glb ni .gltf, ni texturas (frontera
+ * técnica declarada por el PO). Toda geometría generada calcula sus normales de vértice
+ * explícitamente — prerrequisito de la iluminación y el relieve de HU-45 (CA-44.01).
  *
  * Contrato con el lado nativo (CA-38.04):
  *   nativo → web : window.tensionTree.setState(healthScore, stageCode)
@@ -45,7 +48,10 @@
             ' etapa=' + stageCode +
             ' calidad=' + quality.name +
             ' segmentos=' + segmentos +
+            ' tramos=' + quality.subSegments +
+            ' bifurcaciones=' + forkCount +
             ' hojas=' + hojas +
+            ' mallas=' + generatedGeometries.length +
             ' sombras=' + quality.shadows
         );
     }
@@ -75,19 +81,29 @@
      * tanto. Un árbol maduro en calidad baja sigue siendo un árbol maduro, con menos detalle.
      *
      * `maxBranchDepth` es el tope que más pesa —cada nivel multiplica los segmentos—, así que
-     * es lo primero que se recorta. `junctions` son las esferas que tapan la unión entre una
-     * rama y su padre: en calidad baja se prescinde de ellas y se acepta la costura, porque es
+     * es lo primero que se recorta. `junctions` son los nudos que tapan la unión entre una
+     * rama y su padre: en calidad baja se prescinde de ellos y se acepta la costura, porque es
      * el único detalle cuya ausencia no deja un hueco por el que se vea el interior.
+     *
+     * Las cuatro columnas de HU-44 gobiernan el detalle de la geometría orgánica y **no** su
+     * silueta (CA-44.04): `subSegments` es en cuántos tramos encadenados se parte cada rama
+     * —de donde sale la curvatura—, `branchRings` cuántos anillos tiene el tubo unitario,
+     * y `blobRows`/`blobCols` la resolución del grumo de follaje y del nudo de unión. En `low`
+     * el árbol es **el mismo árbol orgánico** con una rama recta por tramo y grumos de tres
+     * filas: menos detalle, nunca otro generador (CA-44.07).
      */
     var QUALITY_PRESETS = {
         high: {
             name: 'high',
             shadows: true,
             maxBranchDepth: 4,
-            maxFoliagePerTip: 4,
+            maxFoliagePerTip: 7,
             junctions: true,
-            trunkRadialSegments: 10,
-            foliageDetail: 1,
+            trunkRadialSegments: 8,
+            branchRings: 2,
+            subSegments: 3,
+            blobRows: 4,
+            blobCols: 7,
             maxPixelRatio: 2.0,
             antialias: true
         },
@@ -95,10 +111,13 @@
             name: 'medium',
             shadows: false,
             maxBranchDepth: 3,
-            maxFoliagePerTip: 3,
+            maxFoliagePerTip: 5,
             junctions: true,
-            trunkRadialSegments: 8,
-            foliageDetail: 1,
+            trunkRadialSegments: 7,
+            branchRings: 2,
+            subSegments: 3,
+            blobRows: 4,
+            blobCols: 7,
             maxPixelRatio: 1.5,
             antialias: true
         },
@@ -106,10 +125,13 @@
             name: 'low',
             shadows: false,
             maxBranchDepth: 2,
-            maxFoliagePerTip: 2,
+            maxFoliagePerTip: 3,
             junctions: false,
             trunkRadialSegments: 6,
-            foliageDetail: 0,
+            branchRings: 1,
+            subSegments: 1,
+            blobRows: 3,
+            blobCols: 5,
             maxPixelRatio: 1.0,
             antialias: false
         }
@@ -216,7 +238,72 @@
     var JUNCTION_SCALE = 1.22;
 
     /** Dispersión de las hojas alrededor de la punta que las sostiene. */
-    var FOLIAGE_TIP_SPREAD = 0.34;
+    var FOLIAGE_TIP_SPREAD = 0.46;
+
+    // ── Geometría orgánica (HU-44, D1-D8) ───────────────────────────────────────────────────
+
+    /**
+     * Topes duros de la ramificación, **definidos por código** (CA-44.04).
+     *
+     * Hasta HU-44 el único tope era `quality.maxBranchDepth`, que es una tabla de
+     * configuración: tocarla mal dispara la recursión combinatoria y con ella el timeout de
+     * carga nativo de 2,5 s (`READY_TIMEOUT_MS` en `Tree3DView.kt`), que deja el fallback
+     * activado **de forma permanente** en un dispositivo con GPU capaz. Estos tres topes
+     * sobreviven a cualquier cambio de preset porque no salen de ningún preset.
+     */
+    var MAX_BRANCH_DEPTH_HARD = 4;
+    var MAX_BRANCH_NODES = 260;
+    var MAX_FOLIAGE_BLOBS = 220;
+
+    /** Tamaño de la tabla de ruido. Potencia de dos para que el envolvimiento sea barato. */
+    var NOISE_TABLE = 64;
+
+    /** Profundidad de las nervaduras de la corteza, en fracción del radio. */
+    var BARK_RELIEF = 0.24;
+
+    /** Achatamiento de la sección transversal: una rama no tiene sección circular. */
+    var BRANCH_OVAL = 0.20;
+
+    /** Rugosidad del grumo de follaje y del nudo de unión, en fracción del radio. */
+    var FOLIAGE_ROUGHNESS = 0.30;
+    var JUNCTION_ROUGHNESS = 0.14;
+
+    /** Rugosidad del terreno del montículo, y filas/columnas extra sobre las del grumo. */
+    var MOUND_ROUGHNESS = 0.26;
+    var MOUND_ROWS_BONUS = 2;
+    var MOUND_COLS_BONUS = 4;
+
+    /**
+     * Margen que se añade al radio de las hojas **solo al encuadrar**.
+     *
+     * El grumo de D5 se desplaza hasta `FOLIAGE_ROUGHNESS / 2` por encima de su radio nominal.
+     * `collectFitSamples` describe cada hoja con ese radio nominal, así que sin este margen las
+     * hojas del borde de la copa podrían tocar el marco: es exactamente el recorte que
+     * CA-38.03 prohíbe y que la tabla de medidas del script de capturas delata como
+     * `MargenSup = 0`.
+     */
+    var FOLIAGE_FIT_MARGIN = 1 + FOLIAGE_ROUGHNESS / 2;
+
+    /**
+     * Curvatura entre tramos consecutivos de una misma rama (D2).
+     *
+     * La irregularidad estructural **tiene que vivir en el esqueleto**, no en la malla
+     * unitaria: `updateSkeletonMatrices` escala cada instancia con `(radius, length, radius)`,
+     * así que cualquier deriva lateral horneada en la geometría se multiplica por el radio
+     * —milímetros en las puntas— y la rama sale recta en pantalla. Partiendo la rama en tramos
+     * encadenados la curvatura es una rotación de nudo, y no cuesta **ni una sola llamada de
+     * dibujo más**: son más instancias dentro de las mallas que ya existen.
+     */
+    var SUB_BEND_JITTER = degToRad(22);
+
+    /**
+     * Cada tramo se dibuja algo más largo que su hueco.
+     *
+     * Dentro de una rama no hay nudo de unión que tape la juntura —los nudos se reservan a las
+     * bifurcaciones reales (D8)—, así que el solape es lo único que impide que la curvatura
+     * abra una grieta por la cara exterior del codo.
+     */
+    var SUB_OVERLAP = 1.07;
 
     /*
      * Forma por etapa (D8, D13).
@@ -251,14 +338,14 @@
             branchDepth: 1,
             trunkSplit: 2,
             trunkHeight: 0.78,
-            trunkRadius: 0.032,
+            trunkRadius: 0.048,
             spread: degToRad(44),
             firstSplitDecay: 0.46,
             lengthDecay: 0.70,
-            foliagePerTip: 1,
-            foliageScale: 0.78,
+            foliagePerTip: 3,
+            foliageScale: 0.50,
             // Muy aplanadas: a este tamaño una esfera es un caramelo, no una hoja.
-            foliageFlatten: 0.34,
+            foliageFlatten: 0.58,
             // Sin madera que la sostenga, una plántula se vence entera.
             droopMax: degToRad(56)
         },
@@ -274,8 +361,8 @@
             spread: degToRad(26),
             firstSplitDecay: 0.48,
             lengthDecay: 0.72,
-            foliagePerTip: 3,
-            foliageScale: 0.92,
+            foliagePerTip: 6,
+            foliageScale: 0.60,
             foliageFlatten: 0.78,
             droopMax: degToRad(40)
         },
@@ -291,8 +378,8 @@
             spread: degToRad(44),
             firstSplitDecay: 0.56,
             lengthDecay: 0.70,
-            foliagePerTip: 4,
-            foliageScale: 0.95,
+            foliagePerTip: 7,
+            foliageScale: 0.62,
             foliageFlatten: 0.92,
             // La madera vieja aguanta: un maduro marchito se despeina, no se derrumba.
             droopMax: degToRad(30)
@@ -382,8 +469,21 @@
     /** Forma resuelta de la etapa en curso, o `null` en Semilla. La fija `buildTree`. */
     var form = null;
 
-    var branchNodes = [];     // nudos con segmento: {node, length, radius, level}
-    var foliageSpecs = [];    // hojas: {node, offset, radius}
+    var branchNodes = [];     // tramos: {node, parentEntry, length, radius, level, isFork}
+    var forkCount = 0;        // cuántos de esos tramos abren una bifurcación (D8)
+    var foliageSpecs = [];    // hojas: {entry, offset, radius}
+
+    /**
+     * Toda geometría generada por este archivo, para liberarla explícitamente (CA-44.01, D10).
+     *
+     * Recorrer el grafo con `disposeGroup` no basta desde HU-44: una misma geometría la
+     * comparten dos mallas —el grumo sirve al follaje y a los nudos—, así que el recorrido la
+     * liberaría dos veces, y cualquier geometría que no acabe colgada de una malla no la
+     * liberaría ninguna. El *garbage collector* de JavaScript no devuelve memoria de GPU: sin
+     * este registro, cada cambio de etapa y **cada degradación de calidad** dejarían atrás un
+     * árbol entero de buffers en la memoria de vídeo.
+     */
+    var generatedGeometries = [];
     var branchMesh = null;
     var junctionMesh = null;
     var foliageMesh = null;
@@ -520,14 +620,191 @@
         };
     }
 
+    // ── Ruido determinista (HU-44, T2) ──────────────────────────────────────────────────────
+
+    /**
+     * Ruido de valor sobre una tabla con semilla, interpolado con suavizado de Hermite.
+     *
+     * Se construye **sobre `seededRandom`** y no sobre un generador nuevo: la determinista del
+     * árbol es la misma propiedad de CA-44.01, y dos fuentes de azar son dos sitios donde
+     * perderla. El resultado se interpola porque el ruido blanco crudo produce una malla de
+     * púas: para que se lea como madera hacen falta valores continuos entre vértices vecinos.
+     *
+     * @return función de una variable real que devuelve un valor en [-1, 1].
+     */
+    function makeNoise(seed) {
+        var rnd = seededRandom(seed);
+        var table = new Array(NOISE_TABLE);
+        for (var i = 0; i < NOISE_TABLE; i++) {
+            table[i] = rnd() * 2 - 1;
+        }
+        return function (x) {
+            var wrapped = x - Math.floor(x / NOISE_TABLE) * NOISE_TABLE;
+            var i0 = Math.floor(wrapped);
+            var i1 = (i0 + 1) % NOISE_TABLE;
+            var t = wrapped - i0;
+            var s = t * t * (3 - 2 * t);
+            return table[i0] * (1 - s) + table[i1] * s;
+        };
+    }
+
+    /**
+     * Dos ruidos de una variable mezclados, que es lo que hace falta para una superficie.
+     *
+     * Los argumentos de quien lo llama son siempre **periódicos en el ángulo** —`cos` y `sin`
+     * del ángulo, nunca el ángulo—, de modo que la costura donde la malla se cierra sobre sí
+     * misma recibe exactamente el mismo valor por los dos lados y no se ve.
+     */
+    function makeSurfaceNoise(seed) {
+        var a = makeNoise(seed);
+        var b = makeNoise((seed ^ 0x9E3779B9) >>> 0);
+        return function (u, v) {
+            return a(u * 1.7 + v * 5.3) * 0.62 + b(v * 2.9 - u * 1.3) * 0.38;
+        };
+    }
+
+    /** Deja la geometría lista y anotada para su liberación explícita (D1, D10). */
+    function finishGeometry(geometry, positions, indices) {
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+        geometry.setIndex(indices);
+        // CA-44.01: las normales se calculan y se exponen **explícitamente**. Hasta HU-44
+        // venían regaladas por las primitivas de Three; con la geometría generada a mano no
+        // vienen solas, y sin ellas HU-45 no puede iluminar ni desplazar nada.
+        geometry.computeVertexNormals();
+        geometry.computeBoundingSphere();
+        generatedGeometries.push(geometry);
+        return geometry;
+    }
+
+    // ── Constructores de malla orgánica (HU-44, D1, D3-D7) ──────────────────────────────────
+
+    /**
+     * Tubo irregular a lo largo de +Y, entre `y = -0.5` y `y = 0.5`, de radio 1 en la base.
+     *
+     * Es el reemplazo de `CylinderGeometry` y conserva **exactamente su convención** —centrado
+     * en el origen, altura 1, radio 1 abajo— para que ni `updateSkeletonMatrices` ni
+     * `buildRootFlare` tengan que cambiar una sola cuenta.
+     *
+     * La sección transversal no es un círculo (D3): el radio de cada vértice se modula con el
+     * ruido de T2 alrededor del eje —nervaduras de corteza— y a lo largo de él —el fuste
+     * engorda y adelgaza—, y encima se achata en óvalo con una orientación que gira con la
+     * altura. La variación **entre ramas** no necesita más geometrías: cada rama ya tiene su
+     * propio `rotation.y`, que hace caer las mismas nervaduras en sitios distintos.
+     *
+     * @param rings anillos a lo alto; con 1 el tubo es un tronco de cono irregular.
+     * @param radial vértices alrededor del eje.
+     * @param profile radio normalizado en función de la altura, de 0 (base) a 1 (punta).
+     * @param seed semilla del relieve.
+     */
+    function makeTubeGeometry(rings, radial, profile, seed) {
+        var noise = makeSurfaceNoise(seed);
+        var positions = [];
+        var indices = [];
+        var j;
+        var i;
+
+        for (j = 0; j <= rings; j++) {
+            var v = j / rings;
+            var base = profile(v);
+            // El óvalo gira con la altura: una rama retorcida, no un prisma achatado.
+            var ovalAngle = v * 2.2 + noise(0.5, v * 3.0);
+            var ovalCos = Math.cos(ovalAngle);
+            var ovalSin = Math.sin(ovalAngle);
+
+            for (i = 0; i <= radial; i++) {
+                var angle = (i / radial) * Math.PI * 2;
+                var ca = Math.cos(angle);
+                var sa = Math.sin(angle);
+                var relief = noise(ca * 2.3, sa * 2.3 + v * 4.1);
+                var r = base * (1 + relief * BARK_RELIEF);
+                // Achatamiento: proyectar la dirección sobre el eje mayor del óvalo.
+                var along = ca * ovalCos + sa * ovalSin;
+                r = r * (1 + BRANCH_OVAL * (along * along - 0.5));
+                positions.push(ca * r, v - 0.5, sa * r);
+            }
+        }
+
+        var rim = radial + 1;
+        for (j = 0; j < rings; j++) {
+            for (i = 0; i < radial; i++) {
+                var a = j * rim + i;
+                var b = a + rim;
+                indices.push(a, b, a + 1, a + 1, b, b + 1);
+            }
+        }
+
+        // Tapas. Sin ellas, un maduro marchito —donde no hay follaje que cubra las puntas—
+        // enseñaría el interior hueco de cada rama.
+        var bottomCenter = positions.length / 3;
+        positions.push(0, -0.5, 0);
+        var topCenter = bottomCenter + 1;
+        positions.push(0, 0.5, 0);
+        for (i = 0; i < radial; i++) {
+            indices.push(bottomCenter, i, i + 1);
+            var top = rings * rim + i;
+            indices.push(topCenter, top + 1, top);
+        }
+
+        return finishGeometry(new THREE.BufferGeometry(), positions, indices);
+    }
+
+    /**
+     * Grumo de radio 1: una masa irregular, no una esfera (D5).
+     *
+     * Reemplaza a `IcosahedronGeometry` en el follaje —donde una esfera se lee como una bola de
+     * caramelo y no como hojas— y en los nudos de unión, con menos rugosidad porque su trabajo
+     * es tapar la bifurcación, no leerse.
+     *
+     * El desplazamiento angular se desvanece hacia los polos con `sin(phi)`: en el polo todos
+     * los meridianos son el mismo punto y, si cada uno lo desplazara distinto, la malla se
+     * rompería justo arriba y abajo de cada hoja.
+     */
+    function makeBlobGeometry(rows, cols, roughness, seed) {
+        var noise = makeSurfaceNoise(seed);
+        var axial = makeNoise((seed ^ 0x85EBCA6B) >>> 0);
+        var positions = [];
+        var indices = [];
+        var j;
+        var i;
+
+        for (j = 0; j <= rows; j++) {
+            var phi = (j / rows) * Math.PI;
+            var sinPhi = Math.sin(phi);
+            var cosPhi = Math.cos(phi);
+
+            for (i = 0; i <= cols; i++) {
+                var theta = (i / cols) * Math.PI * 2;
+                var ct = Math.cos(theta);
+                var st = Math.sin(theta);
+                var lumps = axial(phi * 2.7) * 0.5 + noise(ct * 1.8, st * 1.8) * sinPhi * 0.5;
+                var r = 1 + roughness * lumps;
+                positions.push(sinPhi * ct * r, cosPhi * r, sinPhi * st * r);
+            }
+        }
+
+        var rim = cols + 1;
+        for (j = 0; j < rows; j++) {
+            for (i = 0; i < cols; i++) {
+                var a = j * rim + i;
+                var b = a + rim;
+                // En las filas polares una de las dos caras del quad es degenerada.
+                if (j !== 0) {
+                    indices.push(a, a + 1, b);
+                }
+                if (j !== rows - 1) {
+                    indices.push(a + 1, b + 1, b);
+                }
+            }
+        }
+
+        return finishGeometry(new THREE.BufferGeometry(), positions, indices);
+    }
+
     function disposeGroup(group) {
         if (!group) {
             return;
         }
         group.traverse(function (node) {
-            if (node.geometry) {
-                node.geometry.dispose();
-            }
             if (node.material) {
                 node.material.dispose();
             }
@@ -535,6 +812,20 @@
         if (group.parent) {
             group.parent.remove(group);
         }
+    }
+
+    /**
+     * Libera la memoria de GPU de todas las geometrías generadas para la etapa saliente.
+     *
+     * Va aparte de [disposeGroup] a propósito (D10): las geometrías se comparten entre mallas,
+     * así que recorrer el grafo las liberaría por duplicado, y el registro además alcanza a las
+     * que no cuelgan de ninguna malla.
+     */
+    function disposeGeneratedGeometries() {
+        for (var i = 0; i < generatedGeometries.length; i++) {
+            generatedGeometries[i].dispose();
+        }
+        generatedGeometries = [];
     }
 
     // ── Esqueleto ───────────────────────────────────────────────────────────────────────────
@@ -550,27 +841,74 @@
      * El orden de inserción en [branchNodes] es **padre antes que hijo**, y de eso depende que
      * las matrices relativas se puedan calcular en una sola pasada.
      */
-    function growBranch(node, parentEntry, level, length, radius, rnd) {
-        var entry = {
-            node: node,
-            parentEntry: parentEntry,
-            length: length,
-            radius: radius,
-            level: level,
-            rel: new THREE.Matrix4()
-        };
-        branchNodes.push(entry);
+    function growBranch(node, parentEntry, level, length, radius, rnd, isFork) {
+        // La rama no es un segmento: es una **cadena de tramos** encadenados con una desviación
+        // angular pequeña entre uno y el siguiente (D2). De ahí sale la curvatura del tronco y
+        // que las ramas dejen de ser rectas, sin una sola llamada de dibujo más.
+        var pieces = form.subSegments;
+        var pieceLength = length / pieces;
+        var taper = subSegmentTaper();
+        var current = node;
+        var currentParent = parentEntry;
+        var pieceRadius = radius;
+        var lastEntry = null;
+        var s;
+
+        for (s = 0; s < pieces; s++) {
+            if (branchNodes.length >= MAX_BRANCH_NODES) {
+                break;
+            }
+            var entry = {
+                node: current,
+                parentEntry: currentParent,
+                // Cada tramo se dibuja algo más largo que su hueco: dentro de una rama no hay
+                // nudo que tape la juntura, y sin solape la curvatura abriría una grieta por
+                // la cara exterior del codo.
+                length: pieceLength * SUB_OVERLAP,
+                radius: pieceRadius,
+                level: level,
+                isFork: isFork && s === 0,
+                rel: new THREE.Matrix4()
+            };
+            branchNodes.push(entry);
+            if (entry.isFork) {
+                forkCount++;
+            }
+            lastEntry = entry;
+
+            if (s < pieces - 1) {
+                var next = new THREE.Object3D();
+                next.position.y = pieceLength;
+                next.rotation.order = 'YZX';
+                next.rotation.z = (rnd() - 0.5) * SUB_BEND_JITTER * 2;
+                current.add(next);
+                currentParent = entry;
+                current = next;
+                pieceRadius = pieceRadius * taper;
+            }
+        }
+
+        // El tope duro cortó la rama antes de emitir nada: no hay punta de la que colgar hojas
+        // ni nudo del que seguir ramificando.
+        if (!lastEntry) {
+            return;
+        }
 
         if (level >= form.branchDepth) {
             // Las hojas cuelgan de la punta real de la rama, no de posiciones fijas alrededor
             // del tronco. Es lo que cierra los huecos de la copa: la masa de follaje sigue a la
-            // ramificación en lugar de flotar sobre ella.
+            // ramificación en lugar de flotar sobre ella. Con la rama partida en tramos, la
+            // punta real es la del **último** tramo, y la altura del racimo se mide contra él;
+            // la anchura sigue midiéndose contra la rama entera, que es lo que le da su escala.
             for (var h = 0; h < form.foliagePerTip; h++) {
+                if (foliageSpecs.length >= MAX_FOLIAGE_BLOBS) {
+                    break;
+                }
                 foliageSpecs.push({
-                    entry: entry,
+                    entry: lastEntry,
                     offset: new THREE.Vector3(
                         (rnd() - 0.5) * length * FOLIAGE_TIP_SPREAD * 2,
-                        length * (0.45 + rnd() * 0.75),
+                        pieceLength * (0.35 + rnd() * 0.85),
                         (rnd() - 0.5) * length * FOLIAGE_TIP_SPREAD * 2
                     ),
                     radius: length * form.foliageScale * (0.78 + rnd() * 0.42)
@@ -583,10 +921,13 @@
         var rollBase = rnd() * Math.PI * 2;
 
         for (var i = 0; i < hijos; i++) {
+            if (branchNodes.length >= MAX_BRANCH_NODES) {
+                break;
+            }
             var child = new THREE.Object3D();
             // Los hijos nacen algo antes de la punta del padre: naciendo justo en el extremo,
-            // los dos cilindros se tocarían por una arista y se vería el hueco entre ambos.
-            child.position.y = length * (level === 0 ? TRUNK_ATTACH : BRANCH_ATTACH);
+            // los dos tubos se tocarían por una arista y se vería el hueco entre ambos.
+            child.position.y = pieceLength * (level === 0 ? TRUNK_ATTACH : BRANCH_ATTACH);
             child.rotation.order = 'YZX';
             child.rotation.y = rollBase +
                 (i / hijos) * Math.PI * 2 +
@@ -597,15 +938,46 @@
             child.name = 'branchPivot';
             child.userData.baseRotZ = spread;
             // La caída es progresiva hacia las puntas: una rama gruesa junto al tronco apenas
-            // cede, y las finas del final cuelgan del todo.
+            // cede, y las finas del final cuelgan del todo. El pivote está **solo** en el
+            // primer tramo de cada rama: repetirlo por tramo acumularía la caída y la punta se
+            // enrollaría sobre sí misma.
             child.userData.droopFactor = (level + 1) / Math.max(1, form.branchDepth);
-            node.add(child);
+            current.add(child);
 
             var decay = level === 0 ? form.firstSplitDecay : form.lengthDecay;
             var childLength = length * decay *
                 (1 - BRANCH_LENGTH_JITTER / 2 + rnd() * BRANCH_LENGTH_JITTER);
-            growBranch(child, entry, level + 1, childLength, radius * BRANCH_RADIUS_DECAY, rnd);
+            growBranch(
+                child,
+                lastEntry,
+                level + 1,
+                childLength,
+                radius * BRANCH_RADIUS_DECAY,
+                rnd,
+                true
+            );
         }
+    }
+
+    /** Tramos en que se parte cada rama. Es detalle de calidad, no forma de la etapa. */
+    function subSegmentCount() {
+        return Math.max(1, quality.subSegments);
+    }
+
+    /**
+     * Estrechamiento de **un tramo**, para que la rama entera se estreche por [SEGMENT_TAPER].
+     *
+     * La geometría unitaria la comparten todas las instancias, así que el estrechamiento por
+     * tramo tiene que ser el mismo para todas: se reparte la raíz `pieces`-ésima. Elevado a los
+     * `pieces` tramos da exactamente el afinado de una rama de antes de HU-44.
+     */
+    function subSegmentTaper() {
+        return Math.pow(SEGMENT_TAPER, 1 / subSegmentCount());
+    }
+
+    /** Perfil de radio del tubo de rama: se estrecha linealmente de la base a la punta. */
+    function branchProfile(t) {
+        return 1 + (subSegmentTaper() - 1) * t;
     }
 
     /**
@@ -617,6 +989,7 @@
     function buildSkeleton() {
         branchNodes = [];
         foliageSpecs = [];
+        forkCount = 0;
 
         var raiz = new THREE.Object3D();
         if (!form) {
@@ -631,7 +1004,10 @@
             0,
             form.trunkHeight + trunkBury(),
             form.trunkRadius,
-            seededRandom(BRANCH_SEED)
+            seededRandom(BRANCH_SEED),
+            // El arranque del tronco no es una bifurcación: no hay padre con el que empalmar, y
+            // además nace enterrado en el montículo.
+            false
         );
 
         return raiz;
@@ -660,7 +1036,10 @@
             return null;
         }
         return {
-            branchDepth: Math.min(preset.branchDepth, quality.maxBranchDepth),
+            // El tope duro entra aquí junto al de calidad (CA-44.04): un preset mal tocado no
+            // puede disparar la recursión ni aunque la tabla de calidad se lo permita.
+            branchDepth: Math.min(preset.branchDepth, quality.maxBranchDepth, MAX_BRANCH_DEPTH_HARD),
+            subSegments: subSegmentCount(),
             foliagePerTip: Math.min(preset.foliagePerTip, quality.maxFoliagePerTip),
             trunkSplit: preset.trunkSplit,
             trunkHeight: preset.trunkHeight,
@@ -686,7 +1065,12 @@
     function buildInstancedMeshes() {
         var segmentos = quality.trunkRadialSegments;
 
-        var branchGeometry = new THREE.CylinderGeometry(SEGMENT_TAPER, 1, 1, segmentos, 1, false);
+        var branchGeometry = makeTubeGeometry(
+            quality.branchRings,
+            segmentos,
+            branchProfile,
+            BRANCH_SEED + 11
+        );
         branchMesh = new THREE.InstancedMesh(
             branchGeometry,
             trunkMaterial,
@@ -697,11 +1081,20 @@
         trunkGroup.add(branchMesh);
 
         if (quality.junctions) {
-            var junctionGeometry = new THREE.IcosahedronGeometry(1, quality.foliageDetail);
+            var junctionGeometry = makeBlobGeometry(
+                quality.blobRows,
+                quality.blobCols,
+                JUNCTION_ROUGHNESS,
+                BRANCH_SEED + 23
+            );
+            // Capacidad por **bifurcaciones**, no por tramos (D8). Con la rama partida en
+            // tramos hay varias veces más nudos que antes, pero dentro de una rama los tramos
+            // son casi colineales y no hay costura que tapar: reservar uno por tramo triplicaría
+            // lo más caro por instancia sin cubrir nada nuevo.
             junctionMesh = new THREE.InstancedMesh(
                 junctionGeometry,
                 trunkMaterial,
-                Math.max(1, branchNodes.length)
+                Math.max(1, forkCount)
             );
             junctionMesh.castShadow = quality.shadows;
             junctionMesh.frustumCulled = false;
@@ -710,7 +1103,12 @@
             junctionMesh = null;
         }
 
-        var foliageGeometry = new THREE.IcosahedronGeometry(1, quality.foliageDetail);
+        var foliageGeometry = makeBlobGeometry(
+            quality.blobRows,
+            quality.blobCols,
+            FOLIAGE_ROUGHNESS,
+            BRANCH_SEED + 37
+        );
         foliageMesh = new THREE.InstancedMesh(
             foliageGeometry,
             foliageMaterial,
@@ -752,6 +1150,7 @@
     function updateSkeletonMatrices(foliageT) {
         var i;
         var entry;
+        var forkIndex = 0;
 
         for (i = 0; i < branchNodes.length; i++) {
             entry = branchNodes[i];
@@ -771,12 +1170,13 @@
             tmpMatrix.premultiply(entry.rel);
             branchMesh.setMatrixAt(i, tmpMatrix);
 
-            if (junctionMesh) {
+            if (junctionMesh && entry.isFork) {
                 var junctionRadius = entry.radius * JUNCTION_SCALE;
                 tmpMatrix.identity();
                 tmpMatrix.makeScale(junctionRadius, junctionRadius, junctionRadius);
                 tmpMatrix.premultiply(entry.rel);
-                junctionMesh.setMatrixAt(i, tmpMatrix);
+                junctionMesh.setMatrixAt(forkIndex, tmpMatrix);
+                forkIndex++;
             }
         }
         // La cuenta se fija aquí y no al crear la malla: en Semilla no hay esqueleto y una
@@ -785,7 +1185,7 @@
         branchMesh.count = branchNodes.length;
         branchMesh.instanceMatrix.needsUpdate = true;
         if (junctionMesh) {
-            junctionMesh.count = branchNodes.length;
+            junctionMesh.count = forkIndex;
             junctionMesh.instanceMatrix.needsUpdate = true;
         }
 
@@ -823,17 +1223,39 @@
         var group = new THREE.Group();
         var stemMaterial = new THREE.MeshLambertMaterial({ color: foliageColor(1) });
 
-        var stemGeometry = new THREE.CylinderGeometry(0.022, 0.030, 0.34, Math.max(5, quality.trunkRadialSegments - 4));
+        // Las medidas se hornean en la geometría en vez de escalar la malla: `collectFitSamples`
+        // describe estas piezas con su esfera envolvente por el mayor de los factores de escala,
+        // y con una escala tan anisótropa como la del tallo eso sobrestimaría su tamaño y
+        // alejaría la cámara en la etapa que menos margen tiene.
+        var stemGeometry = makeTubeGeometry(
+            quality.branchRings + 1,
+            Math.max(5, quality.trunkRadialSegments - 2),
+            seedStemProfile,
+            BRANCH_SEED + 53
+        );
+        stemGeometry.scale(0.030, 0.34, 0.030);
+        stemGeometry.computeVertexNormals();
+        stemGeometry.computeBoundingSphere();
+
         var stem = new THREE.Mesh(stemGeometry, stemMaterial);
         stem.position.y = 0.30;
         stem.castShadow = quality.shadows;
         group.add(stem);
 
+        // Los dos cotiledones comparten geometría: es la misma hoja reflejada en su posición.
+        var leafGeometry = makeBlobGeometry(
+            quality.blobRows,
+            quality.blobCols,
+            FOLIAGE_ROUGHNESS,
+            BRANCH_SEED + 71
+        );
+        leafGeometry.scale(0.13 * 1.5, 0.13 * 0.55, 0.13 * 0.9);
+        leafGeometry.computeVertexNormals();
+        leafGeometry.computeBoundingSphere();
+
         for (var i = 0; i < 2; i++) {
-            var leafGeometry = new THREE.IcosahedronGeometry(0.13, quality.foliageDetail);
             var leaf = new THREE.Mesh(leafGeometry, stemMaterial);
             leaf.position.set(i === 0 ? -0.13 : 0.13, 0.46, 0);
-            leaf.scale.set(1.5, 0.55, 0.9);
             leaf.castShadow = quality.shadows;
             group.add(leaf);
         }
@@ -850,11 +1272,20 @@
      * ambos quedaba un hueco de aire por el que se veía el fondo en cuanto la cámara bajaba.
      */
     function buildMound() {
-        var geometry = new THREE.IcosahedronGeometry(moundRadius(), quality.foliageDetail + 1);
+        // Terreno, no una esfera aplastada (D6). En la etapa Semilla el montículo es casi lo
+        // único que hay que mirar: si sigue siendo una primitiva, esa etapa se sigue leyendo
+        // como formas básicas y CA-44.02 no se cumple.
+        var geometry = makeBlobGeometry(
+            quality.blobRows + MOUND_ROWS_BONUS,
+            quality.blobCols + MOUND_COLS_BONUS,
+            MOUND_ROUGHNESS,
+            BRANCH_SEED + 67
+        );
         var color = new THREE.Color(trunkColorHex).multiplyScalar(0.62);
         var mesh = new THREE.Mesh(geometry, new THREE.MeshLambertMaterial({ color: color }));
+        var r = moundRadius();
         mesh.position.y = moundCenterY();
-        mesh.scale.set(1.0, MOUND_FLATTEN, 1.0);
+        mesh.scale.set(r, r * MOUND_FLATTEN, r);
         mesh.castShadow = quality.shadows;
         return mesh;
     }
@@ -882,15 +1313,33 @@
      * el tronco atraviesa la tierra, de modo que ningún ángulo de cámara pueda colar la vista
      * entre uno y otra.
      */
+    /**
+     * Perfil del pie: se abre deprisa junto al suelo y se cierra hacia el fuste.
+     *
+     * La curva es convexa a propósito — un tronco de cono recto vuelve a parecer una primitiva,
+     * que es justo lo que CA-44.07 retira.
+     */
+    function rootFlareProfile(t) {
+        var top = 1 / ROOT_FLARE_RADIUS;
+        return top + (1 - top) * Math.pow(1 - t, 2.2);
+    }
+
+    /** Perfil del tallo de la Semilla: apenas se estrecha, como un cotiledón recién abierto. */
+    function seedStemProfile(t) {
+        return 1 - (1 - 0.022 / 0.030) * t;
+    }
+
     function buildRootFlare() {
         var altura = form.trunkRadius * ROOT_FLARE_HEIGHT_FACTOR;
-        var geometry = new THREE.CylinderGeometry(
-            form.trunkRadius,
-            form.trunkRadius * ROOT_FLARE_RADIUS,
-            altura,
-            quality.trunkRadialSegments
+        var base = form.trunkRadius * ROOT_FLARE_RADIUS;
+        var geometry = makeTubeGeometry(
+            quality.branchRings + 1,
+            quality.trunkRadialSegments,
+            rootFlareProfile,
+            BRANCH_SEED + 89
         );
         var mesh = new THREE.Mesh(geometry, trunkMaterial);
+        mesh.scale.set(base, altura, base);
         mesh.position.y = -trunkBury() + altura / 2;
         mesh.castShadow = quality.shadows;
         return mesh;
@@ -930,6 +1379,11 @@
 
     function rebuildTree() {
         disposeGroup(root);
+        // La ramificación genera mallas nuevas en cada cambio de etapa **y en cada degradación
+        // de calidad**. El recolector de JavaScript no devuelve memoria de GPU: sin esto, cada
+        // reconstrucción dejaría atrás un árbol entero de buffers en la memoria de vídeo
+        // (CA-44.01).
+        disposeGeneratedGeometries();
         buildTree();
         applyStage();
         applyHealth(health);
@@ -1018,7 +1472,14 @@
         for (i = 0; i < foliageSpecs.length; i++) {
             var spec = foliageSpecs[i];
             tmpOffset.copy(spec.offset).applyMatrix4(spec.entry.rel);
-            samples.push({ x: tmpOffset.x, y: tmpOffset.y, z: tmpOffset.z, r: spec.radius });
+            // El grumo se desborda de su radio nominal: sin el margen, las hojas del borde de la
+            // copa tocarían el marco y CA-38.03 quedaría incumplida por unos pocos píxeles.
+            samples.push({
+                x: tmpOffset.x,
+                y: tmpOffset.y,
+                z: tmpOffset.z,
+                r: spec.radius * FOLIAGE_FIT_MARGIN
+            });
         }
 
         return samples;
@@ -1317,6 +1778,24 @@
         canvas.addEventListener('touchcancel', onTouchEnd, { passive: false });
     }
 
+    /**
+     * Pérdida del contexto WebGL durante la sesión (CA-44.05).
+     *
+     * Para ahorrar batería, Android destruye la memoria de GPU cuando la app pasa a segundo
+     * plano: al volver, el lienzo puede haber perdido su conexión con la GPU y el render se
+     * queda **congelado o en blanco**, sin que nada falle de forma observable.
+     *
+     * **No se llama a `preventDefault()` a propósito.** Prevenir el evento es lo que pide la
+     * restauración del contexto, y aquí no se quiere restaurar: se quiere caer al ícono nativo
+     * de HU-37, que ya existe, ya dice lo mismo y no depende de la GPU. Del lado nativo no hace
+     * falta nada: `Tree3DView` acepta `onFailure` **después** de `onReady`.
+     */
+    function bindContextLoss(canvas) {
+        canvas.addEventListener('webglcontextlost', function () {
+            reportFailure('webglcontextlost');
+        }, false);
+    }
+
     // ── API expuesta al lado nativo ─────────────────────────────────────────────────────────
 
     /**
@@ -1450,6 +1929,7 @@
         applyHealth(0);
 
         bindGestures(canvas);
+        bindContextLoss(canvas);
         window.addEventListener('resize', resize);
 
         resize();

@@ -2,16 +2,23 @@
 story_number: 45
 title: 'El árbol se siente vivo'
 slug: 'materiales-organicos-arbol-3d'
-estado: 'Borrador (PO)'
+estado: 'Lista para Revisión'
 autor: 'Esteban Colorado González'
 fecha_creacion: '2026-09-14'
 es_resultado_slicing: true
 historia_origen: 'HU-44 — Evolución fotorrealista del árbol 3D (versión previa a la partición, 12 CAs)'
 historias_hermanas: ['HU-44']
-tracker_tool:
+tracker_tool: ninguna
 tracker_key:
-tracker_status: "pendiente"
+tracker_status: "ninguna"
 sprint: ""
+dev_responsable: "esteban.colorado"
+dev_ia_session_minutes: 286
+dev_manual_minutes: 90
+dev_total_minutes: 376
+dev_closed_at: "2026-09-30 22:30"
+ca_45_07_aprobada: true
+ca_45_07_evidencia: "Aprobación visual directa del PO en dispositivo (calidad=medium). La tira automatizada no es utilizable: ver dev-record.md §Aceptación estética"
 orden_implementacion: '2 de 2 — depende de HU-44, que debe estar implementada antes'
 slicing_justificacion: 'Score INVEST 5/6 de la historia original. Falla Small (esfuerzo estimado 5–8 días: 4 etapas × 3 niveles de calidad, sintonía de shaders en gama baja y bucle de aprobación estética). Corte por capas de datos —fidelidad progresiva del mismo entregable—: esta hija añade los materiales procedurales (relieve de corteza, variación tonal de follaje, degradación estricta de shaders) que completan la visión fotorrealista sobre la geometría que HU-44 deja lista.'
 ---
@@ -26,9 +33,9 @@ slicing_justificacion: 'Score INVEST 5/6 de la historia original. Falla Small (e
 | ----------------------- | ------------- | ---------- | ------------------------------ |
 | Creación HU             | ✅ Completada | 2026-09-14 | Esteban Colorado González (PO) |
 | Análisis Arquitectónico | ⏳ Pendiente  |            | Arquitecto                     |
-| Refinamiento Técnico    | ⏳ Pendiente  |            | Developer                      |
+| Refinamiento Técnico    | ✅ Completada | 2026-09-30 | esteban.colorado               |
 | Estimación              | ⏳ Pendiente  |            | Developer                      |
-| Desarrollo              | ⏳ Pendiente  |            | Developer                      |
+| Desarrollo              | ✅ Completada (Dev-Rápido) | 2026-09-30 | esteban.colorado |
 | Revisión                | ⏳ Pendiente  |            | Revisor                        |
 
 ## Archivos de esta Historia
@@ -47,6 +54,7 @@ slicing_justificacion: 'Score INVEST 5/6 de la historia original. Falla Small (e
 | Fase        | Inicio           | Fin              |
 | ----------- | ---------------- | ---------------- |
 | Creación HU | 2026-09-14 14:27 | 2026-09-14 14:49 |
+| Desarrollo  | 2026-09-30 17:44 | 2026-09-30 22:30 |
 
 ---
 

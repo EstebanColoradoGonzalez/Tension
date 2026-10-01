@@ -1,0 +1,12 @@
+{
+  "attempt_id": "20260930230019-6d0d01f8-b792-4b4b-b37a-1dbd25410045",
+  "story_id": "45",
+  "status": "PENDING_STRATEGY",
+  "started_at": "2026-09-30T23:00:19.195Z",
+  "updated_at": "2026-09-30T23:00:19.301Z",
+  "rieles": 1,
+  "work_dir": "docs\\domain\\stories\\HU-45-materiales-organicos-arbol-3d\\.medicion\\attempts\\20260930230019-6d0d01f8-b792-4b4b-b37a-1dbd25410045\\work",
+  "official_artifacts_modified": false,
+  "reason_code": "STRATEGY_NOT_APPROVED",
+  "detail": "No existe measurement-strategy.json"
+}

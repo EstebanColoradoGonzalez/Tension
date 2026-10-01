@@ -1,11 +1,17 @@
 /*
- * Árbol de entrenamiento en 3D — generación procedural (HU-38, HU-44).
+ * Árbol de entrenamiento en 3D — generación procedural (HU-38, HU-44, HU-45).
  *
  * El árbol se construye entero por código y **sin una sola primitiva de Three.js**: las mallas
  * de tronco, ramas, follaje, uniones y montículo las genera este archivo vértice a vértice
- * (HU-44, CA-44.07). No hay ningún modelo externo: ni .glb ni .gltf, ni texturas (frontera
- * técnica declarada por el PO). Toda geometría generada calcula sus normales de vértice
- * explícitamente — prerrequisito de la iluminación y el relieve de HU-45 (CA-44.01).
+ * (HU-44, CA-44.07). No hay ningún modelo externo: ni .glb ni .gltf (frontera técnica
+ * declarada por el PO). Toda geometría generada calcula sus normales de vértice
+ * explícitamente — prerrequisito de la iluminación y el relieve (CA-44.01).
+ *
+ * Los materiales también son procedurales y **tampoco son un asset**: HU-45 inyecta ruido en
+ * los shaders de Three (`onBeforeCompile`) para el grano y el relieve de la corteza, la
+ * variación tonal del follaje y su secado a manchas. **Cero texturas de imagen** — ni .webp ni
+ * Base64 (CA-45.05: se priorizan los shaders matemáticos). Todo el ruido es una función pura
+ * de la coordenada y de la semilla fija del árbol: mismo estado, misma imagen (CA-45.01).
  *
  * Contrato con el lado nativo (CA-38.04):
  *   nativo → web : window.tensionTree.setState(healthScore, stageCode)
@@ -52,7 +58,11 @@
             ' bifurcaciones=' + forkCount +
             ' hojas=' + hojas +
             ' mallas=' + generatedGeometries.length +
-            ' sombras=' + quality.shadows
+            ' sombras=' + quality.shadows +
+            // Las dos columnas de HU-45: con ellas en logcat se sabe si lo que se está viendo
+            // lleva materiales procedurales o es el Lambert pelado de `low` (CA-45.03).
+            ' materialNoise=' + quality.materialNoise +
+            ' bump=' + quality.barkBump
         );
     }
 
@@ -60,6 +70,83 @@
         if (window.TreeBridge && window.TreeBridge.onFailure) {
             window.TreeBridge.onFailure(String(reason));
         }
+    }
+
+    /**
+     * Instala la interceptación del fallo de compilación de shaders (CA-45.04, HU-45 D8).
+     *
+     * **El fallo de WebGL es silencioso.** La compilación ocurre en la GPU durante el primer
+     * render y un shader que no enlaza **no lanza ninguna excepción**: no lo ve el `try/catch`
+     * de `init`, no lo ve `window.onerror`, y el material se pinta **negro**. Sin esto, el
+     * ejecutante vería un árbol negro en lugar del ícono nativo de HU-37.
+     *
+     * `renderer.debug.onShaderError` es el punto exacto donde Three detecta el fallo, y es más
+     * fiable que leer `diagnostics` —cuya forma ha cambiado entre versiones—. Se instala
+     * **antes** de construir el árbol; [auditPrograms] recoge después lo que se le escape.
+     */
+    function bindShaderErrors() {
+        renderer.debug.onShaderError = function (gl, program, glVertexShader, glFragmentShader) {
+            var detail;
+            try {
+                detail = [
+                    gl.getProgramInfoLog(program) || '',
+                    gl.getShaderInfoLog(glVertexShader) || '',
+                    gl.getShaderInfoLog(glFragmentShader) || ''
+                ].join(' | ');
+            } catch (error) {
+                detail = 'sin detalle: ' + error;
+            }
+            console.error('[tree] fallo de compilación de shader: ' + detail);
+            reportFailure('shader-compile: ' + detail.substring(0, 240));
+        };
+    }
+
+    /**
+     * Segunda red: barrer los programas que el renderizador tiene registrados (CA-45.04).
+     *
+     * Se lee a la defensiva porque `diagnostics` solo existe cuando `checkShaderErrors` está
+     * activo y su forma no es estable entre versiones de Three. Nunca se confía solo en esto:
+     * el camino principal es [bindShaderErrors].
+     */
+    function auditPrograms() {
+        if (!renderer || !renderer.info || !renderer.info.programs) {
+            return;
+        }
+        var programs = renderer.info.programs;
+        for (var i = 0; i < programs.length; i++) {
+            var diagnostics = programs[i] && programs[i].diagnostics;
+            if (diagnostics && diagnostics.runnable === false) {
+                reportFailure('WebGLProgram no ejecutable: ' +
+                    String(diagnostics.programLog || 'sin log').substring(0, 240));
+                return;
+            }
+        }
+    }
+
+    /**
+     * Fuerza la compilación de los shaders **fuera** de la ventana que mide la sonda (D9).
+     *
+     * Los shaders de ruido de esta historia son lo más caro que compila este archivo, y el
+     * primer `render()` es quien paga esa compilación. Medir ahí baja la calidad a `low` en un
+     * dispositivo que después corre a 60 FPS estables — exactamente el falso negativo que la
+     * nota técnica de CA-45.03 describe. Sacarla del bucle también le da a [auditPrograms]
+     * algo que auditar antes de pintar el primer fotograma.
+     */
+    function warmUpShaders() {
+        try {
+            renderer.compile(scene, camera);
+        } catch (error) {
+            // **Que esto falle no es un fallo de shader, y confundirlos sale caro.**
+            // `compile()` es una optimización de cuándo se paga la compilación, no una
+            // comprobación de que los shaders sirvan: si tropieza, el primer `render()`
+            // compila igual y `onShaderError` sigue vigilando. Llamar aquí a `reportFailure`
+            // dejaría el fallback nativo activado de forma permanente en un dispositivo con
+            // GPU perfectamente capaz — el mismo modo de fallo que el timeout de 2,5 s que
+            // los topes duros de HU-44 existen para evitar.
+            console.warn('[tree] renderer.compile no disponible: ' + error);
+            return;
+        }
+        auditPrograms();
     }
 
     // Cualquier error que escape de los try/catch acaba en el fallback nativo (CA-38.05).
@@ -91,6 +178,16 @@
      * y `blobRows`/`blobCols` la resolución del grumo de follaje y del nudo de unión. En `low`
      * el árbol es **el mismo árbol orgánico** con una rama recta por tramo y grumos de tres
      * filas: menos detalle, nunca otro generador (CA-44.07).
+     *
+     * Las dos columnas de HU-45 gobiernan el **material** y materializan la degradación
+     * estricta de CA-45.03: `materialNoise` son las octavas de ruido del shader y `barkBump` la
+     * amplitud del relieve de corteza — cuánto se inclina la normal por unidad de gradiente,
+     * así que 0,30 es una pendiente y no un porcentaje. En `low` las dos valen **0**, y eso no
+     * es «poco ruido»:
+     * la fábrica de materiales no llega a instalar el shader inyectado y devuelve el
+     * `MeshLambertMaterial` pelado. Es, al pie de la letra, «se desactiva el bump/displacement
+     * mapping» y «los materiales usan shaders básicos (tipo Lambert)» — sobre la misma silueta
+     * orgánica, nunca sobre un render a medio compilar.
      */
     var QUALITY_PRESETS = {
         high: {
@@ -104,6 +201,8 @@
             subSegments: 3,
             blobRows: 4,
             blobCols: 7,
+            materialNoise: 2,
+            barkBump: 0.50,
             maxPixelRatio: 2.0,
             antialias: true
         },
@@ -118,6 +217,8 @@
             subSegments: 3,
             blobRows: 4,
             blobCols: 7,
+            materialNoise: 1,
+            barkBump: 0.30,
             maxPixelRatio: 1.5,
             antialias: true
         },
@@ -132,6 +233,8 @@
             subSegments: 1,
             blobRows: 3,
             blobCols: 5,
+            materialNoise: 0,
+            barkBump: 0,
             maxPixelRatio: 1.0,
             antialias: false
         }
@@ -431,8 +534,16 @@
 
     // ── Presupuesto de rendimiento (CA-38.06) ───────────────────────────────────────────────
 
-    /** Fotogramas de calentamiento que no entran en la medida. */
-    var PROBE_WARMUP_FRAMES = 5;
+    /**
+     * Fotogramas de calentamiento que no entran en la medida (CA-45.03).
+     *
+     * La nota técnica pide 2 o 3; van 8. `renderer.compile()` ya saca la compilación de los
+     * shaders de ruido del bucle medido (D9), pero el driver puede diferir el enlace real
+     * (`KHR_parallel_shader_compile`) y el coste de ocho fotogramas de margen —unos 130 ms de
+     * medición que no se usan— es despreciable frente a degradar a `low` un dispositivo que
+     * corría a 60 FPS.
+     */
+    var PROBE_WARMUP_FRAMES = 8;
 
     /** Fotogramas medidos antes de decidir si hay que degradar. */
     var PROBE_FRAMES = 30;
@@ -484,6 +595,17 @@
      * árbol entero de buffers en la memoria de vídeo.
      */
     var generatedGeometries = [];
+
+    /**
+     * Todo material creado por este archivo, para liberarlo explícitamente (HU-45, D11).
+     *
+     * Es el mismo problema que HU-44 resolvió con las geometrías, una capa más arriba:
+     * `trunkMaterial` lo comparten la malla de ramas, la de nudos y el pie del tronco, así que
+     * recorrer el grafo lo liberaría **tres veces** en cada reconstrucción —que ocurre al
+     * cambiar de etapa y cada vez que la sonda degrada la calidad—. Con el registro,
+     * `disposeGroup` deja de tocar materiales y cada uno se libera exactamente una vez.
+     */
+    var generatedMaterials = [];
     var branchMesh = null;
     var junctionMesh = null;
     var foliageMesh = null;
@@ -526,6 +648,8 @@
     var frameRequested = false;
     var probeFrame = 0;
     var probeElapsed = 0;
+    var probeDrawElapsed = 0;
+    var probeDrawFrames = 0;
     var probeLastTime = 0;
     var probeDone = false;
     var readyReported = false;
@@ -663,10 +787,25 @@
         };
     }
 
-    /** Deja la geometría lista y anotada para su liberación explícita (D1, D10). */
-    function finishGeometry(geometry, positions, indices) {
+    /**
+     * Deja la geometría lista y anotada para su liberación explícita (D1, D10).
+     *
+     * `uvs` y `tangents` son de HU-45 (T2): los dos únicos datos que los materiales
+     * procedurales necesitan de la malla. **No mueven un solo vértice** — posiciones, índices
+     * y normales salen idénticos a los de HU-44, y el arnés lo comprueba por hash.
+     */
+    function finishGeometry(geometry, positions, indices, uvs, tangents) {
         geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
         geometry.setIndex(indices);
+        // La `uv` es la coordenada de la propia rejilla que genera la malla; la tangente es su
+        // dirección de avance alrededor del eje. Con las dos, el bump de CA-45.01 se resuelve
+        // en espacio tangente y no necesita derivadas de pantalla (HU-45, D3).
+        if (uvs) {
+            geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+        }
+        if (tangents) {
+            geometry.setAttribute('aTangent', new THREE.Float32BufferAttribute(tangents, 3));
+        }
         // CA-44.01: las normales se calculan y se exponen **explícitamente**. Hasta HU-44
         // venían regaladas por las primitivas de Three; con la geometría generada a mano no
         // vienen solas, y sin ellas HU-45 no puede iluminar ni desplazar nada.
@@ -700,6 +839,8 @@
         var noise = makeSurfaceNoise(seed);
         var positions = [];
         var indices = [];
+        var uvs = [];
+        var tangents = [];
         var j;
         var i;
 
@@ -721,6 +862,11 @@
                 var along = ca * ovalCos + sa * ovalSin;
                 r = r * (1 + BRANCH_OVAL * (along * along - 0.5));
                 positions.push(ca * r, v - 0.5, sa * r);
+                // `u` da la vuelta al eje y `v` sube: con esa orientación las vetas de la
+                // corteza corren **a lo largo** de la rama, que es lo que hace la madera
+                // real (HU-45, T2/D3). La tangente es la dirección de avance de `u`.
+                uvs.push(i / radial, v);
+                tangents.push(-sa, 0, ca);
             }
         }
 
@@ -737,15 +883,19 @@
         // enseñaría el interior hueco de cada rama.
         var bottomCenter = positions.length / 3;
         positions.push(0, -0.5, 0);
+        uvs.push(0.5, 0);
+        tangents.push(1, 0, 0);
         var topCenter = bottomCenter + 1;
         positions.push(0, 0.5, 0);
+        uvs.push(0.5, 1);
+        tangents.push(1, 0, 0);
         for (i = 0; i < radial; i++) {
             indices.push(bottomCenter, i, i + 1);
             var top = rings * rim + i;
             indices.push(topCenter, top + 1, top);
         }
 
-        return finishGeometry(new THREE.BufferGeometry(), positions, indices);
+        return finishGeometry(new THREE.BufferGeometry(), positions, indices, uvs, tangents);
     }
 
     /**
@@ -764,6 +914,8 @@
         var axial = makeNoise((seed ^ 0x85EBCA6B) >>> 0);
         var positions = [];
         var indices = [];
+        var uvs = [];
+        var tangents = [];
         var j;
         var i;
 
@@ -779,6 +931,11 @@
                 var lumps = axial(phi * 2.7) * 0.5 + noise(ct * 1.8, st * 1.8) * sinPhi * 0.5;
                 var r = 1 + roughness * lumps;
                 positions.push(sinPhi * ct * r, cosPhi * r, sinPhi * st * r);
+                // Rejilla lat/long: `u` es el meridiano y `v` el paralelo (HU-45, T2). La
+                // tangente sigue el meridiano y **no se desvanece en los polos** —no depende
+                // de `sinPhi`—, así que el marco tangente del fragmento nunca se degenera.
+                uvs.push(i / cols, j / rows);
+                tangents.push(-st, 0, ct);
             }
         }
 
@@ -797,18 +954,21 @@
             }
         }
 
-        return finishGeometry(new THREE.BufferGeometry(), positions, indices);
+        return finishGeometry(new THREE.BufferGeometry(), positions, indices, uvs, tangents);
     }
 
+    /**
+     * Saca el grupo de la escena.
+     *
+     * **Ya no libera materiales** (HU-45, D11): los materiales se comparten entre mallas, así
+     * que recorrer el grafo los liberaba por duplicado. De eso se encarga ahora
+     * [disposeGeneratedMaterials], igual que [disposeGeneratedGeometries] se encarga de las
+     * geometrías desde HU-44.
+     */
     function disposeGroup(group) {
         if (!group) {
             return;
         }
-        group.traverse(function (node) {
-            if (node.material) {
-                node.material.dispose();
-            }
-        });
         if (group.parent) {
             group.parent.remove(group);
         }
@@ -826,6 +986,489 @@
             generatedGeometries[i].dispose();
         }
         generatedGeometries = [];
+    }
+
+    /** Espejo de [disposeGeneratedGeometries] para los materiales (HU-45, D11). */
+    function disposeGeneratedMaterials() {
+        for (var i = 0; i < generatedMaterials.length; i++) {
+            generatedMaterials[i].dispose();
+        }
+        generatedMaterials = [];
+    }
+
+    // ── Materiales procedurales (HU-45, D1-D7, D12) ─────────────────────────────────────────
+
+    /**
+     * Semilla del ruido de los shaders, derivada de la **misma** semilla que la geometría.
+     *
+     * CA-45.01 prohíbe `Math.random()` y las semillas variables: la corteza y el follaje tienen
+     * que salir idénticos en cada apertura de la pantalla y también tras una degradación de la
+     * sonda, que reconstruye el árbol unos segundos después de abrir. El ruido de GLSL es una
+     * **función pura** de la coordenada, de esta constante y del atributo por instancia: no hay
+     * estado, no hay reloj y no hay azar por ninguna parte (HU-45, D5).
+     */
+    var NOISE_SEED_UNIFORM = (BRANCH_SEED % 1000) / 1000;
+
+    /**
+     * Escala del ruido de corteza: mucha frecuencia alrededor del eje, poca a lo largo.
+     *
+     * Calibrado con las capturas delante (v1 → v2). Con `[6.0, 2.2]` y grano 0,20 la madera se
+     * leía **lisa** en las tres bandas, y en el árbol marchito —donde la corteza es lo único
+     * que hay que mirar— eso incumplía CA-45.01 de la forma más visible posible. Se sube la
+     * frecuencia alrededor del eje y se contrasta el grano; más allá de ~11 ciclos las ramas
+     * finas, que miden cuatro píxeles, empiezan a moirear.
+     */
+    var BARK_UV_SCALE = [9.0, 3.4];
+    var BARK_GRAIN = 0.50;
+
+    /** Separación del grano respecto al gris medio. El ruido de valor se apelmaza en 0,5. */
+    var BARK_GRAIN_CONTRAST = 2.1;
+
+    /** El montículo es tierra: grano más isótropo, más contrastado y con menos relieve. */
+    var SOIL_UV_SCALE = [3.4, 3.4];
+    var SOIL_GRAIN = 0.34;
+    var SOIL_BUMP_FACTOR = 0.6;
+
+    /** Frecuencia de las manchas dentro de cada hoja. A 2,6 el grumo salía casi liso (v1). */
+    var LEAF_UV_SCALE = 4.4;
+
+    /** Variación de luminosidad entre hojas, independiente de la rampa de salud. */
+    var LEAF_TONE_MIN = 0.84;
+    var LEAF_TONE_MAX = 1.16;
+
+    /**
+     * Cuánto se separan dos hojas vecinas en la rampa de salud (HU-45, D6).
+     *
+     * Conforme la copa se seca, la dispersión crece y el follaje amarillea **a manchas y
+     * desincronizado** en vez de cambiar en bloque. Los dos extremos se muestrean sobre la
+     * rampa de `HEALTH_STOPS_*` que ya existe, así que el color medio de la copa sigue siendo
+     * el de la rampa y la continuidad de CA-45.02 se conserva por construcción.
+     *
+     * **El mínimo no puede ser pequeño, y la v1 lo demostró.** Con 0,05 la copa sana salía de
+     * un verde perfectamente plano: cerca de salud 100 la rampa es casi horizontal —el tramo
+     * va de la parada 0,5 a la 1,0—, así que muestrearla en `t ± 0,05` devolvía dos veces el
+     * mismo color y la variación se apagaba justo en la banda donde CA-45.01 la exige. El
+     * máximo sube poco a propósito: en la banda media el moteado ya funcionaba.
+     */
+    var FOLIAGE_DRY_SPREAD_MIN = 0.17;
+    var FOLIAGE_DRY_SPREAD_MAX = 0.28;
+
+    /** Lado de la tabla de ruido, en téxeles. Potencia de dos: repetición y mipmaps. */
+    var NOISE_TEX_SIZE = 128;
+
+    /** Celdas de ruido que cubre la tabla entera. Fija la frecuencia base del grano. */
+    var NOISE_LATTICE = 16;
+
+    /** Rango con que se codifica el gradiente en los canales G y B, centrado en 0,5. */
+    var NOISE_GRAD_RANGE = 4.0;
+
+    /** La tabla vive toda la sesión: se crea una vez y nunca se reconstruye. */
+    var noiseTexture = null;
+
+    /**
+     * El ruido se **precalcula una vez en CPU** y el shader lo lee de una tabla.
+     *
+     * Evaluarlo por fragmento costaba cuatro hashes —unas 100 operaciones por píxel— y el
+     * 2026-09-30 eso hizo que la sonda de rendimiento degradara **siempre** a `low` en el
+     * emulador de referencia: el ejecutante veía el árbol con materiales durante un segundo y
+     * después lo veía convertirse en el árbol pelado de HU-44. Con el presupuesto por encima
+     * de la fidelidad (regla 4 del PO), la salida no es bajar el listón sino abaratar: una
+     * lectura de textura en vez de cien operaciones, unas **quince veces más barato**.
+     *
+     * **Esto no es una textura de imagen y no toca la frontera que declaró el PO.** No hay
+     * archivo, no está en `assets/`, no viaja en el APK —0 bytes—, no hay Base64, no hay red y
+     * no hay carga asíncrona que esperar: por eso `TreeBridge.onReady()` sigue sin tener nada
+     * que aguardar (CA-45.05). Es el **mismo ruido matemático** de siempre, memorizado: lo
+     * genera `seededRandom` con la misma semilla fija que la geometría, así que el árbol sigue
+     * siendo idéntico en cada apertura (CA-45.01).
+     *
+     * Dos propiedades salen gratis de hacerlo así, y las dos costaban en el camino anterior:
+     * el filtrado bilineal da la interpolación suave sin calcularla, y los mipmaps hacen que
+     * la veta **se desvanezca en vez de aliasear** en las ramas finas, que miden cuatro píxeles.
+     *
+     * > La versión en shader murió por precisión antes que por coste, y conviene que quede
+     * > escrito: encadenaba `fract(q.x * q.y * 43.7585)` con el producto entre 1 700 y 17 000,
+     * > y en `mediump` —10 bits de mantisa— eso se redondea a un entero exacto, `fract()`
+     * > devuelve **0,0** y el ruido entero se vuelve constante, sin un solo error. Medido
+     * > fuera del dispositivo: 46 de 48 celdas a cero. Si algún día se vuelve a calcular el
+     * > ruido en el fragmento, **ningún intermedio puede pasar de ~11**.
+     */
+    function buildNoiseTexture() {
+        var size = NOISE_TEX_SIZE;
+        var lattice = NOISE_LATTICE;
+        var rnd = seededRandom(BRANCH_SEED + 211);
+        var lattices = new Float32Array(lattice * lattice);
+        var i;
+        var j;
+
+        for (i = 0; i < lattices.length; i++) {
+            lattices[i] = rnd();
+        }
+
+        // El envolvimiento del índice es lo que hace la tabla **repetible sin costura**: el
+        // shader la muestrea con `RepeatWrapping` varias veces a lo ancho de cada rama.
+        function at(x, y) {
+            var wx = ((x % lattice) + lattice) % lattice;
+            var wy = ((y % lattice) + lattice) % lattice;
+            return lattices[wy * lattice + wx];
+        }
+
+        var data = new Uint8Array(size * size * 4);
+        var cellsPerTexel = lattice / size;
+
+        for (j = 0; j < size; j++) {
+            for (i = 0; i < size; i++) {
+                var px = i * cellsPerTexel;
+                var py = j * cellsPerTexel;
+                var cx = Math.floor(px);
+                var cy = Math.floor(py);
+                var fx = px - cx;
+                var fy = py - cy;
+                var sx = fx * fx * (3 - 2 * fx);
+                var sy = fy * fy * (3 - 2 * fy);
+                var dsx = 6 * fx * (1 - fx);
+                var dsy = 6 * fy * (1 - fy);
+                var a = at(cx, cy);
+                var b = at(cx + 1, cy);
+                var c = at(cx, cy + 1);
+                var d = at(cx + 1, cy + 1);
+                var k1 = b - a;
+                var k2 = c - a;
+                var k3 = a - b - c + d;
+                // Altura y gradiente analítico, exactamente el mismo polinomio que evaluaba
+                // el shader. El gradiente se guarda para que el relieve no cueste tres
+                // lecturas: viene con la altura, igual que venía con los cuatro hashes.
+                var height = a + k1 * sx + k2 * sy + k3 * sx * sy;
+                var gu = dsx * (k1 + k3 * sy);
+                var gv = dsy * (k2 + k3 * sx);
+                var o = (j * size + i) * 4;
+                data[o] = Math.round(clamp(height, 0, 1) * 255);
+                data[o + 1] = Math.round(clamp(0.5 + gu / NOISE_GRAD_RANGE, 0, 1) * 255);
+                data[o + 2] = Math.round(clamp(0.5 + gv / NOISE_GRAD_RANGE, 0, 1) * 255);
+                data[o + 3] = 255;
+            }
+        }
+
+        var texture = new THREE.DataTexture(data, size, size, THREE.RGBAFormat);
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.magFilter = THREE.LinearFilter;
+        texture.minFilter = THREE.LinearMipmapLinearFilter;
+        texture.generateMipmaps = true;
+        texture.needsUpdate = true;
+        return texture;
+    }
+
+    /**
+     * Lectura del ruido precalculado: valor en `.x` y gradiente en `.yz`.
+     *
+     * La tabla cubre [NOISE_LATTICE] celdas de ruido a lo largo de su extensión, así que
+     * dividir por ese número deja las coordenadas en las mismas unidades que usaba el ruido
+     * calculado en el shader: ni la escala de corteza ni la de follaje tuvieron que cambiar.
+     */
+    var GLSL_NOISE = [
+        'uniform sampler2D uNoiseTex;',
+        // Valor **y gradiente** del ruido en una sola pasada (`.x` el valor, `.yz` la
+        // derivada respecto a la coordenada).
+        //
+        // Lo caro de este archivo son los hashes, y el relieve necesita la pendiente, no solo
+        // la altura. Estimarla por diferencias finitas costaba **tres evaluaciones del ruido
+        // por fragmento — doce hashes**, y el 2026-09-30 eso tiró la etapa Maduro marchita por
+        // encima del timeout de carga de 2,5 s de `Tree3DView`: el árbol con más madera a la
+        // vista y ninguna hoja que la tape es el máximo de fragmentos de corteza de las diez
+        // capturas, y cayó al fallback nativo en un dispositivo con GPU de sobra.
+        //
+        // La derivada del ruido de valor es **exacta y sale de los mismos cuatro hashes**: la
+        // interpolación es bilineal con suavizado de Hermite, así que basta derivar el
+        // polinomio. Cuatro hashes en vez de doce, y la pendiente deja de ser una
+        // aproximación.
+        'vec3 treeNoiseD(vec2 p) {',
+        '    vec3 t = texture2D(uNoiseTex, p * ' + (1 / NOISE_LATTICE).toFixed(6) + ').rgb;',
+        '    return vec3(t.r, (t.g - 0.5) * ' + NOISE_GRAD_RANGE.toFixed(1) + ', (t.b - 0.5) * ' + NOISE_GRAD_RANGE.toFixed(1) + ');',
+        '}'
+    ].join('\n');
+
+    /**
+     * Suma de octavas **horneada en el texto del shader**, no resuelta con un uniform.
+     *
+     * El número de octavas lo fija la calidad y la calidad solo cambia reconstruyendo el árbol,
+     * así que no hay nada que decidir en tiempo de fragmento: un bucle con `break` costaría una
+     * comparación por píxel para responder siempre lo mismo. Entra además en la clave de caché
+     * de programa (D12), que es lo que hace que los dos escalones no se pisen.
+     */
+    function glslFbm(octaves) {
+        if (octaves >= 2) {
+            // El desplazamiento de la segunda octava se mantiene pequeño por lo mismo que el
+            // hash: lo que entra a `floor`/`fract` no debe irse de rango en mediump. Su
+            // derivada lleva el factor de la regla de la cadena.
+            return 'vec3 treeFbmD(vec2 p) {\n' +
+                '    vec3 n = treeNoiseD(p);\n' +
+                '    vec3 m = treeNoiseD(p * 2.31 + 1.7);\n' +
+                '    return vec3(n.x * 0.65 + m.x * 0.35, n.yz * 0.65 + m.yz * (2.31 * 0.35));\n' +
+                '}\n' +
+                // Quien solo necesita el valor —el follaje— no paga la derivada: el compilador
+                // elimina lo que no se usa.
+                'float treeFbm(vec2 p) {\n    return treeFbmD(p).x;\n}';
+        }
+        return 'vec3 treeFbmD(vec2 p) {\n    return treeNoiseD(p);\n}\n' +
+            'float treeFbm(vec2 p) {\n    return treeNoiseD(p).x;\n}';
+    }
+
+    /**
+     * Valores por defecto de los atributos que no todas las mallas traen.
+     *
+     * `aSeed` solo existe en las tres mallas instanciadas; el pie del tronco, el montículo y
+     * las piezas de la Semilla son mallas sueltas. `0.5` las deja **en el centro** de la
+     * dispersión por instancia, que es donde tienen que estar: una pieza única no debe salir
+     * sesgada hacia el extremo seco ni hacia el húmedo.
+     */
+    var MATERIAL_DEFAULT_ATTRIBUTES = { aSeed: [0.5], aTangent: [1, 0, 0] };
+
+    /** Cabecera común de los fragmentos procedurales: el ruido y lo que llega del vértice. */
+    function proceduralFragmentHead(octaves) {
+        return GLSL_NOISE + '\n' + glslFbm(octaves) + '\n' +
+            'varying float vTreeSeed;\n' +
+            'uniform float uNoiseSeed;\n';
+    }
+
+    /**
+     * Material de corteza: grano por ruido y relieve por perturbación de la normal.
+     *
+     * Es un `MeshLambertMaterial` con el shader **inyectado**, no un shader propio (D1): así se
+     * conservan gratis la iluminación, el mapa de sombras y el instanciado, y la degradación de
+     * CA-45.03 se reduce a *no instalar el hook*.
+     *
+     * @param kind nombre del material, que entra en la clave de caché de programa (D12).
+     * @param colorHex color base, el mismo que tenía el material plano.
+     * @param uvScale frecuencia del ruido en `u` (alrededor del eje) y en `v` (a lo largo).
+     * @param grain amplitud de la modulación del albedo: grietas oscuras, crestas claras.
+     * @param bumpFactor multiplicador del relieve sobre el que fija la calidad.
+     */
+    function makeBarkMaterial(kind, colorHex, uvScale, grain, bumpFactor) {
+        var octaves = quality.materialNoise;
+        var bump = quality.barkBump * bumpFactor;
+        var material = new THREE.MeshLambertMaterial({ color: colorHex });
+        generatedMaterials.push(material);
+
+        // CA-45.03: en `low` no se instala nada. El material es literalmente el Lambert básico
+        // de siempre, sin bump y sin sombras — el mismo árbol orgánico de HU-44 con materiales
+        // simples, que es lo que la CA pide y lo que impide un render a medio compilar.
+        if (octaves <= 0) {
+            return material;
+        }
+
+        var uniforms = {
+            uBarkScale: { value: new THREE.Vector2(uvScale[0], uvScale[1]) },
+            uBarkBump: { value: bump },
+            uBarkGrain: { value: grain },
+            uNoiseSeed: { value: NOISE_SEED_UNIFORM },
+            uNoiseTex: { value: noiseTexture }
+        };
+        material.userData.uniforms = uniforms;
+        // `USE_UV` hace que Three declare y rellene `vUv` en los dos shaders: la coordenada de
+        // rejilla de T2 llega al fragmento sin que este archivo declare un varying propio.
+        material.defines = { USE_UV: '' };
+        material.defaultAttributeValues = MATERIAL_DEFAULT_ATTRIBUTES;
+
+        material.onBeforeCompile = function (shader) {
+            var key;
+            for (key in uniforms) {
+                if (Object.prototype.hasOwnProperty.call(uniforms, key)) {
+                    shader.uniforms[key] = uniforms[key];
+                }
+            }
+
+            shader.vertexShader =
+                'attribute vec3 aTangent;\n' +
+                'attribute float aSeed;\n' +
+                'varying vec3 vTreeTangent;\n' +
+                'varying float vTreeSeed;\n' +
+                shader.vertexShader.replace(
+                    '#include <defaultnormal_vertex>',
+                    [
+                        '#include <defaultnormal_vertex>',
+                        'vec3 treeTangentObject = aTangent;',
+                        '#ifdef USE_INSTANCING',
+                        '    treeTangentObject = mat3(instanceMatrix) * treeTangentObject;',
+                        '#endif',
+                        'vTreeTangent = normalize(normalMatrix * treeTangentObject);',
+                        'vTreeSeed = aSeed;'
+                    ].join('\n')
+                );
+
+            shader.fragmentShader =
+                proceduralFragmentHead(octaves) +
+                'varying vec3 vTreeTangent;\n' +
+                'uniform vec2 uBarkScale;\n' +
+                'uniform float uBarkBump;\n' +
+                'uniform float uBarkGrain;\n' +
+                shader.fragmentShader
+                    .replace(
+                        '#include <color_fragment>',
+                        [
+                            '#include <color_fragment>',
+                            // El desplazamiento por `vTreeSeed` es lo que impide que las 138
+                            // instancias compartan exactamente la misma veta (D4).
+                            'vec2 treeUv = vUv * uBarkScale + vec2(vTreeSeed * 5.3 + uNoiseSeed, vTreeSeed * 3.1);',
+                            // Una sola evaluación para el grano y el relieve: `.x` tiñe, `.yz`
+                            // inclina la normal más abajo. Antes eran tres.
+                            'vec3 treeNoise = treeFbmD(treeUv);',
+                            'float treeHeight = treeNoise.x;',
+                            // El ruido de valor se apelmaza alrededor de 0,5: sin separarlo
+                            // del centro, el grano recorre una fracción del rango pedido y la
+                            // madera se lee lisa (hallazgo de la v1).
+                            'float treeGrain = clamp((treeHeight - 0.5) * ' + BARK_GRAIN_CONTRAST.toFixed(2) + ' + 0.5, 0.0, 1.0);',
+                            'diffuseColor.rgb *= mix(1.0 - uBarkGrain, 1.0 + uBarkGrain, treeGrain);'
+                        ].join('\n')
+                    )
+                    .replace(
+                        '#include <normal_fragment_begin>',
+                        [
+                            '#include <normal_fragment_begin>',
+                            '{',
+                            // El gradiente ya vino con la altura, de los mismos cuatro hashes:
+                            // las grietas oscuras y el relieve coinciden por construcción.
+                            //
+                            // Re-ortogonalizar la tangente sí hace falta: llega interpolada y
+                            // pasada por la matriz de instancia, así que no es perpendicular a
+                            // la normal.
+                            '    vec3 treeT = vTreeTangent - dot(vTreeTangent, normal) * normal;',
+                            '    if (dot(treeT, treeT) > 1e-6) {',
+                            '        treeT = normalize(treeT);',
+                            '        vec3 treeB = cross(normal, treeT);',
+                            '        normal = normalize(normal - (treeT * treeNoise.y + treeB * treeNoise.z) * uBarkBump);',
+                            '    }',
+                            '}'
+                        ].join('\n')
+                    );
+        };
+
+        // D12: sin esto, Three deriva la clave de `onBeforeCompile.toString()` y dos materiales
+        // de este archivo compartirían programa **sin que nada fallara de forma observable** —
+        // el follaje se dibujaría con el shader de la corteza.
+        material.customProgramCacheKey = function () {
+            return 'tree:' + kind + ':' + octaves + ':' + bump.toFixed(3);
+        };
+
+        return material;
+    }
+
+    /**
+     * Material de follaje: variación tonal por hoja y secado orgánico (D4, D6).
+     *
+     * No lleva bump. Lo que le falta al follaje no es relieve —una hoja a esta escala no lo
+     * muestra— sino dejar de ser **un único color para las 96 instancias**.
+     *
+     * El secado no reinventa la rampa de salud: `applyHealth` muestrea `foliageColor()` dos
+     * veces, un poco por encima y un poco por debajo de la salud actual, y el shader elige
+     * entre esas dos paradas según la hoja y la mancha. Como la mezcla está centrada en 0.5, el
+     * color medio de la copa sigue siendo **exactamente** el de la rampa, y la continuidad de
+     * CA-45.02 se conserva por construcción.
+     */
+    function makeFoliageMaterial() {
+        var octaves = quality.materialNoise;
+        var baseColor = foliageColor(1);
+        var material = new THREE.MeshLambertMaterial({ color: baseColor });
+        generatedMaterials.push(material);
+
+        if (octaves <= 0) {
+            return material;
+        }
+
+        var uniforms = {
+            uLeafScale: { value: LEAF_UV_SCALE },
+            uLeafWet: { value: new THREE.Color(baseColor) },
+            uLeafDry: { value: new THREE.Color(baseColor) },
+            uNoiseSeed: { value: NOISE_SEED_UNIFORM },
+            uNoiseTex: { value: noiseTexture }
+        };
+        material.userData.uniforms = uniforms;
+        material.defines = { USE_UV: '' };
+        material.defaultAttributeValues = MATERIAL_DEFAULT_ATTRIBUTES;
+
+        material.onBeforeCompile = function (shader) {
+            var key;
+            for (key in uniforms) {
+                if (Object.prototype.hasOwnProperty.call(uniforms, key)) {
+                    shader.uniforms[key] = uniforms[key];
+                }
+            }
+
+            shader.vertexShader =
+                'attribute float aSeed;\n' +
+                'varying float vTreeSeed;\n' +
+                shader.vertexShader.replace(
+                    '#include <begin_vertex>',
+                    '#include <begin_vertex>\nvTreeSeed = aSeed;'
+                );
+
+            shader.fragmentShader =
+                proceduralFragmentHead(octaves) +
+                'uniform float uLeafScale;\n' +
+                'uniform vec3 uLeafWet;\n' +
+                'uniform vec3 uLeafDry;\n' +
+                shader.fragmentShader.replace(
+                    '#include <color_fragment>',
+                    [
+                        '#include <color_fragment>',
+                        'vec2 leafUv = vUv * uLeafScale + vec2(vTreeSeed * 5.7 + uNoiseSeed, vTreeSeed * 3.3);',
+                        'float leafBlotch = treeFbm(leafUv);',
+                        // Centrada en 0.5: la media de la copa es la parada de la rampa.
+                        //
+                        // El peso de la mancha es la mitad del de la hoja a propósito: lo que
+                        // CA-45.02 pide es que **unas hojas** se sequen antes que otras, no que
+                        // cada hoja sea un degradado. Hasta que se arregló el hash este término
+                        // valía siempre lo mismo, así que su peso nunca se había probado.
+                        'float leafPhase = clamp(0.5 + (vTreeSeed - 0.5) * 1.15 + (leafBlotch - 0.5) * 0.45, 0.0, 1.0);',
+                        'diffuseColor.rgb = mix(uLeafDry, uLeafWet, leafPhase);',
+                        // Luminosidad por hoja, **al margen de la rampa de salud**: unas hojas
+                        // están a la sombra de otras y ninguna copa real tiene un solo valor.
+                        // Decorrelacionada de `leafPhase` con un `fract`, para que la hoja más
+                        // amarilla no sea además sistemáticamente la más clara.
+                        'diffuseColor.rgb *= mix(' + LEAF_TONE_MIN.toFixed(2) + ', ' + LEAF_TONE_MAX.toFixed(2) + ', fract(vTreeSeed * 7.31));',
+                        'diffuseColor.rgb *= mix(0.92, 1.08, leafBlotch);'
+                    ].join('\n')
+                );
+        };
+
+        material.customProgramCacheKey = function () {
+            return 'tree:foliage:' + octaves;
+        };
+
+        return material;
+    }
+
+    /**
+     * Refresca las dos paradas de la rampa que el shader de follaje interpola (D6).
+     *
+     * No hace nada en `low`, donde el material es el Lambert pelado y el color lo lleva
+     * `material.color` como toda la vida.
+     */
+    function updateFoliageUniforms(t) {
+        if (!foliageMaterial || !foliageMaterial.userData.uniforms) {
+            return;
+        }
+        var spread = FOLIAGE_DRY_SPREAD_MIN +
+            (FOLIAGE_DRY_SPREAD_MAX - FOLIAGE_DRY_SPREAD_MIN) * (1 - t);
+        var uniforms = foliageMaterial.userData.uniforms;
+        uniforms.uLeafWet.value.setHex(foliageColor(clamp(t + spread, 0, 1)));
+        uniforms.uLeafDry.value.setHex(foliageColor(clamp(t - spread, 0, 1)));
+    }
+
+    /**
+     * Semilla por instancia: un solo float, sembrado por el PRNG que ya existe (D4).
+     *
+     * Con el mismo `BRANCH_SEED` de la geometría, así que la corteza de cada rama y el tono de
+     * cada hoja son **los mismos en cada apertura** y tras cada degradación (CA-45.01).
+     */
+    function attachInstanceSeeds(geometry, count, seed) {
+        var total = Math.max(1, count);
+        var rnd = seededRandom(seed);
+        var values = new Float32Array(total);
+        for (var i = 0; i < total; i++) {
+            values[i] = rnd();
+        }
+        geometry.setAttribute('aSeed', new THREE.InstancedBufferAttribute(values, 1));
     }
 
     // ── Esqueleto ───────────────────────────────────────────────────────────────────────────
@@ -1071,6 +1714,7 @@
             branchProfile,
             BRANCH_SEED + 11
         );
+        attachInstanceSeeds(branchGeometry, branchNodes.length, BRANCH_SEED + 101);
         branchMesh = new THREE.InstancedMesh(
             branchGeometry,
             trunkMaterial,
@@ -1087,6 +1731,7 @@
                 JUNCTION_ROUGHNESS,
                 BRANCH_SEED + 23
             );
+            attachInstanceSeeds(junctionGeometry, forkCount, BRANCH_SEED + 103);
             // Capacidad por **bifurcaciones**, no por tramos (D8). Con la rama partida en
             // tramos hay varias veces más nudos que antes, pero dentro de una rama los tramos
             // son casi colineales y no hay costura que tapar: reservar uno por tramo triplicaría
@@ -1109,6 +1754,7 @@
             FOLIAGE_ROUGHNESS,
             BRANCH_SEED + 37
         );
+        attachInstanceSeeds(foliageGeometry, foliageSpecs.length, BRANCH_SEED + 107);
         foliageMesh = new THREE.InstancedMesh(
             foliageGeometry,
             foliageMaterial,
@@ -1221,7 +1867,13 @@
      */
     function buildSeed() {
         var group = new THREE.Group();
-        var stemMaterial = new THREE.MeshLambertMaterial({ color: foliageColor(1) });
+        // HU-45, T8: la Semilla comparte el material de follaje con la copa, que es lo que
+        // tenía —un único Lambert verde para el tallo y los dos cotiledones— y ahora lleva la
+        // misma variación tonal. CA-45.02 y la lección de HU-44 prohíben que una etapa se
+        // quede con otro tratamiento, y esta es la que más fácil se olvida porque vive en su
+        // propio grupo, fuera del esqueleto. No lleva corteza a propósito: un tallo de plántula
+        // es verde y tierno, no madera.
+        var stemMaterial = foliageMaterial;
 
         // Las medidas se hornean en la geometría en vez de escalar la malla: `collectFitSamples`
         // describe estas piezas con su esfera envolvente por el mayor de los factores de escala,
@@ -1282,7 +1934,13 @@
             BRANCH_SEED + 67
         );
         var color = new THREE.Color(trunkColorHex).multiplyScalar(0.62);
-        var mesh = new THREE.Mesh(geometry, new THREE.MeshLambertMaterial({ color: color }));
+        // Tierra, no madera: grano isótropo y más contrastado, con menos relieve (HU-45, T8).
+        // En la etapa Semilla el montículo es casi todo lo que hay que mirar, así que es donde
+        // más se nota que el material dejó de ser un color plano.
+        var mesh = new THREE.Mesh(
+            geometry,
+            makeBarkMaterial('soil', color, SOIL_UV_SCALE, SOIL_GRAIN, SOIL_BUMP_FACTOR)
+        );
         var r = moundRadius();
         mesh.position.y = moundCenterY();
         mesh.scale.set(r, r * MOUND_FLATTEN, r);
@@ -1348,8 +2006,10 @@
     function buildTree() {
         root = new THREE.Group();
 
-        trunkMaterial = new THREE.MeshLambertMaterial({ color: trunkColorHex });
-        foliageMaterial = new THREE.MeshLambertMaterial({ color: foliageColor(1) });
+        // HU-45, T8: los mismos colores de siempre, con el acabado procedural encima. En `low`
+        // la fábrica devuelve el `MeshLambertMaterial` pelado de HU-44 (CA-45.03).
+        trunkMaterial = makeBarkMaterial('bark', trunkColorHex, BARK_UV_SCALE, BARK_GRAIN, 1.0);
+        foliageMaterial = makeFoliageMaterial();
 
         form = resolveForm();
 
@@ -1384,9 +2044,16 @@
         // reconstrucción dejaría atrás un árbol entero de buffers en la memoria de vídeo
         // (CA-44.01).
         disposeGeneratedGeometries();
+        // Los materiales van aparte de las geometrías y aparte del recorrido del grafo, por la
+        // misma razón que ellas: se comparten entre mallas (HU-45, D11).
+        disposeGeneratedMaterials();
         buildTree();
         applyStage();
         applyHealth(health);
+        // La reconstrucción crea materiales nuevos y con ellos programas nuevos. Compilarlos
+        // aquí es barato —la clave de caché de D12 hace que se reutilicen entre etapas de la
+        // misma calidad— y evita que el parón caiga sobre el primer fotograma de la etapa.
+        warmUpShaders();
     }
 
     // ── Aplicación del estado ───────────────────────────────────────────────────────────────
@@ -1604,14 +2271,16 @@
         var t = clamp(value, 0, 1);
         var color = foliageColor(t);
 
-        // Un solo material para toda la copa: las hojas comparten color, así que no hace falta
-        // color por instancia y basta con cambiarlo una vez.
+        // Un solo material para toda la copa. Sigue siendo así: lo que cambia con HU-45 es que
+        // el shader **reparte** ese color entre las hojas en vez de aplicarlo idéntico a las
+        // 96 instancias. `color` es la media exacta de ese reparto, y es lo que se usa tal cual
+        // en `low`, donde el material es el Lambert pelado.
         foliageMaterial.color.setHex(color);
+        updateFoliageUniforms(t);
         foliageGroup.visible = !stagePreset().seed && t > FOLIAGE_MIN_VISIBLE;
 
-        seedGroup.children.forEach(function (part) {
-            part.material.color.setHex(color);
-        });
+        // La Semilla comparte el material de follaje desde HU-45 (T8), así que ya quedó
+        // teñida con la línea de arriba: recorrer sus hijos volvería a poner el mismo color.
 
         applyDroop(1 - t);
         updateSkeletonMatrices(t);
@@ -1658,12 +2327,22 @@
         }
 
         updateCamera();
+        var drawStart = now();
         renderer.render(scene, camera);
+        // Dos relojes distintos y hay que no confundirlos: [probeElapsed] mide el **intervalo
+        // entre fotogramas**, que incluye la espera a la presentación del WebView; esto mide
+        // el **trabajo de dibujar**. Si el intervalo es grande y el trabajo pequeño, lo que
+        // limita es el compositor, no el modelo — y degradar la calidad no arregla nada.
+        probeDrawElapsed += now() - drawStart;
 
         // El primer fotograma pintado es el que cierra el presupuesto de carga: se avisa ahí,
         // no al final de la sonda, para que medir no retrase el aviso.
         if (!readyReported) {
             readyReported = true;
+            // Antes de decir que está listo: si algún programa no enlazó, lo que hay pintado
+            // es negro y el aviso correcto es el fallo, no el ready (CA-45.04). El lado nativo
+            // se queda con el primero que llegue.
+            auditPrograms();
             reportReady();
         }
 
@@ -1683,11 +2362,15 @@
         probeFrame++;
         if (probeFrame <= PROBE_WARMUP_FRAMES) {
             probeLastTime = frameStart;
+            // El calentamiento tampoco cuenta para el trabajo de dibujo: el primer fotograma
+            // paga la subida de buffers a la GPU.
+            probeDrawElapsed = 0;
             return;
         }
 
         probeElapsed += frameStart - probeLastTime;
         probeLastTime = frameStart;
+        probeDrawFrames++;
 
         if (probeFrame < PROBE_WARMUP_FRAMES + PROBE_FRAMES) {
             return;
@@ -1695,6 +2378,13 @@
 
         probeDone = true;
         var average = probeElapsed / PROBE_FRAMES;
+        // Deja el número, no solo el veredicto. Saber **por cuánto** se incumple el
+        // presupuesto es la diferencia entre ajustar el coste con una medida delante y
+        // adivinarlo: `degradado` a secas no distingue 23 ms de 40 ms.
+        var draw = probeDrawFrames > 0 ? probeDrawElapsed / probeDrawFrames : 0;
+        console.log('[tree] sonda intervalo=' + average.toFixed(1) + 'ms dibujo=' + draw.toFixed(2) +
+            'ms presupuesto=' + PROBE_BUDGET_MS + 'ms calidad=' + quality.name +
+            (average <= PROBE_BUDGET_MS ? ' veredicto=cabe' : ' veredicto=degrada'));
         if (average <= PROBE_BUDGET_MS) {
             return;
         }
@@ -1705,6 +2395,17 @@
         }
 
         quality = QUALITY_PRESETS[next];
+
+        // Al llegar a `low` no hay un solo material que lea la tabla de ruido, y la memoria
+        // de vídeo de una textura es independiente de la de geometrías y materiales: no la
+        // libera `.dispose()` de ninguno de los dos ni el recolector de JavaScript. Es la
+        // nota de implementación que el PO dejó al cerrar el refinamiento, y este es el único
+        // punto del ciclo donde llega a aplicar.
+        if (quality.materialNoise === 0 && noiseTexture) {
+            noiseTexture.dispose();
+            noiseTexture = null;
+        }
+
         renderer.shadowMap.enabled = quality.shadows;
         directionalLight.castShadow = quality.shadows;
         if (shadowPlane) {
@@ -1713,6 +2414,22 @@
         renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, quality.maxPixelRatio));
         rebuildTree();
         reportBudget('degradado');
+
+        // **Volver a medir el escalón nuevo, siempre.** Los disparadores de la historia lo
+        // piden explícitamente —«se vuelve a medir, puede repetirse hasta el nivel mínimo»— y
+        // hasta aquí la sonda se desarmaba para siempre tras el primer ajuste.
+        //
+        // Se rearma **también al llegar al escalón más bajo**, aunque ya no haya nada que
+        // degradar: esa medida es la que distingue *un modelo demasiado caro* de *un
+        // dispositivo que no da para ninguno*, y sin ella la línea `degradado` no dice cuál de
+        // las dos cosas pasó. El bucle termina solo: con `low` ya no hay escalón siguiente, así
+        // que la siguiente pasada mide, informa y se detiene.
+        probeFrame = 0;
+        probeElapsed = 0;
+        probeDrawElapsed = 0;
+        probeDrawFrames = 0;
+        probeDone = false;
+
         requestRender();
     }
 
@@ -1892,6 +2609,17 @@
         renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, quality.maxPixelRatio));
         renderer.shadowMap.enabled = quality.shadows;
 
+        // Antes de que exista un solo material: un fallo de compilación no lanza excepción y
+        // hay que estar escuchando cuando ocurra (CA-45.04).
+        bindShaderErrors();
+
+        // Una sola vez para toda la sesión, y solo si la calidad de partida los usa: la
+        // sonda únicamente puede bajar de escalón, así que arrancar en `low` significa que
+        // no habrá materiales procedurales en toda la pantalla.
+        if (quality.materialNoise > 0) {
+            noiseTexture = buildNoiseTexture();
+        }
+
         scene = new THREE.Scene();
         camera = new THREE.PerspectiveCamera(FOV, 1, 0.1, 100);
 
@@ -1927,6 +2655,7 @@
         buildTree();
         applyStage();
         applyHealth(0);
+        warmUpShaders();
 
         bindGestures(canvas);
         bindContextLoss(canvas);

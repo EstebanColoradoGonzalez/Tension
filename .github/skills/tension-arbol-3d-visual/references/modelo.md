@@ -67,6 +67,38 @@ El tope de acercamiento del zoom es `stageFitRadius`, la distancia de encaje exa
 pellizco más agresivo deja el árbol tocando los bordes sin recortarlo ni atravesarlo, que es
 literalmente lo que pide CA-38.03.
 
+## 3b. En los shaders, ningún número intermedio puede crecer (HU-45)
+
+Los materiales de `HU-45` son ruido procedural en GLSL. La regla que costó **dos rondas de
+capturas** descubrir:
+
+> **Si un producto intermedio llega a los miles, el ruido muere en `mediump` y no avisa.**
+
+El hash habitual —`q += dot(q, q + 19.19); fract(q.x * q.y * 43.7585)`— deja el producto entre
+1 700 y 17 000. En `highp` va bien. En `mediump`, que es lo que ofrecen muchas GPU de gama baja,
+hay 10 bits de mantisa: a esa magnitud el espaciado representable es de 1 a 16 unidades, el
+valor se redondea a un **entero exacto** y `fract()` devuelve **0,0**. El ruido entero se vuelve
+una constante.
+
+Lo que lo hace caro es que **no se parece a un fallo**: compila, no hay excepción, no hay línea
+en logcat, el árbol se dibuja perfecto — solo que la corteza sale lisa, igual que si el shader
+no estuviera. Se confunde con «falta amplitud» y se pierden rondas subiendo números.
+
+Cómo reconocerlo sin gastar una ronda:
+
+| Señal | Qué significa |
+| --- | --- |
+| Subes el grano al doble y la estadística de la madera **no se mueve ni una décima** | No es amplitud: el término es constante |
+| El perfil horizontal del tronco es una **rampa monótona** sin una sola oscilación | Lambert puro: el material no está aportando nada |
+| La copa **sí** varía entre hojas pero **no** dentro de cada hoja | La variación por instancia (`aSeed`) vive; la de ruido, no |
+
+Y cómo descartarlo en segundos, sin emulador: portar el hash a Python y evaluarlo en
+`np.float16` (10 bits de mantisa, igual que `mediump`) además de `np.float32`. El hash roto daba
+**6 valores distintos de 512 y dos NaN**; el bueno, 405 de 512 en las dos precisiones.
+
+La regla para escribir uno nuevo: **volver a `fract` en cada paso y no dejar que ningún
+intermedio pase de ~11.**
+
 ## 4. El azar necesita semilla
 
 `BRANCH_SEED` es fija a propósito. `rebuildTree()` se vuelve a llamar cuando la sonda de

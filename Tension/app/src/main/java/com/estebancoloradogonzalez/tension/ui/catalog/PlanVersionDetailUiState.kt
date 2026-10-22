@@ -1,12 +1,15 @@
 package com.estebancoloradogonzalez.tension.ui.catalog
 
 import com.estebancoloradogonzalez.tension.domain.model.EquipmentType
+import com.estebancoloradogonzalez.tension.domain.model.MovementCategory
 
 data class PlanVersionDetailUiState(
     val isLoading: Boolean = true,
     val routineName: String = "",
     val versionNumber: Int = 0,
     val exercises: List<PlanExerciseItem> = emptyList(),
+    /** Los selectores de asignar y de alternativa solo ofrecen esta categoría (CA-46.12). */
+    val movementCategory: MovementCategory? = null,
 )
 
 data class PlanExerciseItem(

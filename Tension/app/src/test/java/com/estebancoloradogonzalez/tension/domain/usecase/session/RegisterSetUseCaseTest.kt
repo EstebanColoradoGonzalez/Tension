@@ -3,12 +3,14 @@ package com.estebancoloradogonzalez.tension.domain.usecase.session
 import com.estebancoloradogonzalez.tension.domain.model.WeightUnit
 import com.estebancoloradogonzalez.tension.domain.repository.SessionRepository
 import com.estebancoloradogonzalez.tension.domain.rules.ExternalLoadRule
+import com.estebancoloradogonzalez.tension.domain.rules.SetRangeNotice
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.runs
 import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
 import org.junit.Test
 
 private const val BARRA = 4L
@@ -21,7 +23,7 @@ class RegisterSetUseCaseTest {
 
     @Test
     fun `invoke with valid data delegates to repository`() = runTest {
-        coEvery { repository.registerSet(1L, 60.0, 8, 2, WeightUnit.KG, BARRA) } just runs
+        coEvery { repository.registerSet(1L, 60.0, 8, 2, WeightUnit.KG, BARRA) } returns null
 
         useCase(1L, 60.0, 8, 2, equipmentTypeId = BARRA)
 
@@ -35,7 +37,7 @@ class RegisterSetUseCaseTest {
 
     @Test
     fun `invoke with zero weight succeeds`() = runTest {
-        coEvery { repository.registerSet(1L, 0.0, 8, 2, WeightUnit.KG, BARRA) } just runs
+        coEvery { repository.registerSet(1L, 0.0, 8, 2, WeightUnit.KG, BARRA) } returns null
 
         useCase(1L, 0.0, 8, 2, equipmentTypeId = BARRA)
 
@@ -44,7 +46,7 @@ class RegisterSetUseCaseTest {
 
     @Test
     fun `invoke with the maximum weight succeeds`() = runTest {
-        coEvery { repository.registerSet(1L, 500.0, 8, 2, WeightUnit.KG, BARRA) } just runs
+        coEvery { repository.registerSet(1L, 500.0, 8, 2, WeightUnit.KG, BARRA) } returns null
 
         useCase(1L, 500.0, 8, 2, equipmentTypeId = BARRA)
 
@@ -58,7 +60,7 @@ class RegisterSetUseCaseTest {
 
     @Test
     fun `invoke propagates the capture unit to the repository`() = runTest {
-        coEvery { repository.registerSet(1L, 20.41, 10, 2, WeightUnit.LB, BARRA) } just runs
+        coEvery { repository.registerSet(1L, 20.41, 10, 2, WeightUnit.LB, BARRA) } returns null
 
         useCase(1L, 20.41, 10, 2, WeightUnit.LB, equipmentTypeId = BARRA)
 
@@ -77,7 +79,7 @@ class RegisterSetUseCaseTest {
 
     @Test
     fun `invoke with one rep succeeds`() = runTest {
-        coEvery { repository.registerSet(1L, 60.0, 1, 2, WeightUnit.KG, BARRA) } just runs
+        coEvery { repository.registerSet(1L, 60.0, 1, 2, WeightUnit.KG, BARRA) } returns null
 
         useCase(1L, 60.0, 1, 2, equipmentTypeId = BARRA)
 
@@ -96,7 +98,7 @@ class RegisterSetUseCaseTest {
 
     @Test
     fun `invoke with rir zero succeeds`() = runTest {
-        coEvery { repository.registerSet(1L, 60.0, 8, 0, WeightUnit.KG, BARRA) } just runs
+        coEvery { repository.registerSet(1L, 60.0, 8, 0, WeightUnit.KG, BARRA) } returns null
 
         useCase(1L, 60.0, 8, 0, equipmentTypeId = BARRA)
 
@@ -105,7 +107,7 @@ class RegisterSetUseCaseTest {
 
     @Test
     fun `invoke with rir two succeeds`() = runTest {
-        coEvery { repository.registerSet(1L, 60.0, 8, 2, WeightUnit.KG, BARRA) } just runs
+        coEvery { repository.registerSet(1L, 60.0, 8, 2, WeightUnit.KG, BARRA) } returns null
 
         useCase(1L, 60.0, 8, 2, equipmentTypeId = BARRA)
 
@@ -147,7 +149,7 @@ class RegisterSetUseCaseTest {
         runTest {
             coEvery {
                 repository.registerSet(1L, 10.0, 8, 1, WeightUnit.KG, PESO_ANADIDO)
-            } just runs
+            } returns null
 
             useCase(
                 sessionExerciseId = 1L,
@@ -164,7 +166,7 @@ class RegisterSetUseCaseTest {
     @Test
     fun `given peso corporal with zero load, when registering a set, then it is accepted`() =
         runTest {
-            coEvery { repository.registerSet(1L, 0.0, 8, 1, WeightUnit.KG, 9L) } just runs
+            coEvery { repository.registerSet(1L, 0.0, 8, 1, WeightUnit.KG, 9L) } returns null
 
             useCase(
                 sessionExerciseId = 1L,
@@ -177,4 +179,16 @@ class RegisterSetUseCaseTest {
 
             coVerify { repository.registerSet(1L, 0.0, 8, 1, WeightUnit.KG, 9L) }
         }
+
+    @Test
+    fun `given a set under 8, when registering, then the live notice is returned`() = runTest {
+        // HU-46, CA-46.05: el aviso viaja con el registro y no lo bloquea.
+        coEvery { repository.registerSet(1L, 60.0, 6, 0, WeightUnit.KG, BARRA) } returns
+            SetRangeNotice.LowerNextSet
+
+        val notice = useCase(1L, 60.0, 6, 0, equipmentTypeId = BARRA)
+
+        assertEquals(SetRangeNotice.LowerNextSet, notice)
+        coVerify { repository.registerSet(1L, 60.0, 6, 0, WeightUnit.KG, BARRA) }
+    }
 }

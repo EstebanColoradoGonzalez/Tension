@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddAPhoto
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -40,8 +41,10 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.estebancoloradogonzalez.tension.R
+import com.estebancoloradogonzalez.tension.domain.model.MovementCategory
 import com.estebancoloradogonzalez.tension.domain.model.ProgressionDifficulty
 import com.estebancoloradogonzalez.tension.ui.catalog.components.EquipmentMultiSelector
+import com.estebancoloradogonzalez.tension.ui.catalog.components.MovementCategorySelector
 import com.estebancoloradogonzalez.tension.ui.catalog.components.MuscleZoneHierarchySelector
 import com.estebancoloradogonzalez.tension.ui.catalog.components.MuscleZoneHierarchySummary
 import com.estebancoloradogonzalez.tension.ui.catalog.components.ProgressionDifficultySelector
@@ -56,6 +59,20 @@ fun ExerciseDetailScreen(
     viewModel: ExerciseDetailViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val categoryConflict by viewModel.categoryConflict.collectAsStateWithLifecycle()
+
+    categoryConflict?.let { message ->
+        AlertDialog(
+            onDismissRequest = viewModel::onCategoryConflictDismissed,
+            title = { Text(stringResource(R.string.exercise_category_conflict_title)) },
+            text = { Text(message) },
+            confirmButton = {
+                TextButton(onClick = viewModel::onCategoryConflictDismissed) {
+                    Text(stringResource(R.string.category_conflict_dismiss))
+                }
+            },
+        )
+    }
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
@@ -105,6 +122,7 @@ fun ExerciseDetailScreen(
                     onNavigateToHistory = onNavigateToExerciseHistory,
                     onChangeImage = { imagePickerLauncher.launch("image/*") },
                     onProgressionDifficultySelected = viewModel::onProgressionDifficultySelected,
+                    onMovementCategorySelected = viewModel::onMovementCategorySelected,
                     onEquipmentToggled = viewModel::onEquipmentToggled,
                     onPrimaryZoneAdded = viewModel::onPrimaryZoneAdded,
                     onPrimaryZoneRemoved = viewModel::onPrimaryZoneRemoved,
@@ -125,6 +143,7 @@ private fun ExerciseDetailContent(
     onNavigateToHistory: (Long) -> Unit,
     onChangeImage: () -> Unit,
     onProgressionDifficultySelected: (ProgressionDifficulty) -> Unit,
+    onMovementCategorySelected: (MovementCategory) -> Unit,
     onEquipmentToggled: (Long) -> Unit,
     onPrimaryZoneAdded: (Long) -> Unit,
     onPrimaryZoneRemoved: (Long) -> Unit,
@@ -146,6 +165,20 @@ private fun ExerciseDetailContent(
             DetailField(
                 label = stringResource(R.string.exercise_field_name),
                 value = exercise.name,
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            // Una sola categoría por ejercicio (CA-46.08). Editable en el sitio como la
+            // dificultad; el conflicto con el plan se explica en un diálogo (CA-46.14).
+            Text(
+                text = stringResource(R.string.movement_category_field),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            MovementCategorySelector(
+                selected = exercise.movementCategory,
+                onSelected = onMovementCategorySelected,
+                modifier = Modifier.fillMaxWidth(),
             )
             Spacer(modifier = Modifier.height(16.dp))
             DetailField(

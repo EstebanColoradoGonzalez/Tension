@@ -35,6 +35,7 @@ import com.estebancoloradogonzalez.tension.R
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.width
 import com.estebancoloradogonzalez.tension.ui.components.EntityNameText
+import com.estebancoloradogonzalez.tension.ui.components.MovementCategoryTag
 import com.estebancoloradogonzalez.tension.ui.components.weekDayShortName
 import com.estebancoloradogonzalez.tension.ui.components.weekDaysShortLabel
 
@@ -135,6 +136,15 @@ fun TrainingPlanScreen(
                                         text = routine.routineName,
                                         style = MaterialTheme.typography.titleMedium,
                                         color = MaterialTheme.colorScheme.onSurface,
+                                    )
+                                }
+                                // La categoría se muestra por rutina (CA-46.09, QA-14), en su
+                                // propia línea y alineada con el nombre: en la misma fila le
+                                // quitaba ancho y lo recortaba.
+                                routine.movementCategory?.let {
+                                    MovementCategoryTag(
+                                        category = it,
+                                        modifier = Modifier.padding(start = 44.dp, top = 4.dp),
                                     )
                                 }
                             }

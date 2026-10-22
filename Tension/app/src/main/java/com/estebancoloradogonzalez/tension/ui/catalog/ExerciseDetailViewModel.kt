@@ -9,6 +9,7 @@ import com.estebancoloradogonzalez.tension.R
 import com.estebancoloradogonzalez.tension.data.local.storage.ImageStorageHelper
 import com.estebancoloradogonzalez.tension.domain.model.Exercise
 import com.estebancoloradogonzalez.tension.domain.model.FilterOptions
+import com.estebancoloradogonzalez.tension.domain.model.MovementCategory
 import com.estebancoloradogonzalez.tension.domain.model.ProgressionDifficulty
 import com.estebancoloradogonzalez.tension.domain.rules.PlateauThresholdRule
 import com.estebancoloradogonzalez.tension.domain.usecase.catalog.AddExerciseEquipmentUseCase
@@ -20,6 +21,7 @@ import com.estebancoloradogonzalez.tension.domain.usecase.catalog.GetExerciseMus
 import com.estebancoloradogonzalez.tension.domain.usecase.catalog.RemoveExerciseEquipmentUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.catalog.SetExerciseMuscleZonesUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.catalog.UpdateExerciseImageUseCase
+import com.estebancoloradogonzalez.tension.domain.usecase.catalog.UpdateExerciseMovementCategoryUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.catalog.UpdateExerciseProgressionDifficultyUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.profile.GetProfileUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -45,6 +47,7 @@ class ExerciseDetailViewModel @Inject constructor(
     private val removeExerciseEquipmentUseCase: RemoveExerciseEquipmentUseCase,
     private val getExerciseMuscleZoneIdsUseCase: GetExerciseMuscleZoneIdsUseCase,
     private val setExerciseMuscleZonesUseCase: SetExerciseMuscleZonesUseCase,
+    private val updateExerciseMovementCategoryUseCase: UpdateExerciseMovementCategoryUseCase,
     private val imageStorageHelper: ImageStorageHelper,
     @ApplicationContext private val context: Context,
 ) : ViewModel() {
@@ -65,6 +68,14 @@ class ExerciseDetailViewModel @Inject constructor(
 
     /** Error del campo de zonas, por la misma razón que [_equipmentError]. */
     private val _muscleZoneError = MutableStateFlow<String?>(null)
+
+    /**
+     * Mensaje del cambio de categoría rechazado, que nombra las rutinas en conflicto
+     * (CA-46.14). Vive fuera del detalle por la misma razón que [_equipmentError]: el rechazo
+     * no escribe, así que el flujo de Room no lo traería.
+     */
+    private val _categoryConflict = MutableStateFlow<String?>(null)
+    val categoryConflict: StateFlow<String?> = _categoryConflict.asStateFlow()
 
     init {
         loadExerciseDetail()
@@ -142,6 +153,7 @@ class ExerciseDetailViewModel @Inject constructor(
                                 baseThreshold,
                                 exercise.progressionDifficulty,
                             ),
+                            movementCategory = exercise.movementCategory,
                         ),
                     )
                 }
@@ -173,6 +185,31 @@ class ExerciseDetailViewModel @Inject constructor(
         viewModelScope.launch {
             updateExerciseProgressionDifficultyUseCase(exerciseId, difficulty)
         }
+    }
+
+    /**
+     * Cambia la categoría al instante, igual que la dificultad (CA-46.14). Un ejercicio sin
+     * asignaciones cambia libremente; uno asignado a rutinas de otra categoría no cambia y el
+     * diálogo nombra esas rutinas. El selector vuelve solo, porque nada se escribió.
+     */
+    fun onMovementCategorySelected(category: MovementCategory) {
+        val state = _uiState.value
+        if (state !is ExerciseDetailUiState.Success) return
+        if (state.exercise.movementCategory == category) return
+        viewModelScope.launch {
+            val result = updateExerciseMovementCategoryUseCase(exerciseId, category)
+            if (result is UpdateExerciseMovementCategoryUseCase.Result.ConflictsWithPlan) {
+                _categoryConflict.value = context.getString(
+                    R.string.exercise_category_conflict_message,
+                    state.exercise.name,
+                    result.routineNames.joinToString("\n") { "· $it" },
+                )
+            }
+        }
+    }
+
+    fun onCategoryConflictDismissed() {
+        _categoryConflict.value = null
     }
 
     /**

@@ -52,7 +52,22 @@ data class SessionExerciseProgressionEntity(
     @ColumnInfo(name = "progression_classification")
     val progressionClassification: String? = null,
 
-    /** Load the double-threshold engine prescribes for this pair after the session. */
+    /** Load the progression engine prescribes for this pair after the session. */
     @ColumnInfo(name = "prescribed_load_kg")
     val prescribedLoadKg: Double? = null,
+
+    /**
+     * How this close read the pair against the 8–12 range: `TOP`, `WITHIN` or `BELOW`
+     * (HU-46, CA-46.01). Null when the range rule did not apply — isometric exercises and
+     * deload sessions — and the summary falls back to the signal it always showed.
+     *
+     * Persisted for the same reason as [prescribedLoadKg]: the summary is a faithful record
+     * of this close, not a value later sessions may already have moved.
+     */
+    @ColumnInfo(name = "range_reading")
+    val rangeReading: String? = null,
+
+    /** Consecutive top-of-range sessions of the pair **after** this close: the «N de 4». */
+    @ColumnInfo(name = "top_range_streak")
+    val topRangeStreak: Int? = null,
 )

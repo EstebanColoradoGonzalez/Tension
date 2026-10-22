@@ -2,8 +2,10 @@ package com.estebancoloradogonzalez.tension.domain.repository
 
 import com.estebancoloradogonzalez.tension.domain.model.EquipmentType
 import com.estebancoloradogonzalez.tension.domain.model.Exercise
+import com.estebancoloradogonzalez.tension.domain.model.MovementCategory
 import com.estebancoloradogonzalez.tension.domain.model.MuscleZone
 import com.estebancoloradogonzalez.tension.domain.model.ProgressionDifficulty
+import com.estebancoloradogonzalez.tension.domain.rules.CategorizedName
 import kotlinx.coroutines.flow.Flow
 
 /** Zonas de un ejercicio, ya partidas por jerarquía. */
@@ -48,9 +50,16 @@ interface ExerciseRepository {
         isToTechnicalFailure: Boolean,
         mediaResource: String?,
         progressionDifficulty: ProgressionDifficulty,
+        movementCategory: MovementCategory,
     ): Long
     suspend fun updateExerciseImage(exerciseId: Long, mediaResource: String?)
     suspend fun updateProgressionDifficulty(exerciseId: Long, difficulty: ProgressionDifficulty)
+
+    /** Cambia la categoría. El caso de uso comprueba antes que el plan no la contradiga. */
+    suspend fun updateMovementCategory(exerciseId: Long, category: MovementCategory)
+
+    /** Rutinas que tienen asignado el ejercicio, con su categoría (CA-46.14). */
+    suspend fun getRoutinesAssigningExercise(exerciseId: Long): List<CategorizedName>
 
     /** El nombre es único por sí solo: el implemento no forma parte de la identidad. */
     suspend fun exerciseExistsByName(name: String): Boolean

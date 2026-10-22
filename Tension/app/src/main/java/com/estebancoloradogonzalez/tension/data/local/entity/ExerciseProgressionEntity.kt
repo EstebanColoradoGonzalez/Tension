@@ -64,4 +64,31 @@ data class ExerciseProgressionEntity(
 
     @ColumnInfo(name = "sessions_without_progression", defaultValue = "0")
     val sessionsWithoutProgression: Int = 0,
+
+    /**
+     * Sesiones consecutivas del par en el tope del rango (12 o más por mayoría) **con el
+     * mismo peso de referencia** (HU-46, CA-46.03). A las 4 se propone subir.
+     *
+     * Es un dato persistido y no una lectura del historial porque la continuidad tiene
+     * excepciones que el historial no dice por sí solo: una sesión sin series del par no la
+     * rompe y una de descarga la deja congelada (CA-46.17, CA-46.18). Viaja en el respaldo
+     * (CA-46.19).
+     */
+    @ColumnInfo(name = "top_range_streak", defaultValue = "0")
+    val topRangeStreak: Int = 0,
+
+    /**
+     * Peso de referencia que sostiene [topRangeStreak]: el **mayor** de las series del par en
+     * la última sesión que sumó, nunca el promedio (CA-46.03). Nulo mientras no hay racha.
+     */
+    @ColumnInfo(name = "top_range_weight_kg")
+    val topRangeWeightKg: Double? = null,
+
+    /**
+     * Última lectura del par en el rango: `TOP`, `WITHIN` o `BELOW` (`RangeReading`). Es lo
+     * que la sesión siguiente necesita para mostrar «bajar peso» junto al peso propuesto
+     * (CA-46.02). Nula si el par nunca se evaluó por rango.
+     */
+    @ColumnInfo(name = "last_range_reading")
+    val lastRangeReading: String? = null,
 )

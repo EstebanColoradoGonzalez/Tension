@@ -43,6 +43,11 @@ data class RegisterSetUiState(
     val timerSeconds: Int = 0,
     val minSeconds: Int? = null,
     val maxSeconds: Int? = null,
+    /**
+     * Aviso de la serie anterior de este ejercicio en la sesión, ya redactado (HU-46,
+     * CA-46.05). Se pinta sobre el formulario sin taparlo: es justo cuando se elige el peso.
+     */
+    val previousSetNotice: String? = null,
 ) {
     val selectedEquipmentName: String?
         get() = equipmentOptions.firstOrNull { it.id == selectedEquipmentTypeId }?.name

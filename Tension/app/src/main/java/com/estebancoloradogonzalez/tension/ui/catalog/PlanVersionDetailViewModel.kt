@@ -92,6 +92,7 @@ class PlanVersionDetailViewModel @Inject constructor(
                     routineName = detail.routineName,
                     versionNumber = detail.versionNumber,
                     exercises = exercisesOnePerSlot,
+                    movementCategory = detail.movementCategory,
                 )
             }
         }.stateIn(

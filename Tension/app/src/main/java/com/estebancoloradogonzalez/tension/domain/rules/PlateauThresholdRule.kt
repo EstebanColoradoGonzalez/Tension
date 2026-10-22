@@ -21,13 +21,17 @@ import kotlin.math.ceil
  *
  * | Difficulty | Multiplier | Sessions |
  * |------------|------------|----------|
- * | LOW        | ×1         | 5        |
- * | MEDIUM     | ×1.5       | 8        |
- * | HIGH       | ×2         | 10       |
+ * | LOW        | ×1         | 10       |
+ * | MEDIUM     | ×1.5       | 15       |
+ * | HIGH       | ×2         | 20       |
+ *
+ * The default was 5 until HU-46: a global and low threshold produced false plateau alerts
+ * that took credibility from the whole alert system (CA-46.07). The multipliers and the
+ * configurable range did not change.
  */
 object PlateauThresholdRule {
 
-    const val DEFAULT_BASE_THRESHOLD = 5
+    const val DEFAULT_BASE_THRESHOLD = 10
     const val MIN_BASE_THRESHOLD = 3
     const val MAX_BASE_THRESHOLD = 15
 

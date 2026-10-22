@@ -262,6 +262,7 @@ class ActionSignalRuleTest {
         setCount: Int = 4,
         isMastered: Boolean = false,
         isDeload: Boolean = false,
+        rangeSignal: RangeSignal? = null,
     ): ActionSignal {
         return ActionSignalRule.resolve(
             classification = classification,
@@ -275,6 +276,46 @@ class ActionSignalRuleTest {
             setCount = setCount,
             isMastered = isMastered,
             isDeload = isDeload,
+            rangeSignal = rangeSignal,
         )
+    }
+
+    // ----- HU-46: la señal de rango manda -----
+
+    @Test
+    fun `given a range reading, when resolving, then it prevails over the first session`() {
+        val result = resolve(classification = null, rangeSignal = RangeSignal.Progressing(1))
+        assertEquals(ActionSignal.TopOfRange(1), result)
+    }
+
+    @Test
+    fun `given an increase by range, when resolving, then the target is the prescribed load`() {
+        val result = resolve(
+            classification = ProgressionClassification.MAINTENANCE,
+            prescribedLoadKg = 62.5,
+            avgWeightKg = 60.0,
+            rangeSignal = RangeSignal.Increase(4),
+        )
+        assertEquals(ActionSignal.IncreaseLoad(62.5, 4), result)
+    }
+
+    @Test
+    fun `given a deload session, when resolving, then the range signal is not shown`() {
+        // CA-46.18
+        val result = resolve(isDeload = true, rangeSignal = RangeSignal.Decrease)
+        assertEquals(ActionSignal.DeloadSession, result)
+    }
+
+    @Test
+    fun `given an isometric exercise, when resolving with a range reading, then the seconds signal is kept`() {
+        // CA-46.16, QA-28: los isométricos miden resistencia y conservan su progresión por segundos
+        val result = resolve(
+            classification = ProgressionClassification.POSITIVE_PROGRESSION,
+            isIsometric = true,
+            totalReps = 90,
+            setCount = 3,
+            rangeSignal = RangeSignal.Decrease,
+        )
+        assertEquals(ActionSignal.IsometricSignal(3, 30), result)
     }
 }

@@ -63,9 +63,12 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.estebancoloradogonzalez.tension.R
-import com.estebancoloradogonzalez.tension.ui.components.EntityNameText
-import com.estebancoloradogonzalez.tension.ui.session.components.AddExerciseSheet
 import com.estebancoloradogonzalez.tension.domain.model.ExerciseSessionStatus
+import com.estebancoloradogonzalez.tension.domain.model.MovementCategory
+import com.estebancoloradogonzalez.tension.domain.rules.RangeSignal
+import com.estebancoloradogonzalez.tension.ui.components.EntityNameText
+import com.estebancoloradogonzalez.tension.ui.components.MovementCategoryTag
+import com.estebancoloradogonzalez.tension.ui.session.components.AddExerciseSheet
 import com.estebancoloradogonzalez.tension.ui.theme.LocalTensionSemanticColors
 
 @Composable
@@ -76,6 +79,12 @@ fun ActiveSessionScreen(
     onNavigateToCreateExercise: (Long) -> Unit,
     onNavigateToHome: () -> Unit,
     sessionId: Long,
+    /**
+     * Aviso en directo de la serie recién registrada (HU-46, CA-46.05), devuelto por la
+     * pantalla de registro al volver. Se muestra en el `Snackbar`: no bloquea nada.
+     */
+    setNotice: String? = null,
+    onSetNoticeShown: () -> Unit = {},
     viewModel: ActiveSessionViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -88,6 +97,13 @@ fun ActiveSessionScreen(
         uiState.errorMessage?.let { message ->
             snackbarHostState.showSnackbar(message)
             viewModel.dismissError()
+        }
+    }
+
+    LaunchedEffect(setNotice) {
+        setNotice?.let { notice ->
+            onSetNoticeShown()
+            snackbarHostState.showSnackbar(notice)
         }
     }
 
@@ -109,6 +125,7 @@ fun ActiveSessionScreen(
                 versionNumber = uiState.versionNumber,
                 isDeloadSession = uiState.isDeloadSession,
                 deloadProgress = uiState.deloadProgress,
+                movementCategory = uiState.movementCategory,
             )
 
             ProgressBar(
@@ -227,17 +244,26 @@ private fun SessionTopBar(
     versionNumber: Int,
     isDeloadSession: Boolean,
     deloadProgress: String,
+    movementCategory: MovementCategory?,
 ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 12.dp),
     ) {
-        EntityNameText(
-            text = stringResource(R.string.session_routine_version_format, routineName, versionNumber),
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            EntityNameText(
+                text = stringResource(R.string.session_routine_version_format, routineName, versionNumber),
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f, fill = false),
+            )
+            // La categoría del día, que acota lo que se puede añadir (CA-46.09).
+            movementCategory?.let { MovementCategoryTag(category = it) }
+        }
         Text(
             text = stringResource(R.string.session_active_label),
             style = MaterialTheme.typography.titleSmall,
@@ -777,13 +803,28 @@ private fun LoadText(exercise: ExerciseUiItem, isDeloadSession: Boolean = false)
         MaterialTheme.colorScheme.onSurface
     }
 
+    val rangeHint = exercise.rangeSignal?.let { rangeHint(it) }
     Text(
-        text = exercise.loadDisplayText,
+        text = if (rangeHint != null) "${exercise.loadDisplayText}  $rangeHint" else exercise.loadDisplayText,
         style = MaterialTheme.typography.bodyMedium.copy(
             fontStyle = if (isNoHistory) FontStyle.Italic else FontStyle.Normal,
         ),
         color = textColor,
     )
+}
+
+/**
+ * Indicación que acompaña al peso propuesto (HU-46): bajar, subida o el avance N de 4
+ * (CA-46.02, CA-46.04). Siempre con símbolo, nunca solo con color (RNF05). Dentro del rango
+ * no se dice nada: mantener el peso es lo que el peso propuesto ya expresa.
+ */
+@Composable
+private fun rangeHint(signal: RangeSignal): String? = when (signal) {
+    is RangeSignal.Decrease -> stringResource(R.string.session_range_hint_decrease)
+    is RangeSignal.Increase -> stringResource(R.string.session_range_hint_increase)
+    is RangeSignal.AddExtraWeight -> stringResource(R.string.session_range_hint_add_weight)
+    is RangeSignal.Progressing -> stringResource(R.string.session_range_hint_streak, signal.streak)
+    is RangeSignal.InRange -> null
 }
 
 @Composable

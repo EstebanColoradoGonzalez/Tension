@@ -1,6 +1,7 @@
 package com.estebancoloradogonzalez.tension.ui.catalog
 
 import com.estebancoloradogonzalez.tension.domain.model.EquipmentType
+import com.estebancoloradogonzalez.tension.domain.model.MovementCategory
 import com.estebancoloradogonzalez.tension.domain.model.MuscleZone
 import com.estebancoloradogonzalez.tension.domain.model.ProgressionDifficulty
 
@@ -18,6 +19,14 @@ data class CreateExerciseUiState(
     val isIsometric: Boolean = false,
     val isToTechnicalFailure: Boolean = false,
     val progressionDifficulty: ProgressionDifficulty = ProgressionDifficulty.MEDIUM,
+    /**
+     * Empuje, Jalón o Pierna (HU-46). Nula hasta que se elige: no hay preselección al crear
+     * desde el Diccionario (CA-46.13). Desde la sesión llega con la del día (CA-46.11).
+     */
+    val movementCategory: MovementCategory? = null,
+    /** La categoría llegó fijada por la sesión y no se puede cambiar (CA-46.11). */
+    val isCategoryFixed: Boolean = false,
+    val categoryError: String? = null,
     val imageUri: String? = null,
     val isSaving: Boolean = false,
     val nameError: String? = null,
@@ -34,6 +43,10 @@ data class CreateExerciseUiState(
     /**
      * El botón permanece deshabilitado mientras no haya una zona principal (CA-41.09).
      * Las secundarias no entran: son opcionales.
+     *
+     * La categoría **no** entra a propósito: guardar sin ella tiene que llegar al
+     * ViewModel para que diga «elige la categoría» junto al campo (CA-46.13). Un botón
+     * deshabilitado no explica qué falta.
      */
     val canSave: Boolean
         get() = name.isNotBlank() &&

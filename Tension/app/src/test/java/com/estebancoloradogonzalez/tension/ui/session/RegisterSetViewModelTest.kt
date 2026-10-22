@@ -2,12 +2,14 @@ package com.estebancoloradogonzalez.tension.ui.session
 
 import android.content.Context
 import androidx.lifecycle.SavedStateHandle
+import com.estebancoloradogonzalez.tension.R
 import com.estebancoloradogonzalez.tension.domain.model.EquipmentType
+import com.estebancoloradogonzalez.tension.domain.model.PrefilledLoad
 import com.estebancoloradogonzalez.tension.domain.model.PreselectionOrigin
 import com.estebancoloradogonzalez.tension.domain.model.RegisterSetInfo
 import com.estebancoloradogonzalez.tension.domain.model.WeightUnit
 import com.estebancoloradogonzalez.tension.domain.rules.ExternalLoadRule
-import com.estebancoloradogonzalez.tension.domain.model.PrefilledLoad
+import com.estebancoloradogonzalez.tension.domain.rules.SetRangeNotice
 import com.estebancoloradogonzalez.tension.domain.usecase.session.GetPrefilledLoadForEquipmentUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.session.GetRegisterSetInfoUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.session.RegisterSetUseCase
@@ -19,7 +21,9 @@ import io.mockk.mockk
 import io.mockk.runs
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -74,6 +78,7 @@ class RegisterSetViewModelTest {
         equipmentOptions: List<EquipmentType> = listOf(barra),
         preselectedEquipmentTypeId: Long = equipmentOptions.first().id,
         preselectionOrigin: PreselectionOrigin = PreselectionOrigin.LAST_USED,
+        previousSetNotice: SetRangeNotice? = null,
     ) = RegisterSetInfo(
         sessionExerciseId = sessionExerciseId,
         exerciseId = 10L,
@@ -89,6 +94,7 @@ class RegisterSetViewModelTest {
         equipmentOptions = equipmentOptions,
         preselectedEquipmentTypeId = preselectedEquipmentTypeId,
         preselectionOrigin = preselectionOrigin,
+        previousSetNotice = previousSetNotice,
     )
 
     private fun createViewModel(): RegisterSetViewModel {
@@ -257,7 +263,7 @@ class RegisterSetViewModelTest {
             info(captureUnit = WeightUnit.LB, lastWeightKg = null)
         coEvery {
             registerSetUseCase(any(), any(), any(), any(), any(), any(), any())
-        } just runs
+        } returns null
 
         val viewModel = createViewModel()
         advanceUntilIdle()
@@ -280,7 +286,7 @@ class RegisterSetViewModelTest {
                 info(captureUnit = WeightUnit.KG, lastWeightKg = null)
             coEvery {
             registerSetUseCase(any(), any(), any(), any(), any(), any(), any())
-        } just runs
+        } returns null
 
             val viewModel = createViewModel()
             advanceUntilIdle()
@@ -513,7 +519,7 @@ class RegisterSetViewModelTest {
                 )
             coEvery {
                 registerSetUseCase(any(), any(), any(), any(), any(), any(), any())
-            } just runs
+            } returns null
 
             val viewModel = createViewModel()
             advanceUntilIdle()
@@ -641,7 +647,7 @@ class RegisterSetViewModelTest {
             info(lastWeightKg = null, equipmentOptions = listOf(barra, mancuerna))
         coEvery {
             registerSetUseCase(any(), any(), any(), any(), any(), any(), any())
-        } just runs
+        } returns null
 
         val viewModel = createViewModel()
         advanceUntilIdle()
@@ -716,5 +722,54 @@ class RegisterSetViewModelTest {
         advanceUntilIdle()
 
         assertEquals(PreselectionOrigin.FIRST_OPTION, viewModel.uiState.value.preselectionOrigin)
+    }
+
+    // ----- HU-46, CA-46.05: aviso en directo -----
+
+    @Test
+    fun `given the previous set was under 8, when the form opens, then the notice is shown above it`() = runTest {
+        every { context.getString(R.string.set_notice_lower_next) } returns "Baja el peso en la próxima serie"
+        coEvery { getRegisterSetInfoUseCase(sessionExerciseId) } returns
+            info(previousSetNotice = SetRangeNotice.LowerNextSet)
+
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        assertEquals("Baja el peso en la próxima serie", viewModel.uiState.value.previousSetNotice)
+    }
+
+    @Test
+    fun `given no previous notice, when the form opens, then nothing is shown`() = runTest {
+        coEvery { getRegisterSetInfoUseCase(sessionExerciseId) } returns info()
+
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        assertNull(viewModel.uiState.value.previousSetNotice)
+    }
+
+    @Test
+    fun `given a top set, when confirming, then the session receives the informative notice`() = runTest {
+        every { context.getString(R.string.set_notice_top_of_range, 2) } returns "Tope del rango (sesión 2 de 4)"
+        coEvery { getRegisterSetInfoUseCase(sessionExerciseId) } returns info(lastWeightKg = 60.0)
+        coEvery {
+            registerSetUseCase(any(), any(), any(), any(), any(), any(), any())
+        } returns SetRangeNotice.TopOfRange(sessionNumber = 2)
+
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+        val results = mutableListOf<SetRegistered>()
+        val collector = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.navigateBack.collect { results.add(it) }
+        }
+
+        viewModel.onRepsChanged("12")
+        viewModel.onRirSelected(1)
+        viewModel.onConfirm()
+        advanceUntilIdle()
+
+        coVerify { registerSetUseCase(sessionExerciseId, any(), 12, 1, any(), any(), any()) }
+        assertEquals(listOf(SetRegistered(notice = "Tope del rango (sesión 2 de 4)")), results)
+        collector.cancel()
     }
 }

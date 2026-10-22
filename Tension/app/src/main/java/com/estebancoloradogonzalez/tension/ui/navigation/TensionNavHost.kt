@@ -395,8 +395,17 @@ fun TensionNavHost(
                         ),
                     ) { backStackEntry ->
                         val activeSessionId = backStackEntry.arguments?.getLong("sessionId") ?: 0L
+                        val setNotice by backStackEntry.savedStateHandle
+                            .getStateFlow<String?>(NavigationRoutes.SET_NOTICE_RESULT_KEY, null)
+                            .collectAsStateWithLifecycle()
                         ActiveSessionScreen(
                             sessionId = activeSessionId,
+                            setNotice = setNotice,
+                            onSetNoticeShown = {
+                                backStackEntry.savedStateHandle[
+                                    NavigationRoutes.SET_NOTICE_RESULT_KEY,
+                                ] = null
+                            },
                             onNavigateToCreateExercise = { sessionId ->
                                 navController.navigate(
                                     NavigationRoutes.createExerciseRoute(sessionId),
@@ -434,7 +443,14 @@ fun TensionNavHost(
                         ),
                     ) {
                         RegisterSetScreen(
-                            onNavigateBack = { navController.popBackStack() },
+                            onNavigateBack = { setNotice ->
+                                // El aviso en directo vuelve a la sesión como resultado de
+                                // navegación (HU-46, CA-46.05).
+                                navController.previousBackStackEntry
+                                    ?.savedStateHandle
+                                    ?.set(NavigationRoutes.SET_NOTICE_RESULT_KEY, setNotice)
+                                navController.popBackStack()
+                            },
                         )
                     }
 

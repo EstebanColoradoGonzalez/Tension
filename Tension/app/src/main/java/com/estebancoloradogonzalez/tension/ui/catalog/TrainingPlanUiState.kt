@@ -1,5 +1,6 @@
 package com.estebancoloradogonzalez.tension.ui.catalog
 
+import com.estebancoloradogonzalez.tension.domain.model.MovementCategory
 import com.estebancoloradogonzalez.tension.domain.model.WeekDay
 
 data class TrainingPlanUiState(
@@ -15,6 +16,8 @@ data class RoutineSectionItem(
     /** Días que ejecutan esta rutina. Vacío cuando ninguno la reclama. */
     val weekDays: List<WeekDay>,
     val versions: List<VersionItem>,
+    /** Categoría de la rutina (HU-46, CA-46.09). */
+    val movementCategory: MovementCategory? = null,
 )
 
 data class VersionItem(

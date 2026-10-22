@@ -2,6 +2,7 @@ package com.estebancoloradogonzalez.tension.data.local.seed
 
 import com.estebancoloradogonzalez.tension.data.local.seed.model.SeedAssignment
 import com.estebancoloradogonzalez.tension.data.local.seed.model.SeedRoutine
+import com.estebancoloradogonzalez.tension.domain.model.MovementCategory
 
 /**
  * Plan de entrenamiento predeterminado: 6 rutinas, una versión por rutina, 35 asignaciones.
@@ -9,6 +10,10 @@ import com.estebancoloradogonzalez.tension.data.local.seed.model.SeedRoutine
  * Los nombres no nombran el día: desde HU-36 el día de la semana es una entidad
  * (`week_day`) relacionada con la rutina, y [DefaultWeekDays] es quien establece esa
  * relación. El nombre expresa el patrón de movimiento y el enfoque, nada más.
+ *
+ * Desde HU-46 cada rutina lleva su **categoría** como dato —Push → Empuje, Pull → Jalón,
+ * Lower → Pierna— y no solo en el nombre, y cada asignación respeta la de su rutina: el plan
+ * por defecto no mezcla categorías (CA-46.09, CA-46.12).
  *
  * Es únicamente el punto de partida de una instalación fresca. El Ejecutante puede
  * crear versiones, asignar o remover ejercicios y agregar alternativas sin restricción.
@@ -38,12 +43,12 @@ object DefaultPlan {
     private const val MANCUERNA = EquipmentCatalog.MANCUERNA
 
     val ROUTINES: List<SeedRoutine> = listOf(
-        SeedRoutine(1, "Push — Foco Deltoides Lateral y Medio", 1),
-        SeedRoutine(2, "Pull — Foco Dorsal Ancho", 2),
-        SeedRoutine(3, "Lower — Foco Cuádriceps", 3),
-        SeedRoutine(4, "Push — Foco Tríceps", 4),
-        SeedRoutine(5, "Pull — Foco Trapecios y Espalda Media", 5),
-        SeedRoutine(6, "Lower — Foco Isquiotibiales y Glúteo", 6),
+        SeedRoutine(1, "Push — Foco Deltoides Lateral y Medio", 1, MovementCategory.PUSH),
+        SeedRoutine(2, "Pull — Foco Dorsal Ancho", 2, MovementCategory.PULL),
+        SeedRoutine(3, "Lower — Foco Cuádriceps", 3, MovementCategory.LEGS),
+        SeedRoutine(4, "Push — Foco Tríceps", 4, MovementCategory.PUSH),
+        SeedRoutine(5, "Pull — Foco Trapecios y Espalda Media", 5, MovementCategory.PULL),
+        SeedRoutine(6, "Lower — Foco Isquiotibiales y Glúteo", 6, MovementCategory.LEGS),
     )
 
     val ASSIGNMENTS: List<SeedAssignment> = listOf(

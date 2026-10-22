@@ -27,7 +27,7 @@ class BackupRepositoryImpl @Inject constructor(
 ) : BackupRepository {
 
     companion object {
-        const val SCHEMA_VERSION = 17
+        const val SCHEMA_VERSION = 18
 
         const val APP_VERSION = "1.0"
 
@@ -70,6 +70,14 @@ class BackupRepositoryImpl @Inject constructor(
          * nada**. Un v16 no dice que ejercicio se anadio ni cual se retiro, asi que el
          * historial restaurado presentaria sesiones cuya composicion no coincide con la de su
          * plan sin poder explicar por que.
+         *
+         * El 17 cae por la categoria de movimiento (HU-46). `exercise.movement_category` y
+         * `routine.movement_category` son `NOT NULL` sin default, y la categoria es una
+         * decision, no un calculo: aceptar un v17 exigiria inventar una por fila, y una
+         * categoria inventada mete ejercicios en dias que nadie eligio. CA-46.19 deja fuera
+         * de alcance la importacion de respaldos anteriores porque la beta se prueba siempre
+         * desde una instalacion fresca. El conteo hacia la subida viaja solo: el mecanismo
+         * vuelca columnas por cursor y ninguna tabla nueva entra en el orden.
          */
         private val ACCEPTED_SCHEMA_VERSIONS = setOf(SCHEMA_VERSION)
 
@@ -218,11 +226,11 @@ class BackupRepositoryImpl @Inject constructor(
                     schemaVersion,
                 )
                 // El formato inmediatamente anterior tiene una causa propia y concreta: no
-                // registra el ajuste de la sesion, que no se deduce del plan. Los mas
-                // antiguos siguen cayendo por la ausencia del equipamiento de las series,
-                // que es lo primero que les falta.
+                // registra la categoria de movimiento, que es una decision y no un calculo
+                // (HU-46). Los mas antiguos siguen cayendo por la ausencia del equipamiento
+                // de las series, que es lo primero que les falta.
                 schemaVersion == PREVIOUS_SCHEMA_VERSION ->
-                    context.getString(R.string.import_backup_no_session_adjustment)
+                    context.getString(R.string.import_backup_no_movement_category)
                 else -> context.getString(R.string.import_backup_no_equipment)
             }
             return BackupValidationResult(

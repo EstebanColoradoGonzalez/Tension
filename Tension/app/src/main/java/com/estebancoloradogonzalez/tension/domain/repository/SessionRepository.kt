@@ -5,6 +5,7 @@ import com.estebancoloradogonzalez.tension.domain.model.ActiveSession
 import com.estebancoloradogonzalez.tension.domain.model.AddableExercise
 import com.estebancoloradogonzalez.tension.domain.model.DeloadState
 import com.estebancoloradogonzalez.tension.domain.model.ExerciseHistoryData
+import com.estebancoloradogonzalez.tension.domain.model.MovementCategory
 import com.estebancoloradogonzalez.tension.domain.model.PrefilledLoad
 import com.estebancoloradogonzalez.tension.domain.model.RegisterSetInfo
 import com.estebancoloradogonzalez.tension.domain.model.RotationState
@@ -15,6 +16,7 @@ import com.estebancoloradogonzalez.tension.domain.model.SessionHistoryItem
 import com.estebancoloradogonzalez.tension.domain.model.SessionPreviewExercise
 import com.estebancoloradogonzalez.tension.domain.model.TodaySession
 import com.estebancoloradogonzalez.tension.domain.model.WeightUnit
+import com.estebancoloradogonzalez.tension.domain.rules.SetRangeNotice
 import kotlinx.coroutines.flow.Flow
 
 interface SessionRepository {
@@ -36,6 +38,11 @@ interface SessionRepository {
         sessionExerciseId: Long,
         equipmentTypeId: Long,
     ): PrefilledLoad?
+    /**
+     * Registra la serie y devuelve el aviso en directo que le corresponde (CA-46.05), o
+     * `null` si no hay nada que decir. El aviso es informativo: la serie se persiste tal
+     * como llegó, haya aviso o no.
+     */
     suspend fun registerSet(
         sessionExerciseId: Long,
         weightKg: Double,
@@ -43,14 +50,22 @@ interface SessionRepository {
         rir: Int,
         captureUnit: WeightUnit,
         equipmentTypeId: Long,
-    )
+    ): SetRangeNotice?
+
+    /**
+     * Categoría del día: la de la rutina de la sesión (CA-46.09). `null` solo si la sesión no
+     * existe o su rutina lleva un código no reconocido.
+     */
+    suspend fun getSessionMovementCategory(sessionId: Long): MovementCategory?
     suspend fun finalizeExercise(sessionExerciseId: Long)
     suspend fun switchAlternativeInSession(sessionExerciseId: Long, exerciseId: Long)
 
     /**
-     * El Diccionario completo, con los que ya están en la sesión marcados (CA-43.01).
+     * El Diccionario de la categoría del día (CA-46.10), con los que ya están en la sesión
+     * marcados (CA-43.01).
      *
-     * No los filtra: la hoja los muestra atenuados y con su causa. Ver [AddableExercise].
+     * No filtra los ya presentes: la hoja los muestra atenuados y con su causa. Ver
+     * [AddableExercise]. Los de otra categoría sí quedan fuera, también de la búsqueda.
      */
     fun getAddableExercises(sessionId: Long): Flow<List<AddableExercise>>
 

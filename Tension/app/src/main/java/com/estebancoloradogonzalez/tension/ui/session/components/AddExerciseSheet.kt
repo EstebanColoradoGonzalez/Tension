@@ -30,6 +30,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.estebancoloradogonzalez.tension.R
+import com.estebancoloradogonzalez.tension.ui.components.movementCategoryName
 import com.estebancoloradogonzalez.tension.ui.session.AddExerciseSheetState
 import com.estebancoloradogonzalez.tension.ui.session.AddableExerciseUiItem
 
@@ -64,6 +65,16 @@ fun AddExerciseSheet(
                 color = MaterialTheme.colorScheme.onSurface,
             )
 
+            // La lista solo trae la categoría del día, y la hoja lo dice (CA-46.10): un
+            // ejercicio que no aparece tiene que tener una causa visible.
+            state.dayCategory?.let { category ->
+                Text(
+                    text = stringResource(R.string.session_add_sheet_category, movementCategoryName(category)),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
             Spacer(modifier = Modifier.height(4.dp))
 
             Text(
@@ -88,8 +99,13 @@ fun AddExerciseSheet(
             Spacer(modifier = Modifier.height(8.dp))
 
             if (state.visibleExercises.isEmpty()) {
+                val category = state.dayCategory
                 Text(
-                    text = stringResource(R.string.session_add_sheet_empty),
+                    text = if (category != null) {
+                        stringResource(R.string.session_add_sheet_empty_category, movementCategoryName(category))
+                    } else {
+                        stringResource(R.string.session_add_sheet_empty)
+                    },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = 24.dp),

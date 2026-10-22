@@ -6,6 +6,11 @@ import com.estebancoloradogonzalez.tension.domain.model.ProgressionClassificatio
 import com.estebancoloradogonzalez.tension.domain.model.SessionSummary
 import com.estebancoloradogonzalez.tension.domain.repository.SessionRepository
 import com.estebancoloradogonzalez.tension.domain.rules.ActionSignalRule
+import com.estebancoloradogonzalez.tension.domain.rules.ExternalLoadRule
+import com.estebancoloradogonzalez.tension.domain.rules.HypertrophyRangeRule
+import com.estebancoloradogonzalez.tension.domain.rules.RangeReading
+import com.estebancoloradogonzalez.tension.domain.rules.RangeSignal
+import com.estebancoloradogonzalez.tension.domain.rules.TopRangeStreak
 import javax.inject.Inject
 
 class GetSessionSummaryUseCase @Inject constructor(
@@ -30,6 +35,14 @@ class GetSessionSummaryUseCase @Inject constructor(
                 val pairClassification = pair.classification?.let {
                     ProgressionClassification.valueOf(it)
                 }
+                val rangeSignal = rangeSignalOf(
+                    rangeReading = pair.rangeReading,
+                    topRangeStreak = pair.topRangeStreak,
+                    equipmentName = pair.equipmentTypeName,
+                    admitsAddedWeight = pair.admitsAddedWeight,
+                    isBodyweight = dto.isBodyweight == 1,
+                    isIsometric = dto.isIsometric == 1,
+                )
                 ExercisePairSummary(
                     equipmentTypeId = pair.equipmentTypeId,
                     equipmentTypeName = pair.equipmentTypeName,
@@ -46,17 +59,18 @@ class GetSessionSummaryUseCase @Inject constructor(
                         setCount = pair.setCount,
                         isMastered = dto.isMastered == 1,
                         isDeload = isDeload,
+                        rangeSignal = rangeSignal,
                     ),
                     weightKg = pair.avgWeightKg,
                     completedSets = pair.setCount,
                 )
             }
 
-            // La señal del ejercicio se sigue resolviendo sobre su lectura consolidada, y es
-            // la que la pantalla muestra cuando hay un solo implemento (CA-40.08). La carga
-            // prescrita que la acompaña es la del par de mayor objetivo, coherente con la
-            // disyunción de CA-40.04.
-            val signal = ActionSignalRule.resolve(
+            // Con un solo implemento la señal del ejercicio es la de su par, y la de rango
+            // manda (HU-46). Con varios, cada renglón lleva la suya y la del ejercicio se sigue
+            // resolviendo sobre su lectura consolidada (CA-40.08). La carga prescrita que la
+            // acompaña es la del par de mayor objetivo, coherente con la disyunción de CA-40.04.
+            val signal = pairs.singleOrNull()?.signal ?: ActionSignalRule.resolve(
                 classification = classification,
                 prescribedLoadKg = pairDtos.mapNotNull { it.prescribedLoadKg }.maxOrNull(),
                 avgWeightKg = dto.avgWeightKg,
@@ -94,6 +108,37 @@ class GetSessionSummaryUseCase @Inject constructor(
             completedExercises = data.info.completedExercises,
             totalExercises = data.info.totalExercises,
             exercises = items,
+        )
+    }
+
+    /**
+     * Lectura del par contra el rango 8–12, ya convertida en señal (HU-46).
+     *
+     * `null` cuando el cierre no la evaluó —isométricos y descarga— y cuando el par no tiene
+     * ninguna señal de peso: sin carga externa y sin admitir «Peso Añadido» (CA-46.15). En
+     * esos casos el resumen conserva la lectura de siempre.
+     */
+    @Suppress("LongParameterList")
+    private fun rangeSignalOf(
+        rangeReading: String?,
+        topRangeStreak: Int?,
+        equipmentName: String,
+        admitsAddedWeight: Boolean,
+        isBodyweight: Boolean,
+        isIsometric: Boolean,
+    ): RangeSignal? {
+        val reading = RangeReading.fromCode(rangeReading) ?: return null
+        val hasExternalLoad = ExternalLoadRule.isCaptureEnabled(
+            isBodyweight = isBodyweight,
+            isIsometric = isIsometric,
+            equipmentName = equipmentName,
+        )
+        if (!hasExternalLoad && !admitsAddedWeight) return null
+        return HypertrophyRangeRule.sessionSignal(
+            reading = reading,
+            streak = TopRangeStreak(count = topRangeStreak ?: 0, referenceWeightKg = null),
+            hasExternalLoad = hasExternalLoad,
+            admitsAddedWeight = admitsAddedWeight,
         )
     }
 }

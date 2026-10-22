@@ -13,8 +13,33 @@ class PlateauThresholdRuleTest {
     // ──────────────────────────────────────────────────────────────
 
     @Test
-    fun `given the system defaults, when the base threshold is read, then it is 5 sessions`() {
-        assertEquals(5, PlateauThresholdRule.DEFAULT_BASE_THRESHOLD)
+    fun `given the system defaults, when the base threshold is read, then it is 10 sessions`() {
+        // HU-46, CA-46.07: el 5 de HU-32 generaba falsas alertas de meseta.
+        assertEquals(10, PlateauThresholdRule.DEFAULT_BASE_THRESHOLD)
+    }
+
+    @Test
+    fun `given the default base, when the three difficulties are composed, then they are 10 15 and 20`() {
+        // QA-11
+        val base = PlateauThresholdRule.DEFAULT_BASE_THRESHOLD
+        assertEquals(10, PlateauThresholdRule.effectiveThreshold(base, ProgressionDifficulty.LOW))
+        assertEquals(15, PlateauThresholdRule.effectiveThreshold(base, ProgressionDifficulty.MEDIUM))
+        assertEquals(20, PlateauThresholdRule.effectiveThreshold(base, ProgressionDifficulty.HIGH))
+    }
+
+    @Test
+    fun `given base 11, when the three difficulties are composed, then they are 11 17 and 22`() {
+        // QA-12
+        assertEquals(11, PlateauThresholdRule.effectiveThreshold(11, ProgressionDifficulty.LOW))
+        assertEquals(17, PlateauThresholdRule.effectiveThreshold(11, ProgressionDifficulty.MEDIUM))
+        assertEquals(22, PlateauThresholdRule.effectiveThreshold(11, ProgressionDifficulty.HIGH))
+    }
+
+    @Test
+    fun `given the configurable range, when its limits are read, then it is still 3 to 15`() {
+        // QA-12, CA-46.07
+        assertEquals(3, PlateauThresholdRule.MIN_BASE_THRESHOLD)
+        assertEquals(15, PlateauThresholdRule.MAX_BASE_THRESHOLD)
     }
 
     // ──────────────────────────────────────────────────────────────

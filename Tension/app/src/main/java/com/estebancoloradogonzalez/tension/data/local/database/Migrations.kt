@@ -1240,8 +1240,10 @@ object Migrations {
      * fresca y el reinicio lo hace el ejecutante desinstalando y reinstalando, no la
      * aplicación. Sube de forma deliberada, historia por historia, y por eso es una
      * constante con nombre y no una ausencia silenciosa. HU-39 lleva el esquema a la 20,
-     * HU-40 a la 21, HU-41 a la 22, HU-42 a la 23 y HU-43 a la 24, las cinco sin migración
-     * (CA-39.11, CA-41.10, CA-42.08).
+     * HU-40 a la 21, HU-41 a la 22, HU-42 a la 23, HU-43 a la 24 y HU-46 a la 25, las seis
+     * sin migración (CA-39.11, CA-41.10, CA-42.08, CA-46.19). La 25 añade la categoría de
+     * movimiento —`NOT NULL` y sin default— a `exercise` y a `routine`, y el conteo hacia la
+     * subida a `exercise_progression` y `session_exercise_progression`.
      */
     const val LAST_MIGRATED_VERSION = 19
 

@@ -1,0 +1,238 @@
+╔══════════════════════════════════════════════════════════════╗
+║  ⚠️  PROTOTIPO — PROPUESTA PENDIENTE DE VALIDACIÓN CON DISEÑO  ║
+╚══════════════════════════════════════════════════════════════╝
+
+HU #46 — Progresión por rango de hipertrofia y sesión acotada
+         a la categoría del día
+Plataforma: mobile / portrait (390 px) · Material 3 · targets ≥ 48 dp
+Ninguna pantalla nueva: todo se integra en pantallas existentes.
+
+
+────────────────────────────────────────────────────────────────
+ 1. REGISTRAR SERIE (E2-T1)  ·  aviso en directo (CA-46.05)
+────────────────────────────────────────────────────────────────
+
+  Caso A — serie por debajo del rango (< 8 reps), incluso la 1.ª
+
++──────────────────────────────────────────+
+| ←  Press de Banca Plano                  |
+|    Serie 2 de 3  ·  Rango 8–12 · RIR 1   |
++──────────────────────────────────────────+
+|  Serie 1   60 kg  ×  6 reps  RIR 0   ✓   |
+|  ─────────────────────────────────────   |
+|  ┌────────────────────────────────────┐  |
+|  │ ⬇  Baja el peso en la próxima serie │  |  ← aviso no
+|  │    6 reps: por debajo del rango 8–12│  |    bloqueante,
+|  └────────────────────────────────────┘  |    sin cantidad
+|  ─────────────────────────────────────   |
+|  Implemento  [▼ Barra              ]     |
+|  Peso        [ −  ]  60 kg  [ +  ]       |  ← El Ejecutante
+|  Repeticiones [__________]               |    decide cuánto
+|  RIR          [▼ 1                 ]     |    bajar
+|                                          |
+|          [   Registrar serie   ]         |
++──────────────────────────────────────────+
+
+  Caso B — serie en el tope del rango (≥ 12 reps)
+
+|  Serie 1   60 kg  × 12 reps  RIR 1   ✓   |
+|  ┌────────────────────────────────────┐  |
+|  │ ⓘ  Tope del rango — cuenta para la  │  |  ← informativo,
+|  │    subida (sesión 2 de 4)           │  |    NO ordena subir
+|  └────────────────────────────────────┘  |
+
+  Caso C — serie entre 8 y 11 reps: sin aviso.
+  Isométricos (plancha): nunca muestran aviso (CA-46.16).
+  Peso corporal sin «Peso Añadido»: nunca muestran aviso (CA-46.15).
+  Descarga activa: sin avisos (CA-46.18).
+
+
+────────────────────────────────────────────────────────────────
+ 2. RESUMEN POST-SESIÓN (E5-T1)  ·  señal por par (CA-46.02/03/04)
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+| ←  Resumen · Push — Foco Tríceps         |
+|    Jueves · Sesión completada            |
++──────────────────────────────────────────+
+|  Extensión de Tríceps sobre Cabeza       |
+|   Mancuerna  12 · 12 · 11                |
+|   ▲ Subir carga → 14 kg                  |  ← 4.ª sesión
+|     4 de 4 sesiones en el tope           |    consecutiva
+|  ─────────────────────────────────────   |
+|  Press de Banca Plano                    |
+|   Barra      6 · 7 · 9                   |
+|   ▼ Bajar peso                           |  ← mayoría < 8,
+|     Tú eliges cuánto según el implemento |    sin cantidad
+|  ─────────────────────────────────────   |
+|  Aperturas                               |
+|   Máquina    12 · 13 · 12                |
+|   ● Mantener — 2 de 4 sesiones en el tope|  ← avance visible
+|  ─────────────────────────────────────   |
+|  Extensión de Tríceps (Pushdown)         |
+|   Polea      10 · 9 · 9                  |
+|   ● Mantener — dentro del rango 8–12     |
++──────────────────────────────────────────+
+
+   En un día de Jalón, el renglón de un ejercicio de peso corporal
+   que admite «Peso Añadido» (CA-46.15):
+
+|  Dominadas                               |
+|   Peso Corporal  12 · 12 · 13            |
+|   ▲ Añadir peso extra                    |  ← nunca «Bajar
+|     4 de 4 sesiones en el tope           |    peso» aquí
+
+   «Mayoría» = más de la mitad de las series registradas del par.
+   El número de series del plan NO interviene (CA-46.06).
+
+
+────────────────────────────────────────────────────────────────
+ 3. SESIÓN ACTIVA (E1)  ·  peso propuesto con su indicación
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+| ←  Push — Foco Tríceps   [EMPUJE]   ⏱    |  ← categoría
+|    Jueves · Versión 1                    |    del día
++──────────────────────────────────────────+
+|  1  Extensión de Tríceps sobre Cabeza ⋮  |
+|     Mancuerna · 14 kg  ▲ subida          |
+|  ─────────────────────────────────────   |
+|  2  Press de Banca Plano       0/3   ⋮   |
+|     Barra · 60 kg  ▼ bajar peso          |
+|  ─────────────────────────────────────   |
+|  3  Aperturas                  0/3   ⋮   |
+|     Máquina · 40 kg  · 2 de 4 en el tope |
+|  ─────────────────────────────────────   |
+|                                          |
+|   [       + Añadir ejercicio       ]     |
+|         [    Cerrar sesión    ]          |
++──────────────────────────────────────────+
+
+
+────────────────────────────────────────────────────────────────
+ 4. AÑADIR EJERCICIO (E1-T2)  ·  filtrado por categoría (CA-46.10)
+────────────────────────────────────────────────────────────────
+
+   +────────────────────────────────────+
+   |  Añadir a esta sesión         ✕    |
+   |  Solo ejercicios de EMPUJE         |  ← Gray600
+   |  ────────────────────────────────  |
+   |  🔍 [______________________]       |
+   |  ────────────────────────────────  |
+   |  Cruce de Polea Alta               |
+   |  Elevación Lateral                 |
+   |  Press de Banca Inclinado          |
+   |  ▒Press de Banca Plano▒    ya está |
+   |  Press Militar                     |
+   |  ...                               |
+   |  ────────────────────────────────  |
+   |  [  + Crear ejercicio nuevo    ]   |
+   +────────────────────────────────────+
+
+   Jalón al Pecho, Sentadilla Hack, Crunch Abdominal… NO aparecen,
+   tampoco al buscarlos.
+
+   Estado vacío de la búsqueda:
+   |  Ningún ejercicio de Empuje coincide.  |
+
+
+────────────────────────────────────────────────────────────────
+ 5. CREAR EJERCICIO (D5-T1)  ·  selector de categoría
+────────────────────────────────────────────────────────────────
+
+  Desde el Diccionario o desde el plan (CA-46.13)
+
++──────────────────────────────────────────+
+| ←  Nuevo ejercicio                       |
++──────────────────────────────────────────+
+|  Nombre *                                |
+|  [________________________________]      |
+|                                          |
+|  Categoría *                             |
+|  (○) Empuje   (○) Jalón   (○) Pierna     |  ← sin preselección
+|  Elige la categoría: Empuje, Jalón o     |  ← error al guardar
+|  Pierna                                  |    sin elegir
+|                                          |
+|  Equipamiento admitido *   ...           |
+|  Zonas musculares *        ...           |
+|  Dificultad de progresión  ...           |
+|                                          |
+|  [ Cancelar ]            [ Guardar ]     |
++──────────────────────────────────────────+
+
+  Desde la sesión activa (CA-46.11)
+
+|  Categoría                               |
+|  (●) Empuje   ▒(○) Jalón▒  ▒(○) Pierna▒  |  ← fijada y
+|  Categoría del día                       |    deshabilitada
+
+
+────────────────────────────────────────────────────────────────
+ 6. DETALLE DE EJERCICIO (D2-T1)  ·  categoría y conflicto (CA-46.14)
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+| ←  Aperturas                             |
++──────────────────────────────────────────+
+|  Categoría        [▼ Empuje         ]    |
+|  Dificultad       [▼ Alta           ]    |
+|  Equipamiento     Mancuerna · Polea ·…   |
++──────────────────────────────────────────+
+
+   Al intentar cambiar a «Jalón»:
+
+   +────────────────────────────────────+
+   |  No se puede cambiar la categoría  |
+   |                                    |
+   |  Aperturas está asignado a rutinas |
+   |  de Empuje:                        |
+   |   · Push — Foco Deltoides Lateral  |
+   |   · Push — Foco Tríceps            |
+   |  Retíralo de esas rutinas primero. |
+   |                        [ Entendido ]|
+   +────────────────────────────────────+
+
+
+────────────────────────────────────────────────────────────────
+ 7. PLAN (D3-T1 / D6-T1 / D4)  ·  categoría de rutina (CA-46.09/12)
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+| ←  Plan de entrenamiento                 |
++──────────────────────────────────────────+
+|  Push — Foco Deltoides Lateral  [EMPUJE] |
+|     Lunes                                |
+|  Pull — Foco Dorsal Ancho       [JALÓN]  |
+|     Martes                               |
+|  Lower — Foco Cuádriceps        [PIERNA] |
+|     Miércoles                            |
+|  ...                                     |
+|          [  + Nueva rutina  ]            |
++──────────────────────────────────────────+
+
+  Crear / editar rutina (D6-T1)
+
+|  Nombre *     [Push — Foco Tríceps___]   |
+|  Categoría *                             |
+|  (●) Empuje   (○) Jalón   (○) Pierna     |
+
+  Asignar ejercicio o alternativa de puesto a una rutina de JALÓN:
+  el selector lista SOLO ejercicios de Jalón.
+
+
+────────────────────────────────────────────────────────────────
+ 8. AJUSTES (J1-T2)  ·  umbral base por defecto 10 (CA-46.07)
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+|  Umbral base de estancamiento            |
+|      [ − ]     10 sesiones     [ + ]     |
+|  Sesiones seguidas sin progresar antes   |
+|  de considerar estancado un ejercicio.   |
+|  Baja → 10 · Media → 15 · Alta → 20      |
+|  Rango permitido: 3 a 15                 |
++──────────────────────────────────────────+
+
+╔══════════════════════════════════════════════════════════════╗
+║  ⚠️  PROTOTIPO — PROPUESTA PENDIENTE DE VALIDACIÓN CON DISEÑO  ║
+╚══════════════════════════════════════════════════════════════╝

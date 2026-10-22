@@ -32,6 +32,12 @@ object NavigationRoutes {
     const val ONE_RM = "one-rm"
     const val ACTIVE_SESSION = "active-session/{sessionId}"
     const val REGISTER_SET = "register-set/{sessionExerciseId}"
+
+    /**
+     * Clave con la que el registro de serie devuelve a la sesión activa el aviso en directo de
+     * la serie recién guardada (HU-46, CA-46.05).
+     */
+    const val SET_NOTICE_RESULT_KEY = "set_notice"
     const val SESSION_SUMMARY = "session-summary/{sessionId}"
     const val DELOAD_MANAGEMENT = "deload"
     const val ALERT_CENTER = "alert-center"

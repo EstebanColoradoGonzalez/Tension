@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.estebancoloradogonzalez.tension.R
 import com.estebancoloradogonzalez.tension.domain.model.WeightUnit
 import com.estebancoloradogonzalez.tension.domain.rules.ExternalLoadRule
+import com.estebancoloradogonzalez.tension.domain.rules.SetRangeNotice
 import com.estebancoloradogonzalez.tension.domain.usecase.session.GetPrefilledLoadForEquipmentUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.session.GetRegisterSetInfoUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.session.RegisterSetUseCase
@@ -30,6 +31,9 @@ import kotlinx.coroutines.launch
 import java.util.Locale
 import javax.inject.Inject
 
+/** Resultado de registrar una serie: el aviso en directo, si lo hay (CA-46.05). */
+data class SetRegistered(val notice: String?)
+
 @HiltViewModel
 class RegisterSetViewModel @Inject constructor(
     private val getRegisterSetInfoUseCase: GetRegisterSetInfoUseCase,
@@ -44,8 +48,14 @@ class RegisterSetViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(RegisterSetUiState())
     val uiState: StateFlow<RegisterSetUiState> = _uiState.asStateFlow()
 
-    private val _navigateBack = MutableSharedFlow<Boolean>(replay = 0)
-    val navigateBack: SharedFlow<Boolean> = _navigateBack.asSharedFlow()
+    private val _navigateBack = MutableSharedFlow<SetRegistered>(replay = 0)
+
+    /**
+     * Vuelta a la sesión. Lleva el aviso en directo de la serie recién registrada (HU-46,
+     * CA-46.05): la pantalla de registro se cierra al guardar, así que el aviso se muestra
+     * donde el ejecutante aterriza, en ese mismo momento.
+     */
+    val navigateBack: SharedFlow<SetRegistered> = _navigateBack.asSharedFlow()
 
     private var timerJob: Job? = null
     private var timerStartRealtime: Long = 0L
@@ -119,9 +129,22 @@ class RegisterSetViewModel @Inject constructor(
                     showChronometer = showChronometer,
                     minSeconds = minSeconds,
                     maxSeconds = maxSeconds,
+                    previousSetNotice = info.previousSetNotice?.let { noticeText(it) },
                 )
             }
         }
+    }
+
+    /**
+     * Texto del aviso en directo (CA-46.05). Uno solo para la vuelta a la sesión y para el
+     * formulario de la serie siguiente, de modo que no puedan decir cosas distintas.
+     */
+    private fun noticeText(notice: SetRangeNotice): String = when (notice) {
+        is SetRangeNotice.LowerNextSet -> context.getString(R.string.set_notice_lower_next)
+        is SetRangeNotice.TopOfRange ->
+            context.getString(R.string.set_notice_top_of_range, notice.sessionNumber)
+        is SetRangeNotice.IncreaseDue -> context.getString(R.string.set_notice_increase_due)
+        is SetRangeNotice.AddWeightDue -> context.getString(R.string.set_notice_add_weight_due)
     }
 
     fun onStartTimer() {
@@ -325,7 +348,7 @@ class RegisterSetViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true) }
             try {
-                registerSetUseCase(
+                val notice = registerSetUseCase(
                     sessionExerciseId = sessionExerciseId,
                     weightKg = weightKg,
                     reps = parsedReps,
@@ -334,7 +357,7 @@ class RegisterSetViewModel @Inject constructor(
                     equipmentTypeId = equipmentTypeId,
                     equipmentTypeName = state.selectedEquipmentName,
                 )
-                _navigateBack.emit(true)
+                _navigateBack.emit(SetRegistered(notice = notice?.let { noticeText(it) }))
             } catch (_: IllegalArgumentException) {
                 _uiState.update {
                     it.copy(
@@ -354,7 +377,7 @@ class RegisterSetViewModel @Inject constructor(
                     )
                 }
             } catch (_: IllegalStateException) {
-                _navigateBack.emit(true)
+                _navigateBack.emit(SetRegistered(notice = null))
             } finally {
                 _uiState.update { it.copy(isSaving = false) }
             }

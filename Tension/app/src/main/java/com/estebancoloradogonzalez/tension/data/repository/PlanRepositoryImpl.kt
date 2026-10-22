@@ -7,6 +7,7 @@ import com.estebancoloradogonzalez.tension.data.local.dao.RoutineDao
 import com.estebancoloradogonzalez.tension.data.local.dao.RoutineVersionDao
 import com.estebancoloradogonzalez.tension.data.local.entity.PlanAssignmentEntity
 import com.estebancoloradogonzalez.tension.domain.model.Exercise
+import com.estebancoloradogonzalez.tension.domain.model.MovementCategory
 import com.estebancoloradogonzalez.tension.domain.model.PlanExercise
 import com.estebancoloradogonzalez.tension.domain.model.PlanVersionDetail
 import com.estebancoloradogonzalez.tension.domain.model.ProgressionDifficulty
@@ -39,6 +40,7 @@ class PlanRepositoryImpl @Inject constructor(
                         name = entity.name,
                         sortOrder = entity.sortOrder,
                         createdAt = entity.createdAt,
+                        movementCategory = MovementCategory.fromCode(entity.movementCategory),
                     ),
                     versions = versionsByRoutine[entity.id]?.map { rv ->
                         VersionSummary(
@@ -58,6 +60,7 @@ class PlanRepositoryImpl @Inject constructor(
                 name = entity.name,
                 sortOrder = entity.sortOrder,
                 createdAt = entity.createdAt,
+                movementCategory = MovementCategory.fromCode(entity.movementCategory),
             )
         }
 
@@ -73,6 +76,7 @@ class PlanRepositoryImpl @Inject constructor(
                     routineVersionId = rv.id,
                     routineName = routine?.name ?: "",
                     versionNumber = rv.versionNumber,
+                    movementCategory = MovementCategory.fromCode(routine?.movementCategory),
                     exercises = assignments.map { pa ->
                         PlanExercise(
                             exerciseId = pa.exerciseId,
@@ -201,6 +205,9 @@ class PlanRepositoryImpl @Inject constructor(
         planAssignmentDao.updateSuggestedEquipment(routineVersionId, exerciseId, equipmentTypeId)
     }
 
+    override suspend fun getMovementCategoryOfVersion(routineVersionId: Long): MovementCategory? =
+        MovementCategory.fromCode(routineDao.getMovementCategoryOfVersion(routineVersionId))
+
     override suspend fun getRoutinesSuggestingEquipment(
         exerciseId: Long,
         equipmentTypeId: Long,
@@ -221,5 +228,6 @@ class PlanRepositoryImpl @Inject constructor(
             isCustom = isCustom == 1,
             mediaResource = mediaResource,
             progressionDifficulty = ProgressionDifficulty.fromCode(progressionDifficulty),
+            movementCategory = MovementCategory.fromCode(movementCategory),
         )
 }

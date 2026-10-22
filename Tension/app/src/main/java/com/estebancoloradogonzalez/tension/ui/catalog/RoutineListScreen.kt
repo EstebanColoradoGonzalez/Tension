@@ -58,12 +58,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.estebancoloradogonzalez.tension.R
+import com.estebancoloradogonzalez.tension.domain.model.MovementCategory
 import com.estebancoloradogonzalez.tension.domain.model.WeekDay
+import com.estebancoloradogonzalez.tension.ui.catalog.components.MovementCategorySelector
 import com.estebancoloradogonzalez.tension.ui.components.EntityNameText
+import com.estebancoloradogonzalez.tension.ui.components.MovementCategoryTag
 import com.estebancoloradogonzalez.tension.ui.components.weekDayName
 import com.estebancoloradogonzalez.tension.ui.components.weekDayShortName
 import com.estebancoloradogonzalez.tension.ui.components.weekDaysShortLabel
@@ -203,15 +207,24 @@ fun RoutineListScreen(
                                 )
                             },
                             supportingContent = {
-                                Text(
-                                    text = if (routine.versionCount == 1) {
-                                        stringResource(R.string.routine_version_count_singular)
-                                    } else {
-                                        stringResource(R.string.routine_version_count, routine.versionCount)
-                                    },
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
+                                // La categoría es un dato de la rutina, no de su nombre
+                                // (CA-46.09). Va en su propia línea: la columna es estrecha
+                                // por las acciones de la derecha, y compartir fila con el
+                                // conteo de versiones lo partía letra a letra.
+                                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    routine.movementCategory?.let { MovementCategoryTag(category = it) }
+                                    Text(
+                                        text = if (routine.versionCount == 1) {
+                                            stringResource(R.string.routine_version_count_singular)
+                                        } else {
+                                            stringResource(R.string.routine_version_count, routine.versionCount)
+                                        },
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
                             },
                             trailingContent = {
                                 Row {
@@ -327,6 +340,13 @@ fun RoutineListScreen(
         CreateRoutineDialog(
             name = uiState.createDialogName,
             onNameChanged = viewModel::onCreateDialogNameChanged,
+            category = uiState.createDialogCategory,
+            onCategorySelected = viewModel::onCreateDialogCategorySelected,
+            categoryError = if (uiState.createCategoryMissing) {
+                stringResource(R.string.movement_category_required)
+            } else {
+                null
+            },
             onConfirm = viewModel::onConfirmCreate,
             onDismiss = viewModel::onDismissCreateDialog,
         )
@@ -336,6 +356,16 @@ fun RoutineListScreen(
         EditRoutineDialog(
             name = uiState.editDialogName,
             onNameChanged = viewModel::onEditDialogNameChanged,
+            category = uiState.editDialogCategory,
+            onCategorySelected = viewModel::onEditDialogCategorySelected,
+            categoryError = if (uiState.editCategoryConflicts.isNotEmpty()) {
+                stringResource(
+                    R.string.routine_category_conflict_message,
+                    uiState.editCategoryConflicts.joinToString(", "),
+                )
+            } else {
+                null
+            },
             onConfirm = viewModel::onConfirmEdit,
             onDismiss = viewModel::onDismissEditDialog,
         )
@@ -466,6 +496,9 @@ private fun RoutineWeekDaysDialog(
 private fun CreateRoutineDialog(
     name: String,
     onNameChanged: (String) -> Unit,
+    category: MovementCategory?,
+    onCategorySelected: (MovementCategory) -> Unit,
+    categoryError: String?,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -473,14 +506,17 @@ private fun CreateRoutineDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.routine_create_title)) },
         text = {
-            OutlinedTextField(
-                value = name,
-                onValueChange = onNameChanged,
-                label = { Text(stringResource(R.string.routine_name_label)) },
-                placeholder = { Text(stringResource(R.string.routine_name_hint)) },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
+            Column {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = onNameChanged,
+                    label = { Text(stringResource(R.string.routine_name_label)) },
+                    placeholder = { Text(stringResource(R.string.routine_name_hint)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                RoutineCategoryField(category, onCategorySelected, categoryError)
+            }
         },
         confirmButton = {
             TextButton(
@@ -502,6 +538,9 @@ private fun CreateRoutineDialog(
 private fun EditRoutineDialog(
     name: String,
     onNameChanged: (String) -> Unit,
+    category: MovementCategory?,
+    onCategorySelected: (MovementCategory) -> Unit,
+    categoryError: String?,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -509,13 +548,16 @@ private fun EditRoutineDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.routine_edit_title)) },
         text = {
-            OutlinedTextField(
-                value = name,
-                onValueChange = onNameChanged,
-                label = { Text(stringResource(R.string.routine_name_label)) },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
+            Column {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = onNameChanged,
+                    label = { Text(stringResource(R.string.routine_name_label)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                RoutineCategoryField(category, onCategorySelected, categoryError)
+            }
         },
         confirmButton = {
             TextButton(
@@ -530,6 +572,27 @@ private fun EditRoutineDialog(
                 Text(stringResource(R.string.cancel))
             }
         },
+    )
+}
+
+/** Categoría obligatoria de la rutina (HU-46, CA-46.09, CA-46.13), con su error debajo. */
+@Composable
+private fun RoutineCategoryField(
+    category: MovementCategory?,
+    onCategorySelected: (MovementCategory) -> Unit,
+    error: String?,
+) {
+    Spacer(modifier = Modifier.height(16.dp))
+    Text(
+        text = stringResource(R.string.movement_category_field),
+        style = MaterialTheme.typography.labelLarge,
+    )
+    Spacer(modifier = Modifier.height(8.dp))
+    MovementCategorySelector(
+        selected = category,
+        onSelected = onCategorySelected,
+        error = error,
+        modifier = Modifier.fillMaxWidth(),
     )
 }
 

@@ -439,6 +439,8 @@
 
 > `equipment_types` son **todas** las opciones que el ejercicio admite, en el orden del catálogo, y `equipment_types_with_sets` los identificadores de las que ya tienen series registradas — las que la ficha marca con candado y no se pueden retirar (`D2-T3`).
 
+> **HU-46.** La ficha muestra la **categoría de movimiento** (Empuje / Jalón / Pierna) con un selector que persiste al instante, igual que la dificultad. Un ejercicio **sin** asignaciones en el plan cambia libremente (CA-46.14). Uno asignado —como puesto o como alternativa, en cualquier versión— a rutinas de otra categoría **no cambia**: `UpdateExerciseMovementCategoryUseCase` devuelve `ConflictsWithPlan(routineNames)` y la pantalla lo presenta en un diálogo que nombra esas rutinas. El selector vuelve solo, porque nada se escribió.
+
 ---
 
 #### `D2-T2`: Editar Dificultad de Progresión del Ejercicio
@@ -532,6 +534,8 @@
 
 > `equipment_type_ids` es obligatorio y no vacío. Los identificadores repetidos se colapsan.
 
+> **HU-46.** Nuevo campo **obligatorio** `movement_category` (Empuje / Jalón / Pierna), con selector segmentado de 48 dp **sin preselección** (CA-46.13). Guardar sin elegirla no persiste nada y muestra «Elige la categoría: Empuje, Jalón o Pierna». El botón no se deshabilita por la categoría, para que el mensaje llegue. **Invocado desde la sesión** (`E1-T2`, CA-46.11), la categoría llega **fijada y deshabilitada** con la línea «Categoría del día». `CreateAndAddExerciseToSessionUseCase` la toma de la sesión y no del formulario.
+
 ---
 
 #### `D3-T1`: Consultar Plan de Entrenamiento
@@ -568,6 +572,8 @@
   ]
 }
 ```
+
+> **HU-46.** Cada rutina muestra su **categoría** como etiqueta, independiente de su nombre libre (CA-46.09). En el plan por defecto: Rutinas 1 y 4 → Empuje, 2 y 5 → Jalón, 3 y 6 → Pierna.
 
 ---
 
@@ -611,6 +617,8 @@
   ]
 }
 ```
+
+> **HU-46.** La cabecera muestra la categoría de la rutina. Los selectores de **asignar ejercicio** y de **alternativa de un puesto** solo ofrecen ejercicios de esa categoría: `ExerciseDao.getNotInVersion` filtra por la categoría de la rutina de la versión. `AssignExerciseToVersionUseCase` y `AddAlternativeToSlotUseCase` **rechazan** cualquier asignación de otra categoría que llegue por la ruta de datos (CA-46.12).
 
 ---
 
@@ -675,6 +683,8 @@
 
 - **Estado de Éxito (creación):** `Rutina creada con versión 1. routine_current_version inicializada con current_version_number=1. Retorno a D3.`
 - **Estado de Éxito (edición):** `Nombre actualizado. Retorno a D3.`
+
+> **HU-46.** Crear y editar rutina incluyen la **categoría obligatoria**, sin preselección al crear (CA-46.13). Cambiar la categoría de una rutina con ejercicios asignados de otra categoría **se impide**: `UpdateRoutineMovementCategoryUseCase` devuelve los nombres de esos ejercicios y el diálogo los muestra bajo el selector (CA-46.14). La categoría se comprueba **antes** que el nombre, así que un conflicto no deja un renombrado a medias.
 
 ---
 
@@ -767,6 +777,8 @@
 - **Estado de Éxito:** `session_exercise creado con is_extra = 1. E1 lo muestra al final de la lista, con su marca de añadido, sin número de puesto y sin ícono de intercambio. El presupuesto de retiro sube en uno.`
 - **Estados de Error:** `ERR_EXERCISE_ALREADY_IN_SESSION`, `ERR_SESSION_NOT_IN_PROGRESS`.
 
+> **HU-46.** El listado y la búsqueda muestran **solo** los ejercicios de la **categoría del día**, que es la de la rutina de la sesión, también cuando esa rutina llegó por una reasignación temporal (CA-46.09, CA-46.10). La hoja dice «Solo ejercicios de {categoría}», y su estado vacío, «Ningún ejercicio de {categoría} coincide.». Se conservan las reglas de HU-43. `addExerciseToSession` rechaza otra categoría dentro de su transacción. La cabecera de `E1` lleva la etiqueta de la categoría y cada ejercicio, junto al peso propuesto, la indicación del último cierre: «▼ bajar peso», «▲ subida», «▲ añadir peso extra» o «· N de 4 en el tope» (CA-46.02, CA-46.04). En descarga no se muestra ninguna.
+
 ---
 
 #### `E1-T3`: Retirar Ejercicio de la Sesión
@@ -803,7 +815,7 @@
 - **Tipo de Trigger (Entrada):** `Acción del ejecutante: completa el formulario E2 (Registro de Serie) y toca el botón de confirmar.`
 - **Descripción:** El sistema valida los datos y persiste un nuevo `exercise_set`. Asigna automáticamente `set_number = COUNT(series previas del ejercicio en la sesión) + 1`. Si es la primera serie **del par `(ejercicio, equipamiento)`**, crea su `exercise_progression` si no existe: un ejercicio entrenado con tres implementos mantiene tres estados de progresión independientes (CA-40.01).
 
-  El **valor precargado** en el campo de peso se resuelve con una precedencia estricta, y **desde HU-40 cada uno de sus términos se resuelve sobre el par `(ejercicio, equipamiento)`**: (1) la carga prescrita por el motor de Doble Umbral **para ese par** mientras siga **activa**, (2) el peso de la serie anterior **del mismo par** en la sesión actual, (3) el peso de la última serie **del mismo par** en su sesión cerrada más reciente, (4) campo vacío. Una prescripción está *activa* mientras supere el último peso efectivamente manejado por más de 0.01 Kg: representa un aumento que el ejecutante aún no ha alcanzado. Una vez alcanzada o superada, la prescripción queda consumida y la memoria del último peso toma el relevo, de modo que la precarga acompaña la progresión en lugar de volver a un valor obsoleto. La memoria se resuelve sobre el **ejercicio efectivamente ejecutado** (`session_exercise.exercise_id`) y excluye las sesiones de descarga. En un microciclo de descarga, la carga de descarga calculada **del par** conserva su prioridad sobre la memoria. El valor precargado es siempre editable: el sistema sugiere, no impone.
+  El **valor precargado** en el campo de peso se resuelve con una precedencia estricta, y **desde HU-40 cada uno de sus términos se resuelve sobre el par `(ejercicio, equipamiento)`**: (1) la carga prescrita por el motor de progresión **para ese par** —desde HU-46 la progresión por rango 8–12— mientras siga **activa**, (2) el peso de la serie anterior **del mismo par** en la sesión actual, (3) el peso de la última serie **del mismo par** en su sesión cerrada más reciente, (4) campo vacío. Una prescripción está *activa* mientras supere el último peso efectivamente manejado por más de 0.01 Kg: representa un aumento que el ejecutante aún no ha alcanzado. Una vez alcanzada o superada, la prescripción queda consumida y la memoria del último peso toma el relevo, de modo que la precarga acompaña la progresión en lugar de volver a un valor obsoleto. La memoria se resuelve sobre el **ejercicio efectivamente ejecutado** (`session_exercise.exercise_id`) y excluye las sesiones de descarga. En un microciclo de descarga, la carga de descarga calculada **del par** conserva su prioridad sobre la memoria. El valor precargado es siempre editable: el sistema sugiere, no impone.
 
   **Al cambiar de implemento en el selector, el peso precargado y la unidad se recalculan para el par nuevo.** Si el par no tiene historial, el campo queda **vacío**: nunca se hereda el peso de otro equipamiento, porque es el peso de otra cosa. El recálculo se cancela en cuanto el ejecutante toca el campo — una sugerencia que llega tarde y pisa lo ya tecleado impondría en vez de sugerir.
 
@@ -850,13 +862,21 @@
 
 > Al cambiar de implemento, el campo de peso se ajusta a lo que ese implemento significa: pasando a uno sin carga externa se fija en 0, y pasando a `Peso Añadido` se **limpia** en vez de heredar, porque lo anterior era el peso de otra cosa y no un lastre.
 
+> **HU-46 — aviso en directo (CA-46.05).** `registerSet` devuelve un `SetRangeNotice` calculado sobre la serie **persistida** y el conteo del par anterior a la sesión:
+> - menos de 8 → «Baja el peso en la próxima serie», también en la primera serie;
+> - 12 o más → «Tope del rango — cuenta para la subida (sesión N de 4)», solo informativo;
+> - 12 o más con la subida ya alcanzada y el mismo peso → «Ya toca subir el peso» (o «Ya toca añadir peso extra» en un par sin carga externa);
+> - entre 8 y 11 → nada.
+>
+> No hay aviso en descarga, en isométricos ni en pares sin carga externa que no admitan «Peso Añadido». Un par sin carga externa nunca recibe el de bajar (CA-46.15, CA-46.16, CA-46.18). El aviso **no bloquea ni modifica** la serie. La pantalla vuelve a `E1` al guardar, así que el aviso viaja como resultado de navegación y se muestra en el `Snackbar` de la sesión activa. El formulario de la serie siguiente lo repite en una tarjeta sobre el formulario.
+
 ---
 
 #### `E4-T1`: Cerrar Sesión
 
 - **Tipo de Trigger (Entrada):** `Acción del ejecutante: confirma el cierre en el diálogo E4 (Confirmación de Cierre de Sesión). La confirmación está deshabilitada mientras la sesión no tenga ninguna serie registrada.`
 - **Precondición — al menos una serie:** cerrar da por terminado lo entrenado, y sin ninguna fila en `exercise_set` no hay nada que terminar. La sesión permanece `IN_PROGRESS` y es reanudable; para resolver el día sin entrenar, la vía es `B1-T5`.
-- **Descripción:** El sistema ejecuta el protocolo de cierre de sesión: (1) finaliza todos los `session_exercise` no finalizados, (2) calcula tonelaje, (3) ejecuta el motor de reglas **por cada par `(ejercicio, equipamiento)` entrenado** (comparación histórica del par, clasificación del par, actualización de su `exercise_progression`, carga del Doble Umbral del par), (4) consolida la lectura del ejercicio y evalúa mesetas y alertas, (5) actualiza `rotation_state`, (6) determina el status de sesión, (7) navega a E5.
+- **Descripción:** El sistema ejecuta el protocolo de cierre de sesión: (1) finaliza todos los `session_exercise` no finalizados, (2) calcula tonelaje, (3) ejecuta el motor de reglas **por cada par `(ejercicio, equipamiento)` entrenado** (comparación histórica del par, clasificación del par, actualización de su `exercise_progression`, carga del par según la progresión por rango 8–12, HU-46), (4) consolida la lectura del ejercicio y evalúa mesetas y alertas, (5) actualiza `rotation_state`, (6) determina el status de sesión, (7) navega a E5.
 
   **La unidad de comparación es el par.** Una sesión con mancuerna y polea del mismo ejercicio produce **dos** evaluaciones independientes, cada una contra el histórico de su implemento. Estrenar uno no tiene contra qué compararse: su clasificación es `NULL` (Sin Historial) y **nunca `REGRESSION`**, su contador arranca en 0 y el estado del otro par no se altera.
 
@@ -899,6 +919,8 @@
 }
 ```
 
+> **HU-46.** El motor de reglas por par sustituye la carga del Doble Umbral por la **progresión por rango 8–12** (`HypertrophyRangeRule`). Cada par se lee por la **mayoría estricta** de sus series registradas: tope (12 o más), dentro, o por debajo (menos de 8). Las series del plan y el RIR no intervienen (CA-46.01, CA-46.06). El cierre persiste en `exercise_progression` el conteo de sesiones consecutivas en el tope con el **mismo peso de referencia** —el mayor de las series, no el promedio— y la última lectura. La lectura y el conteo de ese cierre van a `session_exercise_progression`. La carga propuesta es peso de referencia + incremento con 4 o más sesiones en el tope, y el peso de referencia en cualquier otro caso. Isométricos y sesiones de descarga no se evalúan por rango, y el conteo queda congelado.
+
 ---
 
 #### `E5-T1`: Consultar Resumen Post-Sesión
@@ -940,7 +962,7 @@
           "equipment_type_id": "INTEGER",
           "equipment_type_name": "TEXT",
           "progression_classification": "TEXT | null // null = Sin Historial de ese implemento, jamás una regresión",
-          "prescribed_load_next": "REAL | null // La carga que el Doble Umbral prescribió A ESE PAR",
+          "prescribed_load_next": "REAL | null // La carga que el motor prescribió A ESE PAR (progresión por rango desde HU-46)",
           "action_signal": "TEXT",
           "avg_weight_kg": "REAL",
           "completed_sets": "INTEGER"
@@ -950,6 +972,15 @@
   ]
 }
 ```
+
+> **HU-46.** El renglón de cada par muestra la señal de rango, que **manda** sobre la comparación con la sesión anterior, también en la primera sesión:
+> - «▼ Bajar peso», con «Tú eliges cuánto según el implemento», sin cantidad prescrita (CA-46.02);
+> - «▲ Subir carga → X kg», con «N de 4 sesiones en el tope» (CA-46.03);
+> - «▲ Añadir peso extra», para un par sin carga externa que admite «Peso Añadido» (CA-46.15);
+> - «● Mantener — N de 4 sesiones en el tope» (CA-46.04);
+> - «● Mantener — dentro del rango 8–12».
+>
+> Sin lectura de rango (isométricos, descarga, peso corporal sin «Peso Añadido») se conserva la señal de siempre. Con varios implementos, cada renglón de par lleva su propia señal.
 
 ---
 
@@ -1574,7 +1605,7 @@ Los valores viven en un único punto del código, `AlertThresholdRule`. Esta tab
 
 ```json
 {
-  "plateau_base_threshold": "INTEGER [3..15] // Obligatorio. Default 5."
+  "plateau_base_threshold": "INTEGER [3..15] // Obligatorio. Default 10 (HU-46; antes 5)."
 }
 ```
 
@@ -1583,6 +1614,8 @@ Los valores viven en un único punto del código, `AlertThresholdRule`. Esta tab
 - **Estado de Éxito:** `profile.plateau_base_threshold actualizado. J1 refleja el nuevo valor y el desglose recalculado: Baja x1, Media x1.5 y Alta x2, redondeando hacia arriba.`
 
 - **Estado de Error (fuera de rango):** `El valor se rechaza en la capa de dominio, no se persiste y J1 muestra el mensaje "El umbral debe estar entre 3 y 15".`
+
+> **HU-46.** El valor por defecto en una instalación nueva es **10** (antes 5), con desglose Baja → 10 · Media → 15 · Alta → 20. El rango sigue siendo 3 a 15 y los multiplicadores no cambian (CA-46.07).
 
 ---
 
@@ -1622,6 +1655,8 @@ Los valores viven en un único punto del código, `AlertThresholdRule`. Esta tab
 
 - **Estado de Error:** `Indicador de error con mensaje. Los datos originales permanecen intactos.`
 
+> **HU-46.** Formato **18**. Viajan la categoría de ejercicios y rutinas y el conteo hacia la subida, sin tabla nueva: el mecanismo vuelca columnas por cursor (CA-46.19).
+
 ---
 
 #### `J3-T1`: Importar Respaldo (Restore)
@@ -1658,6 +1693,8 @@ Los valores viven en un único punto del código, `AlertThresholdRule`. Esta tab
 > **Por qué el rechazo es total.** Hasta HU-38 se aceptaban los formatos 11 y 8 porque lo que les faltaba era derivable: `tree_state` se reconstruye entero desde el historial restaurado (`N1-T1`), así que restaurar sin él nunca dejaba un estado inválido. **El equipamiento de la serie no se deriva de nada**: un respaldo anterior no dice con qué implemento se hizo cada serie, y `exercise_set.equipment_type_id` es `NOT NULL`. Aceptarlo exigiría inventar un valor por serie, que es exactamente la importación parcial que HU-39 prohíbe. Con el rechazo, los caminos de importación de v8 y v11/v12 se retiraron del código: importación inalcanzable es una promesa que la aplicación ya no cumple.
 >
 > **El formato 13 se rechaza por el mismo argumento.** Su `exercise_progression` está claveada solo por `exercise_id` y no dice con qué implemento se acumuló cada estado. Ahora `equipment_type_id` es `NOT NULL` y encabeza la clave primaria junto a `exercise_id`, así que aceptarlo obligaría a inventar un implemento por fila — y la restauración tiene que reproducir el estado del motor par por par **sin recalcularlo**.
+
+> **HU-46.** Se acepta solo el formato 18. Un respaldo 17 se rechaza con un mensaje propio: no registra la categoría de movimiento, que es una decisión y no un cálculo. La importación de respaldos anteriores queda fuera de alcance (CA-46.19).
 
 ---
 

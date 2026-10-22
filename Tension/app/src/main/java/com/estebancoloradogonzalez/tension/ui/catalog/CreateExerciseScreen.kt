@@ -44,6 +44,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.estebancoloradogonzalez.tension.R
 import com.estebancoloradogonzalez.tension.ui.catalog.components.EquipmentMultiSelector
+import com.estebancoloradogonzalez.tension.ui.catalog.components.MovementCategorySelector
 import com.estebancoloradogonzalez.tension.ui.catalog.components.MuscleZoneHierarchySelector
 import com.estebancoloradogonzalez.tension.ui.catalog.components.ProgressionDifficultySelector
 import com.estebancoloradogonzalez.tension.ui.components.ExerciseImagePlaceholder
@@ -154,6 +155,25 @@ fun CreateExerciseScreen(
                             { Text(error) }
                         },
                         singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+
+                    // Categoría de movimiento — obligatoria, sin preselección (CA-46.13);
+                    // fijada y deshabilitada cuando el formulario viene de la sesión (CA-46.11)
+                    Text(
+                        text = stringResource(R.string.movement_category_field),
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                    MovementCategorySelector(
+                        selected = uiState.movementCategory,
+                        onSelected = viewModel::onMovementCategorySelected,
+                        enabled = !uiState.isCategoryFixed,
+                        supportingText = if (uiState.isCategoryFixed) {
+                            stringResource(R.string.movement_category_of_the_day)
+                        } else {
+                            null
+                        },
+                        error = uiState.categoryError,
                         modifier = Modifier.fillMaxWidth(),
                     )
 

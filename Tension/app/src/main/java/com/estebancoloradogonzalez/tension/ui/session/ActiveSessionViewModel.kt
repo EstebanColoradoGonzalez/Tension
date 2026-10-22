@@ -16,6 +16,7 @@ import com.estebancoloradogonzalez.tension.domain.usecase.session.FinalizeExerci
 import com.estebancoloradogonzalez.tension.domain.usecase.session.AddExerciseToSessionUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.session.GetAddableExercisesUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.session.GetSessionAdjustmentUseCase
+import com.estebancoloradogonzalez.tension.domain.usecase.session.GetSessionMovementCategoryUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.session.WithdrawFromSessionUseCase
 import com.estebancoloradogonzalez.tension.domain.rules.SessionAdjustmentRule
 import com.estebancoloradogonzalez.tension.domain.rules.WithdrawalVerdict
@@ -46,6 +47,7 @@ class ActiveSessionViewModel @Inject constructor(
     private val getAddableExercisesUseCase: GetAddableExercisesUseCase,
     private val addExerciseToSessionUseCase: AddExerciseToSessionUseCase,
     private val withdrawFromSessionUseCase: WithdrawFromSessionUseCase,
+    private val getSessionMovementCategoryUseCase: GetSessionMovementCategoryUseCase,
     @ApplicationContext private val context: Context,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
@@ -82,6 +84,7 @@ class ActiveSessionViewModel @Inject constructor(
             } else {
                 ""
             }
+            val dayCategory = getSessionMovementCategoryUseCase(sessionId)
 
             combine(
                 getSessionExercisesUseCase(sessionId),
@@ -99,6 +102,7 @@ class ActiveSessionViewModel @Inject constructor(
                         versionNumber = routineVersion?.second ?: 0,
                         addedCount = adjustment.addedCount,
                         withdrawnCount = adjustment.withdrawnCount,
+                        movementCategory = dayCategory,
                         exercises = exercises.map { detail ->
                             val statusLabel = when (detail.status) {
                                 ExerciseSessionStatus.NOT_STARTED -> "No Iniciado"
@@ -137,6 +141,9 @@ class ActiveSessionViewModel @Inject constructor(
                                     completedSets = detail.completedSets,
                                     adjustment = adjustment,
                                 ),
+                                // La descarga prescribe su propia carga: no hay señal de
+                                // rango que mostrar junto a ella (CA-46.18).
+                                rangeSignal = if (isDeload) null else detail.rangeSignal,
                             )
                         },
                     )
@@ -280,7 +287,10 @@ class ActiveSessionViewModel @Inject constructor(
     }
 
     fun onAddExerciseRequested() {
-        _addExerciseSheetState.value = AddExerciseSheetState(isVisible = true)
+        _addExerciseSheetState.value = AddExerciseSheetState(
+            isVisible = true,
+            dayCategory = _uiState.value.movementCategory,
+        )
         viewModelScope.launch {
             getAddableExercisesUseCase(sessionId).collect { catalog ->
                 _addExerciseSheetState.update { current ->

@@ -11,10 +11,12 @@ import com.estebancoloradogonzalez.tension.data.local.entity.ExerciseEquipmentEn
 import com.estebancoloradogonzalez.tension.data.local.entity.ExerciseMuscleZoneEntity
 import com.estebancoloradogonzalez.tension.domain.model.EquipmentType
 import com.estebancoloradogonzalez.tension.domain.model.Exercise
+import com.estebancoloradogonzalez.tension.domain.model.MovementCategory
 import com.estebancoloradogonzalez.tension.domain.model.MuscleZone
 import com.estebancoloradogonzalez.tension.domain.model.ProgressionDifficulty
 import com.estebancoloradogonzalez.tension.domain.repository.ExerciseMuscleZoneIds
 import com.estebancoloradogonzalez.tension.domain.repository.ExerciseRepository
+import com.estebancoloradogonzalez.tension.domain.rules.CategorizedName
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -110,6 +112,7 @@ class ExerciseRepositoryImpl @Inject constructor(
         isToTechnicalFailure: Boolean,
         mediaResource: String?,
         progressionDifficulty: ProgressionDifficulty,
+        movementCategory: MovementCategory,
     ): Long {
         val entity = ExerciseEntity(
             name = name,
@@ -119,6 +122,7 @@ class ExerciseRepositoryImpl @Inject constructor(
             isCustom = 1,
             mediaResource = mediaResource,
             progressionDifficulty = progressionDifficulty.name,
+            movementCategory = movementCategory.name,
         )
         return exerciseDao.insertExerciseWithRelations(
             exercise = entity,
@@ -139,6 +143,15 @@ class ExerciseRepositoryImpl @Inject constructor(
     ) {
         exerciseDao.updateProgressionDifficulty(exerciseId, difficulty.name)
     }
+
+    override suspend fun updateMovementCategory(exerciseId: Long, category: MovementCategory) {
+        exerciseDao.updateMovementCategory(exerciseId, category.name)
+    }
+
+    override suspend fun getRoutinesAssigningExercise(exerciseId: Long): List<CategorizedName> =
+        exerciseDao.getRoutinesAssigningExercise(exerciseId).map {
+            CategorizedName(name = it.name, category = MovementCategory.fromCode(it.category))
+        }
 
     override suspend fun exerciseExistsByName(name: String): Boolean =
         exerciseDao.countByName(name) > 0
@@ -193,6 +206,7 @@ class ExerciseRepositoryImpl @Inject constructor(
             isCustom = isCustom == 1,
             mediaResource = mediaResource,
             progressionDifficulty = ProgressionDifficulty.fromCode(progressionDifficulty),
+            movementCategory = MovementCategory.fromCode(movementCategory),
         )
 }
 

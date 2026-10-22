@@ -26,7 +26,7 @@ import org.junit.Test
 class BackupRepositoryImplTest {
 
     /** Espejo del valor privado del impl: el formato inmediatamente anterior. */
-    private val PREVIOUS_SCHEMA_VERSION = 16
+    private val PREVIOUS_SCHEMA_VERSION = 17
 
     private lateinit var database: TensionDatabase
     private lateinit var context: Context
@@ -306,12 +306,23 @@ class BackupRepositoryImplTest {
     }
 
     @Test
-    fun `the backup format is 17`() {
-        // Sube porque HU-43 añade `session_withdrawal`, y `validateBackup` rechaza por
-        // incompleto cualquier respaldo al que le falte una tabla del orden: en cuanto la
-        // tabla entra, ningún v16 pasa. El motivo de fondo también se sostiene solo: el
-        // ajuste de la sesión no se deriva del plan, así que no se puede reconstruir.
-        assertEquals(17, BackupRepositoryImpl.SCHEMA_VERSION)
+    fun `the backup format is 18`() {
+        // Sube porque HU-46 añade la categoría de movimiento —`NOT NULL` y sin default— a
+        // `exercise` y a `routine`. La categoría es una decisión, no un cálculo: un v17 no
+        // se puede completar sin inventarla (CA-46.19).
+        assertEquals(18, BackupRepositoryImpl.SCHEMA_VERSION)
+    }
+
+    @Test
+    fun `validateBackup rejects the previous format naming the missing movement category`() {
+        every {
+            context.getString(com.estebancoloradogonzalez.tension.R.string.import_backup_no_movement_category)
+        } returns "sin categoría"
+
+        val result = repository.validateBackup(buildBackupJsonWithSchemaVersion(17))
+
+        assertFalse(result.isValid)
+        assertEquals("sin categoría", result.errorMessage)
     }
 
     @Test
@@ -348,7 +359,7 @@ class BackupRepositoryImplTest {
         val result = repository.validateBackup(buildValidBackupJson())
 
         assertTrue(result.isValid)
-        assertEquals(17, result.metadata?.schemaVersion)
+        assertEquals(18, result.metadata?.schemaVersion)
         assertNull(result.errorMessage)
     }
 
@@ -363,7 +374,7 @@ class BackupRepositoryImplTest {
 
     @Test
     fun `validateBackup rejects every older format`() {
-        listOf(14, 13, 11, 10, 8).forEach { version ->
+        listOf(16, 15, 14, 13, 11, 10, 8).forEach { version ->
             val result = repository.validateBackup(buildBackupJsonWithSchemaVersion(version))
 
             assertFalse("La version $version deberia rechazarse", result.isValid)
@@ -607,7 +618,7 @@ class BackupRepositoryImplTest {
         return json.toString()
     }
 
-    /** Respaldo del formato inmediatamente anterior: sin `session_withdrawal`. */
+    /** Respaldo del formato inmediatamente anterior: sin la categoría de movimiento. */
     private fun buildPreviousFormatBackupJson(): String {
         val json = JSONObject()
         json.put("metadata", JSONObject().apply {

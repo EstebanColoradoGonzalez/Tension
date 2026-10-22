@@ -287,8 +287,8 @@ class MiUnRmEstimadoTest {
     private fun crearEjercicioIsometrico() {
         db.openHelper.writableDatabase.execSQL(
             "INSERT INTO exercise (id, name, media_resource, is_bodyweight, is_isometric, " +
-                "is_to_technical_failure, progression_difficulty, is_custom) " +
-                "VALUES ($isometrico, 'Isométrico de prueba', 'x', 0, 1, 0, 'MEDIUM', 1)",
+                "is_to_technical_failure, progression_difficulty, is_custom, movement_category) " +
+                "VALUES ($isometrico, 'Isométrico de prueba', 'x', 0, 1, 0, 'MEDIUM', 1, 'PULL')",
         )
         db.openHelper.writableDatabase.execSQL(
             "INSERT INTO exercise_muscle_zone (exercise_id, muscle_zone_id, is_primary) " +

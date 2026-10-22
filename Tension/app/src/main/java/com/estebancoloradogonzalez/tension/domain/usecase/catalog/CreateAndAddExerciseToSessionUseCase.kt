@@ -2,6 +2,7 @@ package com.estebancoloradogonzalez.tension.domain.usecase.catalog
 
 import com.estebancoloradogonzalez.tension.domain.model.ProgressionDifficulty
 import com.estebancoloradogonzalez.tension.domain.usecase.session.AddExerciseToSessionUseCase
+import com.estebancoloradogonzalez.tension.domain.usecase.session.GetSessionMovementCategoryUseCase
 import javax.inject.Inject
 
 /**
@@ -22,10 +23,16 @@ import javax.inject.Inject
  * Las validaciones del formulario no se repiten aquí: viven íntegras en [CreateExerciseUseCase]
  * —al menos un equipamiento (CA-39.09) y al menos una zona principal (CA-41.09)— porque el
  * formulario es el mismo del Diccionario, sin recortes.
+ *
+ * La categoría **no** la decide el formulario: es la del día (HU-46, CA-46.11). Se toma de la
+ * sesión aquí, y no del valor que llegue de la pantalla, porque un ejercicio creado desde un
+ * día de Empuje con otra categoría no podría añadirse a esa sesión (CA-46.10) y quedaría en
+ * el Diccionario sin el gesto que lo motivó.
  */
 class CreateAndAddExerciseToSessionUseCase @Inject constructor(
     private val createExerciseUseCase: CreateExerciseUseCase,
     private val addExerciseToSessionUseCase: AddExerciseToSessionUseCase,
+    private val getSessionMovementCategoryUseCase: GetSessionMovementCategoryUseCase,
 ) {
     suspend operator fun invoke(
         sessionId: Long,
@@ -39,6 +46,9 @@ class CreateAndAddExerciseToSessionUseCase @Inject constructor(
         mediaResource: String?,
         progressionDifficulty: ProgressionDifficulty = ProgressionDifficulty.MEDIUM,
     ): Long {
+        val dayCategory = checkNotNull(getSessionMovementCategoryUseCase(sessionId)) {
+            "The session has no category of the day"
+        }
         val exerciseId = createExerciseUseCase(
             name = name,
             equipmentTypeIds = equipmentTypeIds,
@@ -49,6 +59,7 @@ class CreateAndAddExerciseToSessionUseCase @Inject constructor(
             isToTechnicalFailure = isToTechnicalFailure,
             mediaResource = mediaResource,
             progressionDifficulty = progressionDifficulty,
+            movementCategory = dayCategory,
         )
         addExerciseToSessionUseCase(sessionId, exerciseId)
         return exerciseId

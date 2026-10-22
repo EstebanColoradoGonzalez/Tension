@@ -1,6 +1,7 @@
 package com.estebancoloradogonzalez.tension.ui.catalog
 
 import com.estebancoloradogonzalez.tension.domain.model.EquipmentType
+import com.estebancoloradogonzalez.tension.domain.model.MovementCategory
 import com.estebancoloradogonzalez.tension.domain.model.MuscleZone
 import com.estebancoloradogonzalez.tension.domain.model.ProgressionDifficulty
 
@@ -34,6 +35,8 @@ data class ExerciseDetailItem(
     val mediaResource: String?,
     val progressionDifficulty: ProgressionDifficulty,
     val effectiveThresholdSessions: Int,
+    /** Empuje, Jalón o Pierna (HU-46). Editable desde la ficha con la restricción de CA-46.14. */
+    val movementCategory: MovementCategory? = null,
 ) {
     val equipmentSummary: String get() = equipmentTypes.joinToString(" · ")
 }

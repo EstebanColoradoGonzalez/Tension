@@ -1,5 +1,7 @@
 package com.estebancoloradogonzalez.tension.domain.model
 
+import com.estebancoloradogonzalez.tension.domain.rules.RangeSignal
+
 data class SessionExerciseDetail(
     val sessionExerciseId: Long,
     val exerciseId: Long?,
@@ -21,4 +23,10 @@ data class SessionExerciseDetail(
     val hasAlternatives: Boolean = false,
     /** Añadido por el ejecutante a esta sesión, fuera de la estructura de puestos (HU-43). */
     val isExtra: Boolean = false,
+    /**
+     * Lo que el último cierre dijo del peso de este ejercicio, para mostrarlo junto al peso
+     * propuesto (HU-46, CA-46.02, CA-46.04). `null` si nunca se leyó por el rango o si el
+     * ejercicio no tiene señal de peso (isométricos, peso corporal sin «Peso Añadido»).
+     */
+    val rangeSignal: RangeSignal? = null,
 )

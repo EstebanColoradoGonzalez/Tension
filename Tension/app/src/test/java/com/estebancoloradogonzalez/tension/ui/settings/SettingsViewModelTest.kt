@@ -72,7 +72,7 @@ class SettingsViewModelTest {
         val viewModel = buildViewModel(storedThreshold = null)
         advanceUntilIdle()
 
-        assertEquals(5, viewModel.uiState.value.baseThreshold)
+        assertEquals(10, viewModel.uiState.value.baseThreshold)
     }
 
     @Test

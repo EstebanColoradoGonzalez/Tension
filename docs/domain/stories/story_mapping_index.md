@@ -74,6 +74,7 @@
 | **[HU-41](./HU-41-catalogo-anatomico-plan-alineado/historia.md)** | Catálogo anatómico y plan por defecto alineado | — | EPIC-10 | `Lista para Revisión` | Alta |
 | **[HU-42](./HU-42-1rm-estimado/historia.md)** | Mi 1RM estimado | — | EPIC-10 | `Lista para Revisión` | Media |
 | **[HU-43](./HU-43-ajustar-sesion-del-dia/historia.md)** | Ajustar la sesión del día | — | EPIC-10 | `Lista para Revisión` | Media |
+| **[HU-46](./HU-46-progresion-rango-categoria-dia/historia.md)** | Progresión por rango de hipertrofia y sesión acotada a la categoría del día | — | EPIC-08 | `Lista para Revisión` | Alta |
 
 **Dependencias entre historias:** `HU-31` depende de `HU-30` (la coherencia entre el valor precargado y la unidad activa del ejercicio) y `HU-33` depende de `HU-32` (la ponderación de la tasa de progresión consume el atributo de dificultad). `HU-38` depende de `HU-37`, de la que hereda la entidad de persistencia, el cálculo, la ruta, la pantalla dedicada y la representación nativa que allí pasa a fallback. Las cinco historias de **EPIC-10** dependen todas de `HU-39`, que aporta el equipamiento persistido en la serie: `HU-40` y `HU-42` solo de ella —`HU-42` es paralelizable—, `HU-41` de ella más los ocho renombrados que declara, y `HU-43` de `HU-39` y de `HU-41`, porque reutiliza el formulario de creación de ejercicio ya con equipamiento múltiple y jerarquía de zonas. El orden `HU-39` → `HU-40` era **crítico** y se respetó: ambas están implementadas, y con `HU-40` el falso `REGRESSION` por cambio de implemento deja de ocurrir. `HU-42` se implementó después de `HU-41` sin depender de ella, que es lo que su carácter paralelizable predecía: su diff no toca ni el catálogo ni el plan. `HU-43` se implementó la última y con sus dos prerrequisitos entregados, de modo que reutilizó el formulario `D5-T1` tal cual, sin tocarlo: **cierra la partición**. El resto son independientes entre sí.
 
@@ -364,5 +365,6 @@ Los 23 RNFs listados en §3 son restricciones de calidad del sistema completo. S
 | HU-41 | RF04, RF05, RF06, RF07, RF08, RF45, RF46, RF62, RF63, RF64 (mod.) | RNF19, RNF31 |
 | HU-42 | — | RNF19, RNF31 |
 | HU-43 | RF14, RF19, RF62 (ext.) | RNF19, RNF31 |
+| HU-46 | RF14, RF25, RF26, RF34, RF62, RF63 (mod.) | RNF05, RNF06, RNF19 |
 
 > **Nota:** un `—` en la columna de RF significa que la historia no declara requisitos funcionales propios. Las historias de EPIC-08 (`HU-28` a `HU-36`) son en su mayoría correcciones y ajustes sobre funcionalidad ya entregada: su trazabilidad vive en los criterios de aceptación de cada historia, no en un RF nuevo. Filas incorporadas en HU-34 (CA-34.05). Las historias de EPIC-10 (`HU-39` a `HU-43`) marcan con `(mod.)` los RF cuya funcionalidad reinterpretan bajo la dimensión del equipamiento, sin introducir requisitos nuevos: `HU-42` es la única capacidad enteramente nueva y no tiene RF propio asignado.

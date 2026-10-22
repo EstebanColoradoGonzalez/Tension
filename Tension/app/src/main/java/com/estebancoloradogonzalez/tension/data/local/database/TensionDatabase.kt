@@ -83,7 +83,7 @@ import com.estebancoloradogonzalez.tension.data.local.entity.WeightRecordEntity
         TreeStateEntity::class,
         ExerciseOneRmEntity::class,
     ],
-    version = 24,
+    version = 25,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)

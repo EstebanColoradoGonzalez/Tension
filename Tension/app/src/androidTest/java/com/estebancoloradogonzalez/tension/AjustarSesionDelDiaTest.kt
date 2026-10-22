@@ -438,7 +438,8 @@ class AjustarSesionDelDiaTest {
     private fun ejercicioFueraDeLaSesion(excepto: Set<Long> = emptySet()): Long {
         val excluidos = if (excepto.isEmpty()) "" else " AND id NOT IN (${excepto.joinToString(",")})"
         return leerLong(
-            "SELECT id FROM exercise WHERE id NOT IN " +
+            // Desde HU-46 la sesión solo admite la categoría del día: la de la rutina 1, Empuje.
+            "SELECT id FROM exercise WHERE movement_category = 'PUSH' AND id NOT IN " +
                 "(SELECT exercise_id FROM session_exercise WHERE session_id = $sessionId " +
                 "AND exercise_id IS NOT NULL)$excluidos ORDER BY id LIMIT 1",
         )!!
@@ -452,8 +453,8 @@ class AjustarSesionDelDiaTest {
         val wdb = db.openHelper.writableDatabase
         wdb.execSQL(
             "INSERT INTO exercise (name, media_resource, is_bodyweight, is_isometric, " +
-                "is_to_technical_failure, progression_difficulty, is_custom) " +
-                "VALUES ('$nombre', 'x', 0, $isIsometric, $isToTechnicalFailure, 'MEDIUM', 1)",
+                "is_to_technical_failure, progression_difficulty, is_custom, movement_category) " +
+                "VALUES ('$nombre', 'x', 0, $isIsometric, $isToTechnicalFailure, 'MEDIUM', 1, 'PUSH')",
         )
         val id = leerLong("SELECT id FROM exercise WHERE name = '$nombre'")!!
         wdb.execSQL(

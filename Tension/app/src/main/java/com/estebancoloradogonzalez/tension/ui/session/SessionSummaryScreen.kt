@@ -47,6 +47,7 @@ import com.estebancoloradogonzalez.tension.domain.model.ExercisePairSummary
 import com.estebancoloradogonzalez.tension.domain.model.ExerciseSummaryItem
 import com.estebancoloradogonzalez.tension.domain.model.ProgressionClassification
 import com.estebancoloradogonzalez.tension.domain.model.SessionSummary
+import com.estebancoloradogonzalez.tension.domain.rules.HypertrophyRangeRule
 import com.estebancoloradogonzalez.tension.ui.components.EntityNameText
 import com.estebancoloradogonzalez.tension.ui.components.ProgressionIndicator
 import com.estebancoloradogonzalez.tension.ui.theme.LocalTensionSemanticColors
@@ -313,6 +314,8 @@ private fun ExerciseSummaryRow(
                                 overflow = TextOverflow.Ellipsis,
                             )
                         }
+                        // La señal de rango es del par (HU-46): cada implemento lleva la suya.
+                        SignalLines(signal = pair.signal, classification = pair.classification)
                     }
                 } else {
                     val classificationText = formatClassificationLine(item)
@@ -326,14 +329,10 @@ private fun ExerciseSummaryRow(
                         )
                     }
                 }
-                // Line 2: Action signal
-                Text(
-                    text = formatActionSignal(item.signal, item.classification),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                // Line 2: Action signal — con varios implementos ya va en cada renglón de par
+                if (item.isDeload || item.pairs.size <= 1) {
+                    SignalLines(signal = item.signal, classification = item.classification)
+                }
                 // Line 3: Series count
                 Text(
                     text = "${item.completedSets}/${item.prescribedSets} series",
@@ -392,13 +391,67 @@ private fun classificationColor(
     null -> MaterialTheme.colorScheme.onSurfaceVariant
 }
 
+/**
+ * Señal y, si la tiene, su línea de apoyo (HU-46): «Tú eliges cuánto» bajo «Bajar peso» —el
+ * sistema no prescribe la cantidad (CA-46.02)— y el avance hacia la subida bajo «Subir carga»
+ * o «Añadir peso extra».
+ */
+@Composable
+private fun SignalLines(
+    signal: ActionSignal,
+    classification: ProgressionClassification?,
+) {
+    Text(
+        text = formatActionSignal(signal, classification),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+    )
+    val detail = signalDetail(signal)
+    if (detail != null) {
+        Text(
+            text = detail,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
+private fun signalDetail(signal: ActionSignal): String? {
+    val streak = when (signal) {
+        is ActionSignal.DecreaseLoad -> return stringResource(R.string.summary_signal_decrease_detail)
+        is ActionSignal.IncreaseLoad -> signal.streak
+        is ActionSignal.AddExtraWeight -> signal.streak
+        else -> null
+    } ?: return null
+    // El conteo puede pasar de 4 si no se sube; el avance se lee contra la meta.
+    return stringResource(
+        R.string.summary_signal_streak_detail,
+        streak.coerceAtMost(HypertrophyRangeRule.SESSIONS_TO_INCREASE),
+    )
+}
+
+@Composable
 private fun formatActionSignal(
     signal: ActionSignal,
     classification: ProgressionClassification?,
 ): String {
     return when (signal) {
-        is ActionSignal.IncreaseLoad ->
+        is ActionSignal.DecreaseLoad -> stringResource(R.string.summary_signal_decrease)
+        is ActionSignal.AddExtraWeight -> stringResource(R.string.summary_signal_add_extra_weight)
+        is ActionSignal.TopOfRange ->
+            stringResource(R.string.summary_signal_top_of_range, signal.streak)
+        is ActionSignal.WithinRange -> stringResource(R.string.summary_signal_within_range)
+        // Ganada por el rango (HU-46) lleva su conteo; sin él es la lectura de siempre.
+        is ActionSignal.IncreaseLoad -> if (signal.streak != null) {
+            stringResource(R.string.summary_signal_increase, "%.1f".format(signal.targetKg))
+        } else {
             "Sube a %.1f Kg la próxima vez".format(signal.targetKg)
+        }
         is ActionSignal.ProgressInReps ->
             "Suma repeticiones antes de subir peso"
         is ActionSignal.MaintainLoad ->

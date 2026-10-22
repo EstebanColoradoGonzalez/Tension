@@ -9,9 +9,11 @@ import com.estebancoloradogonzalez.tension.data.local.database.TensionDatabase
 import com.estebancoloradogonzalez.tension.data.local.entity.RoutineCurrentVersionEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.RoutineEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.RoutineVersionEntity
+import com.estebancoloradogonzalez.tension.domain.model.MovementCategory
 import com.estebancoloradogonzalez.tension.domain.model.Routine
 import com.estebancoloradogonzalez.tension.domain.model.RoutineVersion
 import com.estebancoloradogonzalez.tension.domain.repository.RoutineRepository
+import com.estebancoloradogonzalez.tension.domain.rules.CategorizedName
 import androidx.room.withTransaction
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -32,7 +34,7 @@ class RoutineRepositoryImpl @Inject constructor(
             entities.map { it.toDomain() }
         }
 
-    override suspend fun createRoutine(name: String) {
+    override suspend fun createRoutine(name: String, movementCategory: MovementCategory) {
         database.withTransaction {
             val maxSort = routineDao.getMaxSortOrder() ?: 0
             val routineId = routineDao.insert(
@@ -40,6 +42,7 @@ class RoutineRepositoryImpl @Inject constructor(
                     name = name.trim(),
                     sortOrder = maxSort + 1,
                     createdAt = LocalDate.now().toString(),
+                    movementCategory = movementCategory.name,
                 ),
             )
             routineVersionDao.insert(
@@ -55,6 +58,15 @@ class RoutineRepositoryImpl @Inject constructor(
         val routine = routineDao.getById(id) ?: return
         routineDao.update(routine.copy(name = name.trim()))
     }
+
+    override suspend fun updateMovementCategory(id: Long, category: MovementCategory) {
+        routineDao.updateMovementCategory(id, category.name)
+    }
+
+    override suspend fun getExercisesAssignedToRoutine(routineId: Long): List<CategorizedName> =
+        routineDao.getExercisesAssignedToRoutine(routineId).map {
+            CategorizedName(name = it.name, category = MovementCategory.fromCode(it.category))
+        }
 
     override suspend fun deleteRoutine(id: Long) {
         database.withTransaction {
@@ -166,5 +178,6 @@ class RoutineRepositoryImpl @Inject constructor(
         name = name,
         sortOrder = sortOrder,
         createdAt = createdAt,
+        movementCategory = MovementCategory.fromCode(movementCategory),
     )
 }

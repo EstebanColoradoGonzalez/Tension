@@ -1,5 +1,6 @@
 package com.estebancoloradogonzalez.tension.ui.catalog
 
+import com.estebancoloradogonzalez.tension.domain.model.MovementCategory
 import com.estebancoloradogonzalez.tension.domain.model.WeekDay
 
 data class RoutineListUiState(
@@ -9,9 +10,16 @@ data class RoutineListUiState(
     val restDays: List<WeekDay> = emptyList(),
     val showCreateDialog: Boolean = false,
     val createDialogName: String = "",
+    /** Sin preselección: elegirla es parte del dato (HU-46, CA-46.13). */
+    val createDialogCategory: MovementCategory? = null,
+    /** Se intentó crear sin categoría: el diálogo lo dice junto al campo. */
+    val createCategoryMissing: Boolean = false,
     val showEditDialog: Boolean = false,
     val editTarget: RoutineItem? = null,
     val editDialogName: String = "",
+    val editDialogCategory: MovementCategory? = null,
+    /** Ejercicios asignados que impiden el cambio de categoría (CA-46.14). Vacía si ninguno. */
+    val editCategoryConflicts: List<String> = emptyList(),
     val deleteTarget: RoutineItem? = null,
     val weekDaysTarget: RoutineItem? = null,
     val weekDaysSelection: Set<WeekDay> = emptySet(),
@@ -25,4 +33,6 @@ data class RoutineItem(
     val versionCount: Int,
     /** Días que ejecutan esta rutina. Vacío cuando ninguno la reclama. */
     val weekDays: List<WeekDay> = emptyList(),
+    /** Categoría de la rutina, independiente del nombre (HU-46, CA-46.09). */
+    val movementCategory: MovementCategory? = null,
 )

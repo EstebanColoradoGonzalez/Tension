@@ -1,6 +1,7 @@
 package com.estebancoloradogonzalez.tension.data.local.seed
 
 import com.estebancoloradogonzalez.tension.data.local.seed.model.SeedAssignment
+import com.estebancoloradogonzalez.tension.domain.model.MovementCategory
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -442,6 +443,36 @@ class DefaultPlanTest {
                 .distinct()
                 .sorted()
             assertEquals((1..slots.size).toList(), slots)
+        }
+    }
+
+    // ============================================================
+    // CA-46.09 / CA-46.12 — Categoría de las rutinas y coherencia del plan
+    // ============================================================
+
+    @Test
+    fun `push routines are push, pull routines are pull and lower routines are legs`() {
+        val expected = mapOf(
+            1L to MovementCategory.PUSH,
+            2L to MovementCategory.PULL,
+            3L to MovementCategory.LEGS,
+            4L to MovementCategory.PUSH,
+            5L to MovementCategory.PULL,
+            6L to MovementCategory.LEGS,
+        )
+        assertEquals(expected, DefaultPlan.ROUTINES.associate { it.id to it.movementCategory })
+    }
+
+    @Test
+    fun `no assignment of the default plan mixes categories`() {
+        val categoryOfRoutine = DefaultPlan.ROUTINES.associate { it.id to it.movementCategory }
+        DefaultPlan.ASSIGNMENTS.forEach { assignment ->
+            val exercise = ExerciseCatalog.byId(assignment.exerciseId)!!
+            assertEquals(
+                "${exercise.name} en la rutina ${assignment.routineVersionId}",
+                categoryOfRoutine.getValue(assignment.routineVersionId),
+                exercise.movementCategory,
+            )
         }
     }
 }

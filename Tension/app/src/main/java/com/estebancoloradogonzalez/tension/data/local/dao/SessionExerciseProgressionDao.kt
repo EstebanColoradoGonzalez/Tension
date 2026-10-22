@@ -53,6 +53,13 @@ interface SessionExerciseProgressionDao {
             et.name AS equipmentTypeName,
             sep.progression_classification AS classification,
             sep.prescribed_load_kg AS prescribedLoadKg,
+            sep.range_reading AS rangeReading,
+            sep.top_range_streak AS topRangeStreak,
+            EXISTS(
+                SELECT 1 FROM exercise_equipment ee2
+                INNER JOIN equipment_type et2 ON ee2.equipment_type_id = et2.id
+                WHERE ee2.exercise_id = se.exercise_id AND et2.name = 'Peso Añadido'
+            ) AS admitsAddedWeight,
             COALESCE((
                 SELECT AVG(es.weight_kg) FROM exercise_set es
                 WHERE es.session_exercise_id = se.id
@@ -108,4 +115,10 @@ data class SessionPairSummaryDto(
     val totalReps: Int,
     val setCount: Int,
     val previousTotalReps: Int?,
+    /** Reading of this close against the 8–12 range (HU-46). Null when the rule did not apply. */
+    val rangeReading: String? = null,
+    /** Consecutive top-of-range sessions after this close: the «N de 4». */
+    val topRangeStreak: Int? = null,
+    /** Whether the exercise admits «Peso Añadido»: the only way to add load to the body (CA-46.15). */
+    val admitsAddedWeight: Boolean = false,
 )

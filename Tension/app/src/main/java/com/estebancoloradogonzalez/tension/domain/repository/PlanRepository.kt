@@ -1,6 +1,7 @@
 package com.estebancoloradogonzalez.tension.domain.repository
 
 import com.estebancoloradogonzalez.tension.domain.model.Exercise
+import com.estebancoloradogonzalez.tension.domain.model.MovementCategory
 import com.estebancoloradogonzalez.tension.domain.model.PlanExercise
 import com.estebancoloradogonzalez.tension.domain.model.PlanVersionDetail
 import com.estebancoloradogonzalez.tension.domain.model.Routine
@@ -11,7 +12,14 @@ interface PlanRepository {
     fun getRoutinesWithVersionCounts(): Flow<List<RoutineWithVersions>>
     suspend fun getAllRoutines(): List<Routine>
     fun getVersionDetail(routineVersionId: Long): Flow<PlanVersionDetail?>
+    /**
+     * Ejercicios que todavía no están en la versión y que **comparten la categoría de su
+     * rutina** (CA-46.12). Alimenta los dos selectores del plan: asignar y alternativa.
+     */
     fun getAvailableExercisesForVersion(routineVersionId: Long): Flow<List<Exercise>>
+
+    /** Categoría de la rutina a la que pertenece la versión (CA-46.12). */
+    suspend fun getMovementCategoryOfVersion(routineVersionId: Long): MovementCategory?
     suspend fun assignExercise(
         routineVersionId: Long,
         exerciseId: Long,

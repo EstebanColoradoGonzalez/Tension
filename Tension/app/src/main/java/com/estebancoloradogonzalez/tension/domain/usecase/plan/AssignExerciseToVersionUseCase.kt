@@ -3,6 +3,7 @@ package com.estebancoloradogonzalez.tension.domain.usecase.plan
 import com.estebancoloradogonzalez.tension.domain.repository.ExerciseRepository
 import com.estebancoloradogonzalez.tension.domain.repository.PlanRepository
 import com.estebancoloradogonzalez.tension.domain.repository.SessionRepository
+import com.estebancoloradogonzalez.tension.domain.rules.MovementCategoryRule
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 
@@ -26,6 +27,15 @@ class AssignExerciseToVersionUseCase @Inject constructor(
         }
         require(sets > 0) { "Sets must be greater than 0" }
         require(reps in VALID_REPS) { "Invalid reps value: $reps" }
+        // La rutina solo admite ejercicios de su misma categoría (CA-46.12). El selector ya
+        // no ofrece los demás; esta guarda cubre la ruta de datos.
+        val exerciseCategory = exerciseRepository.getExerciseById(exerciseId).first()?.movementCategory
+        require(
+            MovementCategoryRule.isAssignable(
+                exerciseCategory,
+                planRepository.getMovementCategoryOfVersion(routineVersionId),
+            ),
+        ) { "Exercise category does not match the routine category" }
         // La sugerencia es obligatoria y debe estar entre las opciones del ejercicio: no
         // se persiste la asignación sin ella (CA-41.08).
         val admitted = exerciseRepository.getEquipmentIdsOfExercise(exerciseId).first()

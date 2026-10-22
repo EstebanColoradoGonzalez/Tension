@@ -647,8 +647,45 @@
     <string name="session_detail_withdrawn_one">%1$s se retiró de esta sesión</string>
     <string name="session_detail_withdrawn_many">Se retiraron de esta sesión: %1$s</string>
     <string name="create_exercise_save_and_add">Guardar y añadir</string>
-    <string name="import_backup_no_session_adjustment">Este respaldo se generó con una versión
-        anterior de la aplicación y no registra el ajuste de la sesión: qué ejercicios se
-        añadieron y cuáles se retiraron. Ese dato no se deduce del plan, así que no se puede
+
+    <!-- HU-46: categoría de movimiento -->
+    <string name="movement_category_push">Empuje</string>
+    <string name="movement_category_pull">Jalón</string>
+    <string name="movement_category_legs">Pierna</string>
+    <string name="movement_category_field">Categoría</string>
+    <string name="movement_category_required">Elige la categoría: Empuje, Jalón o Pierna</string>
+    <string name="movement_category_of_the_day">Categoría del día</string>
+    <string name="movement_category_select_description">Categoría %1$s</string>
+    <string name="exercise_category_conflict_title">No se puede cambiar la categoría</string>
+    <string name="exercise_category_conflict_message">%1$s está asignado a rutinas de otra
+        categoría:
+%2$s
+Retíralo de esas rutinas primero.</string>
+    <string name="routine_category_conflict_message">La rutina tiene asignados ejercicios de
+        otra categoría: %1$s. Retíralos de la rutina primero.</string>
+    <string name="category_conflict_dismiss">Entendido</string>
+    <string name="session_add_sheet_category">Solo ejercicios de %1$s</string>
+    <string name="session_add_sheet_empty_category">Ningún ejercicio de %1$s coincide.</string>
+
+    <!-- HU-46: progresión por rango 8–12 -->
+    <string name="set_notice_lower_next">Baja el peso en la próxima serie</string>
+    <string name="set_notice_lower_next_detail">%1$d reps: por debajo del rango 8–12</string>
+    <string name="set_notice_top_of_range">Tope del rango — cuenta para la subida (sesión %1$d de 4)</string>
+    <string name="set_notice_increase_due">Ya toca subir el peso</string>
+    <string name="set_notice_add_weight_due">Ya toca añadir peso extra</string>
+    <string name="summary_signal_decrease">▼ Bajar peso</string>
+    <string name="summary_signal_decrease_detail">Tú eliges cuánto según el implemento</string>
+    <string name="summary_signal_increase">▲ Subir carga → %1$s kg</string>
+    <string name="summary_signal_add_extra_weight">▲ Añadir peso extra</string>
+    <string name="summary_signal_top_of_range">● Mantener — %1$d de 4 sesiones en el tope</string>
+    <string name="summary_signal_within_range">● Mantener — dentro del rango 8–12</string>
+    <string name="summary_signal_streak_detail">%1$d de 4 sesiones en el tope</string>
+    <string name="session_range_hint_decrease">▼ bajar peso</string>
+    <string name="session_range_hint_increase">▲ subida</string>
+    <string name="session_range_hint_add_weight">▲ añadir peso extra</string>
+    <string name="session_range_hint_streak">· %1$d de 4 en el tope</string>
+    <string name="import_backup_no_movement_category">Este respaldo se generó con una versión
+        anterior de la aplicación y no registra la categoría de movimiento de los ejercicios y
+        de las rutinas. La categoría es una decisión, no un cálculo, así que no se puede
         importar. Exporta un respaldo nuevo desde esta versión.</string>
 </resources>

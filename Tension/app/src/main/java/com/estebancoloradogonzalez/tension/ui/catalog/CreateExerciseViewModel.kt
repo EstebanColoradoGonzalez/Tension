@@ -7,10 +7,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.estebancoloradogonzalez.tension.R
 import com.estebancoloradogonzalez.tension.data.local.storage.ImageStorageHelper
+import com.estebancoloradogonzalez.tension.domain.model.MovementCategory
 import com.estebancoloradogonzalez.tension.domain.model.ProgressionDifficulty
 import com.estebancoloradogonzalez.tension.domain.usecase.catalog.CreateAndAddExerciseToSessionUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.catalog.CreateExerciseUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.catalog.GetAllFilterOptionsUseCase
+import com.estebancoloradogonzalez.tension.domain.usecase.session.GetSessionMovementCategoryUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,6 +28,7 @@ class CreateExerciseViewModel @Inject constructor(
     private val getAllFilterOptionsUseCase: GetAllFilterOptionsUseCase,
     private val createExerciseUseCase: CreateExerciseUseCase,
     private val createAndAddExerciseToSessionUseCase: CreateAndAddExerciseToSessionUseCase,
+    private val getSessionMovementCategoryUseCase: GetSessionMovementCategoryUseCase,
     private val imageStorageHelper: ImageStorageHelper,
     @ApplicationContext private val context: Context,
     savedStateHandle: SavedStateHandle,
@@ -50,14 +53,24 @@ class CreateExerciseViewModel @Inject constructor(
     private fun loadOptions() {
         viewModelScope.launch {
             val options = getAllFilterOptionsUseCase().first()
+            // Desde la sesión la categoría es la del día y llega fijada (CA-46.11). El caso de
+            // uso la vuelve a tomar de la sesión al guardar: aquí solo se muestra.
+            val dayCategory = sessionId?.let { getSessionMovementCategoryUseCase(it) }
             _uiState.update {
                 it.copy(
                     isLoading = false,
                     equipmentTypes = options.equipmentTypes,
                     muscleZones = options.muscleZones,
+                    movementCategory = dayCategory ?: it.movementCategory,
+                    isCategoryFixed = dayCategory != null,
                 )
             }
         }
+    }
+
+    fun onMovementCategorySelected(category: MovementCategory) {
+        if (_uiState.value.isCategoryFixed) return
+        _uiState.update { it.copy(movementCategory = category, categoryError = null) }
     }
 
     fun onNameChanged(name: String) {
@@ -154,7 +167,14 @@ class CreateExerciseViewModel @Inject constructor(
             }
             hasError = true
         }
-        if (hasError) return
+        val movementCategory = state.movementCategory
+        if (movementCategory == null) {
+            _uiState.update {
+                it.copy(categoryError = context.getString(R.string.movement_category_required))
+            }
+            hasError = true
+        }
+        if (hasError || movementCategory == null) return
 
         _uiState.update { it.copy(isSaving = true, saveError = null) }
         viewModelScope.launch {
@@ -171,6 +191,7 @@ class CreateExerciseViewModel @Inject constructor(
                         isToTechnicalFailure = state.isToTechnicalFailure,
                         mediaResource = state.imageUri,
                         progressionDifficulty = state.progressionDifficulty,
+                        movementCategory = movementCategory,
                     )
                 } else {
                     createAndAddExerciseToSessionUseCase(

@@ -1,5 +1,8 @@
 package com.estebancoloradogonzalez.tension.domain.usecase.plan
 
+import com.estebancoloradogonzalez.tension.domain.model.Exercise
+import com.estebancoloradogonzalez.tension.domain.model.MovementCategory
+import com.estebancoloradogonzalez.tension.domain.model.ProgressionDifficulty
 import com.estebancoloradogonzalez.tension.domain.repository.ExerciseRepository
 import com.estebancoloradogonzalez.tension.domain.repository.PlanRepository
 import com.estebancoloradogonzalez.tension.domain.repository.SessionRepository
@@ -29,7 +32,43 @@ class AddAlternativeToSlotUseCaseTest {
         // El ejercicio admite el implemento que las pruebas sugieren; el caso que verifica
         // el rechazo lo redefine.
         every { exerciseRepository.getEquipmentIdsOfExercise(any()) } returns flowOf(listOf(MANCUERNA))
+        // Ejercicio y rutina comparten categoría; el caso del rechazo la redefine (CA-46.12).
+        every { exerciseRepository.getExerciseById(any()) } returns flowOf(exercise(MovementCategory.PUSH))
+        coEvery { planRepository.getMovementCategoryOfVersion(any()) } returns MovementCategory.PUSH
     }
+
+    @Test
+    fun `una alternativa de otra categoria que la rutina se rechaza`() = runTest {
+        // QA-20: Jalón al Pecho no puede ser alternativa de un puesto de una rutina de Empuje.
+        coEvery { sessionRepository.hasActiveDeload() } returns false
+        coEvery { sessionRepository.hasActiveSessionForVersion(1L) } returns false
+        every { exerciseRepository.getExerciseById(10L) } returns flowOf(exercise(MovementCategory.PULL))
+
+        try {
+            useCase(1L, 2, 10L, MANCUERNA)
+            assert(false) { "Expected exception was not thrown" }
+        } catch (e: IllegalArgumentException) {
+            // expected
+        }
+
+        coVerify(exactly = 0) { planRepository.addAlternativeToSlot(any(), any(), any(), any()) }
+    }
+
+    private fun exercise(category: MovementCategory) = Exercise(
+        id = 10L,
+        name = "Ejercicio",
+        equipmentOptions = emptyList(),
+        primaryMuscleZones = listOf("Zona"),
+        secondaryMuscleZones = emptyList(),
+        muscleGroup = null,
+        isBodyweight = false,
+        isIsometric = false,
+        isToTechnicalFailure = false,
+        isCustom = false,
+        mediaResource = null,
+        progressionDifficulty = ProgressionDifficulty.MEDIUM,
+        movementCategory = category,
+    )
 
     @Test
     fun `invoke delegates to planRepository when no active deload`() = runTest {

@@ -45,4 +45,16 @@ data class ExerciseEntity(
 
     @ColumnInfo(name = "progression_difficulty", defaultValue = "MEDIUM")
     val progressionDifficulty: String = ProgressionDifficulty.MEDIUM.name,
+
+    /**
+     * Categoría de movimiento: `PUSH`, `PULL` o `LEGS` (HU-46, `MovementCategory`).
+     *
+     * Obligatoria y **sin valor por defecto**, ni en la columna ni aquí: el esquema cambia
+     * por instalación fresca (ADR-019), así que no hay fila previa que rellenar, y un
+     * default permitiría crear un ejercicio sin el dato que la historia existe para
+     * capturar (CA-46.13). Es la que acota qué ejercicios ofrece la sesión del día y qué
+     * ejercicios admite cada rutina del plan.
+     */
+    @ColumnInfo(name = "movement_category")
+    val movementCategory: String,
 )

@@ -2,7 +2,7 @@
 
 > Este documento define la arquitectura estructural de la memoria del sistema y el ciclo de vida de sus entidades. Actúa simultáneamente como Modelo Entidad-Relación, Diccionario de Datos y Máquina de Estados. Se utiliza una sintaxis declarativa (pseudo-código estilo Prisma/TypeScript) para definir las estructuras, utilizando los comentarios inline como el diccionario de datos.
 >
-> **Versión de esquema:** 24 (migraciones registradas: v1 → v2 → … → v18 → v19). **Ni v20, ni v21, ni v22, ni v23, ni v24 tienen migración**: v20 (HU-39) retira `exercise.equipment_type_id`, introduce `exercise_equipment` y añade `exercise_set.equipment_type_id`; v21 (HU-40) reclave `exercise_progression` por el par `(exercise_id, equipment_type_id)` e introduce `session_exercise_progression`; v22 (HU-41) añade `muscle_zone.sort_order`, `exercise_muscle_zone.is_primary` y `plan_assignment.suggested_equipment_type_id`; v23 (HU-42) introduce `exercise_one_rm`; v24 (HU-43) añade `session_exercise.is_extra`, `prescribed_sets` y `prescribed_reps`, e introduce `session_withdrawal`. La excepción documentada a RNF19 (ADR-019) resuelve los cinco cambios sobre instalación fresca. Una base anterior no puede abrir el build vigente — el reinicio lo realiza el ejecutante desinstalando y reinstalando, no la aplicación, y el historial anterior se pierde como consecuencia aceptada.
+> **Versión de esquema:** 25 (migraciones registradas: v1 → v2 → … → v18 → v19). **Ni v20, ni v21, ni v22, ni v23, ni v24, ni v25 tienen migración**: v20 (HU-39) retira `exercise.equipment_type_id`, introduce `exercise_equipment` y añade `exercise_set.equipment_type_id`; v21 (HU-40) reclave `exercise_progression` por el par `(exercise_id, equipment_type_id)` e introduce `session_exercise_progression`; v22 (HU-41) añade `muscle_zone.sort_order`, `exercise_muscle_zone.is_primary` y `plan_assignment.suggested_equipment_type_id`; v23 (HU-42) introduce `exercise_one_rm`; v24 (HU-43) añade `session_exercise.is_extra`, `prescribed_sets` y `prescribed_reps`, e introduce `session_withdrawal`; v25 (HU-46) añade `exercise.movement_category` y `routine.movement_category` —`NOT NULL` y sin default—, el conteo hacia la subida en `exercise_progression` (`top_range_streak`, `top_range_weight_kg`, `last_range_reading`) y en `session_exercise_progression` (`range_reading`, `top_range_streak`), y sube a 10 el default de `profile.plateau_base_threshold`. La excepción documentada a RNF19 (ADR-019) resuelve los seis cambios sobre instalación fresca. Una base anterior no puede abrir el build vigente — el reinicio lo realiza el ejecutante desinstalando y reinstalando, no la aplicación, y el historial anterior se pierde como consecuencia aceptada.
 >
 > El código declara la frontera en `Migrations.LAST_MIGRATED_VERSION` (**19**): por debajo de ella la cadena de migraciones es continua y sin huecos, y el salto de ahí a la versión del esquema es la excepción de ADR-019, que sube historia por historia de forma deliberada. Las migraciones `16→17`, `17→18` y `18→19`, ausentes durante tres versiones, se repusieron después de dejar la aplicación incapaz de abrir cualquier base existente.
 
@@ -34,7 +34,8 @@
 // ==========================================
 model routine {
   id          INTEGER  @id @autoincrement           // PK. Identificador único.
-  name        TEXT     @unique @notNull             // Nombre libre: "Pull + Abs", "Pierna", "Push". Obligatorio. Sin duplicados.
+  name        TEXT     @unique @notNull             // Nombre libre: "Pull + Abs", "Pierna", "Push". Obligatorio. Sin duplicados. Desde HU-46 NO codifica la categoría: esa es `movement_category`.
+  movement_category TEXT @notNull @enum(MovementCategory) // Empuje / Jalón / Pierna (HU-46). Obligatoria y SIN default (CA-46.13). Es la CATEGORÍA DEL DÍA de toda sesión de esta rutina: acota qué ejercicios puede añadir la sesión (CA-46.10) y qué ejercicios y alternativas admite el plan (CA-46.12). No puede cambiar a una distinta de la de sus ejercicios asignados (CA-46.14).
   sort_order  INTEGER  @notNull @check(">= 1")      // Posición en la rotación cíclica. 1-based. Determina el orden de ejecución dentro del microciclo.
   created_at  TEXT     @notNull                     // Fecha de creación ISO 8601. Inmutable tras la creación.
 }
@@ -86,11 +87,12 @@ model equipment_type {
 model exercise {
   id                       INTEGER  @id @autoincrement                  // PK. Identificador único.
   name                     TEXT     @unique @notNull                    // Nombre del ejercicio: "Elevación Lateral", "Dominadas". **Único por sí solo**: el implemento no forma parte de la identidad del ejercicio.
-  is_bodyweight            INTEGER  @notNull @default(0)               // Booleano. 1 = peso corporal (Peso = 0 Kg). Progresión por repeticiones totales, sin Doble Umbral.
+  is_bodyweight            INTEGER  @notNull @default(0)               // Booleano. 1 = peso corporal (Peso = 0 Kg). Progresión por repeticiones totales. Desde HU-46 la señal de rango se decide por la CARGA EXTERNA del implemento (ExternalLoadRule), no por esta marca: un par sin carga externa nunca recibe «bajar peso» y solo recibe «añadir peso extra» si el ejercicio admite «Peso Añadido» (CA-46.15).
   is_isometric             INTEGER  @notNull @default(0)               // Booleano. 1 = isométrico (Plancha, Plancha Lateral). Progresión por segundos (rango 30-45s). "Dominado" al ≥ 45s en todas las series.
   is_to_technical_failure  INTEGER  @notNull @default(0)               // Booleano. 1 = sin límite superior de repeticiones (solo Flexiones). Mutuamente excluyente con is_isometric.
   is_custom                INTEGER  @notNull @default(0)               // Booleano. 1 = creado por el ejecutante (RF-62). 0 = seed precargado.
   media_resource           TEXT     @optional                          // Para seed: nombre del asset PNG empaquetado (ej: "press_de_banca_maquina"). Para custom: ruta absoluta al archivo de imagen en almacenamiento interno. NULL si no se ha asociado imagen.
+  movement_category        TEXT     @notNull @enum(MovementCategory)    // Empuje / Jalón / Pierna (HU-46). UNA sola por ejercicio, obligatoria y SIN default (CA-46.13). Todo lo que trabaja abdomen es PULL. Editable desde el Diccionario salvo que el ejercicio esté asignado a rutinas de otra categoría (CA-46.14). Creado desde la sesión, hereda la categoría del día y no se puede cambiar en el formulario (CA-46.11).
   progression_difficulty   TEXT     @notNull @default("MEDIUM")        // Capacidad intrínseca de progresión del ejercicio. Ver Enum ProgressionDifficulty. Multiplica el umbral base de meseta. Editable por el ejecutante desde el Diccionario. Ningún ejercicio queda sin clasificar: el valor por defecto es MEDIUM, tanto en el seed como en los creados manualmente.
   // CONSTRAINT ÚNICO: UNIQUE(name, equipment_type_id) — clave natural compuesta.
   // CONSTRAINT: is_isometric=1 implica is_bodyweight=1. is_to_technical_failure=1 implica is_bodyweight=1.
@@ -179,7 +181,7 @@ model profile {
   height_m          REAL     @notNull @check("> 0")                               // Altura en metros. Inmutable en la práctica (raramente cambia).
   experience_level  TEXT     @notNull @check("IN ('BEGINNER','INTERMEDIATE','ADVANCED')")  // Nivel de experiencia declarado. Ver Enum ExperienceLevel.
   weekly_frequency  INTEGER  @notNull @default(6) @check(">= 4 AND <= 6")         // Objetivo de sesiones semanales: 4, 5 o 6. Denominador del KPI de Adherencia.
-  plateau_base_threshold INTEGER @notNull @default(5) @check(">= 3 AND <= 15")     // Parámetro del sistema. Sesiones consecutivas sin progresión que definen la meseta antes de aplicar la dificultad del ejercicio. Modela el ritmo de la persona (metabolismo, genética, condición corporal). Configurable desde Ajustes. Su cambio rige desde la siguiente evaluación: no recalcula estados de progresión ya asignados.
+  plateau_base_threshold INTEGER @notNull @default(10) @check(">= 3 AND <= 15")    // Parámetro del sistema. Por defecto 10 desde HU-46 (antes 5: un umbral bajo generaba falsas alertas de meseta, CA-46.07). Sesiones consecutivas sin progresión que definen la meseta antes de aplicar la dificultad del ejercicio. Modela el ritmo de la persona (metabolismo, genética, condición corporal). Configurable desde Ajustes. Su cambio rige desde la siguiente evaluación: no recalcula estados de progresión ya asignados.
   created_at        TEXT     @notNull                                             // Fecha de creación del perfil ISO 8601. Inmutable.
 }
 
@@ -315,8 +317,11 @@ model exercise_progression {
   exercise_id                  INTEGER  @fk(exercise.id)                              // PK compuesta y FK → exercise. ON DELETE RESTRICT.
   equipment_type_id            INTEGER  @fk(equipment_type.id)                        // PK compuesta y FK → equipment_type. ON DELETE RESTRICT. Sin default: el esquema cambia por instalación fresca (ADR-019) y un default permitiría un estado de progresión sin el implemento que lo identifica. Índice propio: no encabeza la PK.
   status                       TEXT     @notNull @default("NO_HISTORY")               // Estado actual del ciclo de vida DEL PAR. Ver Enum ExerciseProgressionStatus.
-  prescribed_load_kg           REAL     @optional @check(">= 0")                      // Carga objetivo del PAR para la próxima sesión en Kg. Calculada por el motor de Doble Umbral sobre las series de ese implemento. NULL para ejercicios de peso corporal e isométricos. Post-descarga: 90% de la carga pre-descarga del par.
-  sessions_without_progression INTEGER  @notNull @default(0) @check(">= 0")           // Contador de sesiones consecutivas sin progresión DEL PAR. Se incrementa con MAINTENANCE o REGRESSION; se resetea a 0 con POSITIVE_PROGRESSION. Umbral de meseta: umbral efectivo = techo(profile.plateau_base_threshold × multiplicador de exercise.progression_difficulty) — la dificultad sigue siendo del EJERCICIO, porque es una propiedad del movimiento, y solo se compara contra el contador de cada par. Con la base por defecto (5): 5 sesiones para dificultad LOW, 8 para MEDIUM y 10 para HIGH. El contador es agnóstico del umbral — acumula siempre y solo se compara al cierre — de modo que cambiar la dificultad reevalúa la condición sin descartar lo acumulado. Umbrales de acción escalonada: 4 y 6.
+  prescribed_load_kg           REAL     @optional @check(">= 0")                      // Carga objetivo del PAR para la próxima sesión en Kg. Desde HU-46 la calcula la progresión por rango 8–12 (HypertrophyRangeRule): con 4 o más sesiones consecutivas en el tope y el mismo peso de referencia, peso de referencia + incremento (+2.5 / +5); con cualquier otra señal, el peso de referencia. NULL para pares sin carga externa e isométricos. Post-descarga: 90% de la carga pre-descarga del par.
+  sessions_without_progression INTEGER  @notNull @default(0) @check(">= 0")           // Contador de sesiones consecutivas sin progresión DEL PAR. Se incrementa con MAINTENANCE o REGRESSION; se resetea a 0 con POSITIVE_PROGRESSION. Umbral de meseta: umbral efectivo = techo(profile.plateau_base_threshold × multiplicador de exercise.progression_difficulty) — la dificultad sigue siendo del EJERCICIO, porque es una propiedad del movimiento, y solo se compara contra el contador de cada par. Con la base por defecto (10, desde HU-46): 10 sesiones para dificultad LOW, 15 para MEDIUM y 20 para HIGH. El contador es agnóstico del umbral — acumula siempre y solo se compara al cierre — de modo que cambiar la dificultad reevalúa la condición sin descartar lo acumulado. Umbrales de acción escalonada: 4 y 6.
+  top_range_streak             INTEGER  @notNull @default(0) @check(">= 0")           // HU-46. Sesiones consecutivas del PAR en el tope del rango (mayoría estricta de series con 12 o más) CON EL MISMO PESO DE REFERENCIA. A las 4 se propone subir (CA-46.03). Vuelve a 0 con una sesión dentro o por debajo del rango y a 1 en el tope con otro peso (CA-46.17). Una sesión sin series del par no lo toca; la descarga lo congela (CA-46.18). Persistido, no derivado: el historial no dice por sí solo esas excepciones.
+  top_range_weight_kg          REAL     @optional                                     // HU-46. Peso de referencia que sostiene la racha: el MAYOR de las series del par en la sesión, nunca el promedio (CA-46.03). NULL sin racha.
+  last_range_reading           TEXT     @optional @enum(RangeReading)                 // HU-46. Última lectura del par: TOP, WITHIN o BELOW. Es lo que la sesión siguiente muestra junto al peso propuesto («bajar peso», CA-46.02). NULL si el par nunca se leyó por el rango.
   // CONSTRAINT: PRIMARY KEY(exercise_id, equipment_type_id).
   // LECTURA CONSOLIDADA (ProgressionConsolidationRule), NO PERSISTIDA: el ejercicio progresa si ALGUNO de sus pares progresó (disyunción) y entra en meseta solo si TODOS alcanzaron el umbral efectivo (conjunción). No existe fila consolidada: se deriva en cada evaluación, así que no hay copia que pueda desincronizarse.
 }
@@ -336,7 +341,9 @@ model session_exercise_progression {
   session_exercise_id       INTEGER  @fk(session_exercise.id)   // PK compuesta y FK → session_exercise. ON DELETE CASCADE: una sesión descartada ya arrastra sus exercise_set por la misma vía, y esta fila es del mismo orden de dato que una serie.
   equipment_type_id         INTEGER  @fk(equipment_type.id)     // PK compuesta y FK → equipment_type. ON DELETE RESTRICT. Índice propio.
   progression_classification TEXT    @optional                  // Clasificación del par. NULL = sin historial de ese par, jamás una regresión. Ver Enum ProgressionClassification.
-  prescribed_load_kg        REAL     @optional @check(">= 0")   // Carga que el Doble Umbral prescribió a ese par EN ESE CIERRE. Se persiste en lugar de leerse en vivo para que el resumen sea un registro fiel y no un valor que sesiones posteriores ya movieron.
+  prescribed_load_kg        REAL     @optional @check(">= 0")   // Carga que el motor prescribió a ese par EN ESE CIERRE. Se persiste en lugar de leerse en vivo para que el resumen sea un registro fiel y no un valor que sesiones posteriores ya movieron.
+  range_reading             TEXT     @optional @enum(RangeReading) // HU-46. Lectura de ese cierre contra el rango 8–12. NULL si la regla no aplicó (isométricos, descarga): el resumen conserva entonces la señal de siempre.
+  top_range_streak          INTEGER  @optional                  // HU-46. Racha del par TRAS ese cierre: el «N de 4» del resumen.
   // CONSTRAINT: PRIMARY KEY(session_exercise_id, equipment_type_id).
 }
 
@@ -596,6 +603,21 @@ enum WeekDay {
   // La relación de cada día con su rutina es editable por el ejecutante desde la gestión del plan; los siete valores del dominio, no.
 }
 
+enum MovementCategory {
+  PUSH  // Empuje. Press, aperturas, elevaciones laterales, extensiones de tríceps.
+  PULL  // Jalón. Remos, jalones, dominadas, curls, trapecio y TODO lo que trabaja abdomen (RN-10).
+  LEGS  // Pierna. Categoría completamente aislada de las otras dos.
+  // HU-46. Una sola por ejercicio y por rutina. La compatibilidad es igualdad estricta (MovementCategoryRule).
+  // Las etiquetas «Empuje», «Jalón», «Pierna» son presentación y no se almacenan.
+}
+
+enum RangeReading {
+  TOP     // La mayoría estricta de las series del par llegó a 12 o más repeticiones.
+  WITHIN  // Ni una ni otra mayoría. Incluye el empate 2 en el tope y 2 por debajo.
+  BELOW   // La mayoría estricta de las series se quedó en menos de 8: el peso es demasiado alto.
+  // HU-46 (CA-46.01). Se calcula sobre las series REALMENTE registradas del par; las series que prescribe el plan y el RIR no intervienen (CA-46.06).
+}
+
 enum WeightUnit {
   KG  // Kilogramos. Unidad canónica y valor por defecto. Paso de captura de los controles de ajuste: 0.5 Kg.
   LB  // Libras. Unidad alternativa de captura para implementos rotulados en libras. Paso de captura: 1 lb. El valor se convierte a kilogramos antes de persistirse (factor 0.45359237, 2 decimales).
@@ -609,7 +631,7 @@ enum TreeGrowthStage {
 }
 
 enum RepsMode {
-  STANDARD           // "8-12" — rango estándar de repeticiones para la mayoría de ejercicios. Se aplica el Doble Umbral.
+  STANDARD           // "8-12" — rango estándar de repeticiones para la mayoría de ejercicios. Se aplica la progresión por rango (HU-46): bajar por debajo de 8, subir tras 4 sesiones consecutivas en 12 o más con el mismo peso.
   TO_TECHNICAL_FAILURE // "TO_TECHNICAL_FAILURE" — sin límite superior. Solo para Flexiones (is_to_technical_failure=1). Progresión por repeticiones totales.
   ISOMETRIC_SECONDS  // "30-45_SEC" — rango en segundos para ejercicios isométricos (is_isometric=1). Progresión por segundos sostenidos.
 }
@@ -836,6 +858,14 @@ La clasificación consolidada de cada sesión se persiste en `session_exercise.p
 
   *`Dominadas` es el único ejercicio seed de peso corporal.* De sus tres implementos, solo `Peso Añadido` habilita la captura de carga: `Barra Fija` es la dominada estricta con el propio peso y `Máquina` es la asistida, cuyo contrapeso resta esfuerzo (ver `ExternalLoadRule`).
 
+  *Categoría de movimiento (HU-46, CA-46.08).* Cada ejercicio seed lleva **una sola** categoría, declarada en `ExerciseCatalog.kt` y verificada por `ExerciseCatalogTest` contra la tabla de la historia (no contra el código). Todo lo que trabaja el abdomen es Jalón:
+
+  | Categoría | Ejercicios |
+  |---|---|
+  | **Empuje** (9) | Press de Banca Plano, Press de Banca Inclinado, Press Militar, Aperturas, Cruce de Polea Alta, Elevación Lateral, Extensión de Tríceps (Pushdown), Extensión de Tríceps sobre Cabeza, Press Francés |
+  | **Jalón** (18) | Jalón al Pecho, Dominadas, Remo T Inclinado, Remo Horizontal, Remo Unilateral Polea Baja, Remo Unilateral Polea Alta, Pull-Over, Face Pull, Vuelos Posteriores (Pájaros), Trapecios con Apoyo en Banco Inclinado, Remo al Mentón, Curl Martillo, Curl Bayesian en Banco Inclinado, Curl de Predicador, Curl de Concentración, Curl de Martillo Cruzado, Crunch Abdominal, Press Pallof |
+  | **Pierna** (11) | Sentadilla Hack, Prensa Inclinada, Sentadilla Búlgara, Sentadilla Sumo, Zancadas (Lunges), Extensión de Cuádriceps, Curl de Isquiotibiales Sentado, Peso Muerto Rumano, Hip Thrust, Aductores, Elevación de Pantorrilla de Pie |
+
 - **`exercise_equipment` (100 filas):** Los implementos que cada uno de los 38 ejercicios seed admite, según la tabla anterior. Ningún ejercicio queda con la lista vacía. 7 ejercicios admiten un solo implemento y 10 admiten dos, tres y cuatro respectivamente. De los 15 tipos del catálogo, 10 tienen al menos un ejercicio y 5 nacen sin ninguno.
 - **`exercise_muscle_zone` (87 filas):** Cada uno de los 38 ejercicios seed está vinculado a sus zonas musculares por criterio biomecánico —el músculo que ejecuta el movimiento, no la máquina ni la ubicación aparente— y **con jerarquía** desde HU-41: **52 relaciones principales y 35 secundarias**. Ningún ejercicio queda sin zona principal y ninguna zona figura a la vez como principal y secundaria del mismo ejercicio. La tabla cerrada la declara CA-41.03 y la verifican `MuscleZoneCatalogTest` y `ExerciseCatalogTest`, que la transcriben desde el texto de la historia y no desde el código. *`Remo al Mentón` fue recatalogado dos veces: HU-29 lo llevó de Hombro + Trapecio a Espalda Alta porque el catálogo de entonces no tenía con qué distinguirlos, y HU-41 lo devuelve a Deltoides Lateral + Trapecio Superior (principales) con Bíceps Braquial (secundaria).*
 
@@ -868,6 +898,7 @@ La clasificación consolidada de cada sesión se persiste en `session_exercise.p
 - **`routine_current_version` (1 fila por rutina del plan):** Se inicializa con `current_version_number=1` para cada rutina que el ejecutante crea al configurar su plan.
 
 - **Plan de entrenamiento predeterminado (seed, 35 asignaciones):** Plan de 6 rutinas precargado en instalación fresca. Cada rutina tiene exactamente 1 versión. Todas las asignaciones usan el rango de repeticiones 8-12. Definido en `data/local/seed/DefaultPlan.kt`. **Los nombres no nombran el día**: desde HU-36 el día es una relación (`week_day`), no un dato de texto dentro del nombre. Desde HU-41 **cada asignación lleva su equipamiento sugerido**, que preselecciona el selector al registrar la serie sin imponerlo; entre paréntesis junto a cada ejercicio.
+  - **Categoría de cada rutina (HU-46, CA-46.09):** Rutinas 1 y 4 (*Push*) → **Empuje**, Rutinas 2 y 5 (*Pull*) → **Jalón**, Rutinas 3 y 6 (*Lower*) → **Pierna**. Ninguna asignación del plan por defecto mezcla categorías (`DefaultPlanTest`).
   - **Rutina 1 — Push — Foco Deltoides Lateral y Medio (lunes):** Elevación Lateral (4s, *Mancuerna*), Press de Banca Inclinado (*Barra*) **o** Press Militar (*Barra*) (slot dual, 3s), Press de Banca Plano (3s, *Barra*), Aperturas (3s, *Máquina*).
   - **Rutina 2 — Pull — Foco Dorsal Ancho (martes):** Jalón al Pecho (*Polea*) **o** Dominadas (*Barra Fija*) (slot dual, 4s — **no comparten sugerencia**: la dominada no se hace en polea), Curl Martillo (3s, *Mancuerna*), Remo Unilateral Polea Baja (3s, *Polea*), Curl Bayesian en Banco Inclinado (3s, *Mancuerna*), Pull-Over (3s, *Polea*), Crunch Abdominal (3s, *Polea*).
   - **Rutina 3 — Lower — Foco Cuádriceps (miércoles):** Aductores (3s, *Máquina*), Extensión de Cuádriceps (4s, *Máquina*), Sentadilla Hack (*Máquina*) **o** Prensa Inclinada (*Máquina*) (slot dual, 3s), Sentadilla Búlgara (3s, *Mancuerna*), Elevación de Pantorrilla (3s, *Máquina*). *HU-41 trajo `Aductores` del cuarto al primer puesto.*

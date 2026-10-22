@@ -1,9 +1,17 @@
 package com.estebancoloradogonzalez.tension.domain.usecase.catalog
 
+import com.estebancoloradogonzalez.tension.domain.model.MovementCategory
 import com.estebancoloradogonzalez.tension.domain.model.ProgressionDifficulty
 import com.estebancoloradogonzalez.tension.domain.repository.ExerciseRepository
 import javax.inject.Inject
 
+/**
+ * Crea un ejercicio del Diccionario.
+ *
+ * Desde HU-46 la categoría de movimiento es obligatoria y no tiene valor por defecto
+ * (CA-46.13): el parámetro no es nulo, y quien construye el formulario valida antes de
+ * llamar para poder decir «elige la categoría» junto al campo.
+ */
 class CreateExerciseUseCase @Inject constructor(
     private val exerciseRepository: ExerciseRepository,
 ) {
@@ -17,6 +25,7 @@ class CreateExerciseUseCase @Inject constructor(
         isToTechnicalFailure: Boolean,
         mediaResource: String?,
         progressionDifficulty: ProgressionDifficulty = ProgressionDifficulty.MEDIUM,
+        movementCategory: MovementCategory,
     ): Long {
         require(name.isNotBlank()) { "Exercise name must not be blank" }
         // Al menos una zona principal; las secundarias son opcionales (CA-41.09).
@@ -46,6 +55,7 @@ class CreateExerciseUseCase @Inject constructor(
             isToTechnicalFailure = isToTechnicalFailure,
             mediaResource = mediaResource,
             progressionDifficulty = progressionDifficulty,
+            movementCategory = movementCategory,
         )
     }
 }

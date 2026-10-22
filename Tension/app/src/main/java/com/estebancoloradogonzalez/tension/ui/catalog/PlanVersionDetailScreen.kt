@@ -66,6 +66,7 @@ import androidx.compose.ui.semantics.Role
 import com.estebancoloradogonzalez.tension.domain.model.EquipmentType
 import com.estebancoloradogonzalez.tension.R
 import com.estebancoloradogonzalez.tension.ui.components.EntityNameText
+import com.estebancoloradogonzalez.tension.ui.components.MovementCategoryTag
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -115,6 +116,12 @@ fun PlanVersionDetailScreen(
                             imageVector = Icons.Filled.ArrowBack,
                             contentDescription = stringResource(R.string.navigate_back),
                         )
+                    }
+                },
+                actions = {
+                    // La categoría de la rutina gobierna qué se puede asignar (CA-46.12).
+                    uiState.movementCategory?.let {
+                        MovementCategoryTag(category = it, modifier = Modifier.padding(end = 16.dp))
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(

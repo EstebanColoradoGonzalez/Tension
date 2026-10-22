@@ -3,6 +3,7 @@ package com.estebancoloradogonzalez.tension.domain.usecase.session
 import com.estebancoloradogonzalez.tension.domain.model.WeightUnit
 import com.estebancoloradogonzalez.tension.domain.repository.SessionRepository
 import com.estebancoloradogonzalez.tension.domain.rules.ExternalLoadRule
+import com.estebancoloradogonzalez.tension.domain.rules.SetRangeNotice
 import com.estebancoloradogonzalez.tension.domain.util.WeightConverter
 import javax.inject.Inject
 
@@ -18,6 +19,9 @@ class RegisterSetUseCase @Inject constructor(
      * name carries: `Peso Añadido` means external ballast, and ballast of zero is not
      * ballast (CA-39.05). Everything else about the implement is resolved in the
      * repository, which owns the catalog.
+     *
+     * Returns the live notice of the set against the 8–12 range (HU-46, CA-46.05), or
+     * `null`. It never blocks the registration nor alters what was registered.
      */
     suspend operator fun invoke(
         sessionExerciseId: Long,
@@ -27,7 +31,7 @@ class RegisterSetUseCase @Inject constructor(
         captureUnit: WeightUnit = WeightUnit.KG,
         equipmentTypeId: Long,
         equipmentTypeName: String? = null,
-    ) {
+    ): SetRangeNotice? {
         require(weightKg >= 0) { "Weight must be >= 0" }
         require(weightKg <= WeightConverter.MAX_WEIGHT_KG) { "Weight must be <= 500 kg" }
         require(reps >= 1) { "Reps must be >= 1" }
@@ -36,7 +40,7 @@ class RegisterSetUseCase @Inject constructor(
         if (ExternalLoadRule.requiresPositiveLoad(equipmentTypeName)) {
             require(weightKg > 0) { "Added weight must be > 0" }
         }
-        sessionRepository.registerSet(
+        return sessionRepository.registerSet(
             sessionExerciseId,
             weightKg,
             reps,

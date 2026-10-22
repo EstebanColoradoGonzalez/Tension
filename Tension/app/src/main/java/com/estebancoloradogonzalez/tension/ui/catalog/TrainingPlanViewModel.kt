@@ -33,6 +33,7 @@ class TrainingPlanViewModel @Inject constructor(
                         routineId = rwv.routine.id,
                         routineName = rwv.routine.name,
                         weekDays = daysByRoutineId[rwv.routine.id].orEmpty(),
+                        movementCategory = rwv.routine.movementCategory,
                         versions = rwv.versions.map { vs ->
                             VersionItem(
                                 routineVersionId = vs.routineVersionId,

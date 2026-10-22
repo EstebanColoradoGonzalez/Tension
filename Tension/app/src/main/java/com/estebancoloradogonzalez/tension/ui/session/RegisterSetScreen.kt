@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -22,6 +23,8 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -61,14 +64,15 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterSetScreen(
-    onNavigateBack: () -> Unit,
+    /** Vuelve a la sesión con el aviso en directo de la serie registrada, o `null`. */
+    onNavigateBack: (setNotice: String?) -> Unit,
     viewModel: RegisterSetViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
-        viewModel.navigateBack.collect { success ->
-            if (success) onNavigateBack()
+        viewModel.navigateBack.collect { result ->
+            onNavigateBack(result.notice)
         }
     }
 
@@ -118,7 +122,7 @@ fun RegisterSetScreen(
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
+                    IconButton(onClick = { onNavigateBack(null) }) {
                         Icon(
                             imageVector = Icons.Default.Close,
                             contentDescription = stringResource(R.string.register_set_cancel),
@@ -137,6 +141,26 @@ fun RegisterSetScreen(
                 .verticalScroll(rememberScrollState()),
         ) {
             Spacer(modifier = Modifier.height(16.dp))
+
+            // Aviso de la serie anterior (CA-46.05): arriba, para leerlo antes de elegir el
+            // peso, y sin tapar el formulario. No bloquea nada.
+            uiState.previousSetNotice?.let { notice ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    ),
+                ) {
+                    Text(
+                        text = notice,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        modifier = Modifier.padding(16.dp),
+                    )
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+            }
 
             // El implemento va antes del peso porque lo gobierna: decide si el campo se
             // captura y qué significa el número (CA-39.04, CA-39.05).
@@ -212,7 +236,7 @@ fun RegisterSetScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             TextButton(
-                onClick = onNavigateBack,
+                onClick = { onNavigateBack(null) },
                 modifier = Modifier.align(Alignment.CenterHorizontally),
             ) {
                 Text(

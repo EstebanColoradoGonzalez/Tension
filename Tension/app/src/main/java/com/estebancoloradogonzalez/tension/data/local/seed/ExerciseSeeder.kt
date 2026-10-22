@@ -38,6 +38,7 @@ object ExerciseSeeder {
             put("is_custom", 0)
             put("media_resource", exercise.mediaResource)
             put("progression_difficulty", exercise.progressionDifficulty.name)
+            put("movement_category", exercise.movementCategory.name)
         }
         db.insert("exercise", SQLiteDatabase.CONFLICT_REPLACE, values)
     }

@@ -1,6 +1,8 @@
 package com.estebancoloradogonzalez.tension.ui.session
 
 import com.estebancoloradogonzalez.tension.domain.model.ExerciseSessionStatus
+import com.estebancoloradogonzalez.tension.domain.model.MovementCategory
+import com.estebancoloradogonzalez.tension.domain.rules.RangeSignal
 
 data class ActiveSessionUiState(
     val isLoading: Boolean = true,
@@ -16,6 +18,8 @@ data class ActiveSessionUiState(
     val addedCount: Int = 0,
     /** Cuantos del plan ha retirado. Nunca por encima de [addedCount] (CA-43.05). */
     val withdrawnCount: Int = 0,
+    /** Categoria del dia: la de la rutina de la sesion (HU-46, CA-46.09). */
+    val movementCategory: MovementCategory? = null,
 ) {
     val completedCount: Int get() = exercises.count { it.status == ExerciseSessionStatus.COMPLETED }
     val totalCount: Int get() = exercises.size
@@ -74,11 +78,19 @@ data class ExerciseUiItem(
      * la fila no tiene —cuantos anadidos hay y que ejercicio esta pendiente de reponer—.
      */
     val withdrawalBlockReason: String? = null,
+    /**
+     * Lo que el ultimo cierre dijo del peso de este ejercicio, junto al peso propuesto:
+     * bajar, subida o el avance N de 4 (HU-46, CA-46.02, CA-46.04). `null` en descarga
+     * (CA-46.18) o si no hay nada que decir.
+     */
+    val rangeSignal: RangeSignal? = null,
 )
 
 /** Hoja de seleccion para anadir un ejercicio a la sesion (CA-43.01, CA-43.02). */
 data class AddExerciseSheetState(
     val isVisible: Boolean = false,
+    /** La lista ya llega acotada a ella; la hoja la nombra (HU-46, CA-46.10). */
+    val dayCategory: MovementCategory? = null,
     val query: String = "",
     val exercises: List<AddableExerciseUiItem> = emptyList(),
     val isAdding: Boolean = false,

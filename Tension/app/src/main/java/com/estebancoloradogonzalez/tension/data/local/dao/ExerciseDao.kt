@@ -29,6 +29,8 @@ data class ExerciseWithDetails(
     val isCustom: Int,
     val mediaResource: String?,
     val progressionDifficulty: String,
+    /** Categoría de movimiento: `PUSH`, `PULL` o `LEGS` (HU-46). */
+    val movementCategory: String,
     /** Zonas que ejecutan el movimiento, separadas por [AGGREGATE_SEPARATOR]. Nunca vacía. */
     val primaryMuscleZones: String?,
     /** Zonas que asisten, separadas por [AGGREGATE_SEPARATOR]. Puede venir nula. */
@@ -60,6 +62,13 @@ data class ExerciseWithDetails(
  */
 const val AGGREGATE_SEPARATOR = "|"
 
+/** Un nombre del plan con su categoría de movimiento (HU-46), para los conflictos de CA-46.14. */
+data class CategorizedNameDto(
+    val name: String,
+    val category: String?,
+    val sortOrder: Int,
+)
+
 @Dao
 interface ExerciseDao {
 
@@ -86,6 +95,7 @@ interface ExerciseDao {
             e.is_custom AS isCustom,
             e.media_resource AS mediaResource,
             e.progression_difficulty AS progressionDifficulty,
+            e.movement_category AS movementCategory,
             (SELECT GROUP_CONCAT(name, '|') FROM (
                 SELECT mz.name AS name FROM exercise_muscle_zone emz
                 INNER JOIN muscle_zone mz ON emz.muscle_zone_id = mz.id
@@ -132,6 +142,7 @@ interface ExerciseDao {
             e.is_custom AS isCustom,
             e.media_resource AS mediaResource,
             e.progression_difficulty AS progressionDifficulty,
+            e.movement_category AS movementCategory,
             (SELECT GROUP_CONCAT(name, '|') FROM (
                 SELECT mz.name AS name FROM exercise_muscle_zone emz
                 INNER JOIN muscle_zone mz ON emz.muscle_zone_id = mz.id
@@ -181,6 +192,7 @@ interface ExerciseDao {
             e.is_custom AS isCustom,
             e.media_resource AS mediaResource,
             e.progression_difficulty AS progressionDifficulty,
+            e.movement_category AS movementCategory,
             (SELECT GROUP_CONCAT(name, '|') FROM (
                 SELECT mz.name AS name FROM exercise_muscle_zone emz
                 INNER JOIN muscle_zone mz ON emz.muscle_zone_id = mz.id
@@ -201,6 +213,11 @@ interface ExerciseDao {
         FROM exercise e
         WHERE e.id NOT IN (
               SELECT exercise_id FROM plan_assignment WHERE routine_version_id = :routineVersionId
+          )
+          AND e.movement_category = (
+              SELECT r.movement_category FROM routine_version rv
+              INNER JOIN routine r ON rv.routine_id = r.id
+              WHERE rv.id = :routineVersionId
           )
         ORDER BY e.name ASC
         """,
@@ -265,6 +282,26 @@ interface ExerciseDao {
 
     @Query("UPDATE exercise SET progression_difficulty = :difficulty WHERE id = :exerciseId")
     suspend fun updateProgressionDifficulty(exerciseId: Long, difficulty: String)
+
+    @Query("UPDATE exercise SET movement_category = :category WHERE id = :exerciseId")
+    suspend fun updateMovementCategory(exerciseId: Long, category: String)
+
+    /**
+     * Rutinas que tienen asignado el ejercicio —como puesto o como alternativa, en cualquier
+     * versión—, con su categoría (CA-46.14). Devuelve nombres y no un conteo para que el
+     * rechazo pueda nombrarlas.
+     */
+    @Query(
+        """
+        SELECT DISTINCT r.name AS name, r.movement_category AS category, r.sort_order AS sortOrder
+        FROM plan_assignment pa
+        INNER JOIN routine_version rv ON pa.routine_version_id = rv.id
+        INNER JOIN routine r ON rv.routine_id = r.id
+        WHERE pa.exercise_id = :exerciseId
+        ORDER BY r.sort_order ASC
+        """,
+    )
+    suspend fun getRoutinesAssigningExercise(exerciseId: Long): List<CategorizedNameDto>
 
     /** El nombre es único por sí solo desde HU-39: el implemento no es parte de la identidad. */
     @Query("SELECT COUNT(*) FROM exercise WHERE name = :name")

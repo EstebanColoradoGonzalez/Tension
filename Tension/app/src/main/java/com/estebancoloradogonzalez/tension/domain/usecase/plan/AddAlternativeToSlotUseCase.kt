@@ -3,6 +3,7 @@ package com.estebancoloradogonzalez.tension.domain.usecase.plan
 import com.estebancoloradogonzalez.tension.domain.repository.ExerciseRepository
 import com.estebancoloradogonzalez.tension.domain.repository.PlanRepository
 import com.estebancoloradogonzalez.tension.domain.repository.SessionRepository
+import com.estebancoloradogonzalez.tension.domain.rules.MovementCategoryRule
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 
@@ -23,6 +24,15 @@ class AddAlternativeToSlotUseCase @Inject constructor(
         require(!sessionRepository.hasActiveSessionForVersion(routineVersionId)) {
             "No se puede modificar el plan mientras hay una sesión activa de esta versión"
         }
+        // La rutina solo admite ejercicios de su misma categoría (CA-46.12). El selector ya
+        // no ofrece los demás; esta guarda cubre la ruta de datos.
+        val exerciseCategory = exerciseRepository.getExerciseById(exerciseId).first()?.movementCategory
+        require(
+            MovementCategoryRule.isAssignable(
+                exerciseCategory,
+                planRepository.getMovementCategoryOfVersion(routineVersionId),
+            ),
+        ) { "Exercise category does not match the routine category" }
         // La alternativa hereda series y repeticiones del puesto, pero **no** el
         // implemento: cada ejercicio del puesto dual lleva el suyo (CA-41.05).
         val admitted = exerciseRepository.getEquipmentIdsOfExercise(exerciseId).first()

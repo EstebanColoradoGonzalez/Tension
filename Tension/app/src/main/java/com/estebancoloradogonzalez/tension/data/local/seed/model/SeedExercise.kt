@@ -1,5 +1,6 @@
 package com.estebancoloradogonzalez.tension.data.local.seed.model
 
+import com.estebancoloradogonzalez.tension.domain.model.MovementCategory
 import com.estebancoloradogonzalez.tension.domain.model.ProgressionDifficulty
 
 /**
@@ -27,6 +28,11 @@ data class SeedExercise(
      * con [primaryMuscleZoneIds] (CA-41.09).
      */
     val secondaryMuscleZoneIds: List<Long>,
+    /**
+     * Empuje, Jalón o Pierna (HU-46, CA-46.08). Obligatoria y sin valor por defecto: olvidar
+     * clasificar un ejercicio nuevo del catálogo no debe compilar.
+     */
+    val movementCategory: MovementCategory,
     val mediaResource: String,
     val isBodyweight: Boolean = false,
     val isIsometric: Boolean = false,

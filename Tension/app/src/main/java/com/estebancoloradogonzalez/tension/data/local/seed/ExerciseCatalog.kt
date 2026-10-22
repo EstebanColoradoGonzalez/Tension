@@ -1,6 +1,7 @@
 package com.estebancoloradogonzalez.tension.data.local.seed
 
 import com.estebancoloradogonzalez.tension.data.local.seed.model.SeedExercise
+import com.estebancoloradogonzalez.tension.domain.model.MovementCategory
 import com.estebancoloradogonzalez.tension.domain.model.ProgressionDifficulty
 
 /**
@@ -23,6 +24,10 @@ import com.estebancoloradogonzalez.tension.domain.model.ProgressionDifficulty
  * ejercicio: `HIGH` para el aislamiento de zonas pequeñas, donde el salto mínimo
  * disponible pesa mucho sobre la carga habitual; `LOW` para los compuestos
  * multiarticulares pesados; `MEDIUM` (valor por defecto, no anotado) para el resto.
+ *
+ * Desde HU-46 cada ejercicio declara **una sola** categoría de movimiento —Empuje, Jalón o
+ * Pierna—, la que acota en qué sesiones y en qué rutinas puede aparecer: 9 de Empuje, 18 de
+ * Jalón y 11 de Pierna. Todo lo que trabaja el abdomen es Jalón (RN-10).
  *
  * Ningún ejercicio se elimina jamás del catálogo. Los que no forman parte del plan
  * predeterminado siguen disponibles como alternativa de slot o para asignación manual, y
@@ -64,6 +69,11 @@ object ExerciseCatalog {
     private const val ADUCTORES = MuscleZoneCatalog.ADUCTORES
     private const val GASTROCNEMIO = MuscleZoneCatalog.GASTROCNEMIO
 
+    // Categorías de movimiento (HU-46, CA-46.08). Todo lo que trabaja abdomen es Jalón.
+    private val PUSH = MovementCategory.PUSH
+    private val PULL = MovementCategory.PULL
+    private val LEGS = MovementCategory.LEGS
+
     // Tipos de equipamiento (equipment_type.id) — ver EquipmentCatalog
     private const val MAQUINA = EquipmentCatalog.MAQUINA
     private const val MAQUINA_SMITH = EquipmentCatalog.MAQUINA_SMITH
@@ -83,6 +93,7 @@ object ExerciseCatalog {
             listOf(MAQUINA, POLEA, BANDA_ELASTICA),
             primaryMuscleZoneIds = listOf(ADUCTORES),
             secondaryMuscleZoneIds = emptyList(),
+            movementCategory = LEGS,
             mediaResource = "aductores_maquina",
         ),
         SeedExercise(
@@ -91,6 +102,7 @@ object ExerciseCatalog {
             listOf(POLEA),
             primaryMuscleZoneIds = listOf(PECTORAL_INFERIOR),
             secondaryMuscleZoneIds = listOf(DELTOIDES_ANTERIOR),
+            movementCategory = PUSH,
             mediaResource = "cruce_de_polea_alta_polea",
             progressionDifficulty = ProgressionDifficulty.HIGH,
         ),
@@ -100,6 +112,7 @@ object ExerciseCatalog {
             listOf(PESO_CORPORAL, POLEA, MAQUINA),
             primaryMuscleZoneIds = listOf(RECTO_ABDOMINAL),
             secondaryMuscleZoneIds = emptyList(),
+            movementCategory = PULL,
             mediaResource = "crunch_abdominal_polea",
         ),
         SeedExercise(
@@ -108,6 +121,7 @@ object ExerciseCatalog {
             listOf(POLEA, MANCUERNA),
             primaryMuscleZoneIds = listOf(BICEPS_CABEZA_LARGA),
             secondaryMuscleZoneIds = emptyList(),
+            movementCategory = PULL,
             mediaResource = "curl_bayesian_en_banco_inclinado_mancuernas",
             progressionDifficulty = ProgressionDifficulty.HIGH,
         ),
@@ -117,6 +131,7 @@ object ExerciseCatalog {
             listOf(MANCUERNA, POLEA),
             primaryMuscleZoneIds = listOf(BICEPS_BRAQUIAL),
             secondaryMuscleZoneIds = emptyList(),
+            movementCategory = PULL,
             mediaResource = "curl_de_concentracion_mancuerna",
             progressionDifficulty = ProgressionDifficulty.HIGH,
         ),
@@ -126,6 +141,7 @@ object ExerciseCatalog {
             listOf(MAQUINA),
             primaryMuscleZoneIds = listOf(ISQUIOTIBIALES),
             secondaryMuscleZoneIds = emptyList(),
+            movementCategory = LEGS,
             mediaResource = "curl_de_isquiotibiales_sentado_maquina",
         ),
         SeedExercise(
@@ -134,6 +150,7 @@ object ExerciseCatalog {
             listOf(MANCUERNA, POLEA),
             primaryMuscleZoneIds = listOf(BRAQUIAL, BRAQUIORRADIAL),
             secondaryMuscleZoneIds = listOf(BICEPS_BRAQUIAL),
+            movementCategory = PULL,
             mediaResource = "curl_de_martillo_cruzado_mancuernas",
             progressionDifficulty = ProgressionDifficulty.HIGH,
         ),
@@ -143,6 +160,7 @@ object ExerciseCatalog {
             listOf(BARRA, MANCUERNA, MAQUINA, POLEA),
             primaryMuscleZoneIds = listOf(BICEPS_CABEZA_CORTA),
             secondaryMuscleZoneIds = emptyList(),
+            movementCategory = PULL,
             mediaResource = "curl_de_predicador_mancuerna",
             progressionDifficulty = ProgressionDifficulty.HIGH,
         ),
@@ -154,6 +172,7 @@ object ExerciseCatalog {
             listOf(MAQUINA, MAQUINA_SMITH),
             primaryMuscleZoneIds = listOf(GASTROCNEMIO),
             secondaryMuscleZoneIds = emptyList(),
+            movementCategory = LEGS,
             mediaResource = "elevacion_de_pantorrilla_en_maquina_de_pie_maquina",
         ),
         SeedExercise(
@@ -162,6 +181,7 @@ object ExerciseCatalog {
             listOf(MANCUERNA, POLEA, MAQUINA),
             primaryMuscleZoneIds = listOf(DELTOIDES_LATERAL),
             secondaryMuscleZoneIds = emptyList(),
+            movementCategory = PUSH,
             mediaResource = "elevacion_lateral_mancuernas",
             progressionDifficulty = ProgressionDifficulty.HIGH,
         ),
@@ -171,6 +191,7 @@ object ExerciseCatalog {
             listOf(MAQUINA),
             primaryMuscleZoneIds = listOf(CUADRICEPS),
             secondaryMuscleZoneIds = emptyList(),
+            movementCategory = LEGS,
             mediaResource = "extension_de_cuadriceps_maquina",
         ),
         // Renombrado en HU-39 desde "Extensión de Tríceps en Polea (Pushdown)": ya no
@@ -181,6 +202,7 @@ object ExerciseCatalog {
             listOf(POLEA),
             primaryMuscleZoneIds = listOf(TRICEPS_CABEZA_LATERAL, TRICEPS_CABEZA_MEDIAL),
             secondaryMuscleZoneIds = emptyList(),
+            movementCategory = PUSH,
             mediaResource = "extension_de_triceps_en_polea_pushdown_polea_con_cuerda",
             progressionDifficulty = ProgressionDifficulty.HIGH,
         ),
@@ -191,6 +213,7 @@ object ExerciseCatalog {
             listOf(MANCUERNA, BARRA, POLEA),
             primaryMuscleZoneIds = listOf(TRICEPS_CABEZA_LARGA),
             secondaryMuscleZoneIds = emptyList(),
+            movementCategory = PUSH,
             mediaResource = "extension_de_triceps_por_encima_de_la_cabeza_mancuernas",
             progressionDifficulty = ProgressionDifficulty.HIGH,
         ),
@@ -200,6 +223,7 @@ object ExerciseCatalog {
             listOf(POLEA, BANDA_ELASTICA),
             primaryMuscleZoneIds = listOf(DELTOIDES_POSTERIOR, TRAPECIO),
             secondaryMuscleZoneIds = listOf(MANGUITO_ROTADOR),
+            movementCategory = PULL,
             mediaResource = "face_pull_polea_con_cuerda",
             progressionDifficulty = ProgressionDifficulty.HIGH,
         ),
@@ -209,6 +233,7 @@ object ExerciseCatalog {
             listOf(BARRA, MAQUINA, MANCUERNA, MAQUINA_SMITH),
             primaryMuscleZoneIds = listOf(GLUTEO_MAYOR),
             secondaryMuscleZoneIds = listOf(ISQUIOTIBIALES, CUADRICEPS),
+            movementCategory = LEGS,
             mediaResource = "hip_thrust_maquina",
             progressionDifficulty = ProgressionDifficulty.LOW,
         ),
@@ -218,6 +243,7 @@ object ExerciseCatalog {
             listOf(BARRA, MANCUERNA, MAQUINA_SMITH),
             primaryMuscleZoneIds = listOf(ISQUIOTIBIALES, GLUTEO_MAYOR),
             secondaryMuscleZoneIds = listOf(ERECTORES_ESPINALES),
+            movementCategory = LEGS,
             mediaResource = "peso_muerto_rumano_barra",
             progressionDifficulty = ProgressionDifficulty.LOW,
         ),
@@ -227,6 +253,7 @@ object ExerciseCatalog {
             listOf(MAQUINA),
             primaryMuscleZoneIds = listOf(CUADRICEPS, GLUTEO_MAYOR),
             secondaryMuscleZoneIds = listOf(ISQUIOTIBIALES),
+            movementCategory = LEGS,
             mediaResource = "prensa_inclinada_maquina",
             progressionDifficulty = ProgressionDifficulty.LOW,
         ),
@@ -236,6 +263,7 @@ object ExerciseCatalog {
             listOf(BARRA, MANCUERNA, MAQUINA, MAQUINA_SMITH),
             primaryMuscleZoneIds = listOf(PECTORAL_SUPERIOR),
             secondaryMuscleZoneIds = listOf(DELTOIDES_ANTERIOR, TRICEPS_BRAQUIAL),
+            movementCategory = PUSH,
             mediaResource = "press_de_banca_inclinado_mancuerna",
             progressionDifficulty = ProgressionDifficulty.LOW,
         ),
@@ -245,6 +273,7 @@ object ExerciseCatalog {
             listOf(BARRA, MANCUERNA, MAQUINA, MAQUINA_SMITH),
             primaryMuscleZoneIds = listOf(PECTORAL_MEDIO),
             secondaryMuscleZoneIds = listOf(DELTOIDES_ANTERIOR, TRICEPS_BRAQUIAL),
+            movementCategory = PUSH,
             mediaResource = "press_de_banca_plano_barra",
             progressionDifficulty = ProgressionDifficulty.LOW,
         ),
@@ -256,6 +285,7 @@ object ExerciseCatalog {
             listOf(POLEA, BANDA_ELASTICA),
             primaryMuscleZoneIds = listOf(OBLICUOS),
             secondaryMuscleZoneIds = listOf(RECTO_ABDOMINAL),
+            movementCategory = PULL,
             mediaResource = "press_pallof_polea",
         ),
         SeedExercise(
@@ -264,6 +294,7 @@ object ExerciseCatalog {
             listOf(BARRA, MAQUINA),
             primaryMuscleZoneIds = listOf(DORSAL_ANCHO, TRAPECIO),
             secondaryMuscleZoneIds = listOf(BICEPS_BRAQUIAL, ROMBOIDES),
+            movementCategory = PULL,
             mediaResource = "remo_t_inclinado_maquina",
             progressionDifficulty = ProgressionDifficulty.LOW,
         ),
@@ -273,6 +304,7 @@ object ExerciseCatalog {
             listOf(PESO_CORPORAL, MANCUERNA, BARRA, MAQUINA_SMITH),
             primaryMuscleZoneIds = listOf(CUADRICEPS, GLUTEO_MAYOR),
             secondaryMuscleZoneIds = emptyList(),
+            movementCategory = LEGS,
             mediaResource = "sentadilla_bulgara_mancuernas",
         ),
         // Renombrado en HU-39 desde "Sentadilla de Zumo": el nombre correcto del patrón
@@ -283,6 +315,7 @@ object ExerciseCatalog {
             listOf(MANCUERNA, PESA_RUSA, BARRA, POLEA),
             primaryMuscleZoneIds = listOf(GLUTEO_MAYOR, CUADRICEPS),
             secondaryMuscleZoneIds = listOf(ADUCTORES),
+            movementCategory = LEGS,
             mediaResource = "sentadilla_de_zumo_mancuerna",
         ),
         SeedExercise(
@@ -291,6 +324,7 @@ object ExerciseCatalog {
             listOf(MAQUINA, BARRA),
             primaryMuscleZoneIds = listOf(CUADRICEPS),
             secondaryMuscleZoneIds = listOf(GLUTEO_MAYOR),
+            movementCategory = LEGS,
             mediaResource = "sentadilla_hack_maquina",
             progressionDifficulty = ProgressionDifficulty.LOW,
         ),
@@ -302,6 +336,7 @@ object ExerciseCatalog {
             listOf(POLEA, MAQUINA),
             primaryMuscleZoneIds = listOf(DORSAL_ANCHO),
             secondaryMuscleZoneIds = listOf(BICEPS_BRAQUIAL, ESPALDA_ALTA),
+            movementCategory = PULL,
             mediaResource = "tiron_de_dorsales_polea",
         ),
         // Renombrado en HU-39 desde "Vuelos Posteriores".
@@ -311,6 +346,7 @@ object ExerciseCatalog {
             listOf(MANCUERNA, POLEA, MAQUINA),
             primaryMuscleZoneIds = listOf(DELTOIDES_POSTERIOR),
             secondaryMuscleZoneIds = listOf(TRAPECIO, ROMBOIDES),
+            movementCategory = PULL,
             mediaResource = "vuelos_posteriores_mancuernas",
             progressionDifficulty = ProgressionDifficulty.HIGH,
         ),
@@ -324,6 +360,7 @@ object ExerciseCatalog {
             listOf(BARRA, POLEA, MANCUERNA),
             primaryMuscleZoneIds = listOf(DELTOIDES_LATERAL, TRAPECIO_SUPERIOR),
             secondaryMuscleZoneIds = listOf(BICEPS_BRAQUIAL),
+            movementCategory = PULL,
             mediaResource = "remo_al_menton_barra",
         ),
         SeedExercise(
@@ -332,6 +369,7 @@ object ExerciseCatalog {
             listOf(MANCUERNA, POLEA, MAQUINA),
             primaryMuscleZoneIds = listOf(PECTORAL_MAYOR),
             secondaryMuscleZoneIds = listOf(DELTOIDES_ANTERIOR),
+            movementCategory = PUSH,
             mediaResource = "aperturas_contractor",
             progressionDifficulty = ProgressionDifficulty.HIGH,
         ),
@@ -341,6 +379,7 @@ object ExerciseCatalog {
             listOf(MANCUERNA, POLEA, BARRA, MAQUINA),
             primaryMuscleZoneIds = listOf(DORSAL_ANCHO),
             secondaryMuscleZoneIds = listOf(PECTORAL_INFERIOR),
+            movementCategory = PULL,
             mediaResource = "pull_over_polea",
         ),
         SeedExercise(
@@ -349,6 +388,7 @@ object ExerciseCatalog {
             listOf(MANCUERNA, POLEA),
             primaryMuscleZoneIds = listOf(BRAQUIAL, BRAQUIORRADIAL),
             secondaryMuscleZoneIds = listOf(BICEPS_BRAQUIAL),
+            movementCategory = PULL,
             mediaResource = "curl_martillo_mancuernas",
             progressionDifficulty = ProgressionDifficulty.HIGH,
         ),
@@ -360,6 +400,7 @@ object ExerciseCatalog {
             listOf(BARRA, MANCUERNA, POLEA),
             primaryMuscleZoneIds = listOf(TRICEPS_BRAQUIAL),
             secondaryMuscleZoneIds = emptyList(),
+            movementCategory = PUSH,
             mediaResource = "rompecraneos_barra",
             progressionDifficulty = ProgressionDifficulty.HIGH,
         ),
@@ -369,6 +410,7 @@ object ExerciseCatalog {
             listOf(BARRA, MANCUERNA, POLEA, MAQUINA),
             primaryMuscleZoneIds = listOf(DORSAL_ANCHO),
             secondaryMuscleZoneIds = listOf(TRAPECIO, ROMBOIDES, BICEPS_BRAQUIAL),
+            movementCategory = PULL,
             mediaResource = "remo_horizontal_polea",
         ),
         // Renombrado en HU-39 desde "Zancadas".
@@ -378,6 +420,7 @@ object ExerciseCatalog {
             listOf(PESO_CORPORAL, MANCUERNA, BARRA, MAQUINA_SMITH),
             primaryMuscleZoneIds = listOf(CUADRICEPS, GLUTEO_MAYOR),
             secondaryMuscleZoneIds = emptyList(),
+            movementCategory = LEGS,
             mediaResource = "zancadas_mancuernas",
         ),
         SeedExercise(
@@ -386,6 +429,7 @@ object ExerciseCatalog {
             listOf(BARRA, MANCUERNA, MAQUINA, MAQUINA_SMITH),
             primaryMuscleZoneIds = listOf(DELTOIDES_ANTERIOR, DELTOIDES_LATERAL),
             secondaryMuscleZoneIds = listOf(TRICEPS_BRAQUIAL),
+            movementCategory = PUSH,
             mediaResource = "press_militar_mancuernas",
             progressionDifficulty = ProgressionDifficulty.LOW,
         ),
@@ -398,6 +442,7 @@ object ExerciseCatalog {
             listOf(BARRA_FIJA, MAQUINA, PESO_ANADIDO),
             primaryMuscleZoneIds = listOf(DORSAL_ANCHO),
             secondaryMuscleZoneIds = listOf(BICEPS_BRAQUIAL, TRAPECIO_INFERIOR),
+            movementCategory = PULL,
             mediaResource = "dominadas_barra_fija",
             isBodyweight = true,
         ),
@@ -408,6 +453,7 @@ object ExerciseCatalog {
             listOf(POLEA),
             primaryMuscleZoneIds = listOf(DORSAL_ANCHO),
             secondaryMuscleZoneIds = listOf(BICEPS_BRAQUIAL, ROMBOIDES),
+            movementCategory = PULL,
             mediaResource = "remo_unilateral_en_polea_baja_polea",
         ),
         // Renombrado en HU-39 desde "Remo Unilateral en Polea Alta". Sale del plan por
@@ -418,6 +464,7 @@ object ExerciseCatalog {
             listOf(POLEA),
             primaryMuscleZoneIds = listOf(DORSAL_ANCHO, ESPALDA_ALTA),
             secondaryMuscleZoneIds = listOf(BICEPS_BRAQUIAL),
+            movementCategory = PULL,
             mediaResource = "remo_unilateral_en_polea_alta_polea",
         ),
         // Añadido en HU-41: ocupa el cuarto puesto del viernes que deja Remo Unilateral
@@ -429,6 +476,7 @@ object ExerciseCatalog {
             listOf(MANCUERNA, BARRA, MAQUINA_SMITH),
             primaryMuscleZoneIds = listOf(TRAPECIO, TRAPECIO_INFERIOR),
             secondaryMuscleZoneIds = listOf(ROMBOIDES, DELTOIDES_POSTERIOR),
+            movementCategory = PULL,
             mediaResource = "trapecios_con_apoyo_banco_inclinado_mancuernas",
         ),
     )

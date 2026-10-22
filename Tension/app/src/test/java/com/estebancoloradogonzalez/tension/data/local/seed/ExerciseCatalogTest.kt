@@ -1,5 +1,6 @@
 package com.estebancoloradogonzalez.tension.data.local.seed
 
+import com.estebancoloradogonzalez.tension.domain.model.MovementCategory
 import com.estebancoloradogonzalez.tension.domain.model.ProgressionDifficulty
 import com.estebancoloradogonzalez.tension.domain.rules.PlateauThresholdRule
 import org.junit.Assert.assertEquals
@@ -688,17 +689,79 @@ class ExerciseCatalogTest {
     fun `effective thresholds with the default base reflect the seed classification`() {
         val base = PlateauThresholdRule.DEFAULT_BASE_THRESHOLD
 
+        // Base 10 desde HU-46 (CA-46.07): Alta → 20, Baja → 10, Media → 15.
         assertEquals(
-            10,
+            20,
             PlateauThresholdRule.effectiveThreshold(base, ExerciseCatalog.byId(10)!!.progressionDifficulty),
         )
         assertEquals(
-            5,
+            10,
             PlateauThresholdRule.effectiveThreshold(base, ExerciseCatalog.byId(17)!!.progressionDifficulty),
         )
         assertEquals(
-            8,
+            15,
             PlateauThresholdRule.effectiveThreshold(base, ExerciseCatalog.byId(25)!!.progressionDifficulty),
         )
+    }
+
+    // ============================================================
+    // CA-46.08 — Categoría de movimiento. La tabla se transcribe de la historia, no del
+    // código: si alguien reclasifica un ejercicio en el catálogo, este test lo delata.
+    // ============================================================
+
+    private val pushFromStory = setOf(
+        "Press de Banca Plano", "Press de Banca Inclinado", "Press Militar", "Aperturas",
+        "Cruce de Polea Alta", "Elevación Lateral", "Extensión de Tríceps (Pushdown)",
+        "Extensión de Tríceps sobre Cabeza", "Press Francés",
+    )
+
+    private val pullFromStory = setOf(
+        "Jalón al Pecho", "Dominadas", "Remo T Inclinado", "Remo Horizontal",
+        "Remo Unilateral Polea Baja", "Remo Unilateral Polea Alta", "Pull-Over", "Face Pull",
+        "Vuelos Posteriores (Pájaros)", "Trapecios con Apoyo en Banco Inclinado", "Remo al Mentón",
+        "Curl Martillo", "Curl Bayesian en Banco Inclinado", "Curl de Predicador",
+        "Curl de Concentración", "Curl de Martillo Cruzado", "Crunch Abdominal", "Press Pallof",
+    )
+
+    private val legsFromStory = setOf(
+        "Sentadilla Hack", "Prensa Inclinada", "Sentadilla Búlgara", "Sentadilla Sumo",
+        "Zancadas (Lunges)", "Extensión de Cuádriceps", "Curl de Isquiotibiales Sentado",
+        "Peso Muerto Rumano", "Hip Thrust", "Aductores", "Elevación de Pantorrilla de Pie",
+    )
+
+    private fun namesIn(category: MovementCategory): Set<String> =
+        ExerciseCatalog.ALL.filter { it.movementCategory == category }.map { it.name }.toSet()
+
+    @Test
+    fun `the story table splits the catalog into 9 push, 18 pull and 11 legs`() {
+        assertEquals(9, pushFromStory.size)
+        assertEquals(18, pullFromStory.size)
+        assertEquals(11, legsFromStory.size)
+    }
+
+    @Test
+    fun `push exercises match the story table`() {
+        assertEquals(pushFromStory, namesIn(MovementCategory.PUSH))
+    }
+
+    @Test
+    fun `pull exercises match the story table`() {
+        assertEquals(pullFromStory, namesIn(MovementCategory.PULL))
+    }
+
+    @Test
+    fun `legs exercises match the story table`() {
+        assertEquals(legsFromStory, namesIn(MovementCategory.LEGS))
+    }
+
+    @Test
+    fun `every exercise that trains the abdomen is pull`() {
+        // RN-10
+        val abdomenZones = MuscleZoneCatalog.ALL.filter { it.muscleGroup == "Abdomen" }.map { it.id }.toSet()
+        val abdominal = ExerciseCatalog.ALL.filter { exercise ->
+            exercise.allMuscleZoneIds.any { it in abdomenZones }
+        }
+        assertTrue(abdominal.isNotEmpty())
+        abdominal.forEach { assertEquals(it.name, MovementCategory.PULL, it.movementCategory) }
     }
 }

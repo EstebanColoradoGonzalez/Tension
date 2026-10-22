@@ -61,6 +61,9 @@ class GetSessionSummaryUseCaseTest {
         prescribedLoadKg: Double? = null,
         avgWeightKg: Double = 10.0,
         setCount: Int = 2,
+        rangeReading: String? = null,
+        topRangeStreak: Int? = null,
+        admitsAddedWeight: Boolean = false,
     ) = SessionPairSummaryDto(
         sessionExerciseId = sessionExerciseId,
         exerciseId = 10L,
@@ -72,6 +75,9 @@ class GetSessionSummaryUseCaseTest {
         totalReps = 20,
         setCount = setCount,
         previousTotalReps = 19,
+        rangeReading = rangeReading,
+        topRangeStreak = topRangeStreak,
+        admitsAddedWeight = admitsAddedWeight,
     )
 
     // ----- CA-40.02: un renglón por implemento ejecutado -----
@@ -246,5 +252,103 @@ class GetSessionSummaryUseCaseTest {
 
             assertTrue(item.pairs.isEmpty())
             assertTrue(item.signal is ActionSignal.FirstSession)
+        }
+
+    // ----- HU-46: la señal de rango 8–12 manda sobre la comparación con la sesión anterior -----
+
+    private suspend fun singlePairSignal(pair: SessionPairSummaryDto, classification: String? = null): ActionSignal {
+        coEvery { repository.getSessionSummaryData(sessionId) } returns SessionSummaryData(
+            info = info,
+            exercises = listOf(exercise(classification = classification)),
+            pairs = listOf(pair),
+            routineRequiresDeload = false,
+        )
+        return useCase(sessionId).exercises.single().signal
+    }
+
+    @Test
+    fun `given the first session at the top, when building the summary, then it is 1 of 4 and not a first session`() =
+        runTest {
+            // QA-01: «Mantener — 1 de 4» sin sesiones previas
+            val signal = singlePairSignal(
+                pair(6L, "Mancuerna", classification = null, rangeReading = "TOP", topRangeStreak = 1),
+            )
+            assertEquals(ActionSignal.TopOfRange(1), signal)
+        }
+
+    @Test
+    fun `given a session below the range, when building the summary, then lower the weight`() = runTest {
+        // QA-03
+        val signal = singlePairSignal(
+            pair(6L, "Mancuerna", "REGRESSION", rangeReading = "BELOW", topRangeStreak = 0),
+            classification = "REGRESSION",
+        )
+        assertEquals(ActionSignal.DecreaseLoad, signal)
+    }
+
+    @Test
+    fun `given the fourth top session, when building the summary, then increase to the prescribed load`() =
+        runTest {
+            // QA-04: «Subir carga → 60 kg + el incremento vigente»
+            val signal = singlePairSignal(
+                pair(
+                    6L,
+                    "Mancuerna",
+                    "MAINTENANCE",
+                    prescribedLoadKg = 62.5,
+                    avgWeightKg = 60.0,
+                    rangeReading = "TOP",
+                    topRangeStreak = 4,
+                ),
+                classification = "MAINTENANCE",
+            )
+            assertEquals(ActionSignal.IncreaseLoad(62.5, 4), signal)
+        }
+
+    @Test
+    fun `given a session within the range, when building the summary, then keep within the range`() = runTest {
+        // QA-02
+        val signal = singlePairSignal(
+            pair(6L, "Mancuerna", "MAINTENANCE", rangeReading = "WITHIN", topRangeStreak = 0),
+            classification = "MAINTENANCE",
+        )
+        assertEquals(ActionSignal.WithinRange, signal)
+    }
+
+    @Test
+    fun `given a bodyweight pair that admits added weight, when four top sessions close, then add extra weight`() =
+        runTest {
+            // QA-26: Dominadas con Barra Fija, sin carga externa
+            coEvery { repository.getSessionSummaryData(sessionId) } returns SessionSummaryData(
+                info = info,
+                exercises = listOf(exercise().copy(isBodyweight = 1)),
+                pairs = listOf(
+                    pair(
+                        5L,
+                        "Barra Fija",
+                        "MAINTENANCE",
+                        rangeReading = "TOP",
+                        topRangeStreak = 4,
+                        admitsAddedWeight = true,
+                    ),
+                ),
+                routineRequiresDeload = false,
+            )
+            assertEquals(ActionSignal.AddExtraWeight(4), useCase(sessionId).exercises.single().signal)
+        }
+
+    @Test
+    fun `given a bodyweight pair without added weight, when building the summary, then no weight signal`() =
+        runTest {
+            // QA-27: Fondos en Banco no admite «Peso Añadido»: se conserva la lectura de siempre
+            coEvery { repository.getSessionSummaryData(sessionId) } returns SessionSummaryData(
+                info = info,
+                exercises = listOf(exercise().copy(isBodyweight = 1)),
+                pairs = listOf(
+                    pair(9L, "Peso Corporal", "MAINTENANCE", rangeReading = "TOP", topRangeStreak = 4),
+                ),
+                routineRequiresDeload = false,
+            )
+            assertTrue(useCase(sessionId).exercises.single().signal is ActionSignal.BodyweightSignal)
         }
 }

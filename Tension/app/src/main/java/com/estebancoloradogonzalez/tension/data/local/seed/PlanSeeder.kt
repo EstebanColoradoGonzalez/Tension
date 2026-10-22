@@ -32,6 +32,7 @@ object PlanSeeder {
             put("name", routine.name)
             put("sort_order", routine.sortOrder)
             put("created_at", SEED_CREATED_AT)
+            put("movement_category", routine.movementCategory.name)
         }
         db.insert("routine", SQLiteDatabase.CONFLICT_REPLACE, values)
     }

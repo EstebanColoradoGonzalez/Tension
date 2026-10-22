@@ -20,6 +20,7 @@ import com.estebancoloradogonzalez.tension.data.local.dao.RoutineVersionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.SessionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.SessionExerciseDao
 import com.estebancoloradogonzalez.tension.data.local.dao.SessionExerciseProgressionDao
+import com.estebancoloradogonzalez.tension.data.local.dao.SessionExerciseWithDetails
 import com.estebancoloradogonzalez.tension.data.local.dao.SessionWithdrawalDao
 import com.estebancoloradogonzalez.tension.data.local.dao.SetExerciseInfo
 import com.estebancoloradogonzalez.tension.data.local.dao.WeekDayDao
@@ -49,10 +50,12 @@ import com.estebancoloradogonzalez.tension.domain.model.ExerciseHistoryEntry
 import com.estebancoloradogonzalez.tension.domain.model.ExerciseResetLoad
 import com.estebancoloradogonzalez.tension.domain.model.ExerciseSessionData
 import com.estebancoloradogonzalez.tension.domain.model.ExerciseSessionStatus
+import com.estebancoloradogonzalez.tension.domain.model.MovementCategory
 import com.estebancoloradogonzalez.tension.domain.model.NextSession
 import com.estebancoloradogonzalez.tension.domain.model.PrefilledLoad
 import com.estebancoloradogonzalez.tension.domain.model.PreselectionOrigin
 import com.estebancoloradogonzalez.tension.domain.model.ProgressionClassification
+import com.estebancoloradogonzalez.tension.domain.model.ProgressionDifficulty
 import com.estebancoloradogonzalez.tension.domain.model.RegisterSetInfo
 import com.estebancoloradogonzalez.tension.domain.model.RotationResolver
 import com.estebancoloradogonzalez.tension.domain.model.RotationState
@@ -67,7 +70,6 @@ import com.estebancoloradogonzalez.tension.domain.model.SetForTonnage
 import com.estebancoloradogonzalez.tension.domain.model.TodaySession
 import com.estebancoloradogonzalez.tension.domain.model.UpcomingSession
 import com.estebancoloradogonzalez.tension.domain.model.WeekDay
-import com.estebancoloradogonzalez.tension.domain.model.ProgressionDifficulty
 import com.estebancoloradogonzalez.tension.domain.model.WeightUnit
 import com.estebancoloradogonzalez.tension.domain.model.WithdrawnExercise
 import com.estebancoloradogonzalez.tension.domain.repository.SessionRepository
@@ -79,26 +81,32 @@ import com.estebancoloradogonzalez.tension.domain.rules.DailyRoutineRule
 import com.estebancoloradogonzalez.tension.domain.rules.DayResolutionRule
 import com.estebancoloradogonzalez.tension.domain.rules.DeloadLoadRule
 import com.estebancoloradogonzalez.tension.domain.rules.DeloadNeedRule
-import com.estebancoloradogonzalez.tension.domain.rules.NextTrainingDayRule
-import com.estebancoloradogonzalez.tension.domain.rules.DoubleThresholdRule
 import com.estebancoloradogonzalez.tension.domain.rules.ExternalLoadRule
+import com.estebancoloradogonzalez.tension.domain.rules.HypertrophyRangeRule
 import com.estebancoloradogonzalez.tension.domain.rules.LoadIncrementResolver
+import com.estebancoloradogonzalez.tension.domain.rules.MovementCategoryRule
+import com.estebancoloradogonzalez.tension.domain.rules.NextTrainingDayRule
 import com.estebancoloradogonzalez.tension.domain.rules.OneRmRule
-import com.estebancoloradogonzalez.tension.domain.rules.PrefilledLoadRule
-import com.estebancoloradogonzalez.tension.domain.rules.RoutineFatigueRule
-import com.estebancoloradogonzalez.tension.domain.rules.SessionAdjustmentRule
-import com.estebancoloradogonzalez.tension.domain.rules.WithdrawalVerdict
 import com.estebancoloradogonzalez.tension.domain.rules.PlateauThresholdRule
+import com.estebancoloradogonzalez.tension.domain.rules.PrefilledLoadRule
 import com.estebancoloradogonzalez.tension.domain.rules.ProgressionClassificationRule
 import com.estebancoloradogonzalez.tension.domain.rules.ProgressionConsolidationRule
 import com.estebancoloradogonzalez.tension.domain.rules.ProgressionRateRule
+import com.estebancoloradogonzalez.tension.domain.rules.RangeReading
+import com.estebancoloradogonzalez.tension.domain.rules.RangeSignal
+import com.estebancoloradogonzalez.tension.domain.rules.RoutineFatigueRule
+import com.estebancoloradogonzalez.tension.domain.rules.SessionAdjustmentRule
+import com.estebancoloradogonzalez.tension.domain.rules.SetRangeNotice
 import com.estebancoloradogonzalez.tension.domain.rules.TonnageRule
+import com.estebancoloradogonzalez.tension.domain.rules.TopRangeStreak
+import com.estebancoloradogonzalez.tension.domain.rules.WithdrawalVerdict
 import com.estebancoloradogonzalez.tension.domain.util.CurrentDateProvider
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import java.time.DayOfWeek
@@ -431,9 +439,31 @@ class SessionRepositoryImpl @Inject constructor(
                     slot = detail.slot,
                     hasAlternatives = detail.alternativesInSlot > 1,
                     isExtra = detail.isExtra == 1,
+                    rangeSignal = carriedRangeSignal(detail),
                 )
             }
         }
+    }
+
+    /**
+     * Señal que el par que gobierna la carga propuesta arrastra a esta sesión (CA-46.02,
+     * CA-46.04). Los isométricos no la tienen (CA-46.16), y un par sin carga externa que no
+     * admite «Peso Añadido» tampoco: no hay peso que proponer (CA-46.15).
+     */
+    private fun carriedRangeSignal(detail: SessionExerciseWithDetails): RangeSignal? {
+        if (detail.isIsometric == 1) return null
+        val hasExternalLoad = ExternalLoadRule.isCaptureEnabled(
+            isBodyweight = detail.isBodyweight == 1,
+            isIsometric = false,
+            equipmentName = detail.rangeEquipmentName,
+        )
+        if (!hasExternalLoad && !detail.admitsAddedWeight) return null
+        return HypertrophyRangeRule.carriedSignal(
+            lastReading = RangeReading.fromCode(detail.rangeReading),
+            streak = TopRangeStreak(count = detail.topRangeStreak, referenceWeightKg = null),
+            hasExternalLoad = hasExternalLoad,
+            admitsAddedWeight = detail.admitsAddedWeight,
+        )
     }
 
     override fun getRotationState(): Flow<RotationState?> {
@@ -506,8 +536,61 @@ class SessionRepositoryImpl @Inject constructor(
             equipmentOptions = equipmentOptions,
             preselectedEquipmentTypeId = preselectedEquipmentTypeId,
             preselectionOrigin = preselection.second,
+            previousSetNotice = previousSetNotice(info, sessionExerciseId),
         )
     }
+
+    /**
+     * Aviso de la última serie registrada de este ejercicio en la sesión (CA-46.05). Es el
+     * mismo cálculo que [registerSet] devuelve en el momento de guardar, repetido aquí para
+     * que el formulario de la serie siguiente lo muestre.
+     */
+    private suspend fun previousSetNotice(
+        info: SetExerciseInfo,
+        sessionExerciseId: Long,
+    ): SetRangeNotice? {
+        val lastSet = exerciseSetDao.getSetsForSessionExercise(sessionExerciseId).lastOrNull()
+            ?: return null
+        val profile = pairLoadProfile(info.exerciseId, info.isBodyweight == 1, info.isIsometric == 1)
+        return rangeNotice(
+            info = info,
+            equipmentTypeId = lastSet.equipmentTypeId,
+            weightKg = lastSet.weightKg,
+            reps = lastSet.reps,
+            hasExternalLoad = profile.hasExternalLoad(lastSet.equipmentTypeId),
+            admitsAddedWeight = profile.admitsAddedWeight,
+        )
+    }
+
+    /**
+     * Aviso en directo de una serie (CA-46.05). Nada en descarga —la descarga prescribe su
+     * propia carga (CA-46.18)— ni en isométricos, que miden resistencia (CA-46.16). El conteo
+     * que se lee es el del par **antes** de esta sesión: la sesión en curso todavía no cuenta.
+     */
+    private suspend fun rangeNotice(
+        info: SetExerciseInfo,
+        equipmentTypeId: Long,
+        weightKg: Double,
+        reps: Int,
+        hasExternalLoad: Boolean,
+        admitsAddedWeight: Boolean,
+    ): SetRangeNotice? {
+        if (info.deloadId != null || info.isIsometric == 1) return null
+        val progression = exerciseProgressionDao.getByPair(info.exerciseId, equipmentTypeId)
+        return HypertrophyRangeRule.setNotice(
+            reps = reps,
+            weightKg = weightKg,
+            streak = TopRangeStreak(
+                count = progression?.topRangeStreak ?: 0,
+                referenceWeightKg = progression?.topRangeWeightKg,
+            ),
+            hasExternalLoad = hasExternalLoad,
+            admitsAddedWeight = admitsAddedWeight,
+        )
+    }
+
+    override suspend fun getSessionMovementCategory(sessionId: Long): MovementCategory? =
+        MovementCategory.fromCode(routineDao.getMovementCategoryOfSession(sessionId))
 
     /**
      * Con qué implemento nace el selector de la serie, y por qué (CA-41.05, CA-39.04).
@@ -637,8 +720,8 @@ class SessionRepositoryImpl @Inject constructor(
         rir: Int,
         captureUnit: WeightUnit,
         equipmentTypeId: Long,
-    ) {
-        database.withTransaction {
+    ): SetRangeNotice? {
+        return database.withTransaction {
             val nextSetNumber = exerciseSetDao.getNextSetNumber(sessionExerciseId)
             val info = sessionExerciseDao.getExerciseInfoForSet(sessionExerciseId)
                 ?: throw IllegalStateException("Session exercise not found")
@@ -711,6 +794,22 @@ class SessionRepositoryImpl @Inject constructor(
                     )
                 }
             }
+
+            // El aviso se calcula sobre el peso **persistido**, igual que el 1RM: es el dato
+            // que queda en la fila. Leerlo aquí, y no en un paso posterior, lo ata a la serie
+            // que se acaba de escribir.
+            rangeNotice(
+                info = info,
+                equipmentTypeId = equipmentTypeId,
+                weightKg = persistedWeightKg,
+                reps = reps,
+                hasExternalLoad = hasExternalLoad,
+                admitsAddedWeight = pairLoadProfile(
+                    info.exerciseId,
+                    info.isBodyweight == 1,
+                    info.isIsometric == 1,
+                ).admitsAddedWeight,
+            )
         }
     }
 
@@ -722,13 +821,19 @@ class SessionRepositoryImpl @Inject constructor(
         sessionExerciseDao.switchAlternativeExercise(sessionExerciseId, exerciseId)
     }
 
+    /**
+     * El Diccionario **de la categoría del día** (CA-46.10), con los que ya están en la
+     * sesión marcados (CA-43.01). Los de otra categoría no viajan: no aparecen ni en el
+     * listado ni en la búsqueda, que filtra en memoria sobre esta lista.
+     */
     override fun getAddableExercises(sessionId: Long): Flow<List<AddableExercise>> {
         return combine(
             exerciseDao.getAll(),
             sessionExerciseDao.getBySessionId(sessionId),
-        ) { catalog, inSession ->
+            flow { emit(routineDao.getMovementCategoryOfSession(sessionId)) },
+        ) { catalog, inSession, dayCategory ->
             val present = inSession.mapNotNull { it.exerciseId }.toSet()
-            catalog.map { dto ->
+            catalog.filter { it.movementCategory == dayCategory }.map { dto ->
                 AddableExercise(
                     exerciseId = dto.id,
                     name = dto.name,
@@ -770,6 +875,15 @@ class SessionRepositoryImpl @Inject constructor(
             }
             val exercise = exerciseDao.getByIdOnce(exerciseId)
                 ?: throw IllegalArgumentException("Exercise not found: $exerciseId")
+            // La sesión solo admite ejercicios de la categoría del día (CA-46.10). La hoja ya
+            // no ofrece los demás; esta guarda cubre la ruta de datos.
+            val dayCategory = MovementCategory.fromCode(
+                routineDao.getMovementCategoryOfSession(sessionId),
+            )
+            val exerciseCategory = MovementCategory.fromCode(exercise.movementCategory)
+            if (!MovementCategoryRule.isAssignable(exerciseCategory, dayCategory)) {
+                throw IllegalStateException("Exercise does not belong to the category of the day")
+            }
 
             sessionExerciseDao.insert(
                 SessionExerciseEntity(
@@ -1071,6 +1185,7 @@ class SessionRepositoryImpl @Inject constructor(
             )
 
             val pairClassifications = mutableListOf<ProgressionClassification?>()
+            val loadProfile = pairLoadProfile(exercise.exerciseId, isBodyweight, isIsometric)
 
             for (equipmentTypeId in equipmentIdsInSession) {
                 val pairSets = currentSetDtos.filter { it.equipmentTypeId == equipmentTypeId }
@@ -1119,16 +1234,29 @@ class SessionRepositoryImpl @Inject constructor(
                         plateauThreshold = effectivePlateauThreshold,
                     )
 
-                val prescribedLoadKg = if (isBodyweight || isIsometric) {
+                // Progresión por el rango 8–12 (HU-46). Sustituye al Doble Umbral de HU-11:
+                // ni las series que prescribe el plan ni el RIR intervienen (CA-46.06). Los
+                // isométricos quedan fuera y conservan su progresión por segundos (CA-46.16);
+                // la descarga ni siquiera llega aquí (CA-46.18).
+                val hasExternalLoad = loadProfile.hasExternalLoad(equipmentTypeId)
+                val range = if (isIsometric) {
                     null
                 } else {
-                    val meetsThreshold = DoubleThresholdRule.meetsDoubleThreshold(currentData)
-                    if (meetsThreshold) {
-                        val loadIncrementKg = LoadIncrementResolver.resolve(exercise.muscleGroup)
-                        currentData.avgWeightKg + loadIncrementKg
-                    } else {
-                        currentProgression.prescribedLoadKg ?: currentData.avgWeightKg
-                    }
+                    evaluateRange(
+                        pairSets = pairSets.map { it.weightKg to it.reps },
+                        previous = TopRangeStreak(
+                            count = currentProgression.topRangeStreak,
+                            referenceWeightKg = currentProgression.topRangeWeightKg,
+                        ),
+                        hasExternalLoad = hasExternalLoad,
+                        admitsAddedWeight = loadProfile.admitsAddedWeight,
+                    )
+                }
+
+                val prescribedLoadKg = if (range == null || !hasExternalLoad) {
+                    null
+                } else {
+                    prescribeLoad(range, exercise.muscleGroup)
                 }
 
                 exerciseProgressionDao.update(
@@ -1136,17 +1264,28 @@ class SessionRepositoryImpl @Inject constructor(
                         status = newStatus,
                         sessionsWithoutProgression = newCounter,
                         prescribedLoadKg = prescribedLoadKg,
+                        topRangeStreak = range?.streak?.count ?: currentProgression.topRangeStreak,
+                        topRangeWeightKg = if (range != null) {
+                            range.streak.referenceWeightKg
+                        } else {
+                            currentProgression.topRangeWeightKg
+                        },
+                        lastRangeReading = range?.reading?.name ?: currentProgression.lastRangeReading,
                     ),
                 )
 
                 // La clasificación del par se persiste aparte de la consolidada: es lo que
-                // el resumen post-sesión presenta como un renglón por implemento.
+                // el resumen post-sesión presenta como un renglón por implemento. La lectura
+                // y el conteo de este cierre viajan con ella por la misma razón que la carga:
+                // el resumen es un registro fiel, no un valor que sesiones posteriores muevan.
                 sessionExerciseProgressionDao.upsert(
                     SessionExerciseProgressionEntity(
                         sessionExerciseId = exercise.sessionExerciseId,
                         equipmentTypeId = equipmentTypeId,
                         progressionClassification = classification?.name,
                         prescribedLoadKg = prescribedLoadKg,
+                        rangeReading = range?.reading?.name,
+                        topRangeStreak = range?.streak?.count,
                     ),
                 )
             }
@@ -1243,6 +1382,84 @@ class SessionRepositoryImpl @Inject constructor(
         try { evaluateLowProgressionRate(today) } catch (_: Exception) { }
         try { evaluateRirOutOfRange(today) } catch (_: Exception) { }
         try { evaluateTonnageDrop(today) } catch (_: Exception) { }
+    }
+
+    /** Lectura, conteo y señal de un par en un cierre (HU-46). */
+    private data class RangeEvaluation(
+        val reading: RangeReading,
+        val referenceWeightKg: Double,
+        val streak: TopRangeStreak,
+        val signal: RangeSignal,
+    )
+
+    private fun evaluateRange(
+        pairSets: List<Pair<Double, Int>>,
+        previous: TopRangeStreak,
+        hasExternalLoad: Boolean,
+        admitsAddedWeight: Boolean,
+    ): RangeEvaluation {
+        val reading = HypertrophyRangeRule.read(pairSets.map { it.second })
+        val referenceWeightKg = HypertrophyRangeRule.referenceWeight(pairSets.map { it.first })
+        val streak = HypertrophyRangeRule.nextStreak(previous, reading, referenceWeightKg)
+        return RangeEvaluation(
+            reading = reading,
+            referenceWeightKg = referenceWeightKg,
+            streak = streak,
+            signal = HypertrophyRangeRule.sessionSignal(
+                reading = reading,
+                streak = streak,
+                hasExternalLoad = hasExternalLoad,
+                admitsAddedWeight = admitsAddedWeight,
+            ),
+        )
+    }
+
+    /**
+     * Carga que se propone para la siguiente sesión del par.
+     *
+     * Solo la subida la mueve: peso de referencia + el incremento de siempre (CA-46.03). Con
+     * cualquier otra señal la propuesta **es el peso de referencia**, no una subida anterior
+     * que no se alcanzó: dejarla viva haría que la precarga siguiera ofreciendo un peso mayor
+     * después de un «Bajar peso» o de una sesión dentro del rango, y el peso nunca se sube sin
+     * 4 sesiones en el tope (RN-4). Si El Ejecutante no sube y vuelve a cerrar en el tope, el
+     * conteo sigue por encima de 4 y la subida se vuelve a proponer.
+     */
+    private fun prescribeLoad(range: RangeEvaluation, muscleGroup: String?): Double =
+        if (range.signal is RangeSignal.Increase) {
+            range.referenceWeightKg + LoadIncrementResolver.resolve(muscleGroup)
+        } else {
+            range.referenceWeightKg
+        }
+
+    /**
+     * Lo que decide, por par, qué señales de peso caben (CA-46.15): si el implemento lleva
+     * carga externa —lo decide `ExternalLoadRule`, no la marca del ejercicio— y si el
+     * ejercicio admite «Peso Añadido», que es lo único que permite proponer peso a quien
+     * entrena con su cuerpo.
+     */
+    private class PairLoadProfile(
+        private val equipmentNamesById: Map<Long, String>,
+        private val isBodyweight: Boolean,
+        private val isIsometric: Boolean,
+    ) {
+        val admitsAddedWeight: Boolean
+            get() = ExternalLoadRule.PESO_ANADIDO in equipmentNamesById.values
+
+        fun hasExternalLoad(equipmentTypeId: Long): Boolean = ExternalLoadRule.isCaptureEnabled(
+            isBodyweight = isBodyweight,
+            isIsometric = isIsometric,
+            equipmentName = equipmentNamesById[equipmentTypeId],
+        )
+    }
+
+    private suspend fun pairLoadProfile(
+        exerciseId: Long,
+        isBodyweight: Boolean,
+        isIsometric: Boolean,
+    ): PairLoadProfile {
+        val admittedIds = exerciseDao.getEquipmentIdsByExercise(exerciseId).first()
+        val names = equipmentTypeDao.getByIds(admittedIds).first().associate { it.id to it.name }
+        return PairLoadProfile(names, isBodyweight, isIsometric)
     }
 
     override suspend fun getSessionSummaryData(sessionId: Long): SessionSummaryData {

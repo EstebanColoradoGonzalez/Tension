@@ -22,4 +22,14 @@ data class RoutineEntity(
 
     @ColumnInfo(name = "created_at")
     val createdAt: String,
+
+    /**
+     * Categoría de la rutina: `PUSH`, `PULL` o `LEGS` (HU-46), independiente del nombre.
+     *
+     * Codificar la división en el nombre libre («Push — …») impedía que el sistema la usara
+     * para validar. Es la **categoría del día** de toda sesión de esta rutina. Sin default,
+     * por la misma razón que `exercise.movement_category`.
+     */
+    @ColumnInfo(name = "movement_category")
+    val movementCategory: String,
 )

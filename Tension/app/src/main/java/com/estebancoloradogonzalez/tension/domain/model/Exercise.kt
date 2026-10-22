@@ -24,6 +24,12 @@ data class Exercise(
     val isCustom: Boolean,
     val mediaResource: String?,
     val progressionDifficulty: ProgressionDifficulty,
+    /**
+     * Empuje, Jalón o Pierna (HU-46). La base la exige `NOT NULL`; `null` aquí solo
+     * significaría un código persistido que no se reconoce, y entonces el ejercicio no se
+     * ofrece en ninguna sesión ni rutina en lugar de caer en una categoría inventada.
+     */
+    val movementCategory: MovementCategory? = null,
 ) {
     /** Nombres de los implementos, para las pantallas que solo los enseñan. */
     val equipmentTypes: List<String> get() = equipmentOptions.map { it.name }

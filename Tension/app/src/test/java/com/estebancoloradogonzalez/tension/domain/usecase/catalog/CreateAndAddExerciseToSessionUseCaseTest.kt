@@ -1,7 +1,9 @@
 package com.estebancoloradogonzalez.tension.domain.usecase.catalog
 
+import com.estebancoloradogonzalez.tension.domain.model.MovementCategory
 import com.estebancoloradogonzalez.tension.domain.model.ProgressionDifficulty
 import com.estebancoloradogonzalez.tension.domain.usecase.session.AddExerciseToSessionUseCase
+import com.estebancoloradogonzalez.tension.domain.usecase.session.GetSessionMovementCategoryUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -14,9 +16,14 @@ class CreateAndAddExerciseToSessionUseCaseTest {
 
     private val createExerciseUseCase: CreateExerciseUseCase = mockk()
     private val addExerciseToSessionUseCase: AddExerciseToSessionUseCase = mockk()
+    private val getSessionMovementCategoryUseCase: GetSessionMovementCategoryUseCase =
+        mockk<GetSessionMovementCategoryUseCase>().also {
+            coEvery { it(7L) } returns MovementCategory.PUSH
+        }
     private val useCase = CreateAndAddExerciseToSessionUseCase(
         createExerciseUseCase,
         addExerciseToSessionUseCase,
+        getSessionMovementCategoryUseCase,
     )
 
     private suspend fun invoke() = useCase(
@@ -34,7 +41,9 @@ class CreateAndAddExerciseToSessionUseCaseTest {
 
     @Test
     fun `crea el ejercicio y lo anade a la sesion en el mismo gesto`() = runTest {
-        coEvery { createExerciseUseCase(any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns 42L
+        coEvery {
+            createExerciseUseCase(any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
+        } returns 42L
         coEvery { addExerciseToSessionUseCase(7L, 42L) } returns 99L
 
         val exerciseId = invoke()
@@ -49,7 +58,9 @@ class CreateAndAddExerciseToSessionUseCaseTest {
         // permanezca en el Diccionario aunque la sesión se cierre, se abandone o el
         // ejercicio se retire de ella. Una transacción conjunta produciría justo el
         // resultado prohibido — un ejercicio creado que se desvanece.
-        coEvery { createExerciseUseCase(any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns 42L
+        coEvery {
+            createExerciseUseCase(any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
+        } returns 42L
         coEvery { addExerciseToSessionUseCase(7L, 42L) } throws
             IllegalStateException("Cannot adjust a session that is not in progress")
 
@@ -60,12 +71,14 @@ class CreateAndAddExerciseToSessionUseCaseTest {
             // esperado
         }
 
-        coVerify { createExerciseUseCase(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+        coVerify { createExerciseUseCase(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
     fun `si la creacion falla no se intenta anadir nada`() = runTest {
-        coEvery { createExerciseUseCase(any(), any(), any(), any(), any(), any(), any(), any(), any()) } throws
+        coEvery {
+            createExerciseUseCase(any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
+        } throws
             IllegalArgumentException("An exercise with this name already exists")
 
         try {
@@ -76,5 +89,31 @@ class CreateAndAddExerciseToSessionUseCaseTest {
         }
 
         coVerify(exactly = 0) { addExerciseToSessionUseCase(any(), any()) }
+    }
+
+    @Test
+    fun `el ejercicio creado hereda la categoria del dia, no la del formulario`() = runTest {
+        // CA-46.11, QA-18: la categoría llega fijada y es la de la rutina de la sesión.
+        coEvery {
+            createExerciseUseCase(any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
+        } returns 42L
+        coEvery { addExerciseToSessionUseCase(7L, 42L) } returns 99L
+
+        invoke()
+
+        coVerify {
+            createExerciseUseCase(
+                name = "Press Pallof",
+                equipmentTypeIds = any(),
+                primaryMuscleZoneIds = any(),
+                secondaryMuscleZoneIds = any(),
+                isBodyweight = any(),
+                isIsometric = any(),
+                isToTechnicalFailure = any(),
+                mediaResource = any(),
+                progressionDifficulty = any(),
+                movementCategory = MovementCategory.PUSH,
+            )
+        }
     }
 }

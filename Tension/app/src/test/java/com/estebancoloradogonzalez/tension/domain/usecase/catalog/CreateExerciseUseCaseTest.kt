@@ -1,5 +1,6 @@
 package com.estebancoloradogonzalez.tension.domain.usecase.catalog
 
+import com.estebancoloradogonzalez.tension.domain.model.MovementCategory
 import com.estebancoloradogonzalez.tension.domain.model.ProgressionDifficulty
 import com.estebancoloradogonzalez.tension.domain.repository.ExerciseRepository
 import io.mockk.coEvery
@@ -29,6 +30,7 @@ class CreateExerciseUseCaseTest {
         isToTechnicalFailure = false,
         mediaResource = null,
         progressionDifficulty = ProgressionDifficulty.HIGH,
+        movementCategory = MovementCategory.PUSH,
     )
 
     @Test
@@ -36,7 +38,7 @@ class CreateExerciseUseCaseTest {
         coEvery { repository.exerciseExistsByName("Elevación Lateral") } returns false
         coEvery {
             repository.createExercise(
-                any(), any(), any(), any(), any(), any(), any(), any(), any(),
+                any(), any(), any(), any(), any(), any(), any(), any(), any(), any(),
             )
         } returns 42L
 
@@ -54,6 +56,7 @@ class CreateExerciseUseCaseTest {
                 isToTechnicalFailure = false,
                 mediaResource = null,
                 progressionDifficulty = ProgressionDifficulty.HIGH,
+                movementCategory = MovementCategory.PUSH,
             )
         }
     }
@@ -94,7 +97,7 @@ class CreateExerciseUseCaseTest {
         coEvery { repository.exerciseExistsByName(any()) } returns false
         coEvery {
             repository.createExercise(
-                any(), any(), any(), any(), any(), any(), any(), any(), any(),
+                any(), any(), any(), any(), any(), any(), any(), any(), any(), any(),
             )
         } returns 1L
 
@@ -111,6 +114,7 @@ class CreateExerciseUseCaseTest {
                 isToTechnicalFailure = any(),
                 mediaResource = any(),
                 progressionDifficulty = any(),
+                movementCategory = any(),
             )
         }
     }
@@ -120,7 +124,7 @@ class CreateExerciseUseCaseTest {
         coEvery { repository.exerciseExistsByName("Aperturas") } returns false
         coEvery {
             repository.createExercise(
-                any(), any(), any(), any(), any(), any(), any(), any(), any(),
+                any(), any(), any(), any(), any(), any(), any(), any(), any(), any(),
             )
         } returns 1L
 

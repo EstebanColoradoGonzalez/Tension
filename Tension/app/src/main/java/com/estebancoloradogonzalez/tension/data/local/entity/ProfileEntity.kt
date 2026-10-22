@@ -20,7 +20,7 @@ data class ProfileEntity(
     @ColumnInfo(name = "weekly_frequency")
     val weeklyFrequency: Int = 6,
 
-    @ColumnInfo(name = "plateau_base_threshold", defaultValue = "5")
+    @ColumnInfo(name = "plateau_base_threshold", defaultValue = "10")
     val plateauBaseThreshold: Int = PlateauThresholdRule.DEFAULT_BASE_THRESHOLD,
 
     @ColumnInfo(name = "created_at")

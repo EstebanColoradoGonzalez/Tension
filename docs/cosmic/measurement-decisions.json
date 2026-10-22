@@ -1,0 +1,29 @@
+[
+  {
+    "decision_key": "continuidad:46-progresion-rango-categoria-dia",
+    "tipo": "continuidad",
+    "estado": "resuelta",
+    "conclusion": "Modifica procesos existentes: reemplaza la Regla de Doble Umbral de HU-11 en la decisión de subir peso y añade la de bajar, cambia el valor por defecto del umbral base de HU-32 y acota el listado de añadir ejercicio de HU-43 y la asignación del plan.",
+    "evidencia": "DoubleThresholdRule.kt (REQUIRED_SETS=4, RIR>=2), PlateauThresholdRule.DEFAULT_BASE_THRESHOLD=5, GetAddableExercisesUseCase sin filtro; HU-11, HU-32, HU-43.",
+    "origen": "po_confirmado",
+    "confirmed_at": "2026-10-22"
+  },
+  {
+    "decision_key": "entity-identity:categoría de movimiento|ejercicio",
+    "tipo": "variante_entidad",
+    "estado": "resuelta",
+    "conclusion": "La categoría de movimiento (Empuje/Jalón/Pierna) es un atributo nuevo del Ejercicio existente, no una entidad distinta.",
+    "evidencia": "domain_and_state_model.md: entidad exercise sin clasificación de movimiento; ninguna historia documenta ciclo de vida propio.",
+    "origen": "llm_inferido",
+    "confirmed_at": "2026-10-22"
+  },
+  {
+    "decision_key": "entity-identity:categoría de movimiento|rutina",
+    "tipo": "variante_entidad",
+    "estado": "resuelta",
+    "conclusion": "La categoría de movimiento (Empuje/Jalón/Pierna) es un atributo nuevo de la Rutina existente, no una entidad distinta.",
+    "evidencia": "domain_and_state_model.md: routine.name es texto libre (\"Push\", \"Pull + Abs\", \"Pierna\"); sin clasificación estructurada.",
+    "origen": "llm_inferido",
+    "confirmed_at": "2026-10-22"
+  }
+]

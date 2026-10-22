@@ -30,6 +30,16 @@ data class SessionExerciseWithDetails(
     val alternativesInSlot: Int,
     /** Si lo añadió el ejecutante en lugar de traerlo el plan (HU-43). */
     val isExtra: Int,
+    /**
+     * Estado de rango del par que gobierna `prescribedLoadKg` —el de mayor carga propuesta,
+     * con el mismo criterio que esa columna (CA-40.04)—: su última lectura, su conteo hacia
+     * la subida y su implemento (HU-46, CA-46.02, CA-46.04).
+     */
+    val rangeReading: String? = null,
+    val topRangeStreak: Int = 0,
+    val rangeEquipmentName: String? = null,
+    /** Si el ejercicio admite «Peso Añadido» (CA-46.15). */
+    val admitsAddedWeight: Boolean = false,
 )
 
 data class SetExerciseInfo(
@@ -205,7 +215,25 @@ interface SessionExerciseDao {
                 WHERE pa_alt.routine_version_id = s.routine_version_id
                   AND pa_alt.slot = se.slot
             ) END AS alternativesInSlot,
-            se.is_extra AS isExtra
+            se.is_extra AS isExtra,
+            (SELECT ep.last_range_reading FROM exercise_progression ep
+             WHERE ep.exercise_id = se.exercise_id
+             ORDER BY ep.prescribed_load_kg DESC, ep.equipment_type_id ASC
+             LIMIT 1) AS rangeReading,
+            COALESCE((SELECT ep.top_range_streak FROM exercise_progression ep
+             WHERE ep.exercise_id = se.exercise_id
+             ORDER BY ep.prescribed_load_kg DESC, ep.equipment_type_id ASC
+             LIMIT 1), 0) AS topRangeStreak,
+            (SELECT et_r.name FROM exercise_progression ep
+             INNER JOIN equipment_type et_r ON ep.equipment_type_id = et_r.id
+             WHERE ep.exercise_id = se.exercise_id
+             ORDER BY ep.prescribed_load_kg DESC, ep.equipment_type_id ASC
+             LIMIT 1) AS rangeEquipmentName,
+            EXISTS(
+                SELECT 1 FROM exercise_equipment ee_a
+                INNER JOIN equipment_type et_a ON ee_a.equipment_type_id = et_a.id
+                WHERE ee_a.exercise_id = se.exercise_id AND et_a.name = 'Peso Añadido'
+            ) AS admitsAddedWeight
         FROM session_exercise se
         LEFT JOIN exercise e ON se.exercise_id = e.id
         INNER JOIN session s ON se.session_id = s.id

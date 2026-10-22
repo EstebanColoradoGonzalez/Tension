@@ -3,12 +3,15 @@ package com.estebancoloradogonzalez.tension.ui.session
 import android.content.Context
 import androidx.lifecycle.SavedStateHandle
 import com.estebancoloradogonzalez.tension.R
+import com.estebancoloradogonzalez.tension.domain.model.DeloadState
 import com.estebancoloradogonzalez.tension.domain.model.ExerciseSessionStatus
+import com.estebancoloradogonzalez.tension.domain.model.MovementCategory
 import com.estebancoloradogonzalez.tension.domain.model.SessionAdjustment
 import com.estebancoloradogonzalez.tension.domain.model.SessionExerciseDetail
 import com.estebancoloradogonzalez.tension.domain.model.WithdrawnExercise
 import com.estebancoloradogonzalez.tension.domain.repository.PlanRepository
 import com.estebancoloradogonzalez.tension.domain.repository.SessionRepository
+import com.estebancoloradogonzalez.tension.domain.rules.RangeSignal
 import com.estebancoloradogonzalez.tension.domain.usecase.deload.GetDeloadStateUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.session.AddExerciseToSessionUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.session.CloseSessionUseCase
@@ -16,6 +19,7 @@ import com.estebancoloradogonzalez.tension.domain.usecase.session.FinalizeExerci
 import com.estebancoloradogonzalez.tension.domain.usecase.session.GetAddableExercisesUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.session.GetSessionAdjustmentUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.session.GetSessionExercisesUseCase
+import com.estebancoloradogonzalez.tension.domain.usecase.session.GetSessionMovementCategoryUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.session.WithdrawFromSessionUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -54,6 +58,10 @@ class ActiveSessionViewModelTest {
     private val getAddableExercisesUseCase: GetAddableExercisesUseCase = mockk()
     private val addExerciseToSessionUseCase: AddExerciseToSessionUseCase = mockk()
     private val withdrawFromSessionUseCase: WithdrawFromSessionUseCase = mockk()
+    private val getSessionMovementCategoryUseCase: GetSessionMovementCategoryUseCase =
+        mockk<GetSessionMovementCategoryUseCase>().also {
+            coEvery { it(any()) } returns MovementCategory.PUSH
+        }
     private val context: Context = mockk()
 
     private val sessionId = 7L
@@ -131,6 +139,7 @@ class ActiveSessionViewModelTest {
             getAddableExercisesUseCase = getAddableExercisesUseCase,
             addExerciseToSessionUseCase = addExerciseToSessionUseCase,
             withdrawFromSessionUseCase = withdrawFromSessionUseCase,
+            getSessionMovementCategoryUseCase = getSessionMovementCategoryUseCase,
             context = context,
             savedStateHandle = SavedStateHandle(mapOf("sessionId" to sessionId)),
         )
@@ -325,5 +334,45 @@ class ActiveSessionViewModelTest {
 
         assertNotNull(vm.uiState.value.errorMessage)
         assertTrue(vm.addExerciseSheetState.value.isVisible)
+    }
+
+    // ----- HU-46 -----
+
+    @Test
+    fun `la categoria del dia llega al estado y a la hoja de anadir`() = runTest {
+        // CA-46.09, CA-46.10
+        every { getAddableExercisesUseCase(sessionId) } returns flowOf(emptyList())
+        val vm = viewModel(exercises = listOf(detail(1, "Press Militar")), adjustment = SessionAdjustment())
+        advanceUntilIdle()
+
+        assertEquals(MovementCategory.PUSH, vm.uiState.value.movementCategory)
+        vm.onAddExerciseRequested()
+        assertEquals(MovementCategory.PUSH, vm.addExerciseSheetState.value.dayCategory)
+    }
+
+    @Test
+    fun `la indicacion de rango acompana al peso propuesto`() = runTest {
+        // CA-46.02
+        val vm = viewModel(
+            exercises = listOf(detail(1, "Press Militar").copy(rangeSignal = RangeSignal.Decrease)),
+            adjustment = SessionAdjustment(),
+        )
+        advanceUntilIdle()
+
+        assertEquals(RangeSignal.Decrease, vm.uiState.value.exercises.single().rangeSignal)
+    }
+
+    @Test
+    fun `en una sesion de descarga no se muestra la indicacion de rango`() = runTest {
+        // CA-46.18
+        coEvery { sessionRepository.getDeloadIdBySessionId(sessionId) } returns 3L
+        coEvery { getDeloadStateUseCase() } returns DeloadState.NoDeloadNeeded
+        val vm = viewModel(
+            exercises = listOf(detail(1, "Press Militar").copy(rangeSignal = RangeSignal.Decrease)),
+            adjustment = SessionAdjustment(),
+        )
+        advanceUntilIdle()
+
+        assertNull(vm.uiState.value.exercises.single().rangeSignal)
     }
 }

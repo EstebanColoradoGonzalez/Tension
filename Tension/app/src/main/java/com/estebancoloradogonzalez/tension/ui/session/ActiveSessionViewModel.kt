@@ -144,6 +144,7 @@ class ActiveSessionViewModel @Inject constructor(
                                 // La descarga prescribe su propia carga: no hay señal de
                                 // rango que mostrar junto a ella (CA-46.18).
                                 rangeSignal = if (isDeload) null else detail.rangeSignal,
+                                canCorrect = detail.canCorrectLastSet,
                             )
                         },
                     )

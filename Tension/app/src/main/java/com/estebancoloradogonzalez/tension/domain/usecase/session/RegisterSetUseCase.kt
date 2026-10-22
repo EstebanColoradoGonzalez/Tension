@@ -2,9 +2,8 @@ package com.estebancoloradogonzalez.tension.domain.usecase.session
 
 import com.estebancoloradogonzalez.tension.domain.model.WeightUnit
 import com.estebancoloradogonzalez.tension.domain.repository.SessionRepository
-import com.estebancoloradogonzalez.tension.domain.rules.ExternalLoadRule
 import com.estebancoloradogonzalez.tension.domain.rules.SetRangeNotice
-import com.estebancoloradogonzalez.tension.domain.util.WeightConverter
+import com.estebancoloradogonzalez.tension.domain.rules.SetValuesRule
 import javax.inject.Inject
 
 class RegisterSetUseCase @Inject constructor(
@@ -32,14 +31,9 @@ class RegisterSetUseCase @Inject constructor(
         equipmentTypeId: Long,
         equipmentTypeName: String? = null,
     ): SetRangeNotice? {
-        require(weightKg >= 0) { "Weight must be >= 0" }
-        require(weightKg <= WeightConverter.MAX_WEIGHT_KG) { "Weight must be <= 500 kg" }
-        require(reps >= 1) { "Reps must be >= 1" }
-        require(rir in 0..2) { "RIR must be between 0 and 2" }
+        // Shared with the correction of the last set (CA-47.06): one rule, not two copies.
+        SetValuesRule.requireValid(weightKg, reps, rir, equipmentTypeName)
         require(equipmentTypeId > 0) { "Equipment type is required" }
-        if (ExternalLoadRule.requiresPositiveLoad(equipmentTypeName)) {
-            require(weightKg > 0) { "Added weight must be > 0" }
-        }
         return sessionRepository.registerSet(
             sessionExerciseId,
             weightKg,

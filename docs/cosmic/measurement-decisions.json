@@ -25,5 +25,14 @@
     "evidencia": "domain_and_state_model.md: routine.name es texto libre (\"Push\", \"Pull + Abs\", \"Pierna\"); sin clasificación estructurada.",
     "origen": "llm_inferido",
     "confirmed_at": "2026-10-22"
+  },
+  {
+    "decision_key": "continuidad:47-corregir-ultima-serie-registrada",
+    "tipo": "continuidad",
+    "estado": "resuelta",
+    "conclusion": "El mecanismo de corrección de series no existe hoy en ningún momento del sistema —ni durante la sesión activa ni post-cierre— y esta historia lo introduce por primera vez. Abre una excepción controlada a la inmutabilidad documentada de la serie, acotada a la última serie registrada mientras la sesión está en curso; post-cierre y para el resto de series la inmutabilidad se mantiene. Confirmado por el PO con ese alcance exacto (ventana global de sesión, corrección repetida dentro de la ventana, recálculo automático de derivados, implemento no corregible).",
+    "evidencia": "domain_and_state_model.md: exercise_set 'Inmutable tras su creación'; interfaces_contract.md: 'El equipamiento de la serie no se corrige' y F2 de solo lectura; architecture_blueprint.md D-03 'Sesiones cerradas son inmutables'; HU-06 registro insertar-y-listo; HU-43 'Nada con series registradas se retira'.",
+    "origen": "po_confirmado",
+    "confirmed_at": "2026-10-22"
   }
 ]

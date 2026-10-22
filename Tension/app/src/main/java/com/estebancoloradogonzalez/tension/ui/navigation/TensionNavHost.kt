@@ -52,6 +52,7 @@ import com.estebancoloradogonzalez.tension.ui.profile.ProfileScreen
 import com.estebancoloradogonzalez.tension.ui.profile.WeightHistoryScreen
 import com.estebancoloradogonzalez.tension.ui.session.ActiveSessionScreen
 import com.estebancoloradogonzalez.tension.ui.session.RegisterSetScreen
+import com.estebancoloradogonzalez.tension.ui.session.RegisterSetViewModel
 import com.estebancoloradogonzalez.tension.ui.session.SessionSummaryScreen
 import com.estebancoloradogonzalez.tension.ui.settings.ExportBackupScreen
 import com.estebancoloradogonzalez.tension.ui.settings.ImportBackupScreen
@@ -416,6 +417,11 @@ fun TensionNavHost(
                                     NavigationRoutes.registerSetRoute(sessionExerciseId),
                                 )
                             },
+                            onNavigateToCorrectSet = { sessionExerciseId ->
+                                navController.navigate(
+                                    NavigationRoutes.correctSetRoute(sessionExerciseId),
+                                )
+                            },
                             onNavigateToExerciseDetail = { exerciseId ->
                                 navController.navigate(
                                     NavigationRoutes.exerciseDetailRoute(exerciseId),
@@ -440,6 +446,10 @@ fun TensionNavHost(
                         route = NavigationRoutes.REGISTER_SET,
                         arguments = listOf(
                             navArgument("sessionExerciseId") { type = NavType.LongType },
+                            navArgument(RegisterSetViewModel.CORRECTION_ARG) {
+                                type = NavType.BoolType
+                                defaultValue = false
+                            },
                         ),
                     ) {
                         RegisterSetScreen(

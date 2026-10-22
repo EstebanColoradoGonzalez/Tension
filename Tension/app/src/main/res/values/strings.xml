@@ -133,6 +133,14 @@
     <string name="register_set_rir_label">RIR</string>
     <string name="register_set_confirm">Confirmar</string>
     <string name="register_set_cancel">Cancelar</string>
+
+    <!-- Corregir la última serie registrada (HU-47) -->
+    <string name="session_correct_set">Corregir</string>
+    <string name="session_correct_set_description">Corregir la última serie registrada</string>
+    <string name="correct_set_title_format">Corregir serie %1$d</string>
+    <string name="correct_set_registered_format">Registrada: %1$s %2$s · %3$d %4$s · RIR %5$d</string>
+    <string name="correct_set_equipment_locked">El equipamiento no se corrige: la serie cuenta para el que se registró.</string>
+    <string name="correct_set_done_format">Serie %1$d corregida</string>
     <string name="error_weight_negative">El peso no puede ser negativo</string>
     <string name="error_weight_not_numeric">Ingresa un valor numérico válido</string>
     <string name="error_weight_max_kg">El peso máximo permitido es 500 Kg</string>

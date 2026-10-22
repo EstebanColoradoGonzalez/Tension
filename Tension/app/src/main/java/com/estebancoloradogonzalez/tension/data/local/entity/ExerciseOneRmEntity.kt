@@ -28,9 +28,16 @@ import androidx.room.Index
  * and CA-42.06 states the view exposes the number and nothing else. A column no one reads,
  * and which repeating an identical session would still touch, is worse than its absence.
  *
- * **The dependency is strictly one-way.** This table is written when a set is registered and
- * read by the 1RM screen only. No rule of the decision engine, no alert and no KPI consults
- * it — same isolation model HU-37 established for the tree.
+ * **Correcting the last set rebuilds the pair's record** (HU-47, CA-47.11) from the
+ * qualifying sets of `exercise_set`, so it can go down. That reconstruction is exact here:
+ * the table exists since the schema that is only installed fresh (ADR-019), no purge exists,
+ * and every set that ever qualified went through the registration and is still in the
+ * history. Only the corrected pair is rebuilt.
+ *
+ * **The dependency is strictly one-way.** This table is written when a set is registered or
+ * the last one is corrected, and read by the 1RM screen only. No rule of the decision
+ * engine, no alert and no KPI consults it — same isolation model HU-37 established for the
+ * tree.
  */
 @Entity(
     tableName = "exercise_one_rm",

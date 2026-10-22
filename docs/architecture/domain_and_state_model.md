@@ -283,6 +283,12 @@ model session_withdrawal {
 // Corresponde al concepto "Log" del dominio.
 // Inmutable tras su creación. Cada serie se registra
 // exactamente una vez.
+// EXCEPCIÓN ACOTADA (HU-47): la última serie registrada
+// de la sesión IN_PROGRESS admite corrección de weight_kg,
+// reps, rir y capture_unit. La ventana se DERIVA (mayor id
+// de la sesión en curso), no se guarda: sin columna nueva.
+// equipment_type_id, set_number y session_exercise_id
+// nunca cambian. Sesión cerrada => inmutable, sin excepción.
 // ==========================================
 model exercise_set {
   id                   INTEGER  @id @autoincrement                              // PK. Identificador único.
@@ -686,6 +692,7 @@ enum MuscleGroup {
 - **Lectura posterior sin efecto (árbol de entrenamiento):** cerrar una sesión dispara el recálculo de `tree_state`, y el barrido del cambio de día lo dispara **después** de resolver la sesión rancia, nunca antes — el barrido conserva la `date` original, y recalcular primero leería una fecha de último entrenamiento desactualizada. El recálculo **no altera `session` ni ninguna de sus transiciones**: es una lectura agregada del historial, es best-effort y su fallo no impide el cierre.
 - **Estado Inicial (Nacimiento):** `IN_PROGRESS` — se asigna al crear la sesión.
 - **Estados Finales (Terminación):** `COMPLETED`, `INCOMPLETE` — una vez alcanzados, la sesión y todos sus datos son **inmutables**.
+- **Ventana de corrección (HU-47):** mientras la sesión está `IN_PROGRESS`, su última serie registrada —la de mayor `id` entre las de la sesión— es corregible en peso, repeticiones, RIR y unidad. Registrar otra serie la mueve, y la transición a `COMPLETED`/`INCOMPLETE` la cierra. Corregir no altera el estado de la sesión, el de sus ejercicios ni su completitud. Reconstruye el 1RM del par corregido.
 
 | **Estado Origen** | **Evento / Trigger** | **Estado Destino** | **Condiciones / Validaciones Previas** |
 | --- | --- | --- | --- |

@@ -1,0 +1,201 @@
+╔══════════════════════════════════════════════════════════════╗
+║  ⚠️  PROTOTIPO — PROPUESTA PENDIENTE DE VALIDACIÓN CON DISEÑO  ║
+╚══════════════════════════════════════════════════════════════╝
+
+HU #47 — Corregir los datos de la última serie registrada
+Plataforma: mobile / portrait (390 px) · Material 3 · targets ≥ 48 dp
+La acción «Corregir» existe SOLO en la sesión activa y SOLO sobre
+el ejercicio que posee la última serie registrada de la sesión.
+Nunca en dos ejercicios a la vez. Al cerrar la sesión, desaparece.
+
+
+────────────────────────────────────────────────────────────────
+ E1 · SESIÓN ACTIVA  ·  la ventana de corrección abre al
+                          registrar (CA-47.01)
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+| ←  Empuje — Pecho                 ⏱      |
+|    Miércoles · Versión 1                 |
++──────────────────────────────────────────+
+|  1  Press de Banca          0/3      ⋮   |
+|     Barra                                  |
+|  ─────────────────────────────────────   |
+|  2  Elevación Lateral       3/3  ✓   ⋮   |  ← acaba de
+|     Mancuerna                            |    registrar la
+|     [      ✎ Corregir ]                  |    serie 3
+|  ─────────────────────────────────────   |
+|  3  Press Inclinado         0/3      ⋮   |
+|     Mancuerna                            |
+|  ─────────────────────────────────────   |
+|                                          |
+|   [       + Añadir ejercicio       ]     |
+|                                          |
+|         [    Cerrar sesión    ]          |
++──────────────────────────────────────────+
+
+  ✓ completado    ▸ en ejecución    (sin marca) no iniciado
+
+  «✎ Corregir» aparece bajo el nombre del ejercicio, como
+  sub-acción de su tarjeta. Solo UN ejercicio lo muestra en
+  cualquier momento: el de la última serie registrada.
+  Press de Banca y Press Inclinado NO lo muestran.
+
+
+────────────────────────────────────────────────────────────────
+ E1 · LA VENTANA SE MUEVE AL REGISTRAR (CA-47.02)
+────────────────────────────────────────────────────────────────
+
+  El ejecutante pasa a Press de Banca y registra su serie 1.
+  La ventana de Elevación Lateral se cierra para siempre;
+  la acción se mueve a Press de Banca.
+
++──────────────────────────────────────────+
+| ←  Empuje — Pecho                 ⏱      |
++──────────────────────────────────────────+
+|  1  Press de Banca          1/3  ▸   ⋮   |
+|     Barra                                  |
+|     [      ✎ Corregir ]                  |  ← ahora la
+|  ─────────────────────────────────────   |    ventana está
+|  2  Elevación Lateral       3/3  ✓   ⋮   |    aquí. La serie 3
+|     Mancuerna                            |    de Elevación ya
+|  ─────────────────────────────────────   |    NO es corregible
+|  3  Press Inclinado         0/3      ⋮   |    aunque se siga en
+|     Mancuerna                            |    la misma sesión.
+|  ─────────────────────────────────────   |
+|   [       + Añadir ejercicio       ]     |
+|         [    Cerrar sesión    ]          |
++──────────────────────────────────────────+
+
+  Lo mismo pasa con la siguiente serie del MISMO ejercicio:
+  la ventana siempre es de la sesión, no del ejercicio.
+
+
+────────────────────────────────────────────────────────────────
+ E2 · FORMULARIO DE CORRECCIÓN  (CA-47.03, CA-47.04)
+────────────────────────────────────────────────────────────────
+
+  El MISMO formulario del registro, en modo corrección:
+  precargado con los valores registrados, título distinto,
+  implemento visible pero no editable.
+
++──────────────────────────────────────────+
+| ✕  Corregir serie 1 de Press de Banca    |  ← título
+|    Registro: 82.5 kg · 18 reps · RIR 1   |    deja claro que
++──────────────────────────────────────────+    se CORRECTA
+|  Implemento                               |
+|  [ Barra                    ]  (bloq.)  |  NO editable:
+|                                          |    la serie cuenta
+|  Peso (*)                    Unidad      |    para el par con
+|  +─────────────────+      +──────────+   |    el que se
+|  | 82.5            |      | ▼ kg     |   |    registró
+|  +─────────────────+      +──────────+   |
+|                                          |
+|  Repeticiones (*)                          |
+|  +──────────────────────────────────────+|
+|  | 18                                        ||
+|  +──────────────────────────────────────+|
+|                                          |
+|  RIR (*)                                  |
+|  ( 0 )  ( 1 )  ( 2 )                      |
+|                                          |
+|      [        Confirmar        ]         |  habilitado solo
+|             [ Cancelar ]                 |  con datos válidos
++──────────────────────────────────────────+
+
+  Precarga: 18 (el valor equivocado tal como se registró).
+  El ejecutante lo cambia a 10 y confirma.
+
+  Tras «Confirmar»:
+    • toast breve: «Serie 1 corregida»
+    • vuelve a E1 y la acción «✎ Corregir» SIGUE visible
+      sobre Press de Banca: la ventana quedó abierta sobre
+      esa misma serie (corrige de nuevo si escribió 11).
+    • el resumen y los derivados (incl. 1RM) quedaron
+      recalculados: el historial es uno solo, el corregido.
+
+  Tras «Cancelar»:
+    • vuelve a E1 sin cambiar nada; la ventana sigue abierta.
+
+
+────────────────────────────────────────────────────────────────
+ E2 · CORRECCIÓN EN VARIANTES (CA-47.09)
+────────────────────────────────────────────────────────────────
+
+  Isométrico (Plancha) — campo de tiempo y peso fijo:
+
++──────────────────────────────────────────+
+| ✕  Corregir serie 2 de Plancha           |
+|    Registro: 0 kg · 40 s · RIR 2         |
++──────────────────────────────────────────+
+|  Peso (*)                                 |
+|  +─────────────────+      +──────────+   |
+|  | 0   (fijo)      |      |  kg (fijo)|||
+|  +─────────────────+      +──────────+   |
+|                                          |
+|  Segundos sostenidos (*)                   |
+|  +──────────────────────────────────────+|
+|  | 40    (Referencia: 30–45 seg)          ||
+|  +──────────────────────────────────────+|
+|                                          |
+|  RIR (*)                                  |
+|  ( 0 )  ( 1 )  ( 2 )                      |
+|                                          |
+|      [        Confirmar        ]         |
+|             [ Cancelar ]                 |
++──────────────────────────────────────────+
+
+  Peso corporal (Flexiones) — idem, con peso fijo en 0 y, si
+  el ejercicio lo admite, la captura de «Peso Añadido» con la
+  misma regla que en el registro (CA-47.06).
+
+
+────────────────────────────────────────────────────────────────
+ E1 · RETOMA TRAS CIERRE INESPERADO (CA-47.10)
+────────────────────────────────────────────────────────────────
+
+  La app se cierra (batería, crash) con la ventana abierta
+  sobre la serie 1 de Press de Banca. Al reabrir y retomar:
+
++──────────────────────────────────────────+
+| ←  Sesión en curso — reanudada        ⏱  |
++──────────────────────────────────────────+
+|  1  Press de Banca          1/3  ▸   ⋮   |
+|     Barra                                  |
+|     [      ✎ Corregir ]                  |  ← la ventana
+|  ─────────────────────────────────────   |    sobrevivió: la
+|  2  Elevación Lateral       3/3  ✓   ⋮   |    última registrada
+|  ─────────────────────────────────────   |    sigue siendo la
+|  ...                                     |    corregible
++──────────────────────────────────────────+
+
+
+────────────────────────────────────────────────────────────────
+ E1 → CIERRE · LA VENTANA MUERE CON LA SESIÓN (CA-47.08)
+────────────────────────────────────────────────────────────────
+
+  Al cerrar la sesión (completada o incompleta):
+
++──────────────────────────────────────────+
+| ←  Empuje — Pecho                ⏱       |
++──────────────────────────────────────────+
+|  1  Press de Banca          3/3  ✓   ⋮   |
+|     Barra                                  |
+|                                          |  «✎ Corregir»
+|  2  Elevación Lateral       3/3  ✓   ⋮   |  desaparece de
+|  3  Press Inclinado         3/3  ✓   ⋮   |  TODOS los
+|                                          |  ejercicios.
+|         [    Cerrar sesión    ]          |  No queda rastro
++──────────────────────────────────────────+    de la acción.
+
+  Resumen post-sesión (E5) y detalle de sesión pasada (F2-T1):
+  los datos mostrados son los CORREGIDOS (10 reps, no 18),
+  como si se hubieran registrado correctos a la primera.
+  Sin ninguna acción de modificación: post-cierre, inmutable.
+  Si el error se descubre después de cerrar, la historia no
+  da salida — esa es la frontera declarada.
+
+
+╔══════════════════════════════════════════════════════════════╗
+║  ⚠️  PROTOTIPO — PROPUESTA PENDIENTE DE VALIDACIÓN CON DISEÑO  ║
+╚══════════════════════════════════════════════════════════════╝

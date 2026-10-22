@@ -96,6 +96,7 @@ class ActiveSessionViewModelTest {
         name: String,
         completedSets: Int = 0,
         isExtra: Boolean = false,
+        canCorrectLastSet: Boolean = false,
     ) = SessionExerciseDetail(
         sessionExerciseId = id,
         exerciseId = id * 10,
@@ -120,6 +121,7 @@ class ActiveSessionViewModelTest {
         slot = 0,
         hasAlternatives = false,
         isExtra = isExtra,
+        canCorrectLastSet = canCorrectLastSet,
     )
 
     private fun viewModel(
@@ -374,5 +376,39 @@ class ActiveSessionViewModelTest {
         advanceUntilIdle()
 
         assertNull(vm.uiState.value.exercises.single().rangeSignal)
+    }
+
+    // ----- HU-47: the correction window -----
+
+    @Test
+    fun `given the last set belongs to one exercise, when listing, then only that one can be corrected`() =
+        runTest {
+            // Given — QA-01: lateral raise has just registered its set 3
+            val vm = viewModel(
+                exercises = listOf(
+                    detail(1, "Press de Banca"),
+                    detail(2, "Elevación Lateral", completedSets = 3, canCorrectLastSet = true),
+                    detail(3, "Press Inclinado"),
+                ),
+                adjustment = SessionAdjustment(),
+            )
+
+            // When
+            advanceUntilIdle()
+
+            // Then — CA-47.01 / CA-47.07: a single action in the whole session
+            val exercises = vm.uiState.value.exercises
+            assertEquals(listOf(2L), exercises.filter { it.canCorrect }.map { it.sessionExerciseId })
+        }
+
+    @Test
+    fun `given no set registered, when listing, then no exercise can be corrected`() = runTest {
+        val vm = viewModel(
+            exercises = listOf(detail(1, "Press de Banca"), detail(2, "Elevación Lateral")),
+            adjustment = SessionAdjustment(),
+        )
+        advanceUntilIdle()
+
+        assertTrue(vm.uiState.value.exercises.none { it.canCorrect })
     }
 }

@@ -21,6 +21,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.SwapHoriz
@@ -58,6 +59,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -74,6 +77,8 @@ import com.estebancoloradogonzalez.tension.ui.theme.LocalTensionSemanticColors
 @Composable
 fun ActiveSessionScreen(
     onNavigateToRegisterSet: (Long) -> Unit,
+    /** Opens the set form in correction mode (HU-47). */
+    onNavigateToCorrectSet: (Long) -> Unit,
     onNavigateToExerciseDetail: (Long) -> Unit,
     onNavigateToSessionSummary: (Long) -> Unit,
     onNavigateToCreateExercise: (Long) -> Unit,
@@ -147,6 +152,7 @@ fun ActiveSessionScreen(
                         exercise = exercise,
                         isDeloadSession = uiState.isDeloadSession,
                         onRegister = { onNavigateToRegisterSet(exercise.sessionExerciseId) },
+                        onCorrect = { onNavigateToCorrectSet(exercise.sessionExerciseId) },
                         onViewDetail = { exercise.exerciseId?.let { onNavigateToExerciseDetail(it) } },
                         onFinalize = { viewModel.onFinalizeExercise(exercise.sessionExerciseId) },
                         onSelectAlternative = { viewModel.onSelectAlternative(exercise) },
@@ -342,6 +348,7 @@ private fun ExerciseRow(
     exercise: ExerciseUiItem,
     isDeloadSession: Boolean,
     onRegister: () -> Unit,
+    onCorrect: () -> Unit,
     onViewDetail: () -> Unit,
     onFinalize: () -> Unit,
     onSelectAlternative: () -> Unit,
@@ -362,6 +369,7 @@ private fun ExerciseRow(
             isDeloadSession = isDeloadSession,
             isDark = isDark,
             onRegister = onRegister,
+            onCorrect = onCorrect,
             onFinalize = onFinalize,
             onViewDetail = onViewDetail,
             onWithdraw = onWithdraw,
@@ -370,6 +378,7 @@ private fun ExerciseRow(
             exercise = exercise,
             isDark = isDark,
             onRegister = onRegister,
+            onCorrect = onCorrect,
             onViewDetail = onViewDetail,
             onWithdraw = onWithdraw,
         )
@@ -428,6 +437,36 @@ private fun ExerciseOverflowMenu(
                 },
             )
         }
+    }
+}
+
+/**
+ * The action that corrects the last registered set (HU-47, CA-47.01).
+ *
+ * It sits under the exercise name, as a sub-action of its card, and not in the menu: the
+ * correction is for the mistake noticed **right then**, so it must be visible without
+ * searching for it. Only the exercise owning the last set of the session draws it, so it never
+ * shows on two cards at once (CA-47.07). Icon plus text: it does not rely on color.
+ */
+@Composable
+private fun CorrectLastSetAction(onCorrect: () -> Unit) {
+    val description = stringResource(R.string.session_correct_set_description)
+    TextButton(
+        onClick = onCorrect,
+        modifier = Modifier
+            .defaultMinSize(minHeight = 48.dp)
+            .semantics { contentDescription = description },
+    ) {
+        Icon(
+            imageVector = Icons.Filled.Edit,
+            contentDescription = null,
+            modifier = Modifier.size(18.dp),
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = stringResource(R.string.session_correct_set),
+            style = MaterialTheme.typography.labelLarge,
+        )
     }
 }
 
@@ -591,6 +630,7 @@ private fun InProgressExerciseRow(
     isDeloadSession: Boolean,
     isDark: Boolean,
     onRegister: () -> Unit,
+    onCorrect: () -> Unit,
     onFinalize: () -> Unit,
     onViewDetail: () -> Unit,
     onWithdraw: () -> Unit,
@@ -643,6 +683,10 @@ private fun InProgressExerciseRow(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 LoadText(exercise = exercise, isDeloadSession = isDeloadSession)
+
+                if (exercise.canCorrect) {
+                    CorrectLastSetAction(onCorrect = onCorrect)
+                }
 
                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -697,6 +741,7 @@ private fun CompletedExerciseRow(
     exercise: ExerciseUiItem,
     isDark: Boolean,
     onRegister: () -> Unit,
+    onCorrect: () -> Unit,
     onViewDetail: () -> Unit,
     onWithdraw: () -> Unit,
 ) {
@@ -749,6 +794,10 @@ private fun CompletedExerciseRow(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+
+                if (exercise.canCorrect) {
+                    CorrectLastSetAction(onCorrect = onCorrect)
+                }
 
                 Spacer(modifier = Modifier.height(8.dp))
 

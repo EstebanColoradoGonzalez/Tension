@@ -2,6 +2,7 @@ package com.estebancoloradogonzalez.tension.data.repository
 
 import androidx.room.withTransaction
 import com.estebancoloradogonzalez.tension.data.local.dao.AlertDao
+import com.estebancoloradogonzalez.tension.data.local.dao.CorrectableSetData
 import com.estebancoloradogonzalez.tension.data.local.dao.DailyRoutineOverrideDao
 import com.estebancoloradogonzalez.tension.data.local.dao.DaySkipDao
 import com.estebancoloradogonzalez.tension.data.local.dao.DeloadDao
@@ -41,6 +42,7 @@ import com.estebancoloradogonzalez.tension.data.local.entity.WeekDayEntity
 import com.estebancoloradogonzalez.tension.data.repository.model.SessionSummaryData
 import com.estebancoloradogonzalez.tension.domain.model.ActiveSession
 import com.estebancoloradogonzalez.tension.domain.model.AddableExercise
+import com.estebancoloradogonzalez.tension.domain.model.CorrectableSet
 import com.estebancoloradogonzalez.tension.domain.model.DailyRoutineOverride
 import com.estebancoloradogonzalez.tension.domain.model.DayOutcome
 import com.estebancoloradogonzalez.tension.domain.model.DeloadState
@@ -440,6 +442,7 @@ class SessionRepositoryImpl @Inject constructor(
                     hasAlternatives = detail.alternativesInSlot > 1,
                     isExtra = detail.isExtra == 1,
                     rangeSignal = carriedRangeSignal(detail),
+                    canCorrectLastSet = detail.ownsCorrectableSet == 1,
                 )
             }
         }
@@ -812,6 +815,102 @@ class SessionRepositoryImpl @Inject constructor(
             )
         }
     }
+
+    override suspend fun getCorrectableSet(sessionExerciseId: Long): CorrectableSet? =
+        exerciseSetDao.getCorrectableSet(sessionExerciseId)?.toDomain()
+
+    override suspend fun correctSet(
+        sessionExerciseId: Long,
+        setId: Long,
+        weightKg: Double,
+        reps: Int,
+        rir: Int,
+        captureUnit: WeightUnit,
+    ) {
+        database.withTransaction {
+            // The window is re-read here, inside the transaction that writes (CA-47.07,
+            // CA-47.08). A form opened before another set was registered, or before the
+            // session was closed, no longer points at the window and must write nothing.
+            val window = exerciseSetDao.getCorrectableSet(sessionExerciseId)
+            check(window != null && window.setId == setId) {
+                "Set is no longer correctable"
+            }
+
+            // External load is decided by the **registered** implement, which is not
+            // correctable (CA-47.03). Same rule as the registration: without external load
+            // the set stays at zero kilograms and in `KG` (CA-39.05, CA-47.09).
+            val hasExternalLoad = ExternalLoadRule.isCaptureEnabled(
+                isBodyweight = window.isBodyweight == 1,
+                isIsometric = window.isIsometric == 1,
+                equipmentName = window.equipmentTypeName,
+            )
+            val persistedUnit = if (hasExternalLoad) captureUnit else WeightUnit.KG
+            val persistedWeightKg = if (hasExternalLoad) weightKg else 0.0
+
+            exerciseSetDao.updateValues(
+                setId = setId,
+                weightKg = persistedWeightKg,
+                reps = reps,
+                rir = rir,
+                captureUnit = persistedUnit.name,
+            )
+
+            // The 1RM is the only derived value that stores something of the set: everything
+            // else — summary, detail, KPIs, previous-set notice — is read from `exercise_set`
+            // when queried. The pair's record is rebuilt from its qualifying sets, already
+            // with the corrected value, so it ends up as if the mistake had never existed: it
+            // may go down, go up or disappear (CA-47.11). See the exactness note in
+            // `ExerciseOneRmEntity`.
+            rebuildOneRm(window.exerciseId, window.equipmentTypeId, hasExternalLoad)
+        }
+    }
+
+    private suspend fun rebuildOneRm(
+        exerciseId: Long,
+        equipmentTypeId: Long,
+        hasExternalLoad: Boolean,
+    ) {
+        val maxWeightKg = exerciseSetDao.getMaxQualifyingWeightForPair(
+            exerciseId = exerciseId,
+            equipmentTypeId = equipmentTypeId,
+            reps = OneRmRule.REFERENCE_REPS,
+            rir = OneRmRule.REFERENCE_RIR,
+        )
+        if (maxWeightKg != null &&
+            OneRmRule.qualifies(
+                reps = OneRmRule.REFERENCE_REPS,
+                rir = OneRmRule.REFERENCE_RIR,
+                hasExternalLoad = hasExternalLoad,
+                weightKg = maxWeightKg,
+            )
+        ) {
+            exerciseOneRmDao.upsert(
+                ExerciseOneRmEntity(
+                    exerciseId = exerciseId,
+                    equipmentTypeId = equipmentTypeId,
+                    oneRmKg = OneRmRule.estimate(maxWeightKg, OneRmRule.REFERENCE_REPS),
+                ),
+            )
+        } else {
+            exerciseOneRmDao.deleteByPair(exerciseId, equipmentTypeId)
+        }
+    }
+
+    private fun CorrectableSetData.toDomain() = CorrectableSet(
+        setId = setId,
+        sessionExerciseId = sessionExerciseId,
+        setNumber = setNumber,
+        totalSets = totalSets,
+        exerciseName = exerciseName,
+        isBodyweight = isBodyweight == 1,
+        isIsometric = isIsometric == 1,
+        weightKg = weightKg,
+        reps = reps,
+        rir = rir,
+        captureUnit = WeightUnit.fromCode(captureUnit),
+        equipmentTypeId = equipmentTypeId,
+        equipmentTypeName = equipmentTypeName,
+    )
 
     override suspend fun finalizeExercise(sessionExerciseId: Long) {
         sessionExerciseDao.finalizeExercise(sessionExerciseId)

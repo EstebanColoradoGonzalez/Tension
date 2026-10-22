@@ -31,7 +31,11 @@ object NavigationRoutes {
     const val PROGRESSION_TREND = "progression-trend"
     const val ONE_RM = "one-rm"
     const val ACTIVE_SESSION = "active-session/{sessionId}"
-    const val REGISTER_SET = "register-set/{sessionExerciseId}"
+    /**
+     * Set registration. `correction=true` opens the same form to correct the last set
+     * registered in the session (HU-47); without the argument it registers a new one.
+     */
+    const val REGISTER_SET = "register-set/{sessionExerciseId}?correction={correction}"
 
     /**
      * Clave con la que el registro de serie devuelve a la sesión activa el aviso en directo de
@@ -54,6 +58,7 @@ object NavigationRoutes {
     fun planVersionDetailRoute(routineVersionId: Long) = "plan-version-detail/$routineVersionId"
     fun activeSessionRoute(sessionId: Long) = "active-session/$sessionId"
     fun registerSetRoute(sessionExerciseId: Long) = "register-set/$sessionExerciseId"
+    fun correctSetRoute(sessionExerciseId: Long) = "register-set/$sessionExerciseId?correction=true"
     fun sessionSummaryRoute(sessionId: Long) = "session-summary/$sessionId"
     fun sessionDetailRoute(sessionId: Long) = "session-detail/$sessionId"
     fun alertDetailRoute(alertId: Long) = "alert-detail/$alertId"

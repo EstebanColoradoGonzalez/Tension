@@ -84,6 +84,11 @@ data class ExerciseUiItem(
      * (CA-46.18) o si no hay nada que decir.
      */
     val rangeSignal: RangeSignal? = null,
+    /**
+     * Whether it shows the «Corregir» action: it owns the last registered set of the session
+     * (HU-47, CA-47.01). Never `true` on two exercises at once (CA-47.07).
+     */
+    val canCorrect: Boolean = false,
 )
 
 /** Hoja de seleccion para anadir un ejercicio a la sesion (CA-43.01, CA-43.02). */

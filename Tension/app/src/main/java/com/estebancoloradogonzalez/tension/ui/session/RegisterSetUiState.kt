@@ -11,6 +11,14 @@ enum class TimerState {
     STOPPED,
 }
 
+/** Values the corrected set was registered with, in its capture unit. */
+data class RegisteredSetValues(
+    val weight: String,
+    val unit: WeightUnit,
+    val reps: Int,
+    val rir: Int,
+)
+
 data class RegisterSetUiState(
     val isLoading: Boolean = true,
     val exerciseName: String = "",
@@ -48,6 +56,19 @@ data class RegisterSetUiState(
      * CA-46.05). Se pinta sobre el formulario sin taparlo: es justo cuando se elige el peso.
      */
     val previousSetNotice: String? = null,
+    /**
+     * The form corrects the last registered set instead of registering a new one (HU-47,
+     * CA-47.03). The implement arrives as the only option and cannot be changed.
+     */
+    val isCorrection: Boolean = false,
+    /** What was registered, to label it above the correction form. */
+    val registeredValues: RegisteredSetValues? = null,
+    /**
+     * The set is no longer the one in the window — another one was registered or the
+     * session was closed —: there is nothing to correct and the screen returns to the
+     * session without a message (CA-47.07).
+     */
+    val isCorrectionWindowClosed: Boolean = false,
 ) {
     val selectedEquipmentName: String?
         get() = equipmentOptions.firstOrNull { it.id == selectedEquipmentTypeId }?.name

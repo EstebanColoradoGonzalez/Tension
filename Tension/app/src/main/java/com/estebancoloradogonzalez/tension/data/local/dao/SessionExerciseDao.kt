@@ -40,6 +40,12 @@ data class SessionExerciseWithDetails(
     val rangeEquipmentName: String? = null,
     /** Si el ejercicio admite «Peso Añadido» (CA-46.15). */
     val admitsAddedWeight: Boolean = false,
+    /**
+     * Whether this exercise owns the last registered set of the session in progress: the
+     * correction window (HU-47, CA-47.01). Same derivation as
+     * `ExerciseSetDao.getCorrectableSet`, so at most one row of the session holds `1`.
+     */
+    val ownsCorrectableSet: Int = 0,
 )
 
 data class SetExerciseInfo(
@@ -175,6 +181,10 @@ interface SessionExerciseDao {
      * El orden antepone `is_extra` porque el añadido entra **al final** de la lista, fuera
      * de la estructura de puestos (CA-43.01), y `se.id` desempata los añadidos por orden de
      * llegada.
+     *
+     * `ownsCorrectableSet` marks the correction window (HU-47). Since the query reads
+     * `exercise_set`, the `Flow` re-emits when a set is registered or corrected, and the
+     * «Corregir» action moves from one exercise to another by itself (CA-47.02).
      */
     @Query(
         """
@@ -233,7 +243,15 @@ interface SessionExerciseDao {
                 SELECT 1 FROM exercise_equipment ee_a
                 INNER JOIN equipment_type et_a ON ee_a.equipment_type_id = et_a.id
                 WHERE ee_a.exercise_id = se.exercise_id AND et_a.name = 'Peso Añadido'
-            ) AS admitsAddedWeight
+            ) AS admitsAddedWeight,
+            CASE WHEN s.status = 'IN_PROGRESS' AND se.id = (
+                SELECT es_w.session_exercise_id
+                FROM exercise_set es_w
+                INNER JOIN session_exercise se_w ON es_w.session_exercise_id = se_w.id
+                WHERE se_w.session_id = s.id
+                ORDER BY es_w.id DESC
+                LIMIT 1
+            ) THEN 1 ELSE 0 END AS ownsCorrectableSet
         FROM session_exercise se
         LEFT JOIN exercise e ON se.exercise_id = e.id
         INNER JOIN session s ON se.session_id = s.id

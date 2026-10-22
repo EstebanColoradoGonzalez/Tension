@@ -3,6 +3,7 @@ package com.estebancoloradogonzalez.tension.ui.session
 import android.content.Context
 import androidx.lifecycle.SavedStateHandle
 import com.estebancoloradogonzalez.tension.R
+import com.estebancoloradogonzalez.tension.domain.model.CorrectableSet
 import com.estebancoloradogonzalez.tension.domain.model.EquipmentType
 import com.estebancoloradogonzalez.tension.domain.model.PrefilledLoad
 import com.estebancoloradogonzalez.tension.domain.model.PreselectionOrigin
@@ -10,6 +11,8 @@ import com.estebancoloradogonzalez.tension.domain.model.RegisterSetInfo
 import com.estebancoloradogonzalez.tension.domain.model.WeightUnit
 import com.estebancoloradogonzalez.tension.domain.rules.ExternalLoadRule
 import com.estebancoloradogonzalez.tension.domain.rules.SetRangeNotice
+import com.estebancoloradogonzalez.tension.domain.usecase.session.CorrectSetUseCase
+import com.estebancoloradogonzalez.tension.domain.usecase.session.GetCorrectableSetUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.session.GetPrefilledLoadForEquipmentUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.session.GetRegisterSetInfoUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.session.RegisterSetUseCase
@@ -44,6 +47,8 @@ class RegisterSetViewModelTest {
     private val getRegisterSetInfoUseCase: GetRegisterSetInfoUseCase = mockk()
     private val getPrefilledLoadForEquipmentUseCase: GetPrefilledLoadForEquipmentUseCase = mockk()
     private val registerSetUseCase: RegisterSetUseCase = mockk()
+    private val getCorrectableSetUseCase: GetCorrectableSetUseCase = mockk()
+    private val correctSetUseCase: CorrectSetUseCase = mockk()
     private val context: Context = mockk()
 
     private val sessionExerciseId = 42L
@@ -97,17 +102,44 @@ class RegisterSetViewModelTest {
         previousSetNotice = previousSetNotice,
     )
 
-    private fun createViewModel(): RegisterSetViewModel {
+    private fun createViewModel(correction: Boolean = false): RegisterSetViewModel {
+        val args = mutableMapOf<String, Any>("sessionExerciseId" to sessionExerciseId)
+        if (correction) args[RegisterSetViewModel.CORRECTION_ARG] = true
         return RegisterSetViewModel(
             getRegisterSetInfoUseCase = getRegisterSetInfoUseCase,
             getPrefilledLoadForEquipmentUseCase = getPrefilledLoadForEquipmentUseCase,
             registerSetUseCase = registerSetUseCase,
-            savedStateHandle = SavedStateHandle(
-                mapOf("sessionExerciseId" to sessionExerciseId),
-            ),
+            getCorrectableSetUseCase = getCorrectableSetUseCase,
+            correctSetUseCase = correctSetUseCase,
+            savedStateHandle = SavedStateHandle(args),
             context = context,
         )
     }
+
+    /** The mistyped S3 of `qa.md`: 18 kg × 18 × RIR 1 with dumbbell. */
+    private fun correctable(
+        weightKg: Double = 18.0,
+        reps: Int = 18,
+        rir: Int = 1,
+        captureUnit: WeightUnit = WeightUnit.KG,
+        equipment: EquipmentType = mancuerna,
+        isBodyweight: Boolean = false,
+        isIsometric: Boolean = false,
+    ) = CorrectableSet(
+        setId = 77L,
+        sessionExerciseId = sessionExerciseId,
+        setNumber = 3,
+        totalSets = 3,
+        exerciseName = "Elevación Lateral",
+        isBodyweight = isBodyweight,
+        isIsometric = isIsometric,
+        weightKg = weightKg,
+        reps = reps,
+        rir = rir,
+        captureUnit = captureUnit,
+        equipmentTypeId = equipment.id,
+        equipmentTypeName = equipment.name,
+    )
 
     // ----- CA-30.03: unit preselection -----
 
@@ -772,4 +804,241 @@ class RegisterSetViewModelTest {
         assertEquals(listOf(SetRegistered(notice = "Tope del rango (sesión 2 de 4)")), results)
         collector.cancel()
     }
+
+    // ----- HU-47: correcting the last registered set -----
+
+    @Test
+    fun `given the correction mode, when the form opens, then it is preloaded with what was registered`() =
+        runTest {
+            // Given
+            coEvery { getCorrectableSetUseCase(sessionExerciseId) } returns correctable()
+
+            // When
+            val viewModel = createViewModel(correction = true)
+            advanceUntilIdle()
+
+            // Then — CA-47.03 / QA-04
+            val state = viewModel.uiState.value
+            assertTrue(state.isCorrection)
+            assertEquals(3, state.currentSetNumber)
+            assertEquals("18.0", state.weightInput)
+            assertEquals("18", state.reps)
+            assertEquals(1, state.selectedRir)
+            assertEquals(WeightUnit.KG, state.captureUnit)
+            assertEquals(RegisteredSetValues("18.0", WeightUnit.KG, 18, 1), state.registeredValues)
+            assertNull(state.previousSetNotice)
+            assertTrue(state.isConfirmEnabled)
+            coVerify(exactly = 0) { getRegisterSetInfoUseCase(any()) }
+        }
+
+    @Test
+    fun `given the correction mode, when choosing another implement, then it is ignored`() =
+        runTest {
+            coEvery { getCorrectableSetUseCase(sessionExerciseId) } returns correctable()
+
+            val viewModel = createViewModel(correction = true)
+            advanceUntilIdle()
+            viewModel.onEquipmentSelected(barra.id)
+            advanceUntilIdle()
+
+            // Then — CA-47.03: visible, resolved, not editable
+            val state = viewModel.uiState.value
+            assertEquals(listOf(mancuerna), state.equipmentOptions)
+            assertEquals(mancuerna.id, state.selectedEquipmentTypeId)
+            assertNull(state.preselectionOrigin)
+            coVerify(exactly = 0) { getPrefilledLoadForEquipmentUseCase(any(), any()) }
+        }
+
+    @Test
+    fun `given a correction, when confirming, then the correction is persisted and not a new set`() =
+        runTest {
+            // Given — QA-05: 18 × 18 → 10 × 10
+            every { context.getString(R.string.correct_set_done_format, 3) } returns "Serie 3 corregida"
+            coEvery { getCorrectableSetUseCase(sessionExerciseId) } returns correctable()
+            coEvery { correctSetUseCase(any(), any(), any(), any(), any(), any(), any()) } just runs
+
+            val viewModel = createViewModel(correction = true)
+            advanceUntilIdle()
+            val results = mutableListOf<SetRegistered>()
+            val collector = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                viewModel.navigateBack.collect { results.add(it) }
+            }
+
+            // When
+            viewModel.onWeightChanged("10")
+            viewModel.onRepsChanged("10")
+            viewModel.onConfirm()
+            advanceUntilIdle()
+
+            // Then — CA-47.04
+            coVerify {
+                correctSetUseCase(sessionExerciseId, 77L, 10.0, 10, 1, WeightUnit.KG, mancuerna.name)
+            }
+            coVerify(exactly = 0) { registerSetUseCase(any(), any(), any(), any(), any(), any(), any()) }
+            assertEquals(listOf(SetRegistered(notice = "Serie 3 corregida")), results)
+            collector.cancel()
+        }
+
+    @Test
+    fun `given a set captured in lb, when correcting, then the preload is in lb and kilograms are persisted`() =
+        runTest {
+            // Given — QA-20: 132 lb registered (59.87 canonical kg)
+            coEvery { getCorrectableSetUseCase(sessionExerciseId) } returns
+                correctable(weightKg = 59.87, reps = 10, captureUnit = WeightUnit.LB, equipment = barra)
+            coEvery { correctSetUseCase(any(), any(), any(), any(), any(), any(), any()) } just runs
+
+            val viewModel = createViewModel(correction = true)
+            advanceUntilIdle()
+            assertEquals(WeightUnit.LB, viewModel.uiState.value.captureUnit)
+            assertEquals("132.0", viewModel.uiState.value.weightInput)
+
+            // When
+            viewModel.onWeightChanged("110")
+            viewModel.onConfirm()
+            advanceUntilIdle()
+
+            // Then — same conversion as the registration
+            coVerify { correctSetUseCase(sessionExerciseId, 77L, 49.9, 10, 1, WeightUnit.LB, barra.name) }
+        }
+
+    @Test
+    fun `given a weight with two decimals, when only the reps are corrected, then the weight is kept`() =
+        runTest {
+            // Given — 22.25 kg: rounding it to 22.3 would change a value nobody corrected
+            coEvery { getCorrectableSetUseCase(sessionExerciseId) } returns
+                correctable(weightKg = 22.25, reps = 18)
+            coEvery { correctSetUseCase(any(), any(), any(), any(), any(), any(), any()) } just runs
+
+            val viewModel = createViewModel(correction = true)
+            advanceUntilIdle()
+            assertEquals("22.25", viewModel.uiState.value.weightInput)
+
+            // When
+            viewModel.onRepsChanged("10")
+            viewModel.onConfirm()
+            advanceUntilIdle()
+
+            // Then
+            coVerify { correctSetUseCase(sessionExerciseId, 77L, 22.25, 10, 1, WeightUnit.KG, mancuerna.name) }
+        }
+
+    @Test
+    fun `given invalid values, when correcting, then confirm is disabled and nothing is persisted`() =
+        runTest {
+            // Given — QA-09 / QA-10 / QA-11: same messages and same gate as the registration
+            coEvery { getCorrectableSetUseCase(sessionExerciseId) } returns correctable()
+
+            val viewModel = createViewModel(correction = true)
+            advanceUntilIdle()
+
+            // When
+            viewModel.onWeightChanged("-1")
+
+            // Then
+            assertNotNull(viewModel.uiState.value.weightError)
+            assertFalse(viewModel.uiState.value.isConfirmEnabled)
+
+            viewModel.onWeightChanged("10")
+            viewModel.onRepsChanged("0")
+            assertNotNull(viewModel.uiState.value.repsError)
+            assertFalse(viewModel.uiState.value.isConfirmEnabled)
+
+            viewModel.onRepsChanged("10")
+            assertTrue(viewModel.uiState.value.isConfirmEnabled)
+            coVerify(exactly = 0) { correctSetUseCase(any(), any(), any(), any(), any(), any(), any()) }
+        }
+
+    @Test
+    fun `given an isometric set, when correcting, then seconds are typed and the weight stays at zero`() =
+        runTest {
+            // Given — QA-14: plank, 0 kg × 45 s × RIR 2
+            val pesoCorporal = EquipmentType(id = 11L, name = ExternalLoadRule.PESO_CORPORAL)
+            coEvery { getCorrectableSetUseCase(sessionExerciseId) } returns correctable(
+                weightKg = 0.0,
+                reps = 45,
+                rir = 2,
+                equipment = pesoCorporal,
+                isBodyweight = true,
+                isIsometric = true,
+            )
+            coEvery { correctSetUseCase(any(), any(), any(), any(), any(), any(), any()) } just runs
+
+            val viewModel = createViewModel(correction = true)
+            advanceUntilIdle()
+
+            val state = viewModel.uiState.value
+            assertFalse(state.showChronometer)
+            assertFalse(state.isWeightEditable)
+            assertEquals("0", state.weightInput)
+            assertEquals("45", state.reps)
+
+            // When
+            viewModel.onRepsChanged("40")
+            viewModel.onConfirm()
+            advanceUntilIdle()
+
+            // Then
+            coVerify {
+                correctSetUseCase(sessionExerciseId, 77L, 0.0, 40, 2, WeightUnit.KG, pesoCorporal.name)
+            }
+        }
+
+    @Test
+    fun `given an added weight set, when correcting, then the ballast stays editable`() = runTest {
+        // Given — QA-15: push-ups with 5 kg of «Peso Añadido»
+        coEvery { getCorrectableSetUseCase(sessionExerciseId) } returns
+            correctable(weightKg = 5.0, reps = 12, equipment = pesoAnadido, isBodyweight = true)
+        coEvery { correctSetUseCase(any(), any(), any(), any(), any(), any(), any()) } just runs
+
+        val viewModel = createViewModel(correction = true)
+        advanceUntilIdle()
+        assertTrue(viewModel.uiState.value.isWeightEditable)
+        assertEquals("5.0", viewModel.uiState.value.weightInput)
+
+        // When
+        viewModel.onWeightChanged("2.5")
+        viewModel.onConfirm()
+        advanceUntilIdle()
+
+        // Then
+        coVerify {
+            correctSetUseCase(sessionExerciseId, 77L, 2.5, 12, 1, WeightUnit.KG, pesoAnadido.name)
+        }
+    }
+
+    @Test
+    fun `given the window moved before opening, when the form loads, then it goes back without message`() =
+        runTest {
+            // Given — QA-12: the set is no longer the last registered one
+            coEvery { getCorrectableSetUseCase(sessionExerciseId) } returns null
+
+            // When
+            val viewModel = createViewModel(correction = true)
+            advanceUntilIdle()
+
+            // Then
+            assertTrue(viewModel.uiState.value.isCorrectionWindowClosed)
+            assertFalse(viewModel.uiState.value.isConfirmEnabled)
+        }
+
+    @Test
+    fun `given the window closed while correcting, when confirming, then it goes back without message`() =
+        runTest {
+            coEvery { getCorrectableSetUseCase(sessionExerciseId) } returns correctable()
+            coEvery { correctSetUseCase(any(), any(), any(), any(), any(), any(), any()) } throws
+                IllegalStateException("Set is no longer correctable")
+
+            val viewModel = createViewModel(correction = true)
+            advanceUntilIdle()
+            val results = mutableListOf<SetRegistered>()
+            val collector = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                viewModel.navigateBack.collect { results.add(it) }
+            }
+
+            viewModel.onConfirm()
+            advanceUntilIdle()
+
+            assertEquals(listOf(SetRegistered(notice = null)), results)
+            collector.cancel()
+        }
 }

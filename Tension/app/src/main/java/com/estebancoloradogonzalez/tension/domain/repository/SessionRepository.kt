@@ -3,6 +3,7 @@ package com.estebancoloradogonzalez.tension.domain.repository
 import com.estebancoloradogonzalez.tension.data.repository.model.SessionSummaryData
 import com.estebancoloradogonzalez.tension.domain.model.ActiveSession
 import com.estebancoloradogonzalez.tension.domain.model.AddableExercise
+import com.estebancoloradogonzalez.tension.domain.model.CorrectableSet
 import com.estebancoloradogonzalez.tension.domain.model.DeloadState
 import com.estebancoloradogonzalez.tension.domain.model.ExerciseHistoryData
 import com.estebancoloradogonzalez.tension.domain.model.MovementCategory
@@ -51,6 +52,33 @@ interface SessionRepository {
         captureUnit: WeightUnit,
         equipmentTypeId: Long,
     ): SetRangeNotice?
+
+    /**
+     * The set inside the correction window, if this session exercise owns it (CA-47.01,
+     * CA-47.03): the last registered set of the session, and only while the session is in
+     * progress. `null` otherwise — another exercise owns it, there are no sets or the
+     * session is already closed (CA-47.07, CA-47.08).
+     */
+    suspend fun getCorrectableSet(sessionExerciseId: Long): CorrectableSet?
+
+    /**
+     * Corrects set [setId] with the given values and rebuilds the derived values that
+     * store something of it — the pair's 1RM — as if the mistake had never existed
+     * (CA-47.04, CA-47.11).
+     *
+     * The window is re-evaluated **inside** the transaction: if [setId] is no longer the
+     * last set of the session in progress of [sessionExerciseId], it throws
+     * [IllegalStateException] and writes nothing. Only weight, unit, repetitions and RIR
+     * change; the implement, the set number and the session stay fixed.
+     */
+    suspend fun correctSet(
+        sessionExerciseId: Long,
+        setId: Long,
+        weightKg: Double,
+        reps: Int,
+        rir: Int,
+        captureUnit: WeightUnit,
+    )
 
     /**
      * Categoría del día: la de la rutina de la sesión (CA-46.09). `null` solo si la sesión no

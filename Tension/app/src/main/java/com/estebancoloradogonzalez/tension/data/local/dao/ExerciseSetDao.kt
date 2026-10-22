@@ -28,6 +28,111 @@ interface ExerciseSetDao {
     @Insert
     suspend fun insert(set: ExerciseSetEntity): Long
 
+    /**
+     * The set inside the correction window, if [sessionExerciseId] owns it (HU-47).
+     *
+     * The window is **derived, not stored**: it is the set with the highest `id` among the
+     * sets of the session, and only while the session is `IN_PROGRESS`. That is why it moves
+     * by itself when any set is registered (CA-47.02), never sits on two exercises
+     * (CA-47.07), dies with the close (CA-47.08) and survives an unexpected shutdown
+     * (CA-47.10). `id` and not `set_number`, because the number is per exercise and the
+     * window belongs to the session.
+     *
+     * The total of sets uses the same `COALESCE` as `getExerciseInfoForSet`, so the
+     * correction form labels it exactly as the registration form does.
+     */
+    @Query(
+        """
+        SELECT
+            es.id AS setId,
+            es.session_exercise_id AS sessionExerciseId,
+            se.exercise_id AS exerciseId,
+            es.set_number AS setNumber,
+            COALESCE(se.prescribed_sets, pa.sets, 4) AS totalSets,
+            e.name AS exerciseName,
+            e.is_bodyweight AS isBodyweight,
+            e.is_isometric AS isIsometric,
+            es.weight_kg AS weightKg,
+            es.reps AS reps,
+            es.rir AS rir,
+            es.capture_unit AS captureUnit,
+            es.equipment_type_id AS equipmentTypeId,
+            et.name AS equipmentTypeName
+        FROM exercise_set es
+        INNER JOIN session_exercise se ON es.session_exercise_id = se.id
+        INNER JOIN session s ON se.session_id = s.id
+        INNER JOIN exercise e ON se.exercise_id = e.id
+        INNER JOIN equipment_type et ON es.equipment_type_id = et.id
+        LEFT JOIN plan_assignment pa ON pa.routine_version_id = s.routine_version_id
+            AND se.is_extra = 0
+            AND pa.exercise_id = se.exercise_id
+        WHERE es.session_exercise_id = :sessionExerciseId
+          AND s.status = 'IN_PROGRESS'
+          AND es.id = (
+            SELECT es_w.id
+            FROM exercise_set es_w
+            INNER JOIN session_exercise se_w ON es_w.session_exercise_id = se_w.id
+            WHERE se_w.session_id = s.id
+            ORDER BY es_w.id DESC
+            LIMIT 1
+          )
+        LIMIT 1
+        """,
+    )
+    suspend fun getCorrectableSet(sessionExerciseId: Long): CorrectableSetData?
+
+    /**
+     * Corrects the values of a set that were typed in (CA-47.04), and **only** those: the
+     * implement, the set number and the exercise are untouched (CA-47.03), so the set keeps
+     * counting for the same pair and the number of sets does not change (CA-47.05).
+     *
+     * It is the only write over an existing set in the system, and its caller checks first,
+     * inside the same transaction, that the set is the one in the window.
+     */
+    @Query(
+        """
+        UPDATE exercise_set
+        SET weight_kg = :weightKg, reps = :reps, rir = :rir, capture_unit = :captureUnit
+        WHERE id = :setId
+        """,
+    )
+    suspend fun updateValues(
+        setId: Long,
+        weightKg: Double,
+        reps: Int,
+        rir: Int,
+        captureUnit: String,
+    )
+
+    /**
+     * The heaviest weight among the sets of the **pair** that qualify as the 1RM reference
+     * set: exactly [reps] repetitions with an RIR of exactly [rir], and a positive weight
+     * (HU-42, CA-42.03). Null if none qualifies.
+     *
+     * It is the rebuilt record: with the repetitions fixed the estimate is monotone in the
+     * weight, so the maximum of the estimates is the estimate of the maximum weight. The
+     * correction of the last set uses it to leave the 1RM as if the mistake had never
+     * existed (CA-47.11), in both directions.
+     */
+    @Query(
+        """
+        SELECT MAX(es.weight_kg)
+        FROM exercise_set es
+        INNER JOIN session_exercise se ON es.session_exercise_id = se.id
+        WHERE se.exercise_id = :exerciseId
+          AND es.equipment_type_id = :equipmentTypeId
+          AND es.reps = :reps
+          AND es.rir = :rir
+          AND es.weight_kg > 0
+        """,
+    )
+    suspend fun getMaxQualifyingWeightForPair(
+        exerciseId: Long,
+        equipmentTypeId: Long,
+        reps: Int,
+        rir: Int,
+    ): Double?
+
     @Query(
         """
         SELECT COUNT(*) + 1 FROM exercise_set
@@ -365,6 +470,24 @@ interface ExerciseSetDao {
     )
     suspend fun getSetDistributionBySessionIds(sessionIds: List<Long>): List<SetDistributionData>
 }
+
+/** The set inside the correction window, with what the form needs (HU-47). */
+data class CorrectableSetData(
+    val setId: Long,
+    val sessionExerciseId: Long,
+    val exerciseId: Long,
+    val setNumber: Int,
+    val totalSets: Int,
+    val exerciseName: String,
+    val isBodyweight: Int,
+    val isIsometric: Int,
+    val weightKg: Double,
+    val reps: Int,
+    val rir: Int,
+    val captureUnit: String,
+    val equipmentTypeId: Long,
+    val equipmentTypeName: String,
+)
 
 data class ExerciseSetData(
     val weightKg: Double,

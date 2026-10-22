@@ -810,6 +810,21 @@
 
 ---
 
+#### `E1-T4`: Corregir la Última Serie Registrada (HU-47)
+
+- **Tipo de Trigger (Entrada):** `Acción del ejecutante: toca «✎ Corregir» bajo el nombre del ejercicio en E1.`
+- **Descripción:** Abre `E2` en **modo corrección** (`E2-T2`) sobre la serie más recientemente registrada de la sesión. La acción es una sub-acción de la tarjeta, no una entrada del menú (⋮): la corrección es para el error que se nota **en ese momento** y tiene que verse sin buscarla.
+
+  **La ventana es una sola y global.** Solo la tarjeta del ejercicio que posee la **última serie registrada de toda la sesión** muestra la acción. Nunca aparece en dos tarjetas a la vez (CA-47.07). Al registrar cualquier serie —del mismo ejercicio o de otro— la acción se mueve a ese ejercicio y la serie anterior queda inmutable para siempre (CA-47.02).
+
+  **La ventana se deriva, no se guarda.** Es la fila de `exercise_set` con el `id` más alto entre las de la sesión, y solo mientras la sesión está `IN_PROGRESS`. Por eso sobrevive a un cierre inesperado de la aplicación (CA-47.10) y desaparece al cerrar la sesión (CA-47.08).
+
+  Fuera de la ventana **no hay mensaje de "no se puede"**: la acción simplemente no existe.
+
+- **Precondición:** la sesión está `IN_PROGRESS` y el ejercicio posee la última serie registrada de la sesión.
+
+---
+
 #### `E2-T1`: Registrar Serie de Ejercicio
 
 - **Tipo de Trigger (Entrada):** `Acción del ejecutante: completa el formulario E2 (Registro de Serie) y toca el botón de confirmar.`
@@ -825,7 +840,7 @@
 
   El formulario ofrece además un **selector de equipamiento**, situado sobre el campo de peso porque lo gobierna. Está limitado a los implementos que el ejercicio admite (`exercise_equipment`) y **desde HU-41 su preselección sigue tres niveles**, en orden: (1) el implemento de la última serie registrada **de este ejercicio en esta sesión** —el último cambio manda—, (2) el **equipamiento sugerido por el plan** para ese puesto, si el ejercicio tiene asignación en la versión de rutina de la sesión y la sugerencia sigue admitida, y (3) CA-39.04 sin cambios: el último implemento usado en cualquier sesión y, si nunca se usó, la primera opción admitida. Cada nivel comprueba que el candidato **siga admitido**, o el selector nacería con un valor que no está entre sus opciones.
 
-  **Un rótulo bajo el selector dice de dónde viene la preselección**: *sugerido por el plan* en el nivel 2 y *último implemento usado* en el 1 y el 3. En el nivel 3 con la primera opción admitida no hay rótulo: es el estado más común de un ejercicio nuevo y no hay nada que explicar. El rótulo **desaparece en cuanto el ejecutante elige a mano**: a partir de ahí el implemento es suyo y un aviso que siguiera diciendo «sugerido por el plan» sería falso. La sugerencia sugiere, no impone. Cuando el ejercicio admite **una sola** opción se presenta resuelto, como etiqueta y sin interacción: un control que se puede tocar para no elegir nada informa menos que un texto. El equipamiento es **obligatorio** y dos series del mismo ejercicio en la misma sesión pueden llevar implementos distintos. La serie sigue siendo inmutable tras su creación: el equipamiento registrado no se corrige después.
+  **Un rótulo bajo el selector dice de dónde viene la preselección**: *sugerido por el plan* en el nivel 2 y *último implemento usado* en el 1 y el 3. En el nivel 3 con la primera opción admitida no hay rótulo: es el estado más común de un ejercicio nuevo y no hay nada que explicar. El rótulo **desaparece en cuanto el ejecutante elige a mano**: a partir de ahí el implemento es suyo y un aviso que siguiera diciendo «sugerido por el plan» sería falso. La sugerencia sugiere, no impone. Cuando el ejercicio admite **una sola** opción se presenta resuelto, como etiqueta y sin interacción: un control que se puede tocar para no elegir nada informa menos que un texto. El equipamiento es **obligatorio** y dos series del mismo ejercicio en la misma sesión pueden llevar implementos distintos. La serie sigue siendo inmutable tras su creación —con la única excepción acotada de `E2-T2`, la última serie de la sesión en curso— y el equipamiento registrado no se corrige nunca, tampoco ahí.
 
   **Efecto colateral persistido, sin nada visible (HU-42).** Si la serie es la **de referencia** —exactamente 10 repeticiones, RIR exactamente 1, sobre carga externa y con peso mayor que 0—, el sistema calcula `1RM = Peso / [1.0278 − (0.0278 × Reps)]`, que a 10 repeticiones equivale a `Peso × 1.3337`, y lo persiste en `exercise_one_rm` para el **par** de la serie, **solo si supera el valor guardado**. El cálculo corre **dentro de la misma transacción** que inserta la serie, y no como un paso posterior best-effort al modo del árbol (`N1-T1`): el 1RM es un récord acumulado que no se puede reconstruir —no hay retro-cálculo y el respaldo lo restaura sin recalcularlo—, así que una escritura perdida sería un máximo perdido para siempre. E2 **no cambia**: no se avisa, no se navega y no se muestra el resultado; el ejecutante lo consulta en `O1` cuando quiere. Nada de lo que este trigger decide depende del 1RM, que se escribe y no se lee.
 
@@ -869,6 +884,53 @@
 > - entre 8 y 11 → nada.
 >
 > No hay aviso en descarga, en isométricos ni en pares sin carga externa que no admitan «Peso Añadido». Un par sin carga externa nunca recibe el de bajar (CA-46.15, CA-46.16, CA-46.18). El aviso **no bloquea ni modifica** la serie. La pantalla vuelve a `E1` al guardar, así que el aviso viaja como resultado de navegación y se muestra en el `Snackbar` de la sesión activa. El formulario de la serie siguiente lo repite en una tarjeta sobre el formulario.
+
+---
+
+#### `E2-T2`: Corregir la Última Serie Registrada (HU-47)
+
+- **Tipo de Trigger (Entrada):** `Acción del ejecutante: en E2 abierto en modo corrección (desde E1-T4), cambia uno o varios valores y toca Confirmar.`
+- **Descripción:** Es el **mismo formulario** de `E2-T1` (ruta `register-set/{id}?correction=true`), con estas diferencias:
+  - **Precarga y título.** Viene precargado con los valores **registrados** de la serie —peso en su unidad de captura, repeticiones o segundos sostenidos, RIR— y el título dice «Corregir serie N». Una tarjeta muestra lo registrado.
+  - **Implemento.** Se presenta como **opción única, resuelto y sin interacción**, con el rótulo de que no se corrige. La serie cuenta siempre para el par con el que se registró: cambiarlo sería reclasificar, no corregir (CA-47.03).
+  - **Isométricos.** Los segundos se corrigen **tecleándolos** en el campo «Segundos sostenidos», no con el cronómetro: se corrige un número ya registrado.
+  - **Fuera del formulario.** El ejercicio, el número de serie, la fecha, el módulo y la versión no aparecen.
+
+  **Mismas validaciones que el registro (CA-47.06).** Lo garantiza una sola regla de dominio, `SetValuesRule`, que usan los dos triggers:
+  - peso en `[0, 500]` kg canónicos;
+  - `Peso Añadido` > 0;
+  - repeticiones o segundos ≥ 1;
+  - RIR en `{0, 1, 2}`.
+
+  El formulario aplica los mismos mensajes, la misma compuerta del botón y el mismo teclado numérico. Sin carga externa, la serie se persiste en 0 kg y `KG`, como al registrarla.
+
+  **Persistencia — una transacción:**
+  1. Relee la ventana. Si la serie ya no es la última de la sesión en curso, no escribe nada (`ERR_SET_NOT_CORRECTABLE`).
+  2. Actualiza **solo** `weight_kg`, `reps`, `rir` y `capture_unit`. No cambia `set_number`, implemento ni sesión, así que el número de series, el estado de los ejercicios y la completitud no varían (CA-47.05).
+  3. **Reconstruye el 1RM del par** desde sus series que califican: `estimate(MAX(weight_kg))` sobre las de 10 repeticiones con RIR 1 y peso > 0, o borra la fila si ya no queda ninguna. El récord **puede bajar**: el objetivo es el dato fiel (CA-47.11).
+
+  El resto de derivados —resumen post-sesión, detalle de sesión pasada, KPIs, tonelaje y aviso de la serie anterior— se lee de `exercise_set` al consultarse. Por eso el historial queda **como si el error nunca hubiera existido**, sin "valor original + corrección" (CA-47.12).
+
+  Tras confirmar, vuelve a `E1` con la confirmación breve «Serie N corregida» en el `Snackbar`, y la ventana **sigue abierta** sobre esa misma serie (CA-47.04). Cancelar vuelve sin cambios.
+
+**Payload / Parámetros (Input):**
+
+```json
+{
+  "session_exercise_id": "INTEGER // Obligatorio. El dueño de la ventana.",
+  "set_id": "INTEGER // Obligatorio. La serie que el formulario cargó; debe seguir siendo la última de la sesión.",
+  "weight_kg": "REAL [0, 500] // Valor canónico, ya convertido desde capture_unit.",
+  "reps": "INTEGER >= 1 // Para isométricos: segundos sostenidos.",
+  "rir": "INTEGER [0, 1, 2]",
+  "capture_unit": "TEXT ['KG', 'LB'] // Se fuerza a 'KG' cuando no hay carga externa."
+}
+```
+
+**Respuesta / Salida (Output Esperado):**
+
+- **Estado de Éxito:** `exercise_set actualizado y 1RM del par reconstruido. Retorno a E1 con «Serie N corregida».`
+- **Estado de Error (validación):** `Igual que E2-T1: error inline y nada se persiste.`
+- **Estado de Error (ventana cerrada):** `ERR_SET_NOT_CORRECTABLE. Se registró otra serie o se cerró la sesión mientras el formulario estaba abierto. No se persiste nada y se vuelve a E1 sin mensaje.`
 
 ---
 
@@ -1801,7 +1863,7 @@ Los valores viven en un único punto del código, `AlertThresholdRule`. Esta tab
 
 ### 2.12. Módulo: `Flujo O — 1RM Estimado`
 
-*Flujo de una sola pantalla, alcanzable exclusivamente desde `G1-T4`. **No produce efectos sobre ningún otro contenedor:** no escribe nada, no genera alertas, no modifica ningún KPI y ningún componente del motor de decisión lee su estado. Sigue el modelo de aislamiento que ADR-020 declaró para el árbol, con una diferencia que conviene tener presente: el valor que presenta **no es derivable en caliente**, se acumula al registrar cada serie (`E2-T1`) y por eso el respaldo lo transporta en lugar de recalcularlo.*
+*Flujo de una sola pantalla, alcanzable exclusivamente desde `G1-T4`. **No produce efectos sobre ningún otro contenedor:** no escribe nada, no genera alertas, no modifica ningún KPI y ningún componente del motor de decisión lee su estado. Sigue el modelo de aislamiento que ADR-020 declaró para el árbol, con una diferencia que conviene tener presente: el valor que presenta **no es derivable en caliente**, se acumula al registrar cada serie (`E2-T1`) y por eso el respaldo lo transporta en lugar de recalcularlo. La corrección de la última serie (`E2-T2`) lo reconstruye para el par corregido desde sus series que califican, y puede bajar.*
 
 ---
 
@@ -1957,6 +2019,7 @@ Los valores viven en un único punto del código, `AlertThresholdRule`. Esta tab
 - **Reasignación no disponible con sesión iniciada:** `La acción de reasignación vive en la tarjeta de sesión propuesta y en la de día de descanso, ninguna de las cuales se compone cuando existe una sesión IN_PROGRESS. No se presenta deshabilitada: no existe en ese estado.`
 - **Tiempo máximo de ejecución de Backup/Restore:** `El proceso de exportación e importación de datos debe completarse en menos de 10 segundos para un historial de hasta 2 años (estimado: ~35,000 registros en exercise_set, base de datos < 5 MB) (RNF-18).`
 - **Inmutabilidad de sesiones cerradas:** `Las sesiones con status = 'COMPLETED' o 'INCOMPLETE' no tienen ningún trigger de edición disponible. F2 (Detalle de Sesión Pasada) es estrictamente de solo lectura. Ninguna interfaz expone acciones de modificación retroactiva de series ya registradas.`
+- **Ventana de corrección única (HU-47):** `Mientras la sesión está IN_PROGRESS, a lo sumo una serie es corregible: la más recientemente registrada de toda la sesión (E1-T4, E2-T2). Registrar cualquier serie mueve la ventana y la anterior queda inmutable; cerrar la sesión la cierra para siempre. Solo se corrigen peso, repeticiones/segundos, RIR y unidad de captura.`
 - **Restricción de navegación durante sesión activa:** `Cuando el flujo E (Sesión Activa) está en curso, la barra de navegación global (Bottom Navigation) se oculta completamente. El único canal de salida del flujo de sesión es E4 (Confirmación de Cierre). No existe ningún trigger que permita abandonar la sesión sin cerrarla formalmente.`
 - **Restricción de orientación:** `La interfaz opera exclusivamente en orientación vertical (portrait). El sistema no soporta modo horizontal (landscape). Si el dispositivo se rota, la vista se mantiene en portrait (RNF-07).`
 - **El árbol no decide nada:** `N1 es de solo lectura y su estado no alimenta ninguna decision del sistema. Ningun componente del motor de decision —prescripcion de carga, Doble Umbral, meseta, regresion, fatiga, protocolo de descarga, rotacion ciclica— lee el puntaje ni la etapa; el arbol no genera alertas ni modifica ROUTINE_INACTIVITY o LOW_ADHERENCE, y la adherencia semanal se calcula exactamente igual. La dependencia es unidireccional: el arbol lee del historial y nada del sistema lee del arbol (ADR-020).`
@@ -1967,5 +2030,5 @@ Los valores viven en un único punto del código, `AlertThresholdRule`. Esta tab
 - **El árbol no tiene pestaña propia:** `N1 es una ruta nueva alcanzable solo desde la tarjeta de B1 (B1-T8). No se añade a la barra de navegacion inferior, que permanece visible durante la pantalla.`
 - **Un tipo, un implemento:** `El catálogo equipment_type no admite valores compuestos ni disyunciones: cada fila nombra un implemento y no una alternativa entre varios. La alternativa vive en exercise_equipment —los implementos que el ejercicio admite— y la elección en exercise_set.equipment_type_id. Los agarres no son equipamiento: cuerda y barra en V son Polea. No existe interfaz para crear, renombrar ni eliminar tipos de equipamiento: la tabla es cerrada y sembrada.`
 - **Ningún ejercicio sin equipamiento:** `Todo ejercicio declara al menos un implemento admitido, en la creación y en la edición. La validación vive en la capa Domain, la interfaz deshabilita el guardado con la selección vacía y la relación no se puede dejar vacía retirando opciones una a una.`
-- **El equipamiento de la serie no se corrige:** `exercise_set es inmutable tras su creación, y el implemento registrado no es la excepción. Ninguna interfaz expone su edición. Por eso tampoco se puede retirar de un ejercicio un implemento con el que ya se registró una serie: la fila quedaría apuntando a algo que el ejercicio dejó de admitir.`
+- **El equipamiento de la serie no se corrige:** `exercise_set es inmutable tras su creación —salvo la ventana de HU-47, que solo abre peso, repeticiones, RIR y unidad—, y el implemento registrado no es la excepción en ningún caso. Ninguna interfaz expone su edición. Por eso tampoco se puede retirar de un ejercicio un implemento con el que ya se registró una serie: la fila quedaría apuntando a algo que el ejercicio dejó de admitir.`
 - **Idioma único:** `Toda la interfaz opera exclusivamente en español. No existe selector de idioma ni soporte para internacionalización (RNF-08).`

@@ -29,4 +29,10 @@ data class SessionExerciseDetail(
      * ejercicio no tiene señal de peso (isométricos, peso corporal sin «Peso Añadido»).
      */
     val rangeSignal: RangeSignal? = null,
+    /**
+     * Whether this exercise owns the last registered set of the session in progress, the
+     * only correctable one (HU-47, CA-47.01). At most one exercise of the session has it
+     * (CA-47.07).
+     */
+    val canCorrectLastSet: Boolean = false,
 )

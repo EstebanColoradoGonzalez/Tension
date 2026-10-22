@@ -76,6 +76,12 @@ fun RegisterSetScreen(
         }
     }
 
+    // The set is no longer the one in the window: nothing to correct and nothing to
+    // explain, the action simply no longer exists (CA-47.07).
+    LaunchedEffect(uiState.isCorrectionWindowClosed) {
+        if (uiState.isCorrectionWindowClosed) onNavigateBack(null)
+    }
+
     if (uiState.isLoading) {
         Box(
             modifier = Modifier.fillMaxSize(),
@@ -104,13 +110,17 @@ fun RegisterSetScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         CounterText(
-                            text = if (uiState.currentSetNumber > uiState.totalSets) {
-                                stringResource(
+                            text = when {
+                                // The title says the set is corrected, not registered (CA-47.03).
+                                uiState.isCorrection -> stringResource(
+                                    R.string.correct_set_title_format,
+                                    uiState.currentSetNumber,
+                                )
+                                uiState.currentSetNumber > uiState.totalSets -> stringResource(
                                     R.string.register_set_extra_title_format,
                                     uiState.currentSetNumber - uiState.totalSets,
                                 )
-                            } else {
-                                stringResource(
+                                else -> stringResource(
                                     R.string.register_set_title_format,
                                     uiState.currentSetNumber,
                                     uiState.totalSets,
@@ -141,6 +151,11 @@ fun RegisterSetScreen(
                 .verticalScroll(rememberScrollState()),
         ) {
             Spacer(modifier = Modifier.height(16.dp))
+
+            uiState.registeredValues?.let { registered ->
+                RegisteredValuesCard(values = registered, isIsometric = uiState.isIsometric)
+                Spacer(modifier = Modifier.height(16.dp))
+            }
 
             // Aviso de la serie anterior (CA-46.05): arriba, para leerlo antes de elegir el
             // peso, y sin tapar el formulario. No bloquea nada.
@@ -173,12 +188,14 @@ fun RegisterSetScreen(
 
             // Por qué nace con ese implemento. Sin rótulo cuando es la primera opción del
             // catálogo: no hay nada que explicar (CA-41.05).
-            val originLabel = when (uiState.preselectionOrigin) {
-                PreselectionOrigin.PLAN_SUGGESTION ->
+            // When correcting, the label says why the implement is not touched (CA-47.03).
+            val originLabel = when {
+                uiState.isCorrection -> stringResource(R.string.correct_set_equipment_locked)
+                uiState.preselectionOrigin == PreselectionOrigin.PLAN_SUGGESTION ->
                     stringResource(R.string.register_set_equipment_from_plan)
-                PreselectionOrigin.LAST_USED ->
+                uiState.preselectionOrigin == PreselectionOrigin.LAST_USED ->
                     stringResource(R.string.register_set_equipment_last_used)
-                PreselectionOrigin.FIRST_OPTION, null -> null
+                else -> null
             }
             if (originLabel != null) {
                 Text(
@@ -247,6 +264,41 @@ fun RegisterSetScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
         }
+    }
+}
+
+/** What was registered, above the correction form (HU-47, CA-47.03). */
+@Composable
+private fun RegisteredValuesCard(
+    values: RegisteredSetValues,
+    isIsometric: Boolean,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        ),
+    ) {
+        Text(
+            text = stringResource(
+                R.string.correct_set_registered_format,
+                values.weight,
+                stringResource(unitLabelRes(values.unit)),
+                values.reps,
+                stringResource(
+                    if (isIsometric) {
+                        R.string.register_set_seconds_suffix
+                    } else {
+                        R.string.register_set_reps_suffix
+                    },
+                ),
+                values.rir,
+            ),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(16.dp),
+        )
     }
 }
 

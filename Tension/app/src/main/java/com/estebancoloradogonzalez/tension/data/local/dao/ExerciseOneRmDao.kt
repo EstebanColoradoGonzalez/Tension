@@ -10,8 +10,8 @@ import kotlinx.coroutines.flow.Flow
 /**
  * Access to the estimated 1RM, keyed by the **(exercise, equipment) pair** (HU-42).
  *
- * Three operations and no more: read one value to compare against, write the pair, and list
- * everything for the screen. The table is written from the set registration transaction and
+ * Read one value to compare against, write the pair, remove it, and list everything for the
+ * screen. The table is written from the set registration and set correction transactions and
  * read from the 1RM screen; **no other query in the system names it**.
  */
 @Dao
@@ -35,6 +35,20 @@ interface ExerciseOneRmDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(oneRm: ExerciseOneRmEntity)
+
+    /**
+     * Removes the record of the pair. Only the correction of the last set calls it (HU-47,
+     * CA-47.11): when the corrected set was the only one that qualified, the pair no longer
+     * has a real value, and CA-42.07 says such a pair is not shown — neither as a zero nor as
+     * a dash. The table is the list, so the row goes.
+     */
+    @Query(
+        """
+        DELETE FROM exercise_one_rm
+        WHERE exercise_id = :exerciseId AND equipment_type_id = :equipmentTypeId
+        """,
+    )
+    suspend fun deleteByPair(exerciseId: Long, equipmentTypeId: Long)
 
     /**
      * Every pair with a record, with the names the screen shows.

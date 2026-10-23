@@ -27,7 +27,7 @@ class GetMuscleGroupTrendUseCase @Inject constructor(
 
         val tonnageSnapshots = recentMicrocycles.map { (number, sessionIds) ->
             val data = metricsRepository.getTonnageDataBySessionIds(sessionIds)
-            val sets = data.map { SetForTonnage(it.weightKg, it.reps, it.muscleGroup) }
+            val sets = data.map { SetForTonnage(it.realLoadKg, it.reps, it.muscleGroup) }
             number to TonnageRule.calculateForMuscleGroup(sets)
         }
 

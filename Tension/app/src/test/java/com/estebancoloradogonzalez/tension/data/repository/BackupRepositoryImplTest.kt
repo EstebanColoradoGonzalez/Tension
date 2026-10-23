@@ -26,7 +26,7 @@ import org.junit.Test
 class BackupRepositoryImplTest {
 
     /** Espejo del valor privado del impl: el formato inmediatamente anterior. */
-    private val PREVIOUS_SCHEMA_VERSION = 17
+    private val PREVIOUS_SCHEMA_VERSION = 18
 
     private lateinit var database: TensionDatabase
     private lateinit var context: Context
@@ -306,15 +306,30 @@ class BackupRepositoryImplTest {
     }
 
     @Test
-    fun `the backup format is 18`() {
-        // Sube porque HU-46 añade la categoría de movimiento —`NOT NULL` y sin default— a
-        // `exercise` y a `routine`. La categoría es una decisión, no un cálculo: un v17 no
-        // se puede completar sin inventarla (CA-46.19).
-        assertEquals(18, BackupRepositoryImpl.SCHEMA_VERSION)
+    fun `given the current build, when reading the backup format, then it is 19`() {
+        // Bumped because HU-49 adds `exercise.body_weight_percent` and `exercise_one_rm.achieved_on`.
+        // Neither is derivable from an 18: the percentage is the executant's decision and an 18
+        // does not say when each 1RM was reached (CA-49.10).
+        assertEquals(19, BackupRepositoryImpl.SCHEMA_VERSION)
     }
 
     @Test
-    fun `validateBackup rejects the previous format naming the missing movement category`() {
+    fun `given a format 18 backup, when validated, then it is rejected naming the body weight load`() {
+        // Given
+        every {
+            context.getString(com.estebancoloradogonzalez.tension.R.string.import_backup_no_body_weight_load)
+        } returns "sin peso corporal movido"
+
+        // When
+        val result = repository.validateBackup(buildBackupJsonWithSchemaVersion(18))
+
+        // Then
+        assertFalse(result.isValid)
+        assertEquals("sin peso corporal movido", result.errorMessage)
+    }
+
+    @Test
+    fun `given a format 17 backup, when validated, then it is rejected naming the movement category`() {
         every {
             context.getString(com.estebancoloradogonzalez.tension.R.string.import_backup_no_movement_category)
         } returns "sin categoría"
@@ -359,7 +374,7 @@ class BackupRepositoryImplTest {
         val result = repository.validateBackup(buildValidBackupJson())
 
         assertTrue(result.isValid)
-        assertEquals(18, result.metadata?.schemaVersion)
+        assertEquals(19, result.metadata?.schemaVersion)
         assertNull(result.errorMessage)
     }
 
@@ -374,7 +389,7 @@ class BackupRepositoryImplTest {
 
     @Test
     fun `validateBackup rejects every older format`() {
-        listOf(16, 15, 14, 13, 11, 10, 8).forEach { version ->
+        listOf(17, 16, 15, 14, 13, 11, 10, 8).forEach { version ->
             val result = repository.validateBackup(buildBackupJsonWithSchemaVersion(version))
 
             assertFalse("La version $version deberia rechazarse", result.isValid)
@@ -687,7 +702,7 @@ class BackupRepositoryImplTest {
         return json.toString()
     }
 
-    /** Respaldo del formato inmediatamente anterior: sin la categoría de movimiento. */
+    /** Backup of the format right before the current one: no body-weight percentage (HU-49). */
     private fun buildPreviousFormatBackupJson(): String {
         val json = JSONObject()
         json.put("metadata", JSONObject().apply {

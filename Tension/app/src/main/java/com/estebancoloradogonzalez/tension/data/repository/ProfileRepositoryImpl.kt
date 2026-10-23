@@ -1,5 +1,7 @@
 package com.estebancoloradogonzalez.tension.data.repository
 
+import com.estebancoloradogonzalez.tension.data.local.dao.ExerciseOneRmDao
+import com.estebancoloradogonzalez.tension.data.local.dao.ExerciseSetDao
 import com.estebancoloradogonzalez.tension.data.local.dao.ProfileDao
 import com.estebancoloradogonzalez.tension.data.local.dao.RotationStateDao
 import com.estebancoloradogonzalez.tension.data.local.dao.WeightRecordDao
@@ -23,7 +25,11 @@ class ProfileRepositoryImpl @Inject constructor(
     private val weightRecordDao: WeightRecordDao,
     private val rotationStateDao: RotationStateDao,
     private val database: TensionDatabase,
+    private val exerciseSetDao: ExerciseSetDao,
+    private val exerciseOneRmDao: ExerciseOneRmDao,
 ) : ProfileRepository {
+
+    private val oneRmRecordWriter = OneRmRecordWriter(exerciseSetDao, exerciseOneRmDao)
 
     override suspend fun createProfile(
         weightKg: Double,
@@ -77,13 +83,26 @@ class ProfileRepositoryImpl @Inject constructor(
         profileDao.updatePlateauBaseThreshold(value)
     }
 
+    /**
+     * Records a new entry of the weight history, dated today.
+     *
+     * The entry becomes the body weight in force from today on (HU-49, CA-49.06), so the 1RM
+     * of any reference set dated today — registered before the weight — is rebuilt with it in
+     * the same transaction. Without that, the record would keep the previous body weight
+     * while the tonnage and the relative strength, which are computed when read, already use
+     * the new one. Nothing dated before today is touched.
+     */
     override suspend fun updateWeight(weightKg: Double) {
-        weightRecordDao.insert(
-            WeightRecordEntity(
-                weightKg = weightKg,
-                date = LocalDate.now().toString(),
-            ),
-        )
+        val today = LocalDate.now().toString()
+        database.withTransaction {
+            weightRecordDao.insert(
+                WeightRecordEntity(
+                    weightKg = weightKg,
+                    date = today,
+                ),
+            )
+            oneRmRecordWriter.rebuildFrom(today)
+        }
     }
 
     override fun getAllWeightRecords(): Flow<List<WeightRecord>> {

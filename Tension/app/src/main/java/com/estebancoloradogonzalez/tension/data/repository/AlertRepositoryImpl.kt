@@ -253,13 +253,13 @@ class AlertRepositoryImpl @Inject constructor(
             currentMicrocycle.map { it.id },
         )
         val currentTonnage = TonnageRule.calculateForMuscleGroup(
-            currentTonnageData.map { SetForTonnage(it.weightKg, it.reps, it.muscleGroup) },
+            currentTonnageData.map { SetForTonnage(it.realLoadKg, it.reps, it.muscleGroup) },
         )
         val previousTonnageData = exerciseSetDao.getTonnageDataBySessionIds(
             previousMicrocycle.map { it.id },
         )
         val previousTonnage = TonnageRule.calculateForMuscleGroup(
-            previousTonnageData.map { SetForTonnage(it.weightKg, it.reps, it.muscleGroup) },
+            previousTonnageData.map { SetForTonnage(it.realLoadKg, it.reps, it.muscleGroup) },
         )
 
         val prevValue = previousTonnage[muscleGroup] ?: 0.0

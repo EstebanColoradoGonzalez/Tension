@@ -57,4 +57,16 @@ data class ExerciseEntity(
      */
     @ColumnInfo(name = "movement_category")
     val movementCategory: String,
+
+    /**
+     * Share of the executant's body weight this exercise moves, as an integer from 0 to 100
+     * (HU-49, CA-49.04). Applied to the body weight in force on the session date, it is added
+     * to the external load of every set whose implement adds body weight (`RealLoadRule`).
+     *
+     * Defaults to 0, both in the column and here: an exercise the executant creates moves no
+     * body weight until the executant says otherwise, and no exercise is ever left without a
+     * percentage (CA-49.05).
+     */
+    @ColumnInfo(name = "body_weight_percent", defaultValue = "0")
+    val bodyWeightPercent: Int = 0,
 )

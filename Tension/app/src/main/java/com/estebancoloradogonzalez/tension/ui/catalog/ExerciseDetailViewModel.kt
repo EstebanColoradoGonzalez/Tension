@@ -20,16 +20,21 @@ import com.estebancoloradogonzalez.tension.domain.usecase.catalog.GetExerciseEqu
 import com.estebancoloradogonzalez.tension.domain.usecase.catalog.GetExerciseMuscleZoneIdsUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.catalog.RemoveExerciseEquipmentUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.catalog.SetExerciseMuscleZonesUseCase
+import com.estebancoloradogonzalez.tension.domain.usecase.catalog.UpdateExerciseBodyWeightPercentUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.catalog.UpdateExerciseImageUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.catalog.UpdateExerciseMovementCategoryUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.catalog.UpdateExerciseProgressionDifficultyUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.profile.GetProfileUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -48,6 +53,7 @@ class ExerciseDetailViewModel @Inject constructor(
     private val getExerciseMuscleZoneIdsUseCase: GetExerciseMuscleZoneIdsUseCase,
     private val setExerciseMuscleZonesUseCase: SetExerciseMuscleZonesUseCase,
     private val updateExerciseMovementCategoryUseCase: UpdateExerciseMovementCategoryUseCase,
+    private val updateExerciseBodyWeightPercentUseCase: UpdateExerciseBodyWeightPercentUseCase,
     private val imageStorageHelper: ImageStorageHelper,
     @ApplicationContext private val context: Context,
 ) : ViewModel() {
@@ -76,6 +82,16 @@ class ExerciseDetailViewModel @Inject constructor(
      */
     private val _categoryConflict = MutableStateFlow<String?>(null)
     val categoryConflict: StateFlow<String?> = _categoryConflict.asStateFlow()
+
+    /**
+     * The «Peso corporal movido» field (HU-49). Null until the detail first loads. Kept apart
+     * from the detail for the same reason as [_categoryConflict]: what is typed is not in Room.
+     */
+    private val _bodyWeightPercentForm = MutableStateFlow<BodyWeightPercentForm?>(null)
+    val bodyWeightPercentForm: StateFlow<BodyWeightPercentForm?> = _bodyWeightPercentForm.asStateFlow()
+
+    private val _events = MutableSharedFlow<ExerciseDetailEvent>()
+    val events: SharedFlow<ExerciseDetailEvent> = _events.asSharedFlow()
 
     init {
         loadExerciseDetail()
@@ -154,11 +170,16 @@ class ExerciseDetailViewModel @Inject constructor(
                                 exercise.progressionDifficulty,
                             ),
                             movementCategory = exercise.movementCategory,
+                            isIsometric = exercise.isIsometric,
+                            bodyWeightPercent = exercise.bodyWeightPercent,
                         ),
                     )
                 }
             }.collect { state ->
                 _uiState.value = state
+                if (state is ExerciseDetailUiState.Success) {
+                    syncBodyWeightPercentForm(state.exercise.bodyWeightPercent)
+                }
             }
         }
     }
@@ -210,6 +231,42 @@ class ExerciseDetailViewModel @Inject constructor(
 
     fun onCategoryConflictDismissed() {
         _categoryConflict.value = null
+    }
+
+    /** While untouched, the field shows the persisted percentage, whatever changed it. */
+    private fun syncBodyWeightPercentForm(persisted: Int) {
+        _bodyWeightPercentForm.update { form ->
+            if (form == null || !form.isEdited) BodyWeightPercentForm(input = persisted.toString()) else form
+        }
+    }
+
+    fun onBodyWeightPercentChanged(value: String) {
+        _bodyWeightPercentForm.update { form ->
+            (form ?: BodyWeightPercentForm(input = "")).copy(input = value, isEdited = true)
+        }
+    }
+
+    /**
+     * Saves with an explicit button, unlike the difficulty: the field is typed, and saving on
+     * every keystroke would recalculate the history of the exercise for a half-written value
+     * (CA-49.08). The use case validates (CA-49.05); a rejected value writes nothing.
+     */
+    fun saveBodyWeightPercent() {
+        val form = _bodyWeightPercentForm.value ?: return
+        if (!form.canSave) return
+
+        _bodyWeightPercentForm.value = form.copy(isSaving = true)
+        viewModelScope.launch {
+            updateExerciseBodyWeightPercentUseCase(exerciseId, form.input)
+                .onSuccess { saved ->
+                    _bodyWeightPercentForm.value = BodyWeightPercentForm(input = saved.toString())
+                    _events.emit(ExerciseDetailEvent.BodyWeightPercentSaved)
+                }
+                .onFailure {
+                    _bodyWeightPercentForm.update { it?.copy(isSaving = false) }
+                    _events.emit(ExerciseDetailEvent.BodyWeightPercentSaveFailed)
+                }
+        }
     }
 
     /**

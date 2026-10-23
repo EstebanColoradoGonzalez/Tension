@@ -58,6 +58,15 @@ interface ExerciseRepository {
     /** Cambia la categoría. El caso de uso comprueba antes que el plan no la contradiga. */
     suspend fun updateMovementCategory(exerciseId: Long, category: MovementCategory)
 
+    /**
+     * Saves the body-weight percentage (HU-49) and rebuilds, in the same transaction, the 1RM
+     * of every pair of the exercise: the percentage is a physical property of the movement, so
+     * a change applies to the whole history (CA-49.08). The tonnage needs nothing — it is
+     * computed when read. The use case has already validated the value. A storage failure is
+     * returned as a failed [Result], never thrown.
+     */
+    suspend fun updateBodyWeightPercent(exerciseId: Long, percent: Int): Result<Unit>
+
     /** Rutinas que tienen asignado el ejercicio, con su categoría (CA-46.14). */
     suspend fun getRoutinesAssigningExercise(exerciseId: Long): List<CategorizedName>
 

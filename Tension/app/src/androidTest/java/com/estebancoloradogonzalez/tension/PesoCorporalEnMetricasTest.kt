@@ -122,6 +122,8 @@ class PesoCorporalEnMetricasTest {
         weightRecordDao = database.weightRecordDao(),
         rotationStateDao = database.rotationStateDao(),
         database = database,
+        exerciseSetDao = database.exerciseSetDao(),
+        exerciseOneRmDao = database.exerciseOneRmDao(),
     )
 
     private fun profileColumns(database: TensionDatabase): Set<String> {

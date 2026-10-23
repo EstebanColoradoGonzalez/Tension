@@ -1247,6 +1247,9 @@ object Migrations {
      *
      * HU-48 takes the schema to 26, also without migration: it drops `profile.experience_level`,
      * which no rule, calculation, metric or alert ever read.
+     *
+     * HU-49 takes it to 27, also without migration: `exercise.body_weight_percent` (default 0)
+     * and `exercise_one_rm.achieved_on` (`NOT NULL`, no default — a record always has a date).
      */
     const val LAST_MIGRATED_VERSION = 19
 

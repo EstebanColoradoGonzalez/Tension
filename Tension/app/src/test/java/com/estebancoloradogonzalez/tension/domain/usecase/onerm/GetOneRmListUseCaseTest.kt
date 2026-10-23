@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -23,7 +24,17 @@ class GetOneRmListUseCaseTest {
         equipmentTypeId: Long,
         equipmentTypeName: String,
         oneRmKg: Double,
-    ) = OneRmEntry(exerciseId, exerciseName, equipmentTypeId, equipmentTypeName, oneRmKg)
+        achievedOn: String = "2026-10-14",
+        bodyWeightKg: Double? = 80.0,
+    ) = OneRmEntry(
+        exerciseId,
+        exerciseName,
+        equipmentTypeId,
+        equipmentTypeName,
+        oneRmKg,
+        achievedOn,
+        bodyWeightKg,
+    )
 
     // CA-42.02 — una tarjeta por ejercicio, con dentro los implementos que tienen valor.
 
@@ -110,4 +121,38 @@ class GetOneRmListUseCaseTest {
 
         assertEquals(73.4, useCase().first().first().equipment.first().oneRmKg, 0.001)
     }
+
+    // CA-49.03 / CA-49.06 — relative strength = 1RM ÷ body weight in force on the date of the 1RM.
+
+    @Test
+    fun `given a record and the body weight of its date, when invoked, then the relative strength divides them`() =
+        runTest {
+            // Given — QA-09: 93.4 kg on 05/10, with 78.0 kg in force that day (not today's 80).
+            every { repository.getAll() } returns flowOf(
+                listOf(entry(1L, "Press de Banca", 4L, "Barra", 93.4, "2026-10-05", 78.0)),
+            )
+
+            // When
+            val equipment = useCase().first().first().equipment.first()
+
+            // Then
+            assertEquals(1.20, equipment.relativeStrength!!, 0.005)
+            assertEquals("2026-10-05", equipment.achievedOn)
+            assertEquals(78.0, equipment.bodyWeightKg!!, 0.0)
+        }
+
+    @Test
+    fun `given a record without a body weight for its date, when invoked, then there is no relative strength`() =
+        runTest {
+            // Given
+            every { repository.getAll() } returns flowOf(
+                listOf(entry(1L, "Press de Banca", 4L, "Barra", 93.4, "2026-10-05", null)),
+            )
+
+            // When
+            val equipment = useCase().first().first().equipment.first()
+
+            // Then
+            assertNull(equipment.relativeStrength)
+        }
 }

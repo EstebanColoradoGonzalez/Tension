@@ -2,7 +2,7 @@
 story_number: 49
 title: "Carga real con peso corporal en tonelaje, 1RM y fuerza relativa"
 slug: "carga-real-peso-corporal"
-estado: "Borrador (PO)"
+estado: "Lista para Revisión"
 autor: "esteban.colorado"
 fecha_creacion: "2026-10-22"
 es_resultado_slicing: true
@@ -42,11 +42,11 @@ medicion_attempt_status:
 medicion_attempt_at:
 medicion_attempt_reason:
 normalization_contract_hash:
-dev_ia_session_minutes:
-dev_manual_minutes:
-dev_total_minutes:
-dev_responsable:
-dev_closed_at:
+dev_ia_session_minutes: 58
+dev_manual_minutes: 0
+dev_total_minutes: 58
+dev_responsable: "esteban.colorado"
+dev_closed_at: "2026-10-23 18:13"
 ---
 
 # Historia #49: Carga real con peso corporal en tonelaje, 1RM y fuerza relativa
@@ -60,9 +60,10 @@ dev_closed_at:
 | Medición PNF | ⏳ Pendiente | | Developer |
 | Verificación cruzada | ⏳ Pendiente | | Developer |
 | Análisis Arquitectónico | ⏳ Pendiente | | Arquitecto |
-| Refinamiento Técnico | ⏳ Pendiente | | Developer |
+| Refinamiento Técnico | ✅ Completada | 2026-10-23 | esteban.colorado |
 | Estimación | ⏳ Pendiente | | Developer |
-| Desarrollo | ⏳ Pendiente | | Developer |
+| Desarrollo | ✅ Completada (Dev-Rápido) | 2026-10-23 | esteban.colorado |
+| Revisión | ⏳ Pendiente | | |
 
 ## Archivos de esta Historia
 
@@ -85,6 +86,7 @@ dev_closed_at:
 | Fase        | Inicio                    | Fin |
 | ----------- | ------------------------- | --- |
 | Creación HU | 2026-10-22 18:47 | 2026-10-22 20:59 |
+| Desarrollo | 2026-10-23 17:15 | 2026-10-23 18:13 |
 
 ---
 

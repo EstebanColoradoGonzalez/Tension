@@ -30,6 +30,11 @@ data class Exercise(
      * ofrece en ninguna sesión ni rutina en lugar de caer en una categoría inventada.
      */
     val movementCategory: MovementCategory? = null,
+    /**
+     * Share of the executant's body weight the exercise moves, 0 to 100 (HU-49, CA-49.04).
+     * It feeds the real load of the tonnage and the 1RM, never the decision engine.
+     */
+    val bodyWeightPercent: Int = 0,
 ) {
     /** Nombres de los implementos, para las pantallas que solo los enseñan. */
     val equipmentTypes: List<String> get() = equipmentOptions.map { it.name }

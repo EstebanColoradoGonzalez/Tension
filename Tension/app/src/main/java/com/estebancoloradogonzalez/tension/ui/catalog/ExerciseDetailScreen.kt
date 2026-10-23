@@ -16,17 +16,23 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddAPhoto
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -37,6 +43,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -60,6 +67,21 @@ fun ExerciseDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val categoryConflict by viewModel.categoryConflict.collectAsStateWithLifecycle()
+    val bodyWeightPercentForm by viewModel.bodyWeightPercentForm.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val percentSavedMessage = stringResource(R.string.exercise_body_weight_percent_saved)
+    val percentSaveFailedMessage = stringResource(R.string.exercise_body_weight_percent_save_error)
+
+    LaunchedEffect(Unit) {
+        viewModel.events.collect { event ->
+            when (event) {
+                ExerciseDetailEvent.BodyWeightPercentSaved ->
+                    snackbarHostState.showSnackbar(percentSavedMessage)
+                ExerciseDetailEvent.BodyWeightPercentSaveFailed ->
+                    snackbarHostState.showSnackbar(percentSaveFailedMessage)
+            }
+        }
+    }
 
     categoryConflict?.let { message ->
         AlertDialog(
@@ -90,6 +112,7 @@ fun ExerciseDetailScreen(
                 onNavigateBack = onNavigateBack,
             )
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { innerPadding ->
         when (val state = uiState) {
             is ExerciseDetailUiState.Loading -> {
@@ -122,6 +145,9 @@ fun ExerciseDetailScreen(
                     onNavigateToHistory = onNavigateToExerciseHistory,
                     onChangeImage = { imagePickerLauncher.launch("image/*") },
                     onProgressionDifficultySelected = viewModel::onProgressionDifficultySelected,
+                    bodyWeightPercentForm = bodyWeightPercentForm,
+                    onBodyWeightPercentChanged = viewModel::onBodyWeightPercentChanged,
+                    onSaveBodyWeightPercent = viewModel::saveBodyWeightPercent,
                     onMovementCategorySelected = viewModel::onMovementCategorySelected,
                     onEquipmentToggled = viewModel::onEquipmentToggled,
                     onPrimaryZoneAdded = viewModel::onPrimaryZoneAdded,
@@ -143,6 +169,9 @@ private fun ExerciseDetailContent(
     onNavigateToHistory: (Long) -> Unit,
     onChangeImage: () -> Unit,
     onProgressionDifficultySelected: (ProgressionDifficulty) -> Unit,
+    bodyWeightPercentForm: BodyWeightPercentForm?,
+    onBodyWeightPercentChanged: (String) -> Unit,
+    onSaveBodyWeightPercent: () -> Unit,
     onMovementCategorySelected: (MovementCategory) -> Unit,
     onEquipmentToggled: (Long) -> Unit,
     onPrimaryZoneAdded: (Long) -> Unit,
@@ -245,6 +274,17 @@ private fun ExerciseDetailContent(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
+            // An isometric is held in seconds and never adds body weight, so the field would
+            // decide nothing there (HU-49, CA-49.07).
+            if (!exercise.isIsometric && bodyWeightPercentForm != null) {
+                Spacer(modifier = Modifier.height(16.dp))
+                BodyWeightPercentField(
+                    form = bodyWeightPercentForm,
+                    onValueChange = onBodyWeightPercentChanged,
+                    onSave = onSaveBodyWeightPercent,
+                )
+            }
+
             Spacer(modifier = Modifier.height(24.dp))
             TextButton(
                 onClick = { onNavigateToHistory(exercise.id) },
@@ -254,6 +294,56 @@ private fun ExerciseDetailContent(
                     color = MaterialTheme.colorScheme.primary,
                 )
             }
+        }
+    }
+}
+
+/**
+ * «Peso corporal movido» (HU-49, CA-49.04): an integer percentage with an explicit save, unlike
+ * the difficulty — saving recalculates the exercise's whole history (CA-49.08), so it should not
+ * happen on every keystroke. An invalid value shows the inline error and disables saving
+ * (CA-49.05).
+ */
+@Composable
+private fun BodyWeightPercentField(
+    form: BodyWeightPercentForm,
+    onValueChange: (String) -> Unit,
+    onSave: () -> Unit,
+) {
+    Column {
+        Text(
+            text = stringResource(R.string.exercise_field_body_weight_percent),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        OutlinedTextField(
+            value = form.input,
+            onValueChange = onValueChange,
+            suffix = { Text(stringResource(R.string.exercise_body_weight_percent_suffix)) },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            isError = !form.isValid,
+            supportingText = if (!form.isValid) {
+                { Text(stringResource(R.string.exercise_body_weight_percent_error)) }
+            } else {
+                null
+            },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = stringResource(R.string.exercise_body_weight_percent_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Button(
+            onClick = onSave,
+            enabled = form.canSave,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(text = stringResource(R.string.exercise_body_weight_percent_save))
         }
     }
 }

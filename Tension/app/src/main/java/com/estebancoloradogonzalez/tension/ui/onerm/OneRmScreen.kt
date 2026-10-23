@@ -41,6 +41,8 @@ import com.estebancoloradogonzalez.tension.domain.model.ExerciseOneRm
 import com.estebancoloradogonzalez.tension.domain.model.OneRmEquipment
 import com.estebancoloradogonzalez.tension.domain.model.WeightUnit
 import com.estebancoloradogonzalez.tension.domain.util.WeightConverter
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 private val CARD_SHAPE = RoundedCornerShape(12.dp)
 private val CARD_PADDING = 16.dp
@@ -187,9 +189,42 @@ private fun OneRmCard(
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth(),
             )
+            RelativeStrength(selected)
         }
     }
 }
+
+/**
+ * The record as a multiple of the body weight in force on the date it was reached, and that
+ * body weight and date (HU-49, CA-49.03). Unitless, so it is the same with kilograms or pounds.
+ * Without a body weight for that date there is nothing honest to show, and nothing is shown.
+ */
+@Composable
+private fun RelativeStrength(selected: OneRmEquipment) {
+    val relativeStrength = selected.relativeStrength ?: return
+    val bodyWeightKg = selected.bodyWeightKg ?: return
+    Spacer(modifier = Modifier.height(4.dp))
+    Text(
+        text = stringResource(R.string.one_rm_relative_strength_format, "%.2f".format(relativeStrength)),
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurface,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.fillMaxWidth(),
+    )
+    Text(
+        text = stringResource(
+            R.string.one_rm_relative_strength_basis_format,
+            "%.1f".format(bodyWeightKg),
+            LocalDate.parse(selected.achievedOn).format(ACHIEVED_ON_FORMAT),
+        ),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.fillMaxWidth(),
+    )
+}
+
+private val ACHIEVED_ON_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
 
 /**
  * Kilograms and pounds at once, no toggle (CA-42.06).

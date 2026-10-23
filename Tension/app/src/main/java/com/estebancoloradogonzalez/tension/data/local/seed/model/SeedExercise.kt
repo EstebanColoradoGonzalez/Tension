@@ -38,6 +38,8 @@ data class SeedExercise(
     val isIsometric: Boolean = false,
     val isToTechnicalFailure: Boolean = false,
     val progressionDifficulty: ProgressionDifficulty = ProgressionDifficulty.MEDIUM,
+    /** Share of body weight the exercise moves, 0 to 100 (HU-49, CA-49.04). */
+    val bodyWeightPercent: Int = 0,
 ) {
     /** Todas las zonas del ejercicio, principales primero. Para las lecturas que no distinguen. */
     val allMuscleZoneIds: List<Long> get() = primaryMuscleZoneIds + secondaryMuscleZoneIds

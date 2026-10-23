@@ -79,7 +79,7 @@
 | **[HU-46](./HU-46-progresion-rango-categoria-dia/historia.md)** | Progresión por rango de hipertrofia y sesión acotada a la categoría del día | — | EPIC-08 | `Completado` | Alta |
 | **[HU-47](./HU-47-corregir-ultima-serie-registrada/historia.md)** | Corregir los datos de la última serie registrada | — | EPIC-08 | `Completado` | — |
 | **[HU-48](./HU-48-perfil-sin-nivel-peso-metricas/historia.md)** | Perfil sin nivel de experiencia y peso corporal en Métricas | — | EPIC-08 | `Borrador (PO)` | — |
-| **[HU-49](./HU-49-carga-real-peso-corporal/historia.md)** | Carga real con peso corporal en tonelaje, 1RM y fuerza relativa | — | EPIC-08 | `Borrador (PO)` | — |
+| **[HU-49](./HU-49-carga-real-peso-corporal/historia.md)** | Carga real con peso corporal en tonelaje, 1RM y fuerza relativa | — | EPIC-08 | `Lista para Revisión` | — |
 
 **HU-47** se monta sobre el registro de serie (`HU-06`, formulario `E2` y sesión `E1`) y sobre el 1RM (`HU-42`), que reconstruye al corregir. Extiende la filosofía de `HU-43` —la sesión en curso admite ajustes temporales y acotados— a los datos de la serie: solo la última registrada de la sesión y solo mientras la sesión sigue en curso. `HU-09` (cierre) sigue congelando todo. `HU-30` aporta la unidad de captura corregible, y `HU-13`/`HU-15` consumen el dato corregido sin cambios propios.
 
@@ -192,7 +192,7 @@
 
 - **Objetivo:** que las decisiones y los números del sistema reflejen lo que de verdad ocurre en el gimnasio. La progresión se lee por rango de hipertrofia y la sesión se acota a la categoría del día. Un error de dedo en la última serie se puede corregir. El perfil deja de pedir datos que nadie usa, y el peso corporal pasa a contar como carga movida.
 - **Historias incluidas:** `HU-46`, `HU-47`, `HU-48`, `HU-49`.
-- **Estado:** `HU-46` y `HU-47` están en `Completado`; `HU-48` y `HU-49` en `Borrador (PO)`.
+- **Estado:** `HU-46` y `HU-47` están en `Completado`; `HU-48` en `Borrador (PO)`; `HU-49` en `Lista para Revisión` (implementada con dev-rápido el 2026-10-23).
 - **Alcance de datos:** las cuatro se validan sobre **instalación fresca** (ADR-019). Los respaldos se generan con la estructura resultante y no se contempla compatibilidad con formatos anteriores.
 
 ---
@@ -326,8 +326,9 @@ Los 23 RNFs listados en §3 son restricciones de calidad del sistema completo. S
 |---------|-------|
 | Historias de Usuario | 49 (HU-01 a HU-49, numeración plana) |
 | Historias Completadas | 47 (HU-01 a HU-47: implementadas, revisadas y cerradas). La funcionalidad de HU-07 y HU-20 la retiró después HU-34 |
-| Historias en Borrador (PO) | 2 (HU-48 y HU-49 en EPIC-08) |
-| **Suma de control** | **47 + 2 = 49** ✅ |
+| Historias en Borrador (PO) | 1 (HU-48 en EPIC-08) |
+| Historias Lista para Revisión | 1 (HU-49 en EPIC-08) |
+| **Suma de control** | **47 + 1 + 1 = 49** ✅ |
 | RFs por historia (promedio) | 2.4 |
 | RFs por historia (máximo) | 8 (HU-15 — Analítica y KPIs) |
 | Historias sin RF propio (correcciones, retiros o solo RNFs) | 19 (HU-07, HU-08, HU-19, HU-20, HU-28 a HU-38, HU-42, HU-44, HU-45 y HU-47) |

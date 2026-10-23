@@ -721,4 +721,22 @@ Retíralo de esas rutinas primero.</string>
         anterior de la aplicación y no registra la categoría de movimiento de los ejercicios y
         de las rutinas. La categoría es una decisión, no un cálculo, así que no se puede
         importar. Exporta un respaldo nuevo desde esta versión.</string>
+
+    <!-- HU-49: peso corporal movido (D2), fuerza relativa (O1) y respaldo -->
+    <string name="exercise_field_body_weight_percent">Peso corporal movido</string>
+    <string name="exercise_body_weight_percent_suffix" formatted="false">%</string>
+    <string name="exercise_body_weight_percent_hint">Parte de tu peso corporal que mueves en este
+        ejercicio. Se suma a la carga con peso libre o con tu propio cuerpo; no con máquina,
+        polea, banda elástica ni TRX.</string>
+    <string name="exercise_body_weight_percent_error">Introduce un número entero entre 0 y 100</string>
+    <string name="exercise_body_weight_percent_save">Guardar</string>
+    <string name="exercise_body_weight_percent_saved">Peso corporal movido actualizado</string>
+    <string name="exercise_body_weight_percent_save_error">No se pudo guardar el peso corporal
+        movido</string>
+    <string name="one_rm_relative_strength_format">%1$s× tu peso corporal</string>
+    <string name="one_rm_relative_strength_basis_format">con %1$s kg el %2$s</string>
+    <string name="import_backup_no_body_weight_load">Este respaldo se generó con una versión
+        anterior de la aplicación y no registra el peso corporal movido de cada ejercicio ni la
+        fecha de cada 1RM, así que no se puede importar. Exporta un respaldo nuevo desde esta
+        versión.</string>
 </resources>

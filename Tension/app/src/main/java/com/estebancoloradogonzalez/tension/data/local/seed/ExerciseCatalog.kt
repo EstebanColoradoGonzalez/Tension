@@ -114,6 +114,7 @@ object ExerciseCatalog {
             secondaryMuscleZoneIds = emptyList(),
             movementCategory = PULL,
             mediaResource = "crunch_abdominal_polea",
+            bodyWeightPercent = 35,
         ),
         SeedExercise(
             4,
@@ -306,6 +307,7 @@ object ExerciseCatalog {
             secondaryMuscleZoneIds = emptyList(),
             movementCategory = LEGS,
             mediaResource = "sentadilla_bulgara_mancuernas",
+            bodyWeightPercent = 85,
         ),
         // Renombrado en HU-39 desde "Sentadilla de Zumo": el nombre correcto del patrón
         // es sumo.
@@ -422,6 +424,7 @@ object ExerciseCatalog {
             secondaryMuscleZoneIds = emptyList(),
             movementCategory = LEGS,
             mediaResource = "zancadas_mancuernas",
+            bodyWeightPercent = 85,
         ),
         SeedExercise(
             34,
@@ -445,6 +448,7 @@ object ExerciseCatalog {
             movementCategory = PULL,
             mediaResource = "dominadas_barra_fija",
             isBodyweight = true,
+            bodyWeightPercent = 100,
         ),
         // Renombrado en HU-39 desde "Remo Unilateral en Polea Baja".
         SeedExercise(

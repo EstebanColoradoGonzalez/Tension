@@ -10,36 +10,21 @@ import kotlinx.coroutines.flow.Flow
 /**
  * Access to the estimated 1RM, keyed by the **(exercise, equipment) pair** (HU-42).
  *
- * Read one value to compare against, write the pair, remove it, and list everything for the
- * screen. The table is written from the set registration and set correction transactions and
- * read from the 1RM screen; **no other query in the system names it**.
+ * Write the pair, remove it, and list everything for the screen. The table is written only
+ * through `OneRmRecordWriter` — from the set registration and correction transactions, the
+ * change of an exercise's body-weight percentage and the registration of a body weight
+ * (HU-49) — and read from the 1RM screen; **no other query in the system names it**.
  */
 @Dao
 interface ExerciseOneRmDao {
-
-    /**
-     * The record currently held by the pair, or null if the pair has none.
-     *
-     * This is the left-hand side of the monotonicity comparison (CA-42.04). It is a read and
-     * not an `UPDATE … MAX(…)` because the upsert syntax that would fold both into one
-     * statement needs SQLite 3.24 — API 30 — and the project targets API 26. The comparison
-     * is safe regardless: it runs inside the transaction that is already open around the set.
-     */
-    @Query(
-        """
-        SELECT one_rm_kg FROM exercise_one_rm
-        WHERE exercise_id = :exerciseId AND equipment_type_id = :equipmentTypeId
-        """,
-    )
-    suspend fun getValue(exerciseId: Long, equipmentTypeId: Long): Double?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(oneRm: ExerciseOneRmEntity)
 
     /**
-     * Removes the record of the pair. Only the correction of the last set calls it (HU-47,
-     * CA-47.11): when the corrected set was the only one that qualified, the pair no longer
-     * has a real value, and CA-42.07 says such a pair is not shown — neither as a zero nor as
+     * Removes the record of the pair. Only the rebuild calls it (HU-47, CA-47.11; HU-49,
+     * CA-49.08): when no set of the pair qualifies any more, the pair no longer has a real
+     * value, and CA-42.07 says such a pair is not shown — neither as a zero nor as
      * a dash. The table is the list, so the row goes.
      */
     @Query(
@@ -57,6 +42,12 @@ interface ExerciseOneRmDao {
      * implement `id`, which is the declared position of the equipment catalog — the same
      * order HU-39 fixed for the checkbox list, and the reason `EquipmentTypeDao` also orders
      * by `id` rather than by name.
+     *
+     * Each row carries the date the record was reached and the body weight in force on that
+     * date — the latest entry dated on or before it, the one saved last on a tie, as in
+     * `WeightRecordDao.getLatestWeight` — which the relative strength divides by (HU-49,
+     * CA-49.03, CA-49.06). Reading `weight_record` here also makes Room re-emit the list when
+     * a body weight is recorded.
      */
     @Query(
         """
@@ -65,7 +56,11 @@ interface ExerciseOneRmDao {
             e.name AS exerciseName,
             r.equipment_type_id AS equipmentTypeId,
             et.name AS equipmentTypeName,
-            r.one_rm_kg AS oneRmKg
+            r.one_rm_kg AS oneRmKg,
+            r.achieved_on AS achievedOn,
+            (SELECT wr.weight_kg FROM weight_record wr
+             WHERE wr.date <= r.achieved_on
+             ORDER BY wr.date DESC, wr.id DESC LIMIT 1) AS bodyWeightKg
         FROM exercise_one_rm r
         INNER JOIN exercise e ON e.id = r.exercise_id
         INNER JOIN equipment_type et ON et.id = r.equipment_type_id
@@ -82,4 +77,6 @@ data class ExerciseOneRmDto(
     val equipmentTypeId: Long,
     val equipmentTypeName: String,
     val oneRmKg: Double,
+    val achievedOn: String,
+    val bodyWeightKg: Double?,
 )

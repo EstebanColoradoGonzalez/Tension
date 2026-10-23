@@ -13,7 +13,8 @@ import androidx.room.Index
  * would mix magnitudes that are not the same strength. Hence the composite key.
  *
  * **The table is the list.** A row is born the first time a set qualifies, and only then:
- * exactly ten repetitions with an RIR of exactly one, over external load. Listing the rows
+ * exactly ten repetitions with an RIR of exactly one, over a real load — external load plus
+ * the body weight the exercise moves (HU-49) — greater than zero. Listing the rows
  * is therefore listing what CA-42.02 and CA-42.07 describe — trained exercises, trained
  * implements, never a zero and never a dash. Nothing has to be filtered out at read time.
  *
@@ -24,18 +25,20 @@ import androidx.room.Index
  * CA-42.08 requires a restored backup to reproduce it **without recalculating**.
  *
  * There is **no `calculated_at`**. `tree_state` keeps one because it makes the order of its
- * recalculation against the day sweep auditable; here there is no sweep, no order to audit,
- * and CA-42.06 states the view exposes the number and nothing else. A column no one reads,
- * and which repeating an identical session would still touch, is worse than its absence.
+ * recalculation against the day sweep auditable; here there is no sweep and no order to
+ * audit. What the record does keep is [achievedOn], the date of the session that reached it,
+ * because the relative strength divides by the body weight in force on that date (HU-49).
  *
- * **Correcting the last set rebuilds the pair's record** (HU-47, CA-47.11) from the
- * qualifying sets of `exercise_set`, so it can go down. That reconstruction is exact here:
+ * **Every write rebuilds the pair's record** from the qualifying sets of `exercise_set`
+ * (`OneRmRecordWriter`): registering a set, correcting the last one (HU-47, CA-47.11),
+ * changing the exercise's body-weight percentage (HU-49, CA-49.08) or recording a body weight.
+ * It can therefore go down. That reconstruction is exact here:
  * the table exists since the schema that is only installed fresh (ADR-019), no purge exists,
  * and every set that ever qualified went through the registration and is still in the
- * history. Only the corrected pair is rebuilt.
+ * history.
  *
- * **The dependency is strictly one-way.** This table is written when a set is registered or
- * the last one is corrected, and read by the 1RM screen only. No rule of the decision
+ * **The dependency is strictly one-way.** This table is written by the rebuild only, and read
+ * by the 1RM screen only. No rule of the decision
  * engine, no alert and no KPI consults it — same isolation model HU-37 established for the
  * tree.
  */
@@ -74,4 +77,13 @@ data class ExerciseOneRmEntity(
      */
     @ColumnInfo(name = "one_rm_kg")
     val oneRmKg: Double,
+
+    /**
+     * Date (`YYYY-MM-DD`) of the session whose set set the record (HU-49, CA-49.02). The
+     * relative strength divides the record by the body weight in force on this date, not by
+     * today's (CA-49.03, CA-49.06). On a tie the earliest date is kept: it is when the value
+     * was first reached.
+     */
+    @ColumnInfo(name = "achieved_on")
+    val achievedOn: String,
 )

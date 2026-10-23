@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
 import com.estebancoloradogonzalez.tension.data.local.entity.ExerciseSetEntity
+import com.estebancoloradogonzalez.tension.domain.model.RealLoadSetData
 import com.estebancoloradogonzalez.tension.domain.model.SetDistributionData
 import com.estebancoloradogonzalez.tension.domain.model.SetTonnageData
 
@@ -105,33 +106,83 @@ interface ExerciseSetDao {
     )
 
     /**
-     * The heaviest weight among the sets of the **pair** that qualify as the 1RM reference
-     * set: exactly [reps] repetitions with an RIR of exactly [rir], and a positive weight
-     * (HU-42, CA-42.03). Null if none qualifies.
+     * Every set of the **pair** with the shape of the 1RM reference set — exactly [reps]
+     * repetitions with an RIR of exactly [rir] (HU-42, CA-42.03) — with the ingredients of its
+     * real load and the date of its session (HU-49, CA-49.02). Oldest first.
      *
-     * It is the rebuilt record: with the repetitions fixed the estimate is monotone in the
-     * weight, so the maximum of the estimates is the estimate of the maximum weight. The
-     * correction of the last set uses it to leave the 1RM as if the mistake had never
-     * existed (CA-47.11), in both directions.
+     * It replaces the former `MAX(weight_kg)`: with the real load, two sets with the same
+     * ballast on dates with different body weights no longer weigh the same, so the maximum
+     * can only be taken once the real load of each set is known. `OneRmRule.record` takes it.
+     *
+     * The body weight is the one in force on the session date: the latest entry of the history
+     * dated on or before it, the one saved last on a tie — the same order as
+     * `WeightRecordDao.getLatestWeight` (CA-49.06).
      */
     @Query(
         """
-        SELECT MAX(es.weight_kg)
+        SELECT
+            es.weight_kg AS weightKg,
+            s.date AS sessionDate,
+            (SELECT wr.weight_kg FROM weight_record wr
+             WHERE wr.date <= s.date
+             ORDER BY wr.date DESC, wr.id DESC LIMIT 1) AS bodyWeightKg,
+            e.body_weight_percent AS bodyWeightPercent,
+            e.is_bodyweight AS isBodyweight,
+            e.is_isometric AS isIsometric,
+            et.name AS equipmentTypeName
         FROM exercise_set es
         INNER JOIN session_exercise se ON es.session_exercise_id = se.id
+        INNER JOIN session s ON se.session_id = s.id
+        INNER JOIN exercise e ON se.exercise_id = e.id
+        INNER JOIN equipment_type et ON et.id = es.equipment_type_id
         WHERE se.exercise_id = :exerciseId
           AND es.equipment_type_id = :equipmentTypeId
           AND es.reps = :reps
           AND es.rir = :rir
-          AND es.weight_kg > 0
+        ORDER BY s.date ASC, es.id ASC
         """,
     )
-    suspend fun getMaxQualifyingWeightForPair(
+    suspend fun getOneRmCandidatesForPair(
         exerciseId: Long,
         equipmentTypeId: Long,
         reps: Int,
         rir: Int,
-    ): Double?
+    ): List<OneRmCandidateData>
+
+    /**
+     * The implements of the exercise with at least one set shaped like the reference set. They
+     * are the pairs whose record a change of the body-weight percentage can create, change or
+     * remove (CA-49.08): a pair without such a set has no record and cannot gain one.
+     */
+    @Query(
+        """
+        SELECT DISTINCT es.equipment_type_id
+        FROM exercise_set es
+        INNER JOIN session_exercise se ON es.session_exercise_id = se.id
+        WHERE se.exercise_id = :exerciseId
+          AND es.reps = :reps
+          AND es.rir = :rir
+        """,
+    )
+    suspend fun getReferenceSetEquipmentIds(exerciseId: Long, reps: Int, rir: Int): List<Long>
+
+    /**
+     * The pairs with a set shaped like the reference set in a session dated on or after
+     * [date]. A new body-weight entry only changes the body weight in force from its own date
+     * on (CA-49.06), so these are the only records it can touch.
+     */
+    @Query(
+        """
+        SELECT DISTINCT se.exercise_id AS exerciseId, es.equipment_type_id AS equipmentTypeId
+        FROM exercise_set es
+        INNER JOIN session_exercise se ON es.session_exercise_id = se.id
+        INNER JOIN session s ON se.session_id = s.id
+        WHERE s.date >= :date
+          AND es.reps = :reps
+          AND es.rir = :rir
+        """,
+    )
+    suspend fun getReferenceSetPairsSince(date: String, reps: Int, rir: Int): List<OneRmPairData>
 
     @Query(
         """
@@ -406,18 +457,90 @@ interface ExerciseSetDao {
      *
      * Si alguna vez se quisiera ponderar por jerarquía, este es el sitio, y sería un
      * cambio de definición de KPI que exige historia propia.
+     *
+     * Each row also carries the ingredients of the real load (HU-49, CA-49.01): the body
+     * weight in force on the session date — the latest entry dated on or before it, the one
+     * saved last on a tie, as in `WeightRecordDao.getLatestWeight` (CA-49.06) —, the
+     * exercise's percentage, whether it is isometric and the implement.
+     * `SetTonnageData.realLoadKg` decides; the external load in `weight_kg` is untouched.
      */
     @Query(
         """
-        SELECT es.weight_kg AS weightKg, es.reps, mz.muscle_group AS muscleGroup
+        SELECT
+            es.weight_kg AS weightKg,
+            es.reps,
+            mz.muscle_group AS muscleGroup,
+            (SELECT wr.weight_kg FROM weight_record wr
+             WHERE wr.date <= s.date
+             ORDER BY wr.date DESC, wr.id DESC LIMIT 1) AS bodyWeightKg,
+            e.body_weight_percent AS bodyWeightPercent,
+            e.is_isometric AS isIsometric,
+            et.name AS equipmentTypeName
         FROM exercise_set es
         INNER JOIN session_exercise se ON es.session_exercise_id = se.id
+        INNER JOIN session s ON se.session_id = s.id
+        INNER JOIN exercise e ON se.exercise_id = e.id
+        INNER JOIN equipment_type et ON et.id = es.equipment_type_id
         INNER JOIN exercise_muscle_zone emz ON se.exercise_id = emz.exercise_id
         INNER JOIN muscle_zone mz ON emz.muscle_zone_id = mz.id
         WHERE se.session_id IN (:sessionIds)
         """,
     )
     suspend fun getTonnageDataBySessionIds(sessionIds: List<Long>): List<SetTonnageData>
+
+    /**
+     * The sets of one session, once each, with the ingredients of their real load: the source
+     * of its total tonnage (HU-49, CA-49.01). Same body weight in force as
+     * [getTonnageDataBySessionIds].
+     */
+    @Query(
+        """
+        SELECT
+            se.session_id AS sessionId,
+            es.weight_kg AS weightKg,
+            es.reps,
+            (SELECT wr.weight_kg FROM weight_record wr
+             WHERE wr.date <= s.date
+             ORDER BY wr.date DESC, wr.id DESC LIMIT 1) AS bodyWeightKg,
+            e.body_weight_percent AS bodyWeightPercent,
+            e.is_isometric AS isIsometric,
+            et.name AS equipmentTypeName
+        FROM exercise_set es
+        INNER JOIN session_exercise se ON es.session_exercise_id = se.id
+        INNER JOIN session s ON se.session_id = s.id
+        INNER JOIN exercise e ON se.exercise_id = e.id
+        INNER JOIN equipment_type et ON et.id = es.equipment_type_id
+        WHERE se.session_id = :sessionId
+        """,
+    )
+    suspend fun getRealLoadSetsBySession(sessionId: Long): List<RealLoadSetData>
+
+    /**
+     * Same as [getRealLoadSetsBySession] for every closed session at once, for the session
+     * history. Filtered by status and not with `IN (:ids)`: the history grows without bound and
+     * SQLite on API 26 caps a statement at 999 parameters.
+     */
+    @Query(
+        """
+        SELECT
+            se.session_id AS sessionId,
+            es.weight_kg AS weightKg,
+            es.reps,
+            (SELECT wr.weight_kg FROM weight_record wr
+             WHERE wr.date <= s.date
+             ORDER BY wr.date DESC, wr.id DESC LIMIT 1) AS bodyWeightKg,
+            e.body_weight_percent AS bodyWeightPercent,
+            e.is_isometric AS isIsometric,
+            et.name AS equipmentTypeName
+        FROM exercise_set es
+        INNER JOIN session_exercise se ON es.session_exercise_id = se.id
+        INNER JOIN session s ON se.session_id = s.id
+        INNER JOIN exercise e ON se.exercise_id = e.id
+        INNER JOIN equipment_type et ON et.id = es.equipment_type_id
+        WHERE s.status IN ('COMPLETED', 'INCOMPLETE')
+        """,
+    )
+    suspend fun getRealLoadSetsOfClosedSessions(): List<RealLoadSetData>
 
     @Query(
         """
@@ -496,4 +619,24 @@ data class ExerciseSetData(
     val captureUnit: String,
     val equipmentTypeId: Long,
     val equipmentTypeName: String,
+)
+
+/**
+ * A set shaped like the 1RM reference set, with what its real load needs (HU-49). The flags
+ * are SQLite integers, as in the other projections of this file.
+ */
+data class OneRmCandidateData(
+    val weightKg: Double,
+    val sessionDate: String,
+    val bodyWeightKg: Double?,
+    val bodyWeightPercent: Int,
+    val isBodyweight: Int,
+    val isIsometric: Int,
+    val equipmentTypeName: String,
+)
+
+/** An (exercise, equipment) pair, the key of the 1RM record. */
+data class OneRmPairData(
+    val exerciseId: Long,
+    val equipmentTypeId: Long,
 )

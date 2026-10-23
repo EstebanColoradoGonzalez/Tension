@@ -16,6 +16,13 @@ data class ActiveSessionInfo(
     val registeredSets: Int,
 )
 
+/**
+ * Summary of one session as its readers need it.
+ *
+ * Not a Room projection since HU-49: [totalTonnageKg] is the sum of the **real load** of every
+ * set, which `RealLoadRule` decides in Kotlin, so the repository composes this from
+ * [SessionSummaryHeaderDto] and the session's sets instead of trusting a `SUM` in SQL.
+ */
 data class SessionSummaryInfo(
     val status: String,
     val routineName: String,
@@ -26,13 +33,23 @@ data class SessionSummaryInfo(
     val completedExercises: Int,
 )
 
+/** What SQL knows of a session summary: everything but the tonnage (HU-49). */
+data class SessionSummaryHeaderDto(
+    val status: String,
+    val routineName: String,
+    val versionNumber: Int,
+    val routineId: Long,
+    val totalExercises: Int,
+    val completedExercises: Int,
+)
+
+/** A closed session for the history. Its tonnage is added in Kotlin, from the real load (HU-49). */
 data class ClosedSessionDto(
     val sessionId: Long,
     val date: String,
     val routineName: String,
     val versionNumber: Int,
     val status: String,
-    val totalTonnageKg: Double,
 )
 
 @Dao
@@ -119,13 +136,6 @@ interface SessionDao {
             r.name AS routineName,
             rv.version_number AS versionNumber,
             r.id AS routineId,
-            COALESCE(
-                (SELECT SUM(es.weight_kg * es.reps)
-                 FROM exercise_set es
-                 INNER JOIN session_exercise se ON es.session_exercise_id = se.id
-                 WHERE se.session_id = s.id),
-                0.0
-            ) AS totalTonnageKg,
             (SELECT COUNT(DISTINCT se.id)
              FROM session_exercise se
              WHERE se.session_id = s.id
@@ -143,7 +153,7 @@ interface SessionDao {
         WHERE s.id = :sessionId
         """,
     )
-    suspend fun getSessionSummaryInfo(sessionId: Long): SessionSummaryInfo
+    suspend fun getSessionSummaryHeader(sessionId: Long): SessionSummaryHeaderDto
 
     @Query(
         """
@@ -231,14 +241,7 @@ interface SessionDao {
             s.date,
             r.name AS routineName,
             rv.version_number AS versionNumber,
-            s.status,
-            COALESCE(
-                (SELECT SUM(es.weight_kg * es.reps)
-                 FROM exercise_set es
-                 INNER JOIN session_exercise se ON es.session_exercise_id = se.id
-                 WHERE se.session_id = s.id),
-                0.0
-            ) AS totalTonnageKg
+            s.status
         FROM session s
         INNER JOIN routine_version rv ON s.routine_version_id = rv.id
         INNER JOIN routine r ON rv.routine_id = r.id

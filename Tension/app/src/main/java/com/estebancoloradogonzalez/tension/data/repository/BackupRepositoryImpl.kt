@@ -27,7 +27,7 @@ class BackupRepositoryImpl @Inject constructor(
 ) : BackupRepository {
 
     companion object {
-        const val SCHEMA_VERSION = 18
+        const val SCHEMA_VERSION = 19
 
         const val APP_VERSION = "1.0"
 
@@ -82,11 +82,24 @@ class BackupRepositoryImpl @Inject constructor(
          * HU-48 does **not** bump the format even though `profile` loses `experience_level`:
          * dropping a column forces nothing to be invented. An earlier 18 carries the extra key
          * and the import discards it like any column that no longer exists (CA-48.08).
+         *
+         * HU-49 bumps the format to 19. An 18 lacks `exercise.body_weight_percent` and
+         * `exercise_one_rm.achieved_on`. Neither is derivable: the percentage is the executant's
+         * decision, and an 18 stores the value of each record but not the date it was reached,
+         * which is `NOT NULL` and which the relative strength needs. Accepting it would mean
+         * inventing both. The story leaves earlier backups out of scope (fresh install, ADR-019).
+         * The two columns travel on their own: the mechanism dumps columns by cursor.
          */
         private val ACCEPTED_SCHEMA_VERSIONS = setOf(SCHEMA_VERSION)
 
-        /** El formato inmediatamente anterior, el unico con un motivo de rechazo propio. */
+        /**
+         * The format right before the current one: it lacks the body-weight percentage and the
+         * date of the 1RM (HU-49), and is rejected naming exactly that.
+         */
         private const val PREVIOUS_SCHEMA_VERSION = SCHEMA_VERSION - 1
+
+        /** Format 17 keeps its own reason: it lacks the movement category (HU-46). */
+        private const val NO_MOVEMENT_CATEGORY_SCHEMA_VERSION = 17
 
         // INSERT order: parents first (FK dependencies satisfied)
         val TABLE_ORDER_INSERT = listOf(
@@ -229,11 +242,14 @@ class BackupRepositoryImpl @Inject constructor(
                     SCHEMA_VERSION,
                     schemaVersion,
                 )
-                // El formato inmediatamente anterior tiene una causa propia y concreta: no
-                // registra la categoria de movimiento, que es una decision y no un calculo
-                // (HU-46). Los mas antiguos siguen cayendo por la ausencia del equipamiento
-                // de las series, que es lo primero que les falta.
+                // The format right before has its own concrete reason: it does not record the
+                // body-weight percentage nor the date of each 1RM (HU-49). The 17 keeps its
+                // own: no movement category, a decision and not a calculation (HU-46). Older
+                // ones still fall on the missing equipment of the sets, the first thing they
+                // lack.
                 schemaVersion == PREVIOUS_SCHEMA_VERSION ->
+                    context.getString(R.string.import_backup_no_body_weight_load)
+                schemaVersion == NO_MOVEMENT_CATEGORY_SCHEMA_VERSION ->
                     context.getString(R.string.import_backup_no_movement_category)
                 else -> context.getString(R.string.import_backup_no_equipment)
             }

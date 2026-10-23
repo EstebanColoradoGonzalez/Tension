@@ -2,7 +2,7 @@
 
 > Este documento define la arquitectura estructural de la memoria del sistema y el ciclo de vida de sus entidades. Actúa simultáneamente como Modelo Entidad-Relación, Diccionario de Datos y Máquina de Estados. Se utiliza una sintaxis declarativa (pseudo-código estilo Prisma/TypeScript) para definir las estructuras, utilizando los comentarios inline como el diccionario de datos.
 >
-> **Versión de esquema:** 25 (migraciones registradas: v1 → v2 → … → v18 → v19). **Ni v20, ni v21, ni v22, ni v23, ni v24, ni v25 tienen migración**: v20 (HU-39) retira `exercise.equipment_type_id`, introduce `exercise_equipment` y añade `exercise_set.equipment_type_id`; v21 (HU-40) reclave `exercise_progression` por el par `(exercise_id, equipment_type_id)` e introduce `session_exercise_progression`; v22 (HU-41) añade `muscle_zone.sort_order`, `exercise_muscle_zone.is_primary` y `plan_assignment.suggested_equipment_type_id`; v23 (HU-42) introduce `exercise_one_rm`; v24 (HU-43) añade `session_exercise.is_extra`, `prescribed_sets` y `prescribed_reps`, e introduce `session_withdrawal`; v25 (HU-46) añade `exercise.movement_category` y `routine.movement_category` —`NOT NULL` y sin default—, el conteo hacia la subida en `exercise_progression` (`top_range_streak`, `top_range_weight_kg`, `last_range_reading`) y en `session_exercise_progression` (`range_reading`, `top_range_streak`), y sube a 10 el default de `profile.plateau_base_threshold`. La excepción documentada a RNF19 (ADR-019) resuelve los seis cambios sobre instalación fresca. Una base anterior no puede abrir el build vigente — el reinicio lo realiza el ejecutante desinstalando y reinstalando, no la aplicación, y el historial anterior se pierde como consecuencia aceptada.
+> **Versión de esquema:** 27 (migraciones registradas: v1 → v2 → … → v18 → v19). **Ni v20, ni v21, ni v22, ni v23, ni v24, ni v25 tienen migración**: v20 (HU-39) retira `exercise.equipment_type_id`, introduce `exercise_equipment` y añade `exercise_set.equipment_type_id`; v21 (HU-40) reclave `exercise_progression` por el par `(exercise_id, equipment_type_id)` e introduce `session_exercise_progression`; v22 (HU-41) añade `muscle_zone.sort_order`, `exercise_muscle_zone.is_primary` y `plan_assignment.suggested_equipment_type_id`; v23 (HU-42) introduce `exercise_one_rm`; v24 (HU-43) añade `session_exercise.is_extra`, `prescribed_sets` y `prescribed_reps`, e introduce `session_withdrawal`; v25 (HU-46) añade `exercise.movement_category` y `routine.movement_category` —`NOT NULL` y sin default—, el conteo hacia la subida en `exercise_progression` (`top_range_streak`, `top_range_weight_kg`, `last_range_reading`) y en `session_exercise_progression` (`range_reading`, `top_range_streak`), y sube a 10 el default de `profile.plateau_base_threshold`; v26 (HU-48) retira `profile.experience_level`; v27 (HU-49) añade `exercise.body_weight_percent` (default 0) y `exercise_one_rm.achieved_on` (`NOT NULL`, sin default). La excepción documentada a RNF19 (ADR-019) resuelve estos cambios sobre instalación fresca. Una base anterior no puede abrir el build vigente — el reinicio lo realiza el ejecutante desinstalando y reinstalando, no la aplicación, y el historial anterior se pierde como consecuencia aceptada.
 >
 > El código declara la frontera en `Migrations.LAST_MIGRATED_VERSION` (**19**): por debajo de ella la cadena de migraciones es continua y sin huecos, y el salto de ahí a la versión del esquema es la excepción de ADR-019, que sube historia por historia de forma deliberada. Las migraciones `16→17`, `17→18` y `18→19`, ausentes durante tres versiones, se repusieron después de dejar la aplicación incapaz de abrir cualquier base existente.
 
@@ -14,7 +14,7 @@
 
 - **Manejo de Tiempos y Fechas:** `Todas las fechas se almacenan como TEXT en formato ISO 8601. Fechas simples usan "YYYY-MM-DD"; marcas de tiempo completas usan "YYYY-MM-DDTHH:MM:SS". Ningún valor de fecha se almacena como INTEGER epoch ni como tipo nativo de la base de datos.`
 - **Manejo de Estados Lógicos (Booleanos):** `El motor de persistencia (SQLite) no tiene tipo BOOLEAN nativo. Todos los valores lógicos binarios se almacenan como INTEGER NOT NULL con DEFAULT 0, donde 0 = false y 1 = true. Ninguna columna lógica admite NULL — un valor nulo en una columna booleana es un estado inválido.`
-- **Manejo de Valores de Alta Precisión (Peso en Kg):** `Los valores de peso corporal y carga de ejercicio se almacenan como REAL (punto flotante de 64 bits). El incremento mínimo del sistema es 0.5 Kg, por lo que la precisión de REAL es suficiente sin recurrir a enteros escalados. Los valores calculados derivados (tonelaje, promedios, tendencias) NO se persisten — se computan en la capa de aplicación a partir de los datos base en cada consulta. **La única excepción es `exercise_one_rm.one_rm_kg`**, y lo es porque no es un agregado sino un **récord**: el máximo histórico de las series que califican. Recalcularlo desde `exercise_set` podría perder un máximo alcanzado en una serie ya purgada o restaurada parcialmente, y por eso el respaldo lo restaura en lugar de recalcularlo (HU-42, CA-42.08).`
+- **Manejo de Valores de Alta Precisión (Peso en Kg):** `Los valores de peso corporal y carga de ejercicio se almacenan como REAL (punto flotante de 64 bits). El incremento mínimo del sistema es 0.5 Kg, por lo que la precisión de REAL es suficiente sin recurrir a enteros escalados. Los valores calculados derivados (tonelaje, promedios, tendencias) NO se persisten — se computan en la capa de aplicación a partir de los datos base en cada consulta. **La única excepción es `exercise_one_rm.one_rm_kg`**, y lo es porque no es un agregado sino un **récord**: el máximo histórico de las series que califican. Recalcularlo desde `exercise_set` podría perder un máximo alcanzado en una serie ya purgada o restaurada parcialmente, y por eso el respaldo lo restaura en lugar de recalcularlo (HU-42, CA-42.08). **La carga real de una serie (HU-49) tampoco se persiste:** `exercise_set.weight_kg` sigue guardando la carga externa tecleada, y la carga real (carga externa + peso corporal vigente en la fecha de la sesión × `exercise.body_weight_percent` / 100, si el ejercicio no es isométrico y el implemento suma peso corporal — `RealLoadRule`) se calcula en cada lectura del tonelaje y en cada reconstrucción del 1RM.`
 - **Kilogramo como Unidad Canónica:** `El kilogramo es la única unidad de almacenamiento, cálculo, agregación y comparación del sistema. El ejecutante puede capturar la carga de cada ejercicio en libras (exercise_set.capture_unit), pero esa unidad es exclusivamente una preferencia de captura y presentación: la conversión a kilogramos ocurre en la frontera de captura, con el factor fijo 1 lb = 0.45359237 kg y 2 decimales de precisión. El valor convertido NO se redondea al múltiplo de 0.5 Kg — el incremento del sistema rige los controles de ajuste, no la precisión del dato. Ninguna regla del motor, consulta agregada ni métrica consulta la unidad de captura; solo el detalle de la serie individual la muestra.`
 - **Convenciones de Nomenclatura de Esquema:** `Nombres de tablas y columnas en snake_case en inglés (ej: routine_version, exercise_id). Claves primarias autoincrement: id INTEGER PRIMARY KEY AUTOINCREMENT. Claves foráneas: sufijo _id para referencias a PKs enteras. Datos de catálogo (seed) usan ON DELETE RESTRICT; datos transaccionales usan ON DELETE CASCADE donde aplica.`
 - **Cardinalidad de Instancias:** `El sistema es single-user. Las tablas profile, rotation_state, daily_routine_override, day_skip y tree_state son de fila única (id = 1 siempre). Todas las demás tablas crecen indefinidamente con el historial del ejecutante.`
@@ -94,6 +94,7 @@ model exercise {
   media_resource           TEXT     @optional                          // Para seed: nombre del asset PNG empaquetado (ej: "press_de_banca_maquina"). Para custom: ruta absoluta al archivo de imagen en almacenamiento interno. NULL si no se ha asociado imagen.
   movement_category        TEXT     @notNull @enum(MovementCategory)    // Empuje / Jalón / Pierna (HU-46). UNA sola por ejercicio, obligatoria y SIN default (CA-46.13). Todo lo que trabaja abdomen es PULL. Editable desde el Diccionario salvo que el ejercicio esté asignado a rutinas de otra categoría (CA-46.14). Creado desde la sesión, hereda la categoría del día y no se puede cambiar en el formulario (CA-46.11).
   progression_difficulty   TEXT     @notNull @default("MEDIUM")        // Capacidad intrínseca de progresión del ejercicio. Ver Enum ProgressionDifficulty. Multiplica el umbral base de meseta. Editable por el ejecutante desde el Diccionario. Ningún ejercicio queda sin clasificar: el valor por defecto es MEDIUM, tanto en el seed como en los creados manualmente.
+  body_weight_percent      INTEGER  @notNull @default(0) @check(">= 0 AND <= 100") // Porcentaje del peso corporal que el ejercicio mueve (HU-49). Entero 0-100. Seed: Dominadas 100, Sentadilla Búlgara 85, Zancadas (Lunges) 85, Crunch Abdominal 35, resto 0; los creados por el ejecutante nacen en 0. Editable desde el Diccionario (D2-T1) con guardado explícito. Es una propiedad física del movimiento: cambiarlo recalcula el tonelaje (al leer) y reconstruye el 1RM de todos los pares del ejercicio (CA-49.08). No lo lee ninguna regla del motor de decisión (CA-49.09).
   // CONSTRAINT ÚNICO: UNIQUE(name, equipment_type_id) — clave natural compuesta.
   // CONSTRAINT: is_isometric=1 implica is_bodyweight=1. is_to_technical_failure=1 implica is_bodyweight=1.
 }
@@ -193,6 +194,10 @@ model profile {
 // registro — los anteriores no se sobrescriben ni eliminan.
 // El peso actual = registro más reciente (ORDER BY date DESC, id DESC LIMIT 1):
 // varios registros del mismo día se desempatan por id (HU-48).
+// Peso VIGENTE en una fecha (HU-49, CA-49.06): el registro más reciente
+// con date <= esa fecha, con el mismo desempate. Es el que completa la
+// carga real de las series de esa fecha y el que divide el 1RM en la
+// fuerza relativa. Un registro nuevo no reescribe el pasado.
 // También lo alimenta el registro rápido de Métricas (G1-T5), que
 // crea la misma entrada que actualizar el peso desde el Perfil.
 // ==========================================
@@ -445,10 +450,15 @@ model tree_state {
 // ==========================================
 // ENTIDAD: exercise_one_rm
 // PROPÓSITO: 1RM estimado del par (ejercicio, equipamiento).
-// Nace la primera vez que una serie del par cumple la
-// condición de referencia —exactamente 10 repeticiones con
-// RIR exactamente 1, sobre carga externa— y desde entonces
-// guarda el máximo histórico de esas series. LA TABLA ES LA
+// Existe mientras alguna serie del par cumple la condición
+// de referencia —exactamente 10 repeticiones con RIR
+// exactamente 1, sobre una CARGA REAL mayor que 0 (HU-49)— y
+// guarda el máximo histórico de esas series con su fecha.
+// Toda escritura RECONSTRUYE el par desde sus series de
+// referencia (OneRmRecordWriter): al registrar una serie, al
+// corregir la última (HU-47), al cambiar el porcentaje del
+// ejercicio (CA-49.08) y al registrar un peso corporal (solo
+// los pares con series de referencia desde esa fecha). LA TABLA ES LA
 // LISTA: sus filas son exactamente lo que la vista muestra,
 // así que un par sin serie que califique no existe aquí y no
 // se presenta ni con cero ni con guion.
@@ -460,7 +470,8 @@ model tree_state {
 model exercise_one_rm {
   exercise_id       INTEGER  @notNull @relation(exercise.id, onDelete: RESTRICT)        // PK compuesta. El ejercicio del par.
   equipment_type_id INTEGER  @notNull @relation(equipment_type.id, onDelete: RESTRICT)  // PK compuesta. El implemento del par: 20 Kg en polea y 20 Kg en mancuerna no son la misma fuerza, así que un solo número por ejercicio mezclaría magnitudes incomparables.
-  one_rm_kg         REAL     @notNull @check("> 0")                                     // El récord, en kilogramos. Fórmula 1RM = Peso / [1.0278 − (0.0278 × Reps)], que a 10 repeticiones es Peso × 1.3337. Nunca decrece: una serie que califica solo lo actualiza si es mayor. Sin columna de fecha — la vista muestra el número y nada más, y una marca de tiempo cambiaría al repetir una sesión idéntica.
+  one_rm_kg         REAL     @notNull @check("> 0")                                     // El récord, en kilogramos. Fórmula 1RM = Carga real / [1.0278 − (0.0278 × Reps)], que a 10 repeticiones es Carga real × 1.3337 (HU-49: con Peso Corporal o Barra Fija la carga real es el peso corporal × porcentaje; con Peso Añadido, cuerpo + lastre; la dominada asistida en Máquina sigue sin 1RM). Una serie nueva nunca lo baja; reescribir el historial (corrección, cambio de porcentaje) sí puede bajarlo.
+  achieved_on       TEXT     @notNull @format("YYYY-MM-DD")                             // Fecha de la sesión de la serie que fijó el récord (HU-49, CA-49.02). En empate, la más antigua. La fuerza relativa = one_rm_kg ÷ peso corporal vigente en esta fecha (CA-49.03), calculada al leer y nunca persistida.
 }
 
 // ==========================================
@@ -863,6 +874,8 @@ La clasificación consolidada de cada sesión se persiste en `session_exercise.p
 
   *`Dominadas` es el único ejercicio seed de peso corporal.* De sus tres implementos, solo `Peso Añadido` habilita la captura de carga: `Barra Fija` es la dominada estricta con el propio peso y `Máquina` es la asistida, cuyo contrapeso resta esfuerzo (ver `ExternalLoadRule`).
 
+  *Peso corporal movido (HU-49, CA-49.04).* `body_weight_percent` sembrado: **Dominadas 100**, **Sentadilla Búlgara 85**, **Zancadas (Lunges) 85**, **Crunch Abdominal 35**; el resto 0. Declarado en `ExerciseCatalog.kt` y verificado por `ExerciseCatalogTest` contra la tabla de la historia. Implementos que suman peso corporal (`RealLoadRule`): Peso Corporal, Barra Fija, Peso Añadido, Mancuerna, Barra, Barra EZ, Máquina Smith, Pesa Rusa, Balón Medicinal, Paralelas/Dip Station y Rodillo de Abdomen; no suman Máquina, Polea, Banda Elástica ni TRX/Suspensión.
+
   *Categoría de movimiento (HU-46, CA-46.08).* Cada ejercicio seed lleva **una sola** categoría, declarada en `ExerciseCatalog.kt` y verificada por `ExerciseCatalogTest` contra la tabla de la historia (no contra el código). Todo lo que trabaja el abdomen es Jalón:
 
   | Categoría | Ejercicios |
@@ -898,7 +911,7 @@ La clasificación consolidada de cada sesión se persiste en `session_exercise.p
 
 - **`session_withdrawal` (0 filas):** No se siembra. Nace vacía y solo crece cuando el ejecutante retira un ejercicio de una sesión en curso, dentro del presupuesto que sus añadidos le dan (CA-43.04). Una base recién instalada no tiene ninguna sesión, así que no hay nada que rellenar ni retro-calcular. El detalle de una sesión sin filas aquí no muestra ningún aviso de retiro, que es exactamente lo correcto: no se retiró nada.
 
-- **`exercise_one_rm` (0 filas):** No se siembra, por la misma razón que `tree_state` y con una consecuencia distinta. La tabla nace vacía y **solo hacia adelante**: cada fila aparece la primera vez que una serie del par cumple la condición de referencia. No hay retro-cálculo — el cambio de esquema se resuelve por instalación fresca (ADR-019), así que al llegar la historia no existe historial previo que rellenar. Mientras no haya ninguna fila, la vista de 1RM presenta su estado vacío explicativo en lugar de una lista en blanco.
+- **`exercise_one_rm` (0 filas):** No se siembra, por la misma razón que `tree_state` y con una consecuencia distinta. La tabla nace vacía: cada fila aparece la primera vez que una serie del par cumple la condición de referencia, y desde HU-49 se reconstruye entera desde las series de referencia en cada escritura. No hay retro-cálculo — el cambio de esquema se resuelve por instalación fresca (ADR-019), así que al llegar la historia no existe historial previo que rellenar. Mientras no haya ninguna fila, la vista de 1RM presenta su estado vacío explicativo en lugar de una lista en blanco.
 
 - **`routine_current_version` (1 fila por rutina del plan):** Se inicializa con `current_version_number=1` para cada rutina que el ejecutante crea al configurar su plan.
 

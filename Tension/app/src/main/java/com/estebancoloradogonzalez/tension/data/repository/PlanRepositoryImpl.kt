@@ -229,5 +229,6 @@ class PlanRepositoryImpl @Inject constructor(
             mediaResource = mediaResource,
             progressionDifficulty = ProgressionDifficulty.fromCode(progressionDifficulty),
             movementCategory = MovementCategory.fromCode(movementCategory),
+            bodyWeightPercent = bodyWeightPercent,
         )
 }

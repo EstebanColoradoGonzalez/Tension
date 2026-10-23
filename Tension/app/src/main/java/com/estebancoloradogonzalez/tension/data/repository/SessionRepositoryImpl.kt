@@ -22,6 +22,7 @@ import com.estebancoloradogonzalez.tension.data.local.dao.SessionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.SessionExerciseDao
 import com.estebancoloradogonzalez.tension.data.local.dao.SessionExerciseProgressionDao
 import com.estebancoloradogonzalez.tension.data.local.dao.SessionExerciseWithDetails
+import com.estebancoloradogonzalez.tension.data.local.dao.SessionSummaryInfo
 import com.estebancoloradogonzalez.tension.data.local.dao.SessionWithdrawalDao
 import com.estebancoloradogonzalez.tension.data.local.dao.SetExerciseInfo
 import com.estebancoloradogonzalez.tension.data.local.dao.WeekDayDao
@@ -31,7 +32,6 @@ import com.estebancoloradogonzalez.tension.data.local.entity.DailyRoutineOverrid
 import com.estebancoloradogonzalez.tension.data.local.entity.DaySkipEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.DeloadEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.DeloadFrozenVersionEntity
-import com.estebancoloradogonzalez.tension.data.local.entity.ExerciseOneRmEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.ExerciseProgressionEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.ExerciseSetEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.SessionEntity
@@ -142,6 +142,12 @@ class SessionRepositoryImpl @Inject constructor(
     private val profileDao: ProfileDao,
     private val currentDateProvider: CurrentDateProvider,
 ) : SessionRepository {
+
+    /**
+     * The only writer of the 1RM records from this repository: registering and correcting a
+     * set rebuild the pair through it, inside their own transaction (HU-49).
+     */
+    private val oneRmRecordWriter = OneRmRecordWriter(exerciseSetDao, exerciseOneRmDao)
 
     /**
      * Resuelve la sesión de hoy: el día de la semana decide la rutina, y la reasignación
@@ -772,30 +778,17 @@ class SessionRepositoryImpl @Inject constructor(
                 ),
             )
 
-            // El 1RM del par, si esta serie es la de referencia (CA-42.03). Se decide sobre
-            // el peso **persistido** y sobre `hasExternalLoad`, ya resueltos arriba: es el
-            // mismo dato que queda en la fila, no el que se tecleó.
+            // The pair's 1RM, if this set has the shape of the reference set (CA-42.03). It is
+            // rebuilt from every reference set of the pair, this one included, over their real
+            // load: the persisted external load plus the body weight the exercise moves, with
+            // the body weight in force on the session date (HU-49, CA-49.02). The result is the
+            // same maximum as HU-42's incremental write, but the date and the real load come
+            // from a single place (`OneRmRecordWriter`).
             //
-            // Va dentro de esta transacción, y no en un paso best-effort posterior como el
-            // recálculo del árbol, porque el 1RM **no se puede reconstruir**: no hay
-            // retro-cálculo, el respaldo lo restaura en lugar de recalcularlo (CA-42.08) y
-            // una serie ya registrada no vuelve a pasar por aquí. Un fallo tras insertar la
-            // serie sería un máximo perdido para siempre; así, o se persisten las dos cosas
-            // o no se persiste ninguna.
-            if (OneRmRule.qualifies(reps, rir, hasExternalLoad, persistedWeightKg)) {
-                val estimated = OneRmRule.estimate(persistedWeightKg, reps)
-                val currentRecord = exerciseOneRmDao.getValue(info.exerciseId, equipmentTypeId)
-                // Estrictamente mayor: un valor igual o menor conserva el guardado, y repetir
-                // una sesión idéntica no escribe nada en absoluto (CA-42.04).
-                if (currentRecord == null || estimated > currentRecord) {
-                    exerciseOneRmDao.upsert(
-                        ExerciseOneRmEntity(
-                            exerciseId = info.exerciseId,
-                            equipmentTypeId = equipmentTypeId,
-                            oneRmKg = estimated,
-                        ),
-                    )
-                }
+            // It runs inside this transaction, not in a later best-effort step like the tree
+            // recalculation: either the set and its record are persisted, or neither is.
+            if (reps == OneRmRule.REFERENCE_REPS && rir == OneRmRule.REFERENCE_RIR) {
+                oneRmRecordWriter.rebuildPair(info.exerciseId, equipmentTypeId)
             }
 
             // El aviso se calcula sobre el peso **persistido**, igual que el 1RM: es el dato
@@ -858,41 +851,9 @@ class SessionRepositoryImpl @Inject constructor(
             // The 1RM is the only derived value that stores something of the set: everything
             // else — summary, detail, KPIs, previous-set notice — is read from `exercise_set`
             // when queried. The pair's record is rebuilt from its qualifying sets, already
-            // with the corrected value, so it ends up as if the mistake had never existed: it
-            // may go down, go up or disappear (CA-47.11). See the exactness note in
-            // `ExerciseOneRmEntity`.
-            rebuildOneRm(window.exerciseId, window.equipmentTypeId, hasExternalLoad)
-        }
-    }
-
-    private suspend fun rebuildOneRm(
-        exerciseId: Long,
-        equipmentTypeId: Long,
-        hasExternalLoad: Boolean,
-    ) {
-        val maxWeightKg = exerciseSetDao.getMaxQualifyingWeightForPair(
-            exerciseId = exerciseId,
-            equipmentTypeId = equipmentTypeId,
-            reps = OneRmRule.REFERENCE_REPS,
-            rir = OneRmRule.REFERENCE_RIR,
-        )
-        if (maxWeightKg != null &&
-            OneRmRule.qualifies(
-                reps = OneRmRule.REFERENCE_REPS,
-                rir = OneRmRule.REFERENCE_RIR,
-                hasExternalLoad = hasExternalLoad,
-                weightKg = maxWeightKg,
-            )
-        ) {
-            exerciseOneRmDao.upsert(
-                ExerciseOneRmEntity(
-                    exerciseId = exerciseId,
-                    equipmentTypeId = equipmentTypeId,
-                    oneRmKg = OneRmRule.estimate(maxWeightKg, OneRmRule.REFERENCE_REPS),
-                ),
-            )
-        } else {
-            exerciseOneRmDao.deleteByPair(exerciseId, equipmentTypeId)
+            // with the corrected value and over their real load (HU-49), so it ends up as if
+            // the mistake had never existed: it may go down, go up or disappear (CA-47.11).
+            oneRmRecordWriter.rebuildPair(window.exerciseId, window.equipmentTypeId)
         }
     }
 
@@ -1562,7 +1523,7 @@ class SessionRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getSessionSummaryData(sessionId: Long): SessionSummaryData {
-        val info = sessionDao.getSessionSummaryInfo(sessionId)
+        val info = sessionSummaryInfo(sessionId)
         val exercises = sessionExerciseDao.getExercisesForSummary(sessionId)
         val pairs = sessionExerciseProgressionDao.getPairSummariesForSession(sessionId)
         val routineRequiresDeload = alertDao.existsActiveByRoutine(
@@ -1734,6 +1695,10 @@ class SessionRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getSessionHistory(): List<SessionHistoryItem> {
+        // Real-load tonnage of every closed session, in one read (HU-49, CA-49.01).
+        val tonnageBySession = exerciseSetDao.getRealLoadSetsOfClosedSessions()
+            .groupBy { it.sessionId }
+            .mapValues { (_, sets) -> sets.sumOf { it.tonnageKg } }
         return sessionDao.getClosedSessionsWithSummary().map { dto ->
             SessionHistoryItem(
                 sessionId = dto.sessionId,
@@ -1741,13 +1706,31 @@ class SessionRepositoryImpl @Inject constructor(
                 routineName = dto.routineName,
                 versionNumber = dto.versionNumber,
                 status = dto.status,
-                totalTonnageKg = dto.totalTonnageKg,
+                totalTonnageKg = tonnageBySession[dto.sessionId] ?: 0.0,
             )
         }
     }
 
+    /**
+     * The session summary with its tonnage over the **real load** of every set (HU-49,
+     * CA-49.01): the post-session summary and the session detail read the same figure.
+     */
+    private suspend fun sessionSummaryInfo(sessionId: Long): SessionSummaryInfo {
+        val header = sessionDao.getSessionSummaryHeader(sessionId)
+        val tonnageKg = exerciseSetDao.getRealLoadSetsBySession(sessionId).sumOf { it.tonnageKg }
+        return SessionSummaryInfo(
+            status = header.status,
+            routineName = header.routineName,
+            versionNumber = header.versionNumber,
+            routineId = header.routineId,
+            totalTonnageKg = tonnageKg,
+            totalExercises = header.totalExercises,
+            completedExercises = header.completedExercises,
+        )
+    }
+
     override suspend fun getSessionDetail(sessionId: Long): SessionDetail {
-        val summaryInfo = sessionDao.getSessionSummaryInfo(sessionId)
+        val summaryInfo = sessionSummaryInfo(sessionId)
         val sessionEntity = sessionDao.getById(sessionId).first()
             ?: throw IllegalArgumentException("Session not found: $sessionId")
         val exerciseDtos = sessionExerciseDao.getExercisesForSessionDetail(sessionId)
@@ -2010,7 +1993,7 @@ class SessionRepositoryImpl @Inject constructor(
         )
         val currentTonnage = TonnageRule.calculateForMuscleGroup(
             currentTonnageData.map {
-                SetForTonnage(it.weightKg, it.reps, it.muscleGroup)
+                SetForTonnage(it.realLoadKg, it.reps, it.muscleGroup)
             },
         )
 
@@ -2019,7 +2002,7 @@ class SessionRepositoryImpl @Inject constructor(
         )
         val previousTonnage = TonnageRule.calculateForMuscleGroup(
             previousTonnageData.map {
-                SetForTonnage(it.weightKg, it.reps, it.muscleGroup)
+                SetForTonnage(it.realLoadKg, it.reps, it.muscleGroup)
             },
         )
 

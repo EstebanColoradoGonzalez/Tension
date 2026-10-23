@@ -1,5 +1,8 @@
 package com.estebancoloradogonzalez.tension.domain.rules
 
+import com.estebancoloradogonzalez.tension.domain.model.OneRmCandidate
+import com.estebancoloradogonzalez.tension.domain.model.OneRmRecord
+
 /**
  * Estimates the one-repetition maximum of a set, and decides whether the set is entitled to
  * produce one at all (HU-42).
@@ -20,7 +23,12 @@ package com.estebancoloradogonzalez.tension.domain.rules
  * - With the repetitions fixed, the result is monotone in the weight. The two rules the
  *   executant asked for — recalculate when the weight goes up, keep the highest value ever
  *   reached — therefore collapse into one: the 1RM is the **maximum over the qualifying
- *   sets**, and it never decreases.
+ *   sets**, and new sets never lower it.
+ *
+ * Since HU-49 the weight is the **real load** of the set ([RealLoadRule]): the external load
+ * plus the body weight the exercise moves. The record can therefore go down when the history
+ * itself is rewritten — a corrected set (HU-47) or a changed percentage (CA-49.08) — and it
+ * is always rebuilt from the reference sets by [record].
  */
 object OneRmRule {
 
@@ -36,28 +44,68 @@ object OneRmRule {
     /**
      * Whether this set produces a 1RM.
      *
-     * [hasExternalLoad] is the verdict of [ExternalLoadRule] for the pair, and it is what
-     * carries the whole of CA-42.05: an isometric never qualifies — its repetitions are
-     * seconds held, so «ten repetitions» means nothing —, a set logged with `Peso Corporal`
-     * never qualifies, and on a bodyweight exercise neither `Barra Fija` nor an assisted
-     * `Máquina` do, because their load is a counterweight that subtracts effort. `Peso
-     * Añadido` does qualify, and over the ballast alone: the executant's bodyweight is not
-     * added.
+     * [hasCountableLoad] says whether the implement carries load the 1RM may count: external
+     * load by [ExternalLoadRule], or the executant's body weight by [RealLoadRule] (HU-49). It
+     * carries CA-42.05 and CA-49.07 together: an isometric never qualifies — its repetitions
+     * are seconds held, so «ten repetitions» means nothing —, and an assisted pull-up on
+     * `Máquina` neither captures load nor adds body weight, because its counterweight
+     * subtracts effort. `Peso Corporal` and `Barra Fija` qualify once the exercise declares a
+     * percentage, and `Peso Añadido` counts the body **plus** the ballast (CA-49.02).
      *
-     * The [weightKg] guard is not in the criteria and is deliberate. A machine typed in at
-     * zero would otherwise store a record of `0.0 kg`, and CA-42.07 is explicit that a pair
-     * without a real value is not shown — neither as a zero nor as a dash. Not creating the
-     * row is cheaper than creating it and hiding it afterwards.
+     * [loadKg] is the real load of the set. Its guard is not in the criteria and is
+     * deliberate: a machine typed in at zero, or a body-weight set without a percentage, would
+     * otherwise store a record of `0.0 kg`, and CA-42.07 is explicit that a pair without a real
+     * value is not shown — neither as a zero nor as a dash.
      */
     fun qualifies(
         reps: Int,
         rir: Int,
-        hasExternalLoad: Boolean,
-        weightKg: Double,
-    ): Boolean = hasExternalLoad &&
-        weightKg > 0.0 &&
+        hasCountableLoad: Boolean,
+        loadKg: Double,
+    ): Boolean = hasCountableLoad &&
+        loadKg > 0.0 &&
         reps == REFERENCE_REPS &&
         rir == REFERENCE_RIR
+
+    /**
+     * Whether a set of this pair carries load the 1RM may count: external load, or body
+     * weight added by the implement (see [qualifies]).
+     */
+    fun hasCountableLoad(
+        isBodyweight: Boolean,
+        isIsometric: Boolean,
+        equipmentTypeName: String?,
+        bodyWeightPercent: Int,
+    ): Boolean = ExternalLoadRule.isCaptureEnabled(isBodyweight, isIsometric, equipmentTypeName) ||
+        RealLoadRule.appliesBodyWeight(bodyWeightPercent, isIsometric, equipmentTypeName)
+
+    /**
+     * The record of a pair from its candidate sets, with the date it was reached (HU-49,
+     * CA-49.02), or null when none qualifies.
+     *
+     * The record is the **maximum over the qualifying sets** (CA-42.04), now over their real
+     * load. On a tie the earliest date wins: the record dates from the session in which the
+     * value was first reached, which is what «strictly greater» always meant at registration.
+     *
+     * It is the only way a record is written. Rebuilding always from the reference sets — at
+     * registration, at correction (HU-47), when the percentage changes (CA-49.08) and when a
+     * body weight is recorded — is what keeps the persisted value exact: the lesson of HU-42
+     * is that a 1RM written wrong stays wrong.
+     */
+    fun record(candidates: List<OneRmCandidate>): OneRmRecord? =
+        candidates
+            .filter { qualifies(it.reps, it.rir, it.hasCountableLoad, it.loadKg) }
+            .minWithOrNull(compareByDescending<OneRmCandidate> { it.loadKg }.thenBy { it.date })
+            ?.let { best -> OneRmRecord(estimate(best.loadKg, best.reps), best.date) }
+
+    /**
+     * The relative strength: the 1RM as a multiple of the body weight in force on the date it
+     * was reached (CA-49.03). Unitless — the same with kilograms or pounds — and null without a
+     * body weight to divide by, which the screen shows as nothing rather than as an invented
+     * figure.
+     */
+    fun relativeStrength(oneRmKg: Double, bodyWeightKg: Double?): Double? =
+        bodyWeightKg?.takeIf { it > 0.0 }?.let { oneRmKg / it }
 
     /**
      * `1RM = weight / [1.0278 − (0.0278 × reps)]`.

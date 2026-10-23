@@ -33,6 +33,11 @@ class OneRmViewModelTest {
     private val polea = 2L
     private val elevacionLateral = 10L
 
+    private companion object {
+        const val ACHIEVED_ON = "2026-10-14"
+        const val BODY_WEIGHT_KG = 80.0
+    }
+
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
@@ -44,8 +49,8 @@ class OneRmViewModelTest {
     }
 
     private fun lateralRaiseWithTwoImplements() = listOf(
-        OneRmEntry(elevacionLateral, "Elevación Lateral", mancuerna, "Mancuerna", 16.0),
-        OneRmEntry(elevacionLateral, "Elevación Lateral", polea, "Polea", 22.7),
+        OneRmEntry(elevacionLateral, "Elevación Lateral", mancuerna, "Mancuerna", 16.0, ACHIEVED_ON, BODY_WEIGHT_KG),
+        OneRmEntry(elevacionLateral, "Elevación Lateral", polea, "Polea", 22.7, ACHIEVED_ON, BODY_WEIGHT_KG),
     )
 
     // CA-42.02 — el primer implemento queda activo al abrir, sin que nadie lo elija.
@@ -124,10 +129,32 @@ class OneRmViewModelTest {
             assertTrue(viewModel.uiState.value.selection.containsKey(elevacionLateral))
 
             source.value = listOf(
-                OneRmEntry(99L, "Curl Martillo", mancuerna, "Mancuerna", 21.3),
+                OneRmEntry(99L, "Curl Martillo", mancuerna, "Mancuerna", 21.3, ACHIEVED_ON, BODY_WEIGHT_KG),
             )
             advanceUntilIdle()
 
             assertFalse(viewModel.uiState.value.selection.containsKey(elevacionLateral))
+        }
+
+    // CA-49.03 — the relative strength reaches the card already computed, with its weight and date.
+
+    @Test
+    fun `given a record with its body weight, when loaded, then the card carries the relative strength`() =
+        runTest {
+            // Given
+            every { repository.getAll() } returns flowOf(
+                listOf(OneRmEntry(35L, "Dominadas", 5L, "Barra Fija", 106.7, "2026-10-14", 80.0)),
+            )
+
+            // When
+            val viewModel = OneRmViewModel(getOneRmListUseCase)
+            advanceUntilIdle()
+
+            // Then
+            val state = viewModel.uiState.value
+            val selected = state.selectedEquipment(state.exercises.first())
+            assertEquals(1.33, selected.relativeStrength!!, 0.01)
+            assertEquals(80.0, selected.bodyWeightKg!!, 0.0)
+            assertEquals("2026-10-14", selected.achievedOn)
         }
 }

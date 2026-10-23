@@ -5,6 +5,15 @@ data class OneRmEquipment(
     val equipmentTypeId: Long,
     val equipmentTypeName: String,
     val oneRmKg: Double,
+    /** Date the record was reached, `YYYY-MM-DD` (HU-49, CA-49.02). */
+    val achievedOn: String,
+    /** Body weight in force on [achievedOn], or null if the history has none that early. */
+    val bodyWeightKg: Double?,
+    /**
+     * The record as a multiple of [bodyWeightKg] (CA-49.03), unitless. Null when there is no
+     * body weight to divide by: the card then shows no relative strength at all.
+     */
+    val relativeStrength: Double?,
 )
 
 /**

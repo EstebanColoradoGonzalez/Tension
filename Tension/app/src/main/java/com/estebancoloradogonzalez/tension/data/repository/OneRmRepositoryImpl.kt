@@ -35,6 +35,8 @@ class OneRmRepositoryImpl @Inject constructor(
                     equipmentTypeId = row.equipmentTypeId,
                     equipmentTypeName = row.equipmentTypeName,
                     oneRmKg = row.oneRmKg,
+                    achievedOn = row.achievedOn,
+                    bodyWeightKg = row.bodyWeightKg,
                 )
             }
         }

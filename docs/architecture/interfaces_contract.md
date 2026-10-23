@@ -431,11 +431,14 @@
   "is_to_technical_failure": "BOOLEAN",
   "media_resource": "TEXT | null // Ruta asset o archivo. null = mostrar placeholder",
   "progression_difficulty": "TEXT ['LOW','MEDIUM','HIGH'] // Dificultad de progresión. Nunca null.",
-  "effective_plateau_threshold": "INTEGER // Derivado, no persistido: techo(umbral base del perfil x multiplicador de la dificultad). Se muestra como 'Se considerará estancado tras N sesiones sin progresar'."
+  "effective_plateau_threshold": "INTEGER // Derivado, no persistido: techo(umbral base del perfil x multiplicador de la dificultad). Se muestra como 'Se considerará estancado tras N sesiones sin progresar'.",
+  "body_weight_percent": "INTEGER // 0-100 (HU-49). Porcentaje del peso corporal que el ejercicio mueve. Nunca null."
 }
 ```
 
 > `equipment_types` son **todas** las opciones que el ejercicio admite, en el orden del catálogo, y `equipment_types_with_sets` los identificadores de las que ya tienen series registradas — las que la ficha marca con candado y no se pueden retirar (`D2-T3`).
+
+> **HU-49 — «Peso corporal movido».** La ficha muestra el porcentaje en un campo numérico con sufijo **%** y botón **Guardar** — a diferencia de la dificultad, **no persiste al instante**: guardar reescribe el historial del ejercicio. Solo se acepta un **entero de 0 a 100** (CA-49.05): un valor fuera de rango, decimal o vacío muestra en línea «Introduce un número entero entre 0 y 100», deshabilita Guardar y no escribe nada. `UpdateExerciseBodyWeightPercentUseCase` valida y `ExerciseRepository.updateBodyWeightPercent` guarda y **reconstruye el 1RM de todos los pares del ejercicio** en una sola transacción (CA-49.08); el tonelaje no necesita nada, porque se calcula al leer. Al guardar aparece el snackbar «Peso corporal movido actualizado». El campo **no se muestra en ejercicios isométricos** (CA-49.07).
 
 > **HU-46.** La ficha muestra la **categoría de movimiento** (Empuje / Jalón / Pierna) con un selector que persiste al instante, igual que la dificultad. Un ejercicio **sin** asignaciones en el plan cambia libremente (CA-46.14). Uno asignado —como puesto o como alternativa, en cualquier versión— a rutinas de otra categoría **no cambia**: `UpdateExerciseMovementCategoryUseCase` devuelve `ConflictsWithPlan(routineNames)` y la pantalla lo presenta en un diálogo que nombra esas rutinas. El selector vuelve solo, porque nada se escribió.
 
@@ -842,6 +845,8 @@
 
   **Efecto colateral persistido, sin nada visible (HU-42).** Si la serie es la **de referencia** —exactamente 10 repeticiones, RIR exactamente 1, sobre carga externa y con peso mayor que 0—, el sistema calcula `1RM = Peso / [1.0278 − (0.0278 × Reps)]`, que a 10 repeticiones equivale a `Peso × 1.3337`, y lo persiste en `exercise_one_rm` para el **par** de la serie, **solo si supera el valor guardado**. El cálculo corre **dentro de la misma transacción** que inserta la serie, y no como un paso posterior best-effort al modo del árbol (`N1-T1`): el 1RM es un récord acumulado que no se puede reconstruir —no hay retro-cálculo y el respaldo lo restaura sin recalcularlo—, así que una escritura perdida sería un máximo perdido para siempre. E2 **no cambia**: no se avisa, no se navega y no se muestra el resultado; el ejecutante lo consulta en `O1` cuando quiere. Nada de lo que este trigger decide depende del 1RM, que se escribe y no se lee.
 
+  **Desde HU-49 el 1RM es de carga real y se reconstruye** (CA-49.02). Si la serie tiene 10 repeticiones y RIR 1, el sistema reconstruye el récord del par desde todas sus series de referencia (`OneRmRecordWriter`): carga real = carga externa persistida + peso corporal vigente en la fecha de la sesión × porcentaje del ejercicio, si el implemento suma peso corporal. Califica si la carga real es mayor que 0 y el implemento captura carga externa o suma peso corporal: `Peso Corporal` y `Barra Fija` producen 1RM, `Peso Añadido` cuenta cuerpo + lastre, la dominada asistida en `Máquina` sigue sin 1RM (CA-49.07). El récord guarda la **fecha** de la sesión que lo alcanzó (`achieved_on`; en empate, la más antigua). **La serie persiste la carga externa tecleada, y la carga precargada y prescrita siguen siendo externas** (CA-49.09).
+
   **El implemento decide si hay carga externa que capturar** (`ExternalLoadRule`), y lo decide él y no solo la marca del ejercicio: `Peso Corporal` registra 0 en cualquier ejercicio; `Peso Añadido` es lo único que habilita la captura sobre un ejercicio de peso corporal, y exige un valor **estrictamente mayor que 0** porque representa exclusivamente la carga externa; sobre un ejercicio de peso corporal, `Barra Fija` —la dominada estricta— y `Máquina` —la asistida, cuya carga es un contrapeso que **resta** esfuerzo y que registrado como peso invertiría el significado del dato— registran 0. Sobre cualquier otro ejercicio, `Máquina` sí es carga. Cuando la captura está deshabilitada, el campo de peso permanece visible y bloqueado en 0 y el selector de unidad se oculta.
 
 **Payload / Parámetros (Input):**
@@ -905,7 +910,7 @@
   **Persistencia — una transacción:**
   1. Relee la ventana. Si la serie ya no es la última de la sesión en curso, no escribe nada (`ERR_SET_NOT_CORRECTABLE`).
   2. Actualiza **solo** `weight_kg`, `reps`, `rir` y `capture_unit`. No cambia `set_number`, implemento ni sesión, así que el número de series, el estado de los ejercicios y la completitud no varían (CA-47.05).
-  3. **Reconstruye el 1RM del par** desde sus series que califican: `estimate(MAX(weight_kg))` sobre las de 10 repeticiones con RIR 1 y peso > 0, o borra la fila si ya no queda ninguna. El récord **puede bajar**: el objetivo es el dato fiel (CA-47.11).
+  3. **Reconstruye el 1RM del par** desde sus series que califican, sobre su **carga real** y con su fecha (HU-49, `OneRmRecordWriter`), o borra la fila si ya no queda ninguna. El récord **puede bajar**: el objetivo es el dato fiel (CA-47.11).
 
   El resto de derivados —resumen post-sesión, detalle de sesión pasada, KPIs, tonelaje y aviso de la serie anterior— se lee de `exercise_set` al consultarse. Por eso el historial queda **como si el error nunca hubiera existido**, sin "valor original + corrección" (CA-47.12).
 
@@ -964,7 +969,7 @@
 ```json
 {
   "session_status": "TEXT // 'COMPLETED' o 'INCOMPLETE'",
-  "tonnage_total": "REAL // Σ (weight_kg × reps) de todas las series",
+  "tonnage_total": "REAL // Σ (carga real × reps) de todas las series (HU-49): carga real = weight_kg + peso corporal vigente en la fecha × body_weight_percent / 100, si el ejercicio no es isométrico y el implemento suma peso corporal (RealLoadRule)",
   "exercise_summaries": [
     {
       "exercise_id": "INTEGER",
@@ -987,6 +992,8 @@
 
 - **Tipo de Trigger (Entrada):** `Evento de sistema: navegación automática desde E4 tras cierre exitoso de sesión.`
 - **Descripción:** El sistema presenta el resumen calculado durante el cierre de sesión. Vista de solo lectura.
+
+  **Desde HU-49 el tonelaje es de carga real** (CA-49.01): cada serie pesa su carga externa más el peso corporal vigente en la fecha de la sesión × el porcentaje del ejercicio, si no es isométrico y el implemento suma peso corporal (`RealLoadRule`). Es la misma cifra del historial y el detalle de sesión (`F1`, `F2`) y del tonelaje semanal de `G1`. **La serie sigue mostrando la carga tecleada**; solo el tonelaje cambia.
 
   **Desde HU-40 el resumen presenta un renglón por implemento efectivamente usado**, con la clasificación y la señal de ese par. Con un solo implemento el renglón se colapsa en la línea del ejercicio y la pantalla es **idéntica** a la anterior a esta historia (CA-40.08). La clasificación que acompaña al nombre del ejercicio es la **consolidada**.
 
@@ -1070,7 +1077,7 @@
       "routine_name": "TEXT",
       "version_number": "INTEGER",
       "status": "TEXT // 'COMPLETED' o 'INCOMPLETE'",
-      "tonnage_total": "REAL // Calculado: Σ (weight_kg × reps)"
+      "tonnage_total": "REAL // Calculado: Σ (carga real × reps) (HU-49)"
     }
   ]
 }
@@ -1347,6 +1354,7 @@ La sección se omite solo sin perfil. Sin sesiones en el período, el gráfico m
 
 - **Tipo de Trigger (Entrada):** `Acción del ejecutante: toca "Volumen por Grupo Muscular" en G1.`
 - **Descripción:** El sistema calcula el tonelaje acumulado y la distribución de volumen del microciclo seleccionado, más la evolución del tonelaje a lo largo de todos los microciclos.
+- **Tonelaje de carga real (HU-49, CA-49.01).** El tonelaje por grupo y su evolución usan la carga real de cada serie, con el peso corporal vigente en la fecha de su sesión (CA-49.06). Lo mismo vale para la Tendencia (`G3-T1`) y para la alerta `TONNAGE_DROP` (evaluación al cerrar y detalle `H2-T1`, RF-57). La distribución de volumen (series por zona) no cambia.
 - **Todas las zonas del ejercicio cuentan, principales y secundarias, sin ponderación** (HU-41). La jerarquía es informativa para el ejecutante, no un peso de cálculo: una serie de un ejercicio de tres zonas aporta su tonelaje **íntegro** a cada uno de los tres grupos. Es la misma agregación de antes de HU-41 — lo que cambió es que las zonas son más finas. **El eje sigue siendo los 14 grupos musculares**, que no cambian: la granularidad fina cabe íntegra dentro de ellos y ningún KPI cambió de definición.
 
 **Payload / Parámetros (Input):**
@@ -1525,6 +1533,8 @@ Los umbrales de suficiencia no son una calibración nueva: cada uno transcribe l
 
 - **Tipo de Trigger (Entrada):** `Acción del ejecutante: toca una alerta en H1.`
 - **Descripción:** El sistema recupera el detalle completo de la alerta, recalcula dinámicamente los datos que la dispararon, redacta la explicación causal y resuelve la acción sugerida. **Toda alerta lleva acción sugerida**: ninguna se limita a describir el problema.
+
+  **`TONNAGE_DROP` recalcula los tonelajes con carga real** (HU-49): los valores que el detalle muestra son los mismos que dispararon la alerta al cerrar la sesión, ambos sobre `RealLoadRule`.
 
   **`PLATEAU` identifica qué implementos están estancados** (CA-40.05). Se derivan de los contadores vigentes de los pares del ejercicio en lugar de persistirse con la alerta: entre que se emite y se lee, los contadores pueden moverse, y lo que hay que enseñar es el estado de hoy. Con un solo implemento estancado el bloque no se presenta y el texto es el de siempre. El contador que la narrativa cita es el **mayor** entre los pares: la meseta del ejercicio es una conjunción, así que se alcanza cuando el último par cruza el umbral.
 
@@ -1722,6 +1732,7 @@ Los valores viven en un único punto del código, `AlertThresholdRule`. Esta tab
 
 - **Tipo de Trigger (Entrada):** `Acción del ejecutante: toca "Exportar datos" en J2 tras leer la advertencia de contenido no cifrado.`
 - **Descripción:** El sistema serializa todos los datos de la base de datos local en formato JSON con metadatos de versión y genera un archivo de backup en el almacenamiento del dispositivo. El proceso debe completarse en menos de 10 segundos para historial de hasta 2 años.
+- **Formato `schemaVersion: 19` desde HU-49.** Además de lo anterior, el respaldo lleva `exercise.body_weight_percent` y `exercise_one_rm.achieved_on`, que viajan solas porque el volcado es por cursor (CA-49.10). Un respaldo **18** se rechaza con un mensaje propio: no registra el peso corporal movido ni la fecha de cada 1RM, y ninguno de los dos se deriva (el porcentaje es una decisión; la fecha es `NOT NULL`). El 17 conserva su mensaje (sin categoría de movimiento, HU-46).
 - **Formato `schemaVersion: 16` desde HU-42.** El respaldo incluye `exercise_one_rm` —el 1RM de cada par `(ejercicio, equipamiento)`—, que entra al volcado detrás de `exercise` y de `equipment_type`, como sus claves foráneas exigen. El formato 15 de HU-41 ya incluía el catálogo de zonas con su orden, la **jerarquía principal/secundaria** de cada ejercicio y el **equipamiento sugerido** de cada asignación del plan.
 - **Los formatos anteriores se rechazan**, el 15 incluido, y con un mensaje que nombra su causa propia: no lleva el 1RM. El 1RM es un **récord acumulado**, no un derivado reconstruible —recalcularlo desde las series podría perder un máximo alcanzado en una serie ya purgada o restaurada parcialmente—, y CA-42.08 exige que el respaldo lo reproduzca **sin recalcularlo**. Aceptar un v15 dejaría la vista de `O1` vacía sobre un historial lleno de series que sí calificaron. Los formatos más antiguos siguen cayendo por lo primero que les falta: el equipamiento de las series (CA-39.12).
 
@@ -1907,11 +1918,11 @@ Los valores viven en un único punto del código, `AlertThresholdRule`. Esta tab
 #### `O1-T1`: Consultar el 1RM Estimado
 
 - **Tipo de Trigger (Entrada):** `Automático: al componerse O1.`
-- **Descripción:** Presenta el 1RM de cada par `(ejercicio, equipamiento)` que tiene récord, **una tarjeta por ejercicio** y en orden **alfabético** por nombre. No recalcula nada: el récord ya está persistido desde la serie que lo produjo, así que aquí solo se lee.
+- **Descripción:** Presenta el 1RM de cada par `(ejercicio, equipamiento)` que tiene récord, **una tarjeta por ejercicio** y en orden **alfabético** por nombre. No recalcula nada: el récord ya está persistido —reconstruido desde las series de referencia sobre su **carga real** (HU-49)—, así que aquí solo se lee.
   - **Solo lo entrenado, y solo lo que califica.** La lista son exactamente las filas de `exercise_one_rm`. Un ejercicio del Diccionario sin ninguna serie no aparece; un ejercicio entrenado cuyas series nunca cumplieron la condición tampoco; y un implemento entrenado sin serie que califique **no se presenta como opción**, aunque otro implemento del mismo ejercicio sí tenga valor. **Nunca se muestra un cero ni un guion:** si no hay dato, no hay fila.
   - **Implementos dentro de la tarjeta.** Se presentan en el orden declarado del catálogo de equipamiento, el mismo de `D5-T1`. El primero queda activo al abrir. Un ejercicio con **un solo** implemento con récord lo presenta como etiqueta no interactiva y muestra su valor directamente, sin exigir selección.
   - **Doble unidad siempre.** El valor se presenta en kilogramos **y** en libras a la vez, sin conmutador, con el factor vigente del sistema (0.45359237). La presentación **no depende** de la `capture_unit` con la que se registró la serie.
-  - **Solo el número.** No se presenta el peso, ni las repeticiones, ni la fecha de la serie que produjo el récord.
+  - **Fuerza relativa (HU-49, CA-49.03).** Bajo el valor en Kg y Lb: «N.NN× tu peso corporal» —1RM ÷ peso corporal vigente en la fecha en que se alcanzó el récord, dos decimales, sin unidad— y, en texto secundario, «con X kg el DD/MM/AAAA». Se calcula al leer (`OneRmRule.relativeStrength`); sin peso registrado para esa fecha, no se muestra. No se presentan las repeticiones de la serie.
 - **Estado vacío:** cuando no hay ninguna fila —sin sesiones, o con sesiones cuyas series nunca calificaron— la pantalla **enuncia la condición de cálculo** (10 repeticiones con RIR 1) en lugar de dejar una lista en blanco. El vacío real se distingue de la carga: el mensaje no se presenta antes de saber si hay datos.
 
 **Payload / Parámetros (Input):**
@@ -1934,7 +1945,10 @@ Los valores viven en un único punto del código, `AlertThresholdRule`. Esta tab
         {
           "equipment_type_id": "INTEGER",
           "equipment_type_name": "TEXT",
-          "one_rm_kg": "REAL // Canónico. Las libras se derivan en presentación."
+          "one_rm_kg": "REAL // Canónico. Las libras se derivan en presentación.",
+          "achieved_on": "TEXT // YYYY-MM-DD. Fecha de la sesión que fijó el récord (HU-49).",
+          "body_weight_kg": "REAL | null // Peso corporal vigente en achieved_on.",
+          "relative_strength": "REAL | null // one_rm_kg ÷ body_weight_kg. null sin peso vigente."
         }
       ]
     }

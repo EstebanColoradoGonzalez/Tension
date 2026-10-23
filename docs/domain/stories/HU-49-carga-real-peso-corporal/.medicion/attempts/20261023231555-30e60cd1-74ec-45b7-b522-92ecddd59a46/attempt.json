@@ -1,0 +1,12 @@
+{
+  "attempt_id": "20261023231555-30e60cd1-74ec-45b7-b522-92ecddd59a46",
+  "story_id": "49",
+  "status": "PENDING_STRATEGY",
+  "started_at": "2026-10-23T23:15:55.967Z",
+  "updated_at": "2026-10-23T23:15:56.149Z",
+  "rieles": 1,
+  "work_dir": "D:\\Users\\Esteban\\Repositories\\Tension\\docs\\domain\\stories\\HU-49-carga-real-peso-corporal\\.medicion\\attempts\\20261023231555-30e60cd1-74ec-45b7-b522-92ecddd59a46\\work",
+  "official_artifacts_modified": false,
+  "reason_code": "STRATEGY_NOT_APPROVED",
+  "detail": "No existe measurement-strategy.json"
+}

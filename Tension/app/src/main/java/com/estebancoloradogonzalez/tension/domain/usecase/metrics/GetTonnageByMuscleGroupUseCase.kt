@@ -13,7 +13,7 @@ class GetTonnageByMuscleGroupUseCase @Inject constructor(
     suspend operator fun invoke(sessionIds: List<Long>): List<MuscleGroupTonnage> {
         if (sessionIds.isEmpty()) return ALL_GROUPS.map { MuscleGroupTonnage(it, 0.0) }
         val tonnageData = metricsRepository.getTonnageDataBySessionIds(sessionIds)
-        val sets = tonnageData.map { SetForTonnage(it.weightKg, it.reps, it.muscleGroup) }
+        val sets = tonnageData.map { SetForTonnage(it.realLoadKg, it.reps, it.muscleGroup) }
         val tonnageMap = TonnageRule.calculateForMuscleGroup(sets)
         return ALL_GROUPS.map { group ->
             MuscleGroupTonnage(group, tonnageMap[group] ?: 0.0)

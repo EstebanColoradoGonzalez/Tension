@@ -1,0 +1,1 @@
+{"tipo":"pendiente","attempt_id":"20261023231555-30e60cd1-74ec-45b7-b522-92ecddd59a46","ts":"2026-10-23 18:16","step":"step-01-prereqs","punto":"prelude: compuerta de Measurement Strategy","causa":"entorno","descripcion":"No existe docs/cosmic/measurement-strategy.json (Measurement Strategy aprobada); el prelude cerró el intento sin medir","estado":"PENDING_STRATEGY"}

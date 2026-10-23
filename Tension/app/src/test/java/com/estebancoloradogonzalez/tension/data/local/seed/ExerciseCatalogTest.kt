@@ -764,4 +764,26 @@ class ExerciseCatalogTest {
         assertTrue(abdominal.isNotEmpty())
         abdominal.forEach { assertEquals(it.name, MovementCategory.PULL, it.movementCategory) }
     }
+
+    // ============================================================
+    // HU-49 — seeded body-weight percentage (CA-49.04, QA-10)
+    // ============================================================
+
+    @Test
+    fun `given the seed catalog, when reading the body weight percent, then it matches the story table`() {
+        // Given
+        val expected = mapOf(
+            "Dominadas" to 100,
+            "Sentadilla Búlgara" to 85,
+            "Zancadas (Lunges)" to 85,
+            "Crunch Abdominal" to 35,
+        )
+
+        // When
+        val actual = ExerciseCatalog.ALL.associate { it.name to it.bodyWeightPercent }
+
+        // Then
+        expected.forEach { (name, percent) -> assertEquals(name, percent, actual[name]) }
+        actual.filterKeys { it !in expected }.forEach { (name, percent) -> assertEquals(name, 0, percent) }
+    }
 }

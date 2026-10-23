@@ -31,6 +31,8 @@ data class ExerciseWithDetails(
     val progressionDifficulty: String,
     /** Categoría de movimiento: `PUSH`, `PULL` o `LEGS` (HU-46). */
     val movementCategory: String,
+    /** Share of body weight the exercise moves, 0 to 100 (HU-49). */
+    val bodyWeightPercent: Int,
     /** Zonas que ejecutan el movimiento, separadas por [AGGREGATE_SEPARATOR]. Nunca vacía. */
     val primaryMuscleZones: String?,
     /** Zonas que asisten, separadas por [AGGREGATE_SEPARATOR]. Puede venir nula. */
@@ -96,6 +98,7 @@ interface ExerciseDao {
             e.media_resource AS mediaResource,
             e.progression_difficulty AS progressionDifficulty,
             e.movement_category AS movementCategory,
+            e.body_weight_percent AS bodyWeightPercent,
             (SELECT GROUP_CONCAT(name, '|') FROM (
                 SELECT mz.name AS name FROM exercise_muscle_zone emz
                 INNER JOIN muscle_zone mz ON emz.muscle_zone_id = mz.id
@@ -143,6 +146,7 @@ interface ExerciseDao {
             e.media_resource AS mediaResource,
             e.progression_difficulty AS progressionDifficulty,
             e.movement_category AS movementCategory,
+            e.body_weight_percent AS bodyWeightPercent,
             (SELECT GROUP_CONCAT(name, '|') FROM (
                 SELECT mz.name AS name FROM exercise_muscle_zone emz
                 INNER JOIN muscle_zone mz ON emz.muscle_zone_id = mz.id
@@ -193,6 +197,7 @@ interface ExerciseDao {
             e.media_resource AS mediaResource,
             e.progression_difficulty AS progressionDifficulty,
             e.movement_category AS movementCategory,
+            e.body_weight_percent AS bodyWeightPercent,
             (SELECT GROUP_CONCAT(name, '|') FROM (
                 SELECT mz.name AS name FROM exercise_muscle_zone emz
                 INNER JOIN muscle_zone mz ON emz.muscle_zone_id = mz.id
@@ -285,6 +290,9 @@ interface ExerciseDao {
 
     @Query("UPDATE exercise SET movement_category = :category WHERE id = :exerciseId")
     suspend fun updateMovementCategory(exerciseId: Long, category: String)
+
+    @Query("UPDATE exercise SET body_weight_percent = :percent WHERE id = :exerciseId")
+    suspend fun updateBodyWeightPercent(exerciseId: Long, percent: Int)
 
     /**
      * Rutinas que tienen asignado el ejercicio —como puesto o como alternativa, en cualquier

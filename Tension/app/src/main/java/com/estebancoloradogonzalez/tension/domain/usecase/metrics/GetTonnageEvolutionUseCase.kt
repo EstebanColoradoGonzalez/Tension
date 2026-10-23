@@ -15,7 +15,7 @@ class GetTonnageEvolutionUseCase @Inject constructor(
     ): List<TonnageSnapshot> {
         return microcycleMap.map { (number, sessionIds) ->
             val tonnageData = metricsRepository.getTonnageDataBySessionIds(sessionIds)
-            val sets = tonnageData.map { SetForTonnage(it.weightKg, it.reps, it.muscleGroup) }
+            val sets = tonnageData.map { SetForTonnage(it.realLoadKg, it.reps, it.muscleGroup) }
             val tonnageMap = TonnageRule.calculateForMuscleGroup(sets)
             TonnageSnapshot(number, tonnageMap)
         }

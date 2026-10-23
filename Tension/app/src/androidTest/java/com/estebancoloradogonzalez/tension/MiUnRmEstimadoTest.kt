@@ -181,9 +181,11 @@ class MiUnRmEstimadoTest {
     // ----- CA-42.05: sin carga externa no hay 1RM -----
 
     /**
-     * Las opciones de `Dominadas`. `Barra Fija` es la dominada estricta y `Máquina` la
-     * asistida, cuyo contrapeso **resta** esfuerzo; solo `Peso Añadido` deja récord, y sobre
-     * el lastre únicamente — el peso corporal del ejecutante no se suma.
+     * The `Dominadas` options. `Barra Fija` is the strict pull-up and `Máquina` the assisted
+     * one, whose counterweight **subtracts** effort. This database has no weight history, so
+     * there is no body weight in force to add (HU-49, CA-49.06): only `Peso Añadido` leaves a
+     * record, over the ballast. With a recorded weight, `CargaRealPesoCorporalTest` covers the
+     * strict pull-up and the ballast added to the body.
      */
     @Test
     fun de_las_opciones_de_dominadas_solo_peso_anadido_deja_record() = runBlocking {
@@ -198,8 +200,9 @@ class MiUnRmEstimadoTest {
     }
 
     /**
-     * `Peso Corporal` sobre un ejercicio que no está marcado como tal — el caso que motivó
-     * `ExternalLoadRule`. La serie se registra en cero y no hay fuerza que medir.
+     * `Peso Corporal` on an exercise not flagged as bodyweight — the case that motivated
+     * `ExternalLoadRule`. The set is registered at zero and, without a weight history, its real
+     * load is zero too (HU-49): there is no strength to measure.
      */
     @Test
     fun peso_corporal_no_deja_record_aunque_el_ejercicio_no_sea_de_peso_corporal() = runBlocking {

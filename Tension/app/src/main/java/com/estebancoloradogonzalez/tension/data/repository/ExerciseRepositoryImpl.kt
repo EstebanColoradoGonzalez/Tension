@@ -1,11 +1,14 @@
 package com.estebancoloradogonzalez.tension.data.repository
 
+import androidx.room.withTransaction
 import com.estebancoloradogonzalez.tension.data.local.dao.AGGREGATE_SEPARATOR
 import com.estebancoloradogonzalez.tension.data.local.dao.EquipmentTypeDao
 import com.estebancoloradogonzalez.tension.data.local.dao.ExerciseDao
+import com.estebancoloradogonzalez.tension.data.local.dao.ExerciseOneRmDao
 import com.estebancoloradogonzalez.tension.data.local.dao.ExerciseSetDao
 import com.estebancoloradogonzalez.tension.data.local.dao.ExerciseWithDetails
 import com.estebancoloradogonzalez.tension.data.local.dao.MuscleZoneDao
+import com.estebancoloradogonzalez.tension.data.local.database.TensionDatabase
 import com.estebancoloradogonzalez.tension.data.local.entity.ExerciseEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.ExerciseEquipmentEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.ExerciseMuscleZoneEntity
@@ -26,7 +29,11 @@ class ExerciseRepositoryImpl @Inject constructor(
     private val equipmentTypeDao: EquipmentTypeDao,
     private val muscleZoneDao: MuscleZoneDao,
     private val exerciseSetDao: ExerciseSetDao,
+    private val exerciseOneRmDao: ExerciseOneRmDao,
+    private val database: TensionDatabase,
 ) : ExerciseRepository {
+
+    private val oneRmRecordWriter = OneRmRecordWriter(exerciseSetDao, exerciseOneRmDao)
 
     override fun getAllExercises(): Flow<List<Exercise>> =
         exerciseDao.getAll().map { list ->
@@ -148,6 +155,17 @@ class ExerciseRepositoryImpl @Inject constructor(
         exerciseDao.updateMovementCategory(exerciseId, category.name)
     }
 
+    override suspend fun updateBodyWeightPercent(exerciseId: Long, percent: Int): Result<Unit> =
+        try {
+            database.withTransaction {
+                exerciseDao.updateBodyWeightPercent(exerciseId, percent)
+                oneRmRecordWriter.rebuildExercise(exerciseId)
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+
     override suspend fun getRoutinesAssigningExercise(exerciseId: Long): List<CategorizedName> =
         exerciseDao.getRoutinesAssigningExercise(exerciseId).map {
             CategorizedName(name = it.name, category = MovementCategory.fromCode(it.category))
@@ -207,6 +225,7 @@ class ExerciseRepositoryImpl @Inject constructor(
             mediaResource = mediaResource,
             progressionDifficulty = ProgressionDifficulty.fromCode(progressionDifficulty),
             movementCategory = MovementCategory.fromCode(movementCategory),
+            bodyWeightPercent = bodyWeightPercent,
         )
 }
 

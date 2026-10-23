@@ -2,7 +2,7 @@
 story_number: 44
 title: 'El árbol deja de ser geométrico'
 slug: 'arbol-organico'
-estado: 'Lista para Revisión'
+estado: 'Completado'
 autor: 'Esteban Colorado González'
 fecha_creacion: '2026-09-14'
 es_resultado_slicing: true

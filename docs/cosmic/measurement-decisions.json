@@ -34,5 +34,41 @@
     "evidencia": "domain_and_state_model.md: exercise_set 'Inmutable tras su creación'; interfaces_contract.md: 'El equipamiento de la serie no se corrige' y F2 de solo lectura; architecture_blueprint.md D-03 'Sesiones cerradas son inmutables'; HU-06 registro insertar-y-listo; HU-43 'Nada con series registradas se retira'.",
     "origen": "po_confirmado",
     "confirmed_at": "2026-10-22"
+  },
+  {
+    "decision_key": "entity-identity:ejercicio|porcentaje de peso corporal",
+    "tipo": "variante_entidad",
+    "estado": "resuelta",
+    "conclusion": "El porcentaje de peso corporal movido es un atributo nuevo del Ejercicio existente, no una entidad distinta.",
+    "evidencia": "domain_and_state_model.md: entidad exercise; precedente HU-32 (dificultad de progresión como atributo editable del ejercicio).",
+    "origen": "llm_inferido",
+    "confirmed_at": "2026-10-22"
+  },
+  {
+    "decision_key": "entity-identity:fecha del 1rm|récord de 1rm estimado",
+    "tipo": "variante_entidad",
+    "estado": "resuelta",
+    "conclusion": "La fecha en que se alcanzó el 1RM es un atributo nuevo del récord de 1RM existente, no una entidad distinta.",
+    "evidencia": "ExerciseOneRmEntity: exercise_id, equipment_type_id, one_rm_kg; sin fecha. HU-42.",
+    "origen": "llm_inferido",
+    "confirmed_at": "2026-10-22"
+  },
+  {
+    "decision_key": "continuidad:48-perfil-sin-nivel-peso-metricas",
+    "tipo": "continuidad",
+    "estado": "resuelta",
+    "conclusion": "Modifica procesos existentes: retira el nivel de experiencia del registro y la edición del perfil (HU-01) y lleva el peso corporal, hoy solo registrado y consultado (HU-01, HU-02), al panel de Métricas (HU-15, HU-35) como complemento del tonelaje, con IMC secundario sin categoría. El registro rápido de peso alimenta el mismo historial de HU-02. No crea un proceso nuevo desde cero.",
+    "evidencia": "ExperienceLevel sin lectores fuera de perfil/onboarding; altura sin uso; peso solo en perfil e historial (WeightHistoryScreen); HU-01, HU-02, HU-15, HU-35.",
+    "origen": "po_confirmado",
+    "confirmed_at": "2026-10-22"
+  },
+  {
+    "decision_key": "continuidad:49-carga-real-peso-corporal",
+    "tipo": "continuidad",
+    "estado": "resuelta",
+    "conclusion": "Modifica procesos existentes: el tonelaje (HU-15), la alerta de caída de tonelaje (HU-18) y el 1RM estimado (HU-42) pasan a usar la carga real (porcentaje de peso corporal del ejercicio × peso vigente por fecha + carga externa), leyendo el historial de peso de HU-02. No crea un proceso nuevo desde cero ni toca el motor de decisión.",
+    "evidencia": "TonnageRule weightKg*reps (peso corporal aporta 0); OneRmRule excluye Peso Corporal/Barra Fija y calcula sobre lastre; ExerciseOneRmEntity sin fecha; HU-02, HU-15, HU-18, HU-42.",
+    "origen": "po_confirmado",
+    "confirmed_at": "2026-10-22"
   }
 ]

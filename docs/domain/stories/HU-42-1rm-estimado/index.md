@@ -2,7 +2,7 @@
 story_number: 42
 title: 'Mi 1RM estimado'
 slug: '1rm-estimado'
-estado: 'Lista para Revisión'
+estado: 'Completado'
 autor: 'Esteban Colorado González'
 fecha_creacion: '2026-09-06'
 es_resultado_slicing: true

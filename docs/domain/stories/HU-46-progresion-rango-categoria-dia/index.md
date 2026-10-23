@@ -2,7 +2,7 @@
 story_number: 46
 title: "Progresión por rango de hipertrofia y sesión acotada a la categoría del día"
 slug: "progresion-rango-categoria-dia"
-estado: "Lista para Revisión"
+estado: "Completado"
 autor: "esteban.colorado"
 fecha_creacion: "2026-10-22"
 es_resultado_slicing: false

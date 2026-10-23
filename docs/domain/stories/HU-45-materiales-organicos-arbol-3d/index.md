@@ -2,7 +2,7 @@
 story_number: 45
 title: 'El árbol se siente vivo'
 slug: 'materiales-organicos-arbol-3d'
-estado: 'Lista para Revisión'
+estado: 'Completado'
 autor: 'Esteban Colorado González'
 fecha_creacion: '2026-09-14'
 es_resultado_slicing: true

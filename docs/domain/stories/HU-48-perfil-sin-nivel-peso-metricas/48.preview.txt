@@ -1,0 +1,202 @@
+╔══════════════════════════════════════════════════════════════╗
+║  ⚠️  PROTOTIPO — PROPUESTA PENDIENTE DE VALIDACIÓN CON DISEÑO  ║
+╚══════════════════════════════════════════════════════════════╝
+
+HU #48 — Perfil sin nivel de experiencia y peso corporal en Métricas
+Plataforma: mobile / portrait (390 px) · Material 3 · targets ≥ 48 dp
+El nivel de experiencia desaparece de A1 y C1. El peso corporal
+entra en Métricas (G1) como complemento del tonelaje, con
+registro rápido. El IMC es un dato secundario y SIN categoría.
+
+
+────────────────────────────────────────────────────────────────
+ A1 · CONFIGURA TU PERFIL  ·  solo peso y altura (CA-48.01)
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+|                                          |
+|                 Tension                  |
+|            Configura tu perfil           |
+|                                          |
+|  Peso corporal *                         |
+|  [ 78.5                          ] Kg    |
+|                                          |
+|  Altura *                                |
+|  [ 1.78                          ] m     |
+|                                          |
+|                                          |
+|  [            Registrar             ]    |
+|                                          |
++──────────────────────────────────────────+
+
+  ANTES había un tercer bloque «Nivel de experiencia» con
+  (○) Principiante (○) Intermedio (○) Avanzado. Desaparece:
+  no hay campo, ni opción, ni texto que lo mencione.
+  «Registrar» se habilita con peso > 0 y altura > 0.
+
+
+────────────────────────────────────────────────────────────────
+ C1 · MI PERFIL  ·  sin nivel de experiencia (CA-48.02)
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+| ←  Mi Perfil                             |
++──────────────────────────────────────────+
+|                                          |
+|  Peso corporal *                         |
+|  [ 78.5                          ] Kg    |
+|                                          |
+|  Altura *                                |
+|  [ 1.78                          ] m     |
+|                                          |
+|  [              Guardar             ]    |
+|                                          |
+|  Ver historial de peso  ›                |
+|                                          |
++──────────────────────────────────────────+
+
+
+────────────────────────────────────────────────────────────────
+ G1 · MÉTRICAS · sección «Peso corporal» (CA-48.03)
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+|  Métricas                                |
++──────────────────────────────────────────+
+|  Período:  (●) 4 sem  (○) 8 sem  (○) 12 sem
+|                                          |
+|  … Adherencia · Intensidad · Progresión  |
+|                                          |
+|  PESO CORPORAL                           |
+|  +────────────────────────────────────+  |
+|  |  Peso actual                       |  |
+|  |  78.5 Kg                           |  |
+|  |  Registrado el 20/10/2026          |  |
+|  |  IMC 24.8 · dato de contexto       |  |
+|  |  ⓘ El IMC relaciona peso y altura; |  |
+|  |    no distingue músculo de grasa.  |  |
+|  +────────────────────────────────────+  |
+|  +────────────────────────────────────+  |
+|  |  Variación del peso                |  |
+|  |  +1.3 Kg                           |  |
+|  |  Últimas 4 semanas                 |  |
+|  |  Diferencia entre tu peso actual y |  |
+|  |  el que tenías al inicio del       |  |
+|  |  período.                          |  |
+|  +────────────────────────────────────+  |
+|  +────────────────────────────────────+  |
+|  |  Peso corporal y tonelaje          |  |
+|  |  Kg cuerpo                Kg tonel.|  |
+|  |  79 ┤            ●───●       ┌ 9000 |  |
+|  |  78 ┤     ●──────╯      ▒▒   │ 7000 |  |
+|  |  77 ┤ ●───╯        ▒▒  ▒▒   │ 5000 |  |
+|  |     └──┬────┬────┬────┬──    └      |  |
+|  |       S1   S2   S3   S4            |  |
+|  |  ● Peso corporal (Kg)              |  |
+|  |  ▒ Tonelaje (Kg movidos)           |  |
+|  +────────────────────────────────────+  |
+|                                          |
+|  [         ⊕ Registrar peso         ]    |
+|                                          |
+|  1RM estimado  ›                         |
+|  Volumen  ›   ·   Tendencia  ›           |
++──────────────────────────────────────────+
+
+  El IMC NO lleva «normal», «sobrepeso» ni ninguna categoría o
+  color de valoración. Es texto secundario bajo el peso.
+  Cada indicador: etiqueta · valor · unidad · descripción ·
+  período (convención HU-35).
+  El gráfico comparte eje temporal; cada serie tiene su escala.
+
+
+────────────────────────────────────────────────────────────────
+ G1 · DIÁLOGO «REGISTRAR PESO» (CA-48.04, CA-48.05)
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+|░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░|
+|░░ +──────────────────────────────────+ ░░|
+|░░ |  Registrar peso                  | ░░|
+|░░ |                                  | ░░|
+|░░ |  Peso corporal *                 | ░░|
+|░░ |  [ 78.5                    ] Kg  | ░░|
+|░░ |  Se guardará con fecha de hoy    | ░░|
+|░░ |  en tu historial de peso.        | ░░|
+|░░ |                                  | ░░|
+|░░ |        [ Cancelar ]  [ Guardar ] | ░░|
+|░░ +──────────────────────────────────+ ░░|
+|░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░|
++──────────────────────────────────────────+
+
+  Precargado con el último peso. Teclado numérico.
+
+  Estado de error (valor 0, vacío o negativo):
+
+|░░ |  Peso corporal *                 | ░░|
+|░░ |  [ 0                       ] Kg  | ░░|
+|░░ |  ⚠ El peso debe ser un valor     | ░░|
+|░░ |    positivo                      | ░░|
+|░░ |        [ Cancelar ]  [ Guardar ] | ░░|
+                               └ deshabilitado
+
+  Guardar  → snackbar «Peso registrado» y la sección se
+             actualiza: peso, fecha, variación, gráfico, IMC.
+  Cancelar → no se crea entrada; el historial no cambia.
+
+
+────────────────────────────────────────────────────────────────
+ G1 · ESTADOS DE LA SECCIÓN (CA-48.06, CA-48.07)
+────────────────────────────────────────────────────────────────
+
+  Peso desactualizado (último registro > 30 días):
+
+|  PESO CORPORAL                           |
+|  +────────────────────────────────────+  |
+|  |  ⓘ Tu último peso es de hace 42    |  |
+|  |    días.   Registrar peso ›        |  |
+|  +────────────────────────────────────+  |
+|  +────────────────────────────────────+  |
+|  |  Peso actual                       |  |
+|  |  78.5 Kg · 10/09/2026              |  |
+|  …                                       |
+
+  Nota informativa, NO alerta: no va al Centro de Alertas.
+  Desaparece al registrar un peso nuevo.
+
+  Datos insuficientes:
+
+|  +────────────────────────────────────+  |
+|  |  Variación del peso                |  |
+|  |  Sin datos suficientes             |  |
+|  |  Necesitas un peso registrado      |  |
+|  |  antes del inicio del período.     |  |
+|  +────────────────────────────────────+  |
+|  +────────────────────────────────────+  |
+|  |  Peso corporal y tonelaje          |  |
+|  |  78 ┤ ●───────●                    |  |
+|  |     └──┬────┬────┬────┬──          |  |
+|  |  Sin sesiones en este período:     |  |
+|  |  no hay tonelaje que mostrar.      |  |
+|  +────────────────────────────────────+  |
+
+  Nunca «0 Kg» de variación ni barras en cero.
+
+
+────────────────────────────────────────────────────────────────
+ C2 · HISTORIAL DE PESO  ·  sin cambios de diseño
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+| ←  Historial de Peso                     |
++──────────────────────────────────────────+
+|  22/10/2026            78.5 Kg           |  ← creado desde
+|  ─────────────────────────────────────   |    Métricas
+|  01/10/2026            77.9 Kg           |
+|  ─────────────────────────────────────   |
+|  02/09/2026            77.2 Kg           |
+|  Registro inicial                        |
++──────────────────────────────────────────+
+
+╔══════════════════════════════════════════════════════════════╗
+║  ⚠️  PROTOTIPO — PROPUESTA PENDIENTE DE VALIDACIÓN CON DISEÑO  ║
+╚══════════════════════════════════════════════════════════════╝

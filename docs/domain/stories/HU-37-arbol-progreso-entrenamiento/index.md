@@ -2,7 +2,7 @@
 story_number: 37
 title: 'El árbol de mi entrenamiento'
 slug: 'arbol-progreso-entrenamiento'
-estado: 'Lista para Revisión'
+estado: 'Completado'
 autor: 'Esteban Colorado González'
 fecha_creacion: '2026-09-02'
 es_resultado_slicing: true

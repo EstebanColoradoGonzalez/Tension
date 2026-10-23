@@ -2,7 +2,7 @@
 story_number: 40
 title: 'Cambiar de implemento no es retroceder'
 slug: 'progresion-por-equipamiento'
-estado: 'Lista para Revisión'
+estado: 'Completado'
 autor: 'Esteban Colorado González'
 fecha_creacion: '2026-09-06'
 es_resultado_slicing: true

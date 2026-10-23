@@ -2,7 +2,7 @@
 story_number: 39
 title: 'Un solo ejercicio, varios implementos'
 slug: 'equipamiento-multiple-por-ejercicio'
-estado: 'Lista para Revisión'
+estado: 'Completado'
 autor: 'Esteban Colorado González'
 fecha_creacion: '2026-09-06'
 es_resultado_slicing: true

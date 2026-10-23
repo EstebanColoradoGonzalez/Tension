@@ -2,7 +2,7 @@
 story_number: 41
 title: 'Catálogo anatómico y plan por defecto alineado'
 slug: 'catalogo-anatomico-plan-alineado'
-estado: 'Lista para Revisión'
+estado: 'Completado'
 autor: 'Esteban Colorado González'
 fecha_creacion: '2026-09-06'
 es_resultado_slicing: true

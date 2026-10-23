@@ -4,7 +4,7 @@
 >
 > **Nota de migración — Normalización de IDs:** Los IDs de historias han sido normalizados — la HU-15.5 pasa a ser HU-16 y los IDs subsiguientes se desplazan en +1 hasta HU-26. La columna "ID Legacy" en §2 preserva la referencia al ID original para trazabilidad completa.
 >
-> **Nota — numeración:** el proyecto tiene **43 historias con numeración plana y correlativa**, `HU-01` a `HU-43`. No existen IDs decimales ni historias contenedoras: cada historia es autocontenida y se implementa por sí misma. Cuando una historia se divide por análisis INVEST, sus hijas reciben números planos consecutivos y declaran su origen y su orden en el frontmatter — es el caso de `HU-37` y `HU-38`, y de `HU-39` a `HU-43`.
+> **Nota — numeración:** el proyecto tiene **49 historias con numeración plana y correlativa**, `HU-01` a `HU-49`. No existen IDs decimales ni historias contenedoras: cada historia es autocontenida y se implementa por sí misma. Cuando una historia se divide por análisis INVEST, sus hijas reciben números planos consecutivos y declaran su origen y su orden en el frontmatter. Es el caso de `HU-37` y `HU-38`, de `HU-39` a `HU-43`, de `HU-44` y `HU-45`, y de `HU-48` y `HU-49`.
 
 ---
 
@@ -19,8 +19,8 @@
 - **[EPIC-05] Backlog de Consolidación:** Historias del backlog original pendientes: migración de estructura de módulos a división Pull/Push/Legs, historial de ejercicios y sesiones, sistema de alertas proactivas y backup/restauración.
 - **[EPIC-06] Estabilización y Correcciones:** Correcciones de defectos detectados post-producción y mejoras de experiencia de usuario: filtro de sustituciones, reestructuración del plan y preview de sesión con cronómetro integrado.
 - **[EPIC-07] Evolución del Plan:** Transición a plan completamente libre definido por el usuario (eliminación de módulos fijos A/B/C), actualización del catálogo de ejercicios y plan por defecto, ajustes de usabilidad y alternativas por puesto en el plan.
-- **[EPIC-08] Fidelidad al Gimnasio Real:** Reducción de la fricción entre lo que ocurre en el gimnasio y lo que el sistema modela: captura de carga en la unidad real del implemento, memoria del último peso manejado, umbrales de progresión realistas por ejercicio, alertas accionables, métricas legibles, días de la semana reasignables y retiro del mecanismo de sustitución por grupo muscular.
-- **[EPIC-09] Recompensa Visual:** Representación visual del historial de entrenamiento como un árbol que crece con las sesiones acumuladas y se marchita con la ausencia. **Excepción de alcance declarada:** la exclusión de `system_definition_document.md` §2.1 —motivación, adherencia y días del calendario como insumos de decisión— **se mantiene intacta**. Esta épica es puramente visual y aislada: lee del historial y ningún componente de decisión, alerta o KPI lee de ella.
+- **[EPIC-08] Fidelidad al Gimnasio Real:** Reducción de la fricción entre lo que ocurre en el gimnasio y lo que el sistema modela: captura de carga en la unidad real del implemento, memoria del último peso manejado, umbrales de progresión realistas por ejercicio, alertas accionables, métricas legibles, días de la semana reasignables y retiro del mecanismo de sustitución por grupo muscular. Continúa con la progresión por rango de hipertrofia, la corrección de la última serie registrada, un perfil sin datos inútiles (retiro del nivel de experiencia) y el peso corporal como parte de la carga real que se mueve.
+- **[EPIC-09] Recompensa Visual:** Representación visual del historial de entrenamiento como un árbol que crece con las sesiones acumuladas y se marchita con la ausencia, y su evolución hacia un árbol orgánico con materiales naturales. **Excepción de alcance declarada:** la exclusión de `system_definition_document.md` §2.1 —motivación, adherencia y días del calendario como insumos de decisión— **se mantiene intacta**. Esta épica es puramente visual y aislada: lee del historial y ningún componente de decisión, alerta o KPI lee de ella.
 - **[EPIC-10] El Implemento como Dimensión:** El equipamiento deja de ser un atributo fijo del ejercicio y pasa a ser un dato de la serie, con la progresión resolviéndose por par (ejercicio, equipamiento). Corrige el defecto por el que cambiar de mancuerna a polea se leía como regresión. Arrastra consigo la recatalogación anatómica del diccionario, el plan por defecto alineado con su implemento sugerido, el 1RM estimado y la sesión editable. Es la continuación natural de EPIC-08: misma intención de fidelidad al gimnasio real, aplicada a la dimensión que faltaba.
 
 ---
@@ -31,57 +31,67 @@
 
 | ID Destino | Título | ID Legacy | Épica | Estado | Prioridad |
 |---|---|---|---|---|---|
-| **[HU-01](./HU-01-registrar-actualizar-perfil-ejecutante/historia.md)** | Registrar y actualizar perfil del ejecutante | HU-01 | EPIC-01 | `Done` | Alta |
-| **[HU-02](./HU-02-consultar-historial-peso-corporal/historia.md)** | Consultar historial de peso corporal | HU-02 | EPIC-01 | `Done` | Media |
-| **[HU-03](./HU-03-consultar-gestionar-diccionario-ejercicios/historia.md)** | Consultar y gestionar Diccionario de Ejercicios con media visual | HU-03 | EPIC-01 | `Done` | Alta |
-| **[HU-04](./HU-04-consultar-gestionar-plan-entrenamiento/historia.md)** | Consultar y gestionar Plan de Entrenamiento | HU-04 | EPIC-01 | `Done` | Alta |
-| **[HU-05](./HU-05-determinar-iniciar-sesion-rotacion/historia.md)** | Determinar e iniciar sesión según rotación cíclica | HU-05 | EPIC-02 | `Done` | Crítica |
-| **[HU-06](./HU-06-registrar-series-ejercicio-sesion-activa/historia.md)** | Registrar series de ejercicios en sesión activa | HU-06 | EPIC-02 | `Done` | Crítica |
-| **[HU-07](./HU-07-sustituir-ejercicio-sesion-activa/historia.md)** | Sustituir ejercicio puntualmente en sesión activa | HU-07 | EPIC-02 | `Descartada` — implementada y luego eliminada por HU-34 | Media |
-| **[HU-08](./HU-08-registrar-ejercicios-peso-corporal-isometricos/historia.md)** | Registrar ejercicios de peso corporal e isométricos | HU-08 | EPIC-02 | `Done` | Alta |
-| **[HU-09](./HU-09-cerrar-sesion-rotacion/historia.md)** | Cerrar sesión y avanzar rotación | HU-09 | EPIC-02 | `Done` | Crítica |
-| **[HU-10](./HU-10-evaluar-clasificar-progresion-post-sesion/historia.md)** | Evaluar y clasificar progresión post-sesión | HU-10 | EPIC-03 | `Done` | Crítica |
-| **[HU-11](./HU-11-prescribir-carga-objetiva-double-threshold/historia.md)** | Prescribir carga objetivo según Regla de Doble Umbral | HU-11 | EPIC-03 | `Done` | Crítica |
-| **[HU-12](./HU-12-motor-deteccion-regresion-meseta-necesidad-descarga/historia.md)** | Motor de Detección: Regresión, Meseta y Necesidad de Descarga | HU-12 | EPIC-03 | `Done` | Alta |
-| **[HU-13](./HU-13-mostrar-resumen-post-sesion-senales-accion/historia.md)** | Mostrar resumen post-sesión con señales de acción | HU-13 | EPIC-04 | `Done` | Alta |
-| **[HU-14](./HU-14-protocolo-descarga-conteo-microciclos/historia.md)** | Protocolo de Descarga y Conteo de Microciclos | HU-14 | EPIC-04 | `Done` | Alta |
-| **[HU-15](./HU-15-analitica-kpis-entrenamiento/historia.md)** | Analítica y KPIs del Entrenamiento | HU-15 | EPIC-04 | `Done` | Alta |
-| **[HU-16](./HU-16-migracion-division-push-pull-legs/historia.md)** | Migración a división Pull / Push / Legs | HU-15.5 | EPIC-05 | `Done` | Alta |
-| **[HU-17](./HU-17-consultar-historial-ejercicios-sesiones/historia.md)** | Consultar historial de ejercicios y sesiones | HU-16 | EPIC-05 | `Done` | Alta |
-| **[HU-18](./HU-18-sistema-alertas/historia.md)** | Sistema de Alertas | HU-17 | EPIC-05 | `Done` | Alta |
-| **[HU-19](./HU-19-backup-restauracion/historia.md)** | Backup y Restauración | HU-18 | EPIC-05 | `Done` | Alta |
-| **[HU-20](./HU-20-correccion-sustitucion-ejercicios-sesion-activa/historia.md)** | Corrección de sustitución de ejercicios en sesión activa | HU-19 | EPIC-06 | `Descartada` — corregía un mecanismo que HU-34 eliminó | Media |
-| **[HU-21](./HU-21-reestructuracion-plan-entrenamiento/historia.md)** | Reestructuración del plan de entrenamiento y orden sugerido de ejecución | HU-20 | EPIC-06 | `Done` | Media |
-| **[HU-22](./HU-22-preview-cronometro-sesion/historia.md)** | Preview de sesión sin iniciar y cronómetro para ejercicios por tiempo | HU-21 | EPIC-06 | `Done` | Media |
-| **[HU-23](./HU-23-transicion-plan-rutinas-versiones/historia.md)** | Transición a plan, rutinas y versiones 100% definidas por el usuario | HU-22 | EPIC-07 | `Done` | Alta |
-| **[HU-24](./HU-24-actualizacion-diccionario-ejercicios-plan-entrenamiento/historia.md)** | Actualización del Diccionario de Ejercicios y Plan de Entrenamiento por defecto | HU-23 | EPIC-07 | `Done` | Alta |
-| **[HU-25](./HU-25-ajustes-usabilidad-rir-personalizacion-correcciones/historia.md)** | Ajustes de usabilidad, rango de RIR, personalización de series/repeticiones y correcciones de datos | HU-24 | EPIC-07 | `Done` | Alta |
-| **[HU-26](./HU-26-alternativas-puesto-plan-entrenamiento/historia.md)** | Alternativas por puesto en el plan de entrenamiento | HU-25 | EPIC-07 | `Done` | Alta |
-| **[HU-27](./HU-27-actualizar-plan-predeterminado/historia.md)** | Actualizar Plan de Entrenamiento Predeterminado | — | EPIC-07 | `Done` | Alta |
-| **[HU-28](./HU-28-legibilidad-nombres-titulos-largos/historia.md)** | Legibilidad de nombres y títulos largos | — | EPIC-08 | `Done` | Media |
-| **[HU-29](./HU-29-plan-catalogo-actualizados/historia.md)** | Plan por defecto y catálogo de ejercicios actualizados | — | EPIC-08 | `Done` | Alta |
-| **[HU-30](./HU-30-unidad-carga-kg-lb/historia.md)** | Captura de carga en la unidad real del implemento | — | EPIC-08 | `Done` | Alta |
-| **[HU-31](./HU-31-memoria-ultimo-peso/historia.md)** | Memoria del último peso manejado | — | EPIC-08 | `Done` | Alta |
-| **[HU-32](./HU-32-umbral-meseta-realista/historia.md)** | Umbral de meseta realista por ejercicio | — | EPIC-08 | `Done` | Alta |
-| **[HU-33](./HU-33-alertas-comprensibles-accionables/historia.md)** | Alertas comprensibles y accionables | — | EPIC-08 | `Done` | Alta |
-| **[HU-34](./HU-34-eliminar-sustitucion-grupo-muscular/historia.md)** | Eliminación de la sustitución por grupo muscular | — | EPIC-08 | `Done` | Media |
-| **[HU-35](./HU-35-metricas-comprensibles/historia.md)** | Métricas que se explican solas | — | EPIC-08 | `Done` | Media |
-| **[HU-36](./HU-36-dias-semana-reasignables/historia.md)** | Días de la semana como entidad reasignable | — | EPIC-08 | `Done` | Alta |
-| **[HU-37](./HU-37-arbol-progreso-entrenamiento/historia.md)** | El árbol de mi entrenamiento | — | EPIC-09 | `Lista para Revisión` | Media |
-| **[HU-38](./HU-38-arbol-3d-interactivo/historia.md)** | El árbol en 3D | — | EPIC-09 | `Lista para Revisión` | Baja |
-| **[HU-39](./HU-39-equipamiento-multiple-por-ejercicio/historia.md)** | Un solo ejercicio, varios implementos | — | EPIC-10 | `Lista para Revisión` | Alta |
-| **[HU-40](./HU-40-progresion-por-equipamiento/historia.md)** | Cambiar de implemento no es retroceder | — | EPIC-10 | `Lista para Revisión` | Alta |
-| **[HU-41](./HU-41-catalogo-anatomico-plan-alineado/historia.md)** | Catálogo anatómico y plan por defecto alineado | — | EPIC-10 | `Lista para Revisión` | Alta |
-| **[HU-42](./HU-42-1rm-estimado/historia.md)** | Mi 1RM estimado | — | EPIC-10 | `Lista para Revisión` | Media |
-| **[HU-43](./HU-43-ajustar-sesion-del-dia/historia.md)** | Ajustar la sesión del día | — | EPIC-10 | `Lista para Revisión` | Media |
-| **[HU-46](./HU-46-progresion-rango-categoria-dia/historia.md)** | Progresión por rango de hipertrofia y sesión acotada a la categoría del día | — | EPIC-08 | `Lista para Revisión` | Alta |
-| **[HU-47](./HU-47-corregir-ultima-serie-registrada/historia.md)** | Corregir los datos de la última serie registrada | — | EPIC-08 | `Lista para Revisión` | — |
+| **[HU-01](./HU-01-registrar-actualizar-perfil-ejecutante/historia.md)** | Registrar y actualizar perfil del ejecutante | HU-01 | EPIC-01 | `Completado` | Alta |
+| **[HU-02](./HU-02-consultar-historial-peso-corporal/historia.md)** | Consultar historial de peso corporal | HU-02 | EPIC-01 | `Completado` | Media |
+| **[HU-03](./HU-03-consultar-gestionar-diccionario-ejercicios/historia.md)** | Consultar y gestionar Diccionario de Ejercicios con media visual | HU-03 | EPIC-01 | `Completado` | Alta |
+| **[HU-04](./HU-04-consultar-gestionar-plan-entrenamiento/historia.md)** | Consultar y gestionar Plan de Entrenamiento | HU-04 | EPIC-01 | `Completado` | Alta |
+| **[HU-05](./HU-05-determinar-iniciar-sesion-rotacion/historia.md)** | Determinar e iniciar sesión según rotación cíclica | HU-05 | EPIC-02 | `Completado` | Crítica |
+| **[HU-06](./HU-06-registrar-series-ejercicio-sesion-activa/historia.md)** | Registrar series de ejercicios en sesión activa | HU-06 | EPIC-02 | `Completado` | Crítica |
+| **[HU-07](./HU-07-sustituir-ejercicio-sesion-activa/historia.md)** | Sustituir ejercicio puntualmente en sesión activa | HU-07 | EPIC-02 | `Completado` — implementada; su funcionalidad la retiró después HU-34 | Media |
+| **[HU-08](./HU-08-registrar-ejercicios-peso-corporal-isometricos/historia.md)** | Registrar ejercicios de peso corporal e isométricos | HU-08 | EPIC-02 | `Completado` | Alta |
+| **[HU-09](./HU-09-cerrar-sesion-rotacion/historia.md)** | Cerrar sesión y avanzar rotación | HU-09 | EPIC-02 | `Completado` | Crítica |
+| **[HU-10](./HU-10-evaluar-clasificar-progresion-post-sesion/historia.md)** | Evaluar y clasificar progresión post-sesión | HU-10 | EPIC-03 | `Completado` | Crítica |
+| **[HU-11](./HU-11-prescribir-carga-objetiva-double-threshold/historia.md)** | Prescribir carga objetivo según Regla de Doble Umbral | HU-11 | EPIC-03 | `Completado` | Crítica |
+| **[HU-12](./HU-12-motor-deteccion-regresion-meseta-necesidad-descarga/historia.md)** | Motor de Detección: Regresión, Meseta y Necesidad de Descarga | HU-12 | EPIC-03 | `Completado` | Alta |
+| **[HU-13](./HU-13-mostrar-resumen-post-sesion-senales-accion/historia.md)** | Mostrar resumen post-sesión con señales de acción | HU-13 | EPIC-04 | `Completado` | Alta |
+| **[HU-14](./HU-14-protocolo-descarga-conteo-microciclos/historia.md)** | Protocolo de Descarga y Conteo de Microciclos | HU-14 | EPIC-04 | `Completado` | Alta |
+| **[HU-15](./HU-15-analitica-kpis-entrenamiento/historia.md)** | Analítica y KPIs del Entrenamiento | HU-15 | EPIC-04 | `Completado` | Alta |
+| **[HU-16](./HU-16-migracion-division-push-pull-legs/historia.md)** | Migración a división Pull / Push / Legs | HU-15.5 | EPIC-05 | `Completado` | Alta |
+| **[HU-17](./HU-17-consultar-historial-ejercicios-sesiones/historia.md)** | Consultar historial de ejercicios y sesiones | HU-16 | EPIC-05 | `Completado` | Alta |
+| **[HU-18](./HU-18-sistema-alertas/historia.md)** | Sistema de Alertas | HU-17 | EPIC-05 | `Completado` | Alta |
+| **[HU-19](./HU-19-backup-restauracion/historia.md)** | Backup y Restauración | HU-18 | EPIC-05 | `Completado` | Alta |
+| **[HU-20](./HU-20-correccion-sustitucion-ejercicios-sesion-activa/historia.md)** | Corrección de sustitución de ejercicios en sesión activa | HU-19 | EPIC-06 | `Completado` — implementada; HU-34 retiró después el mecanismo que corregía | Media |
+| **[HU-21](./HU-21-reestructuracion-plan-entrenamiento/historia.md)** | Reestructuración del plan de entrenamiento y orden sugerido de ejecución | HU-20 | EPIC-06 | `Completado` | Media |
+| **[HU-22](./HU-22-preview-cronometro-sesion/historia.md)** | Preview de sesión sin iniciar y cronómetro para ejercicios por tiempo | HU-21 | EPIC-06 | `Completado` | Media |
+| **[HU-23](./HU-23-transicion-plan-rutinas-versiones/historia.md)** | Transición a plan, rutinas y versiones 100% definidas por el usuario | HU-22 | EPIC-07 | `Completado` | Alta |
+| **[HU-24](./HU-24-actualizacion-diccionario-ejercicios-plan-entrenamiento/historia.md)** | Actualización del Diccionario de Ejercicios y Plan de Entrenamiento por defecto | HU-23 | EPIC-07 | `Completado` | Alta |
+| **[HU-25](./HU-25-ajustes-usabilidad-rir-personalizacion-correcciones/historia.md)** | Ajustes de usabilidad, rango de RIR, personalización de series/repeticiones y correcciones de datos | HU-24 | EPIC-07 | `Completado` | Alta |
+| **[HU-26](./HU-26-alternativas-puesto-plan-entrenamiento/historia.md)** | Alternativas por puesto en el plan de entrenamiento | HU-25 | EPIC-07 | `Completado` | Alta |
+| **[HU-27](./HU-27-actualizar-plan-predeterminado/historia.md)** | Actualizar Plan de Entrenamiento Predeterminado | — | EPIC-07 | `Completado` | Alta |
+| **[HU-28](./HU-28-legibilidad-nombres-titulos-largos/historia.md)** | Legibilidad de nombres y títulos largos | — | EPIC-08 | `Completado` | Media |
+| **[HU-29](./HU-29-plan-catalogo-actualizados/historia.md)** | Plan por defecto y catálogo de ejercicios actualizados | — | EPIC-08 | `Completado` | Alta |
+| **[HU-30](./HU-30-unidad-carga-kg-lb/historia.md)** | Captura de carga en la unidad real del implemento | — | EPIC-08 | `Completado` | Alta |
+| **[HU-31](./HU-31-memoria-ultimo-peso/historia.md)** | Memoria del último peso manejado | — | EPIC-08 | `Completado` | Alta |
+| **[HU-32](./HU-32-umbral-meseta-realista/historia.md)** | Umbral de meseta realista por ejercicio | — | EPIC-08 | `Completado` | Alta |
+| **[HU-33](./HU-33-alertas-comprensibles-accionables/historia.md)** | Alertas comprensibles y accionables | — | EPIC-08 | `Completado` | Alta |
+| **[HU-34](./HU-34-eliminar-sustitucion-grupo-muscular/historia.md)** | Eliminación de la sustitución por grupo muscular | — | EPIC-08 | `Completado` | Media |
+| **[HU-35](./HU-35-metricas-comprensibles/historia.md)** | Métricas que se explican solas | — | EPIC-08 | `Completado` | Media |
+| **[HU-36](./HU-36-dias-semana-reasignables/historia.md)** | Días de la semana como entidad reasignable | — | EPIC-08 | `Completado` | Alta |
+| **[HU-37](./HU-37-arbol-progreso-entrenamiento/historia.md)** | El árbol de mi entrenamiento | — | EPIC-09 | `Completado` | Media |
+| **[HU-38](./HU-38-arbol-3d-interactivo/historia.md)** | El árbol en 3D | — | EPIC-09 | `Completado` | Baja |
+| **[HU-39](./HU-39-equipamiento-multiple-por-ejercicio/historia.md)** | Un solo ejercicio, varios implementos | — | EPIC-10 | `Completado` | Alta |
+| **[HU-40](./HU-40-progresion-por-equipamiento/historia.md)** | Cambiar de implemento no es retroceder | — | EPIC-10 | `Completado` | Alta |
+| **[HU-41](./HU-41-catalogo-anatomico-plan-alineado/historia.md)** | Catálogo anatómico y plan por defecto alineado | — | EPIC-10 | `Completado` | Alta |
+| **[HU-42](./HU-42-1rm-estimado/historia.md)** | Mi 1RM estimado | — | EPIC-10 | `Completado` | Media |
+| **[HU-43](./HU-43-ajustar-sesion-del-dia/historia.md)** | Ajustar la sesión del día | — | EPIC-10 | `Completado` | Media |
+| **[HU-44](./HU-44-arbol-organico/historia.md)** | El árbol deja de ser geométrico | — | EPIC-09 | `Completado` | — |
+| **[HU-45](./HU-45-materiales-organicos-arbol-3d/historia.md)** | El árbol se siente vivo | — | EPIC-09 | `Completado` | — |
+| **[HU-46](./HU-46-progresion-rango-categoria-dia/historia.md)** | Progresión por rango de hipertrofia y sesión acotada a la categoría del día | — | EPIC-08 | `Completado` | Alta |
+| **[HU-47](./HU-47-corregir-ultima-serie-registrada/historia.md)** | Corregir los datos de la última serie registrada | — | EPIC-08 | `Completado` | — |
+| **[HU-48](./HU-48-perfil-sin-nivel-peso-metricas/historia.md)** | Perfil sin nivel de experiencia y peso corporal en Métricas | — | EPIC-08 | `Borrador (PO)` | — |
+| **[HU-49](./HU-49-carga-real-peso-corporal/historia.md)** | Carga real con peso corporal en tonelaje, 1RM y fuerza relativa | — | EPIC-08 | `Borrador (PO)` | — |
 
 **HU-47** se monta sobre el registro de serie (`HU-06`, formulario `E2` y sesión `E1`) y sobre el 1RM (`HU-42`), que reconstruye al corregir. Extiende la filosofía de `HU-43` —la sesión en curso admite ajustes temporales y acotados— a los datos de la serie: solo la última registrada de la sesión y solo mientras la sesión sigue en curso. `HU-09` (cierre) sigue congelando todo. `HU-30` aporta la unidad de captura corregible, y `HU-13`/`HU-15` consumen el dato corregido sin cambios propios.
 
-**Dependencias entre historias:** `HU-31` depende de `HU-30` (la coherencia entre el valor precargado y la unidad activa del ejercicio) y `HU-33` depende de `HU-32` (la ponderación de la tasa de progresión consume el atributo de dificultad). `HU-38` depende de `HU-37`, de la que hereda la entidad de persistencia, el cálculo, la ruta, la pantalla dedicada y la representación nativa que allí pasa a fallback. Las cinco historias de **EPIC-10** dependen todas de `HU-39`, que aporta el equipamiento persistido en la serie: `HU-40` y `HU-42` solo de ella —`HU-42` es paralelizable—, `HU-41` de ella más los ocho renombrados que declara, y `HU-43` de `HU-39` y de `HU-41`, porque reutiliza el formulario de creación de ejercicio ya con equipamiento múltiple y jerarquía de zonas. El orden `HU-39` → `HU-40` era **crítico** y se respetó: ambas están implementadas, y con `HU-40` el falso `REGRESSION` por cambio de implemento deja de ocurrir. `HU-42` se implementó después de `HU-41` sin depender de ella, que es lo que su carácter paralelizable predecía: su diff no toca ni el catálogo ni el plan. `HU-43` se implementó la última y con sus dos prerrequisitos entregados, de modo que reutilizó el formulario `D5-T1` tal cual, sin tocarlo: **cierra la partición**. El resto son independientes entre sí.
+**HU-48** retira el nivel de experiencia del perfil (`HU-01`), un dato que ninguna regla, métrica ni alerta leía. También lleva el peso corporal (`HU-02`) a Métricas (`HU-15`, `HU-35`), con registro rápido e IMC como dato secundario sin categoría. **HU-49** suma el peso corporal a la carga real de cada serie según un porcentaje por ejercicio, editable en el Diccionario igual que la dificultad de `HU-32`. Esa carga real alimenta el tonelaje en todas sus vistas, la alerta de caída de tonelaje (`HU-18`) y el 1RM (`HU-42`), y añade la fuerza relativa. Ninguna de las dos toca el motor de decisión.
+
+**Dependencias entre historias:** `HU-31` depende de `HU-30` (la coherencia entre el valor precargado y la unidad activa del ejercicio) y `HU-33` depende de `HU-32` (la ponderación de la tasa de progresión consume el atributo de dificultad). `HU-38` depende de `HU-37`, de la que hereda la entidad de persistencia, el cálculo, la ruta, la pantalla dedicada y la representación nativa que allí pasa a fallback. Las cinco historias de **EPIC-10** dependen todas de `HU-39`, que aporta el equipamiento persistido en la serie: `HU-40` y `HU-42` solo de ella —`HU-42` es paralelizable—, `HU-41` de ella más los ocho renombrados que declara, y `HU-43` de `HU-39` y de `HU-41`, porque reutiliza el formulario de creación de ejercicio ya con equipamiento múltiple y jerarquía de zonas. El orden `HU-39` → `HU-40` era **crítico** y se respetó: ambas están implementadas, y con `HU-40` el falso `REGRESSION` por cambio de implemento deja de ocurrir. `HU-42` se implementó después de `HU-41` sin depender de ella, que es lo que su carácter paralelizable predecía: su diff no toca ni el catálogo ni el plan. `HU-43` se implementó la última y con sus dos prerrequisitos entregados, de modo que reutilizó el formulario `D5-T1` tal cual, sin tocarlo: **cierra la partición**. `HU-44` y `HU-45` dependen de `HU-38`, cuyo modelo 3D evolucionan, y `HU-45` depende además de `HU-44`, de la que toma la geometría orgánica sobre la que aplica sus materiales. `HU-48` y `HU-49` son independientes entre sí. El resto son independientes entre sí.
 
 **Nota de partición — HU-37 y HU-38:** ambas provienen de una **misma historia original** (*Árbol de progreso del entrenamiento*, 16 CAs), dividida por análisis INVEST (score 4/6, falla `Small`). Se usó **numeración plana** en lugar de IDs decimales, respetando la convención declarada en el encabezado de este documento. `HU-37` entrega el árbol completo con representación nativa y toda la infraestructura; `HU-38` aísla el riesgo del primer WebView del proyecto y de Three.js.
+
+**Nota de partición — HU-44 y HU-45:** ambas provienen de una **misma historia original** (*Evolución fotorrealista del árbol 3D*, 12 CAs), dividida por análisis INVEST. `HU-44` entrega la geometría orgánica (ramificación procedural, cuatro etapas, tres niveles de calidad). `HU-45` añade sobre ella los materiales procedurales de corteza y follaje, y debe implementarse después.
+
+**Nota de partición — HU-48 y HU-49:** ambas provienen de una **misma historia original** (*Eliminar el nivel de experiencia y usar el peso corporal en las métricas*, 17 CAs), dividida por análisis INVEST (score 4/6, falla `Small`). `HU-48` reúne el retiro del nivel de experiencia y el peso corporal en Métricas. `HU-49` aísla el riesgo técnico: la carga real en el tonelaje, el 1RM y la fuerza relativa. La cobertura de los 17 CAs sobre las dos hijas fue validada, sin huérfanos ni duplicados. Son independientes y pueden implementarse en cualquier orden.
 
 **Cambio de alcance en HU-41 (2026-09-11):** el cuarto puesto del viernes, que la historia daba a *Remo al Mentón*, lo ocupa **`Trapecios con Apoyo en Banco Inclinado`**, ejercicio nuevo pedido por el PO durante el desarrollo. El catálogo sube de 37 a 38 ejercicios —primera alta desde `HU-29`— y con ello CA-41.03, CA-41.06 y CA-41.07 cambiaron. `Remo al Mentón` conserva la reclasificación que CA-41.03 le da y permanece en el Diccionario, fuera del plan. Queda registrado en `historia.md`, `cambios.md` y `refinamiento.md` (D13).
 
@@ -129,38 +139,38 @@
 
 - **Objetivo:** Sistema funcional completo para el ciclo de entrenamiento con Motor de Decisión activo: el ejecutante puede configurar su plan, registrar sesiones y recibir prescripciones de carga derivadas exclusivamente de su historial. Cero improvisación, cero estancamiento invisible.
 - **Historias incluidas:** `HU-01`, `HU-02`, `HU-03`, `HU-04`, `HU-05`, `HU-06`, `HU-07`, `HU-08`, `HU-09`, `HU-10`, `HU-11`, `HU-12`, `HU-13`, `HU-14`, `HU-15`
-- **Estado:** `Done` — 15 historias completadas.
+- **Estado:** `Completado` — 15 historias completadas.
 
 ### 4.2. Release 1.1 — Consolidación (EPIC-05)
 
 - **Objetivo:** Completar las historias pendientes del backlog original: migración de la estructura de módulos a división Pull/Push/Legs, historial navegable de ejercicios y sesiones, sistema de alertas proactivas por niveles de severidad, y backup/restauración completo del historial.
 - **Historias incluidas:** `HU-16`, `HU-17`, `HU-18`, `HU-19`
-- **Estado:** `Done` — 4 historias completadas.
+- **Estado:** `Completado` — 4 historias completadas.
 
 ### 4.3. Release 1.2 — Estabilización (EPIC-06)
 
 - **Objetivo:** Correcciones de defectos detectados en el comportamiento de sustitución de ejercicios, reestructuración del plan con orden sugerido biomecánico, y mejoras de experiencia de usuario (preview de sesión sin iniciarla, cronómetro integrado para isométricos).
 - **Historias incluidas:** `HU-20`, `HU-21`, `HU-22`
-- **Estado:** `Done` — `HU-21` y `HU-22` completadas; `HU-20` descartada (HU-34 eliminó el mecanismo que corregía).
+- **Estado:** `Completado` — 3 historias completadas. La funcionalidad de `HU-20` la retiró después `HU-34`, junto con el mecanismo que corregía.
 
 ### 4.4. Release 1.3 — Evolución del Plan (EPIC-07)
 
 - **Objetivo:** Eliminar la estructura fija de módulos (A/B/C) y permitir al ejecutante definir sus propias rutinas, versiones y asignaciones de ejercicios completamente libres. Incluye actualización del catálogo y plan por defecto, ajustes de usabilidad globales y alternativas por puesto en el plan.
 - **Historias incluidas:** `HU-23`, `HU-24`, `HU-25`, `HU-26`, `HU-27`
-- **Estado:** `Done` — 5 historias completadas.
+- **Estado:** `Completado` — 5 historias completadas.
 
 ### 4.5. Release 1.4 — Fidelidad al Gimnasio Real (EPIC-08)
 
 - **Objetivo:** Cerrar la distancia entre el gimnasio real y el modelo del sistema. El ejecutante registra en la unidad que marca cada máquina, el sistema recuerda la carga que viene manejando, sus alertas dejan de dispararse antes de tiempo y explican qué hacer, las métricas se entienden, el plan por defecto y el catálogo quedan corregidos, los días pasan a ser reasignables y desaparece el mecanismo de sustitución por grupo muscular.
 - **Historias incluidas:** `HU-28`, `HU-29`, `HU-30`, `HU-31`, `HU-32`, `HU-33`, `HU-34`, `HU-35`, `HU-36`
-- **Estado:** `Done` — 9 historias completadas.
+- **Estado:** `Completado` — 9 historias completadas.
 - **Alcance de datos:** la aplicación está en fase beta y su base de datos se reiniciará por completo. Ninguna historia de este release requiere migración de datos — excepción documentada a RNF19, limitada a EPIC-08.
 
 ### 4.6. Release 1.5 — Recompensa Visual (EPIC-09)
 
 - **Objetivo:** Dar al ejecutante una devolución visual de su constancia que no exija interpretar métricas. Un árbol que crece con las sesiones acumuladas y se marchita con la ausencia, con la estatura expresando el historial y la salud la recencia. Se entrega en dos fases: primero el árbol completo con representación nativa, después el modelo 3D interactivo.
-- **Historias incluidas:** `HU-37`, `HU-38` — en ese orden obligatorio.
-- **Estado:** `Lista para Revisión` — 2 historias implementadas por Dev-Rápido, pendientes de revisión.
+- **Historias incluidas:** `HU-37`, `HU-38`, `HU-44`, `HU-45`, en ese orden obligatorio. `HU-44` y `HU-45` evolucionan el modelo 3D hacia un árbol orgánico con materiales naturales.
+- **Estado:** `Completado` — 4 historias implementadas, revisadas y cerradas.
 - **Excepción de alcance:** la exclusión de `system_definition_document.md` §2.1 **se mantiene**. El árbol es una capa puramente visual y aislada, con dependencia unidireccional hacia el historial. No alimenta al motor de decisión, no genera alertas y no altera ningún KPI.
 - **Alcance de datos:** `HU-37` introduce una entidad nueva y un incremento del formato de respaldo. Se valida sobre instalación fresca — excepción documentada a RNF19 (ADR-019), limitada a esa historia.
 - **Riesgo:** concentrado íntegramente en `HU-38`, que introduce el **primer WebView del proyecto** y su primera dependencia JavaScript. La partición existe para que ese riesgo no bloquee la entrega del árbol.
@@ -171,16 +181,23 @@
 
 - **Objetivo:** Corregir el defecto por el que cambiar de implemento se leía como retroceso. El equipamiento pasa de atributo fijo del ejercicio a dato de la serie, y la progresión se resuelve por par (ejercicio, equipamiento) con consolidación booleana por ejercicio. Alrededor de ese cambio: catálogo recatalogado con criterio anatómico, plan por defecto alineado con su implemento sugerido, 1RM estimado y sesión editable.
 - **Historias incluidas:** `HU-39`, `HU-40`, `HU-41`, `HU-42`, `HU-43`.
-- **Orden:** `HU-39` primero y `HU-40` inmediatamente después —orden crítico—; `HU-41` tercera; `HU-42` paralelizable tras `HU-39`; `HU-43` última, tras `HU-39` y `HU-41`. **Las cinco están implementadas** (2026-09-07 las dos primeras, 2026-09-11 las tres restantes): el esquema es la versión 24, el respaldo la 17, la unidad de comparación del motor es el par (ejercicio, equipamiento), el catálogo tiene 33 zonas jerarquizadas sobre los mismos 14 grupos, el plan por defecto sugiere implemento en sus 35 asignaciones, el panel de Métricas tiene entrada a la vista de 1RM estimado por par (`Flujo O`) y la sesión activa admite añadir y retirar ejercicios de forma temporal (`E1-T2`, `E1-T3`) sin que el plan se modifique. **El release queda completo y pendiente de revisión.**
-- **Estado:** `Borrador (PO)` — 5 historias creadas, pendientes de análisis arquitectónico.
+- **Orden:** `HU-39` primero y `HU-40` inmediatamente después —orden crítico—; `HU-41` tercera; `HU-42` paralelizable tras `HU-39`; `HU-43` última, tras `HU-39` y `HU-41`. **Las cinco están implementadas** (2026-09-07 las dos primeras, 2026-09-11 las tres restantes): el esquema es la versión 24, el respaldo la 17, la unidad de comparación del motor es el par (ejercicio, equipamiento), el catálogo tiene 33 zonas jerarquizadas sobre los mismos 14 grupos, el plan por defecto sugiere implemento en sus 35 asignaciones, el panel de Métricas tiene entrada a la vista de 1RM estimado por par (`Flujo O`) y la sesión activa admite añadir y retirar ejercicios de forma temporal (`E1-T2`, `E1-T3`) sin que el plan se modifique. **El release queda completo y revisado.**
+- **Estado:** `Completado` — 5 historias implementadas, revisadas y cerradas.
 - **Alcance de datos:** las cinco extienden el esquema. Se validan sobre **instalación fresca**, heredando la excepción documentada a RNF19 (**ADR-019**) que `HU-39` declara y las cuatro hermanas heredan. La frontera está declarada en el código como `Migrations.LAST_MIGRATED_VERSION`: cada hermana que suba el esquema sin migración tiene que moverla a mano, de modo que el hueco nunca sea un olvido. El historial de sesiones anterior **se pierde**, y los respaldos del formato previo quedan **incompatibles**: la restauración los rechaza con mensaje explícito en lugar de importarlos parcialmente.
 - **Decisión de diseño declarada:** **no se introduce ningún factor de equivalencia de carga entre implementos.** Los pares se comparan consigo mismos y se relacionan por regla booleana —disyunción para progresión, conjunción para meseta—, no por conversión de carga, que exigiría una calibración manual por ejercicio insostenible.
 - **Riesgo:** estuvo concentrado en `HU-40`, que reescribió la unidad de comparación de reglas de decisión ya implementadas y probadas —clasificación, Doble Umbral, meseta, descarga, memoria del último peso y KPIs comparativos—. `HU-39` solo añade una dimensión al registro, y `HU-42` fue la de menor riesgo de diseño —pantalla nueva, entidad propia y dependencia unidireccional hacia el historial—, con un riesgo distinto en su lugar: el 1RM es el primer dato del sistema que **no se puede reconstruir**, así que un defecto en su escritura no falla, se guarda mal para siempre.
 - **Recorte posible:** `HU-43` era la única prescindible sin dejar el sistema en un estado inconsistente. No hizo falta recortar.
 
+### 4.8. Release 1.7 — Fidelidad al Gimnasio Real, continuación (EPIC-08)
+
+- **Objetivo:** que las decisiones y los números del sistema reflejen lo que de verdad ocurre en el gimnasio. La progresión se lee por rango de hipertrofia y la sesión se acota a la categoría del día. Un error de dedo en la última serie se puede corregir. El perfil deja de pedir datos que nadie usa, y el peso corporal pasa a contar como carga movida.
+- **Historias incluidas:** `HU-46`, `HU-47`, `HU-48`, `HU-49`.
+- **Estado:** `HU-46` y `HU-47` están en `Completado`; `HU-48` y `HU-49` en `Borrador (PO)`.
+- **Alcance de datos:** las cuatro se validan sobre **instalación fresca** (ADR-019). Los respaldos se generan con la estructura resultante y no se contempla compatibilidad con formatos anteriores.
+
 ---
 
-## 4.8. Inconsistencias Declaradas (corregidas)
+## 4.9. Inconsistencias Declaradas (corregidas)
 
 *Discrepancias entre este índice y el estado real del sistema, corregidas en HU-34 el 2026-08-31 (CA-34.05).*
 
@@ -192,6 +209,7 @@
 | **RF16** — Sustituir ejercicio puntualmente | Asignado a HU-07 | ✅ Reasignado a **HU-26** (alternativas por slot) en §7 y §10 |
 | **HU-27** y las nueve historias de EPIC-08 | Presentes en §2, ausentes en §10 | ✅ Incorporadas a §10 con su estado real |
 | **HU-37** y **HU-38** — El árbol de entrenamiento | `Borrador (PO)` | ✅ `Lista para Revisión` — ambas fueron implementadas por Dev-Rápido y su propio `index.md` ya lo indicaba. Corregido el 2026-09-06 durante la creación de EPIC-10 |
+| **HU-01** a **HU-47** — estado de cierre | `Done`, `Lista para Revisión` o `Descartada` (HU-07, HU-20), y HU-44/HU-45 ausentes del índice | ✅ `Completado` — el PO confirmó el 2026-10-22 que las 47 historias están implementadas, revisadas y cerradas. Se unificó el estado en este índice y en el `index.md` de cada historia. HU-07 y HU-20 se implementaron y su funcionalidad la retiró después HU-34, lo que no cambia su cierre |
 
 ---
 
@@ -306,16 +324,14 @@ Los 23 RNFs listados en §3 son restricciones de calidad del sistema completo. S
 
 | Métrica | Valor |
 |---------|-------|
-| Historias de Usuario | 43 (HU-01 a HU-43, numeración plana) |
-| Historias Done | 34 (todas salvo HU-07, HU-20, HU-37, HU-38 y HU-39 a HU-43) |
-| Historias en Lista para Revisión | 7 (HU-37 y HU-38 — EPIC-09; HU-39 a HU-43 — EPIC-10; implementadas y pendientes de revisión) |
-| Historias en Borrador (PO) | 0 |
-| Historias descartadas | 2 (HU-07 y HU-20 — HU-34 eliminó la sustitución por grupo muscular que ambas sostenían) |
-| **Suma de control** | **34 + 7 + 0 + 2 = 43** ✅ |
+| Historias de Usuario | 49 (HU-01 a HU-49, numeración plana) |
+| Historias Completadas | 47 (HU-01 a HU-47: implementadas, revisadas y cerradas). La funcionalidad de HU-07 y HU-20 la retiró después HU-34 |
+| Historias en Borrador (PO) | 2 (HU-48 y HU-49 en EPIC-08) |
+| **Suma de control** | **47 + 2 = 49** ✅ |
 | RFs por historia (promedio) | 2.4 |
 | RFs por historia (máximo) | 8 (HU-15 — Analítica y KPIs) |
-| Historias sin RF propio (correcciones, retiros o solo RNFs) | 16 (HU-07, HU-08, HU-19, HU-20, HU-28 a HU-38 y HU-42) |
-| Historias sin RNF específicos | 16 (cubiertas por RNFs transversales) |
+| Historias sin RF propio (correcciones, retiros o solo RNFs) | 19 (HU-07, HU-08, HU-19, HU-20, HU-28 a HU-38, HU-42, HU-44, HU-45 y HU-47) |
+| Historias sin RNF específicos | 18 (cubiertas por RNFs transversales) |
 
 ---
 
@@ -331,7 +347,7 @@ Los 23 RNFs listados en §3 son restricciones de calidad del sistema completo. S
 | HU-04 | RF05, RF06, RF08, RF63, RF64 | — |
 | HU-05 | RF09, RF10, RF11, RF12 | RNF13 |
 | HU-06 | RF13, RF14, RF15, RF17, RF22 | RNF02, RNF03, RNF04, RNF10, RNF12 |
-| HU-07 | — (historia descartada: RF16 reasignado a HU-26 en HU-34) | — |
+| HU-07 | — (funcionalidad retirada por HU-34: RF16 reasignado a HU-26) | — |
 | HU-08 | — | RNF12 |
 | HU-09 | RF18, RF19, RF20, RF21 | RNF10 |
 | HU-10 | RF23, RF24, RF28, RF31, RF32, RF33, RF43 | — |
@@ -344,7 +360,7 @@ Los 23 RNFs listados en §3 son restricciones de calidad del sistema completo. S
 | HU-17 | RF50, RF51, RF60 | — |
 | HU-18 | RF53, RF54, RF55, RF56, RF57, RF58 | RNF05 |
 | HU-19 | — | RNF15, RNF16, RNF17, RNF18, RNF26, RNF27 |
-| HU-20 | — (historia descartada: HU-34 eliminó el mecanismo que corregía) | — |
+| HU-20 | — (funcionalidad retirada: HU-34 eliminó el mecanismo que corregía) | — |
 | HU-21 | RF04, RF05, RF06 (mod.) | RNF31 |
 | HU-22 | RF12, RF32 (ext.) | RNF02 |
 | HU-23 | RF04, RF05, RF07, RF08, RF09, RF10, RF11, RF12, RF14, RF16, RF21, RF26, RF30, RF36, RF37, RF39, RF41, RF46, RF49, RF58, RF60, RF62, RF63, RF64 (mod.) | RNF09, RNF14, RNF19, RNF28, RNF29, RNF31 |
@@ -368,7 +384,11 @@ Los 23 RNFs listados en §3 son restricciones de calidad del sistema completo. S
 | HU-41 | RF04, RF05, RF06, RF07, RF08, RF45, RF46, RF62, RF63, RF64 (mod.) | RNF19, RNF31 |
 | HU-42 | — | RNF19, RNF31 |
 | HU-43 | RF14, RF19, RF62 (ext.) | RNF19, RNF31 |
+| HU-44 | — | — |
+| HU-45 | — | — |
 | HU-46 | RF14, RF25, RF26, RF34, RF62, RF63 (mod.) | RNF05, RNF06, RNF19 |
 | HU-47 | — | — |
+| HU-48 | RF01, RF02 (mod.), RF03 (ext.) | RNF19 |
+| HU-49 | RF20, RF45, RF52, RF57, RF59, RF60 (mod.) | RNF19, RNF31 |
 
 > **Nota:** un `—` en la columna de RF significa que la historia no declara requisitos funcionales propios. Las historias de EPIC-08 (`HU-28` a `HU-36`) son en su mayoría correcciones y ajustes sobre funcionalidad ya entregada: su trazabilidad vive en los criterios de aceptación de cada historia, no en un RF nuevo. Filas incorporadas en HU-34 (CA-34.05). Las historias de EPIC-10 (`HU-39` a `HU-43`) marcan con `(mod.)` los RF cuya funcionalidad reinterpretan bajo la dimensión del equipamiento, sin introducir requisitos nuevos: `HU-42` es la única capacidad enteramente nueva y no tiene RF propio asignado.

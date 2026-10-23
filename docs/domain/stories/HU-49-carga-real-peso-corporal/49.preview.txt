@@ -1,0 +1,123 @@
+╔══════════════════════════════════════════════════════════════╗
+║  ⚠️  PROTOTIPO — PROPUESTA PENDIENTE DE VALIDACIÓN CON DISEÑO  ║
+╚══════════════════════════════════════════════════════════════╝
+
+HU #49 — Carga real con peso corporal en tonelaje, 1RM y fuerza relativa
+Plataforma: mobile / portrait (390 px) · Material 3 · targets ≥ 48 dp
+Solo dos puntos de interfaz cambian de diseño: la tarjeta de 1RM
+(O1) gana la fuerza relativa y el detalle de ejercicio (D2) gana
+el «Peso corporal movido». El resto (E5, G1, G2, G3, H2) muestra
+los mismos componentes con el tonelaje ya calculado con carga real.
+
+
+────────────────────────────────────────────────────────────────
+ D2 · DETALLE DE EJERCICIO · «Peso corporal movido» (CA-49.04)
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+| ←  Dominadas                             |
++──────────────────────────────────────────+
+|  [  🖼  imagen del ejercicio  ]          |
+|                                          |
+|  Categoría:  Jalón                       |
+|  Zona principal:  Dorsal Ancho           |
+|  Implementos:  Barra Fija · Máquina ·    |
+|                Peso Añadido              |
+|                                          |
+|  Dificultad de progresión                |
+|  [▼ Media                          ]     |
+|                                          |
+|  Peso corporal movido                    |
+|  [ 100                           ] %     |
+|  Parte de tu peso corporal que mueves    |
+|  en este ejercicio. Se suma a la carga   |
+|  con peso libre o con tu propio cuerpo;  |
+|  no con máquina ni polea.                |
+|                                          |
+|  [              Guardar             ]    |
++──────────────────────────────────────────+
+
+  Error (fuera de 0–100, decimal o vacío):
+
+|  Peso corporal movido                    |
+|  [ 120                           ] %     |
+|  ⚠ Introduce un número entero entre     |
+|    0 y 100                               |
+|  [              Guardar             ]    |
+                     └ deshabilitado
+
+  Guardar → snackbar «Peso corporal movido actualizado».
+  El tonelaje y el 1RM de este ejercicio se recalculan con el
+  nuevo porcentaje, en todo su historial (CA-49.08).
+  En ejercicios isométricos el campo NO se muestra.
+
+
+────────────────────────────────────────────────────────────────
+ O1 · 1RM ESTIMADO · fuerza relativa (CA-49.02, CA-49.03)
+────────────────────────────────────────────────────────────────
+
++──────────────────────────────────────────+
+| ←  1RM estimado                          |
++──────────────────────────────────────────+
+|  +────────────────────────────────────+  |
+|  |  Dominadas                         |  |
+|  |  (●) Barra Fija  (○) Peso Añadido  |  |
+|  |                                    |  |
+|  |  106.7 Kg  ·  235.2 Lb             |  |
+|  |  1.33× tu peso corporal            |  |
+|  |  con 80.0 Kg el 14/10/2026         |  |
+|  +────────────────────────────────────+  |
+|  +────────────────────────────────────+  |
+|  |  Sentadilla Búlgara                |  |
+|  |  (●) Mancuerna  (○) Peso Corporal  |  |
+|  |                                    |  |
+|  |  117.4 Kg  ·  258.7 Lb             |  |
+|  |  1.47× tu peso corporal            |  |
+|  |  con 80.0 Kg el 09/10/2026         |  |
+|  +────────────────────────────────────+  |
+|  +────────────────────────────────────+  |
+|  |  Press de Banca                    |  |
+|  |  (●) Barra                         |  |
+|  |                                    |  |
+|  |  93.4 Kg  ·  205.8 Lb              |  |
+|  |  1.19× tu peso corporal            |  |
+|  |  con 78.5 Kg el 20/10/2026         |  |
+|  +────────────────────────────────────+  |
++──────────────────────────────────────────+
+
+  Dominadas en Barra Fija HOY no aparece (no hay carga externa).
+  Con esta historia aparece: (80 × 100 %) × 1.3337 = 106.7 Kg.
+  Búlgara con mancuernas de 20 Kg: (80 × 85 % + 20) × 1.3337.
+  La fuerza relativa usa el peso VIGENTE en la fecha del 1RM,
+  no el peso de hoy. Es la misma en Kg y en Lb (sin unidad).
+  Dominadas en Máquina (asistida) sigue sin 1RM.
+
+
+────────────────────────────────────────────────────────────────
+ E5 / G1 / G2 / G3 / H2 · TONELAJE CON CARGA REAL (CA-49.01)
+────────────────────────────────────────────────────────────────
+
+  Sin cambios de diseño: mismos componentes, otro valor.
+  Ejemplo E5 (resumen post-sesión), peso corporal 80 Kg:
+
++──────────────────────────────────────────+
+|  Resumen de la sesión                    |
++──────────────────────────────────────────+
+|  Tonelaje total            3,190 Kg      |
+|                                          |
+|  Dominadas · Barra Fija                  |
+|    8 + 8 + 7 reps          1,840 Kg      |  ← antes: 0 Kg
+|  Dominadas · Peso Añadido 10 Kg          |
+|    6 reps                    540 Kg      |  ← antes: 60 Kg
+|  Remo con Barra · Barra                  |
+|    10 + 9 + 8 reps @ 30 Kg   810 Kg   |  ← sin cambio
++──────────────────────────────────────────+
+
+  La serie sigue mostrando lo que se registró (0 Kg / lastre);
+  solo el tonelaje refleja la carga real.
+  Las señales de subir/bajar peso y la meseta NO cambian
+  (CA-49.09).
+
+╔══════════════════════════════════════════════════════════════╗
+║  ⚠️  PROTOTIPO — PROPUESTA PENDIENTE DE VALIDACIÓN CON DISEÑO  ║
+╚══════════════════════════════════════════════════════════════╝

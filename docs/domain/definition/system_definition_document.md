@@ -76,7 +76,7 @@
 
 *Elementos principales que el sistema manipula, consume o transforma.*
 
-- **Ejecutante:** La persona que entrena. Posee atributos de perfil (peso corporal, altura, nivel de experiencia) que contextualizan sus métricas y pueden cambiar con el tiempo.
+- **Ejecutante:** La persona que entrena. Posee atributos de perfil (peso corporal y altura) que contextualizan sus métricas y pueden cambiar con el tiempo.
 - **Rutina:** La unidad organizativa del plan de entrenamiento, creada y nombrada libremente por el ejecutante. Agrupa los ejercicios que trabajará en una misma sesión. Su estructura, nombre y composición son completamente libres.
 - **Versión:** Una variante opcional de una rutina que usa diferentes ejercicios para atacar los mismos objetivos musculares, permitiendo variedad de estímulo y prevención de lesiones por sobreuso. Una rutina puede tener una o múltiples versiones.
 - **Ejercicio:** La unidad de movimiento específica (ej.: Press de Banca). Agnóstico de rutina: no pertenece inherentemente a ninguna rutina. El ejecutante lo asigna libremente a las rutinas de su plan.

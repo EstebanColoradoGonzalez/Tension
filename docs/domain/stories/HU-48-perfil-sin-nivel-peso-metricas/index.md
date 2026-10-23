@@ -60,7 +60,7 @@ dev_closed_at:
 | Medición PNF | ⏳ Pendiente | | Developer |
 | Verificación cruzada | ⏳ Pendiente | | Developer |
 | Análisis Arquitectónico | ⏳ Pendiente | | Arquitecto |
-| Refinamiento Técnico | ⏳ Pendiente | | Developer |
+| Refinamiento Técnico | ✅ Completada | 2026-10-23 | esteban.colorado |
 | Estimación | ⏳ Pendiente | | Developer |
 | Desarrollo | ⏳ Pendiente | | Developer |
 
@@ -85,6 +85,7 @@ dev_closed_at:
 | Fase        | Inicio                    | Fin |
 | ----------- | ------------------------- | --- |
 | Creación HU | 2026-10-22 18:47 | 2026-10-22 20:59 |
+| Desarrollo | 2026-10-23 14:35 | |
 
 ---
 

@@ -11,9 +11,14 @@ interface WeightRecordDao {
     @Insert
     suspend fun insert(record: WeightRecordEntity)
 
-    @Query("SELECT * FROM weight_record ORDER BY date DESC LIMIT 1")
+    /**
+     * The current weight is the last entry. Several entries can share a date —each save
+     * creates one, from the profile or from Metrics— so `id` breaks the tie: the one saved
+     * last wins (HU-48, Rule 3).
+     */
+    @Query("SELECT * FROM weight_record ORDER BY date DESC, id DESC LIMIT 1")
     fun getLatestWeight(): Flow<WeightRecordEntity?>
 
-    @Query("SELECT * FROM weight_record ORDER BY date DESC")
+    @Query("SELECT * FROM weight_record ORDER BY date DESC, id DESC")
     fun getAllDescByDate(): Flow<List<WeightRecordEntity>>
 }

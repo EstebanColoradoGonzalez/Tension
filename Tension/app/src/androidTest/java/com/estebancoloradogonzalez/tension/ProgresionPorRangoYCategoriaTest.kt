@@ -193,8 +193,8 @@ class ProgresionPorRangoYCategoriaTest {
     @Test
     fun un_perfil_nuevo_nace_con_umbral_base_diez() {
         db.openHelper.writableDatabase.execSQL(
-            "INSERT INTO profile (id, height_m, experience_level, weekly_frequency, created_at) " +
-                "VALUES (1, 1.8, 'BEGINNER', 6, '2026-10-22')",
+            "INSERT INTO profile (id, height_m, weekly_frequency, created_at) " +
+                "VALUES (1, 1.8, 6, '2026-10-22')",
         )
 
         assertEquals(10L, leerLong("SELECT plateau_base_threshold FROM profile WHERE id = 1"))

@@ -5,10 +5,6 @@
     <string name="onboarding_subtitle">Configura tu perfil</string>
     <string name="weight_label">Peso corporal (Kg)</string>
     <string name="height_label">Altura (m)</string>
-    <string name="experience_level_label">Nivel de experiencia</string>
-    <string name="experience_beginner">Principiante</string>
-    <string name="experience_intermediate">Intermedio</string>
-    <string name="experience_advanced">Avanzado</string>
     <string name="register_button">Registrar</string>
     <string name="error_weight_positive">El peso debe ser un valor positivo</string>
     <string name="error_height_positive">La altura debe ser un valor positivo</string>
@@ -346,6 +342,7 @@
     <string name="metric_unit_kg_per_session">kg/sesión</string>
     <string name="metric_unit_percentage">%</string>
     <string name="metric_unit_rir">RIR</string>
+    <string name="metric_unit_bmi">kg/m²</string>
     <string name="metric_not_applicable">No aplica</string>
     <string name="metric_insufficient_marker">──</string>
     <string name="metric_insufficient_exercise_observations">Necesitas registrar este ejercicio al
@@ -360,6 +357,8 @@
         registradas</string>
     <string name="metric_insufficient_complete_microcycles">Necesitas %1$d microciclos completos
         más</string>
+    <string name="metric_insufficient_weight_reference">Sin datos suficientes: necesitas un peso
+        registrado antes del inicio del período</string>
 
     <!-- Metrics G1 -->
     <string name="metrics_title">Métricas</string>
@@ -397,6 +396,32 @@
     <string name="metrics_entry_volume_description">Cómo repartes las series entre grupos</string>
     <string name="metrics_entry_trend_title">Tendencia de progresión</string>
     <string name="metrics_entry_trend_description">Hacia dónde va tu carga por grupo</string>
+    <!-- Sección «Peso corporal» del panel de Métricas (HU-48) -->
+    <string name="metrics_section_body_weight">PESO CORPORAL</string>
+    <string name="metrics_body_weight_current_title">Peso actual</string>
+    <string name="metrics_body_weight_current_description">Último peso que registraste</string>
+    <string name="metrics_body_weight_recorded_on">Registrado el %1$s</string>
+    <string name="metrics_body_weight_bmi_label">IMC</string>
+    <string name="metrics_body_weight_bmi_description">Relaciona tu peso con tu altura. Es un dato
+        de contexto: no distingue músculo de grasa.</string>
+    <string name="metrics_body_weight_variation_title">Variación del peso</string>
+    <string name="metrics_body_weight_variation_description">Diferencia entre tu peso actual y el
+        que tenías al inicio del período</string>
+    <string name="metrics_body_weight_chart_title">Peso corporal y tonelaje</string>
+    <string name="metrics_body_weight_chart_description">Tu peso, un punto por registro, junto al
+        tonelaje que moviste cada semana</string>
+    <string name="metrics_body_weight_no_tonnage">Sin sesiones en este período: no hay tonelaje que
+        mostrar.</string>
+    <string name="metrics_body_weight_stale">Tu último peso es de hace %1$d días</string>
+    <string name="metrics_body_weight_register">Registrar peso</string>
+    <string name="metrics_body_weight_dialog_title">Registrar peso</string>
+    <string name="metrics_body_weight_dialog_hint">Se guardará con fecha de hoy en tu historial de
+        peso.</string>
+    <string name="metrics_body_weight_saved">Peso registrado</string>
+    <string name="chart_axis_y_body_weight">kg cuerpo</string>
+    <string name="chart_axis_y_weekly_tonnage">kg tonelaje</string>
+    <string name="chart_legend_body_weight">Peso corporal (kg)</string>
+    <string name="chart_legend_weekly_tonnage">Tonelaje semanal (kg movidos)</string>
 
     <!-- Volume G2 -->
     <string name="volume_title">Volumen por Grupo Muscular</string>

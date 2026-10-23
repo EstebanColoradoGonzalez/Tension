@@ -14,9 +14,6 @@ data class ProfileEntity(
     @ColumnInfo(name = "height_m")
     val heightM: Double,
 
-    @ColumnInfo(name = "experience_level")
-    val experienceLevel: String,
-
     @ColumnInfo(name = "weekly_frequency")
     val weeklyFrequency: Int = 6,
 

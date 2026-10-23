@@ -37,8 +37,7 @@
 ```json
 {
   "weight_kg": "REAL > 0 // Obligatorio. Peso corporal inicial del ejecutante en kilogramos.",
-  "height_m": "REAL > 0 // Obligatorio. Altura del ejecutante en metros.",
-  "experience_level": "TEXT // Obligatorio. Uno de: 'BEGINNER', 'INTERMEDIATE', 'ADVANCED'."
+  "height_m": "REAL > 0 // Obligatorio. Altura del ejecutante en metros."
 }
 ```
 
@@ -309,8 +308,7 @@
 ```json
 {
   "weight_kg": "REAL > 0 // Opcional. Nuevo peso corporal. Si difiere del actual, genera nuevo weight_record.",
-  "height_m": "REAL > 0 // Opcional. Nueva altura.",
-  "experience_level": "TEXT // Opcional. Uno de: 'BEGINNER', 'INTERMEDIATE', 'ADVANCED'."
+  "height_m": "REAL > 0 // Opcional. Nueva altura."
 }
 ```
 
@@ -1275,9 +1273,48 @@
 }
 ```
 
-**Agrupación en secciones (CA-35.02):** `ADHERENCIA` (adherencia semanal), `INTENSIDAD` (RIR promedio por módulo) y `PROGRESIÓN` (tasa de progresión y velocidad de carga).
+**Agrupación en secciones (CA-35.02):** `ADHERENCIA` (adherencia semanal), `INTENSIDAD` (RIR promedio por módulo), `PROGRESIÓN` (tasa de progresión y velocidad de carga) y, desde HU-48, `PESO CORPORAL`.
+
+**Sección `PESO CORPORAL` (HU-48):** complemento del tonelaje, nunca métrica en sí misma. Ningún componente del motor de decisión la lee. Usa el mismo `period_weeks` que `PROGRESIÓN`, con el mismo selector:
+
+```json
+{
+  "body_weight": {
+    "current_weight_kg": "REAL // Último registro de weight_record (date DESC, id DESC). Unidad 'BODY_WEIGHT', un decimal",
+    "recorded_on": "TEXT // Fecha ISO de ese registro. Se muestra 'Registrado el dd/MM/yyyy'",
+    "variation_kg": "REAL | null // Peso actual menos el vigente al inicio del período (registro más reciente con fecha <= inicio). null = 'Sin datos suficientes' (sin referencia, o la referencia es el propio peso actual). Un 0.0 calculado es un valor real",
+    "bmi": "REAL // peso actual / altura². Dato secundario SIN categoría ni valoración. Unidad 'BMI' (kg/m²), un decimal",
+    "days_since_last_record": "INTEGER",
+    "is_stale": "BOOLEAN // > 30 días. Nota informativa en la sección: no es una alerta, no va al Centro de Alertas ni notifica",
+    "weight_points": "[{date, weight_kg}] // Un punto por registro dentro del período",
+    "weekly_tonnage": "[{week_start, tonnage_kg}] // Un punto por semana ISO (lunes a domingo) con sesiones cerradas dentro del período; suma el tonelaje de sesión del sistema. Semana sin sesiones = sin punto, nunca cero"
+  }
+}
+```
+
+La sección se omite solo sin perfil. Sin sesiones en el período, el gráfico muestra la línea de peso y comunica que no hay tonelaje.
 
 **Accesos a las pantallas de detalle:** bajo las secciones, `G1` presenta tres entradas hermanas —`G1-T4` (1RM estimado), `G2-T1` (volumen por grupo muscular) y `G3-T1` (tendencia de progresión)—, compuestas con el mismo elemento para que no puedan divergir. Ninguna de las tres añade pestaña a la barra de navegación inferior.
+
+---
+
+#### `G1-T5`: Registro Rápido de Peso Corporal
+
+- **Tipo de Trigger (Entrada):** `Acción del ejecutante: toca "Registrar peso" en la sección PESO CORPORAL de G1, o el acceso de la nota de peso desactualizado, y luego "Guardar" en el diálogo.`
+- **Descripción:** El diálogo abre con un único campo de peso en Kg, precargado con el último peso, y teclado numérico. Al guardar crea **la misma entrada** de `weight_record` que actualizar el peso desde `C1-T1` (`UpdateWeightUseCase`), con fecha de hoy. El peso actual pasa a ser ese valor y la sección se recalcula de inmediato. "Cancelar" cierra el diálogo sin escribir. Se puede repetir: cada guardado crea una entrada nueva.
+
+**Payload / Parámetros (Input):**
+
+```json
+{
+  "weight_kg": "REAL > 0 // Obligatorio. Mismo criterio y mismo mensaje inline que el peso del perfil. 'Guardar' deshabilitado mientras sea inválido."
+}
+```
+
+**Respuesta / Salida (Output Esperado):**
+
+- **Estado de Éxito:** `Nuevo weight_record con fecha actual. Snackbar "Peso registrado". La sección PESO CORPORAL muestra el nuevo peso, su fecha, la variación, el gráfico y el IMC.`
+- **Estado de Error:** `ERR_VALIDATION_PROFILE inline bajo el campo. No se persiste nada.`
 
 ---
 
@@ -1983,7 +2020,7 @@ Los valores viven en un único punto del código, `AlertThresholdRule`. Esta tab
 | `ERR_VALIDATION_WEIGHT` | Peso ingresado es < 0 o no es un número válido | Mostrar error inline bajo el campo. Deshabilitar botón de confirmar. |
 | `ERR_VALIDATION_REPS` | Repeticiones ingresadas son < 1 o no son entero válido | Mostrar error inline bajo el campo. Deshabilitar botón de confirmar. |
 | `ERR_VALIDATION_RIR` | RIR no está en el rango [0, 2] | Mostrar error inline. El selector de chips RIR previene este estado; solo ocurre en entrada manual. |
-| `ERR_VALIDATION_PROFILE` | Peso o altura ≤ 0, o nivel de experiencia no reconocido | Mostrar error inline bajo el campo afectado. |
+| `ERR_VALIDATION_PROFILE` | Peso o altura ≤ 0 | Mostrar error inline bajo el campo afectado. |
 | `ERR_SESSION_ALREADY_ACTIVE` | Se intenta iniciar una sesión cuando ya existe una `IN_PROGRESS` | Mostrar la tarjeta "Reanudar Sesión" en B1. Deshabilitar "Iniciar Sesión". |
 | `ERR_REASSIGN_SESSION_ACTIVE` | Se intenta reasignar temporalmente la rutina (`B1-T3`) con una sesión `IN_PROGRESS` | La acción no se compone con sesión activa: B1 muestra "Reanudar Sesión", que no la aloja, y E1 no la ofrece. Si llega a la capa de datos, mostrar Snackbar: la rutina queda fijada al iniciar la sesión. |
 | `ERR_SKIP_SESSION_HAS_SETS` | Se intenta cancelar el día (`B1-T5`) con al menos una serie registrada | B1 ya presenta la acción deshabilitada con el motivo. Si llega a la capa de datos, mostrar Snackbar: reanudar la sesión y cerrarla como incompleta. |

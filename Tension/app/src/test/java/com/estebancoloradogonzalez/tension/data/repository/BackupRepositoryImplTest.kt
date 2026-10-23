@@ -596,6 +596,75 @@ class BackupRepositoryImplTest {
 
     // endregion
 
+    // region Profile without experience level (HU-48)
+
+    private val profileV26Columns = listOf(
+        "id",
+        "height_m",
+        "weekly_frequency",
+        "plateau_base_threshold",
+        "created_at",
+    )
+
+    private fun buildBackupWithProfileRow(row: JSONObject): String {
+        val json = JSONObject()
+        json.put("metadata", JSONObject().apply {
+            put("appVersion", "1.0")
+            put("schemaVersion", BackupRepositoryImpl.SCHEMA_VERSION)
+            put("exportDate", "2026-10-22T14:00:00")
+            put("recordCount", 1)
+        })
+        val data = JSONObject()
+        for (table in BackupRepositoryImpl.TABLE_ORDER_INSERT) {
+            val rows = org.json.JSONArray()
+            if (table == "profile") rows.put(row)
+            data.put(table, rows)
+        }
+        json.put("data", data)
+        return json.toString()
+    }
+
+    @Test
+    fun `given a profile carrying the level, when imported, then the level is dropped and the rest restores`() =
+        runTest {
+            // Given — QA-14 / CA-48.08: a file exported before HU-48 still carries the key
+            stubTableInfo(mapOf("profile" to profileV26Columns))
+            val json = buildBackupWithProfileRow(
+                JSONObject().apply {
+                    put("id", 1)
+                    put("height_m", 1.78)
+                    put("experience_level", "INTERMEDIATE")
+                    put("weekly_frequency", 6)
+                    put("plateau_base_threshold", 10)
+                    put("created_at", "2026-09-02")
+                },
+            )
+            val putKeys = mutableListOf<String>()
+            mockkConstructor(ContentValues::class)
+            every { anyConstructed<ContentValues>().put(any<String>(), any<Long>()) } answers {
+                putKeys.add(firstArg())
+                Unit
+            }
+            every { anyConstructed<ContentValues>().put(any<String>(), any<Double>()) } answers {
+                putKeys.add(firstArg())
+                Unit
+            }
+            every { anyConstructed<ContentValues>().put(any<String>(), any<String>()) } answers {
+                putKeys.add(firstArg())
+                Unit
+            }
+
+            // When
+            repository.importFromJson(json)
+
+            // Then
+            assertFalse(putKeys.contains("experience_level"))
+            assertEquals(profileV26Columns.sorted(), putKeys.sorted())
+            verify { db.setTransactionSuccessful() }
+        }
+
+    // endregion
+
     private fun buildValidBackupJson(sessionCount: Int = 0): String {
         val json = JSONObject()
         json.put("metadata", JSONObject().apply {

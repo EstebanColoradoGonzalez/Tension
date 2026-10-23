@@ -1,6 +1,5 @@
 package com.estebancoloradogonzalez.tension.domain.usecase.profile
 
-import com.estebancoloradogonzalez.tension.domain.model.ExperienceLevel
 import com.estebancoloradogonzalez.tension.domain.repository.ProfileRepository
 import io.mockk.Runs
 import io.mockk.coEvery
@@ -18,35 +17,35 @@ class UpdateProfileUseCaseTest {
 
     @Test
     fun `invoke with valid data updates profile successfully`() = runTest {
-        coEvery { repository.updateProfile(any(), any()) } just Runs
+        coEvery { repository.updateProfile(any()) } just Runs
 
-        val result = useCase(1.80, ExperienceLevel.ADVANCED)
+        val result = useCase(1.80)
 
         assertTrue(result.isSuccess)
-        coVerify { repository.updateProfile(1.80, ExperienceLevel.ADVANCED) }
+        coVerify { repository.updateProfile(1.80) }
     }
 
     @Test
     fun `invoke with zero height returns failure`() = runTest {
-        val result = useCase(0.0, ExperienceLevel.INTERMEDIATE)
+        val result = useCase(0.0)
 
         assertTrue(result.isFailure)
-        coVerify(exactly = 0) { repository.updateProfile(any(), any()) }
+        coVerify(exactly = 0) { repository.updateProfile(any()) }
     }
 
     @Test
     fun `invoke with negative height returns failure`() = runTest {
-        val result = useCase(-1.5, ExperienceLevel.BEGINNER)
+        val result = useCase(-1.5)
 
         assertTrue(result.isFailure)
-        coVerify(exactly = 0) { repository.updateProfile(any(), any()) }
+        coVerify(exactly = 0) { repository.updateProfile(any()) }
     }
 
     @Test
     fun `invoke propagates repository exception as failure`() = runTest {
-        coEvery { repository.updateProfile(any(), any()) } throws RuntimeException("DB error")
+        coEvery { repository.updateProfile(any()) } throws RuntimeException("DB error")
 
-        val result = useCase(1.75, ExperienceLevel.INTERMEDIATE)
+        val result = useCase(1.75)
 
         assertTrue(result.isFailure)
     }

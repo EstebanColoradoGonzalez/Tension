@@ -173,13 +173,14 @@ model plan_assignment {
 // Tabla de fila única — sistema single-user.
 // Se crea al completar el onboarding y se actualiza
 // desde las vistas de Perfil y Ajustes.
+// Sin nivel de experiencia desde el esquema 26 (HU-48): no tenía
+// ningún consumidor. Retirado sin migración (ADR-019).
 // El peso corporal actual NO se almacena aquí —
 // se obtiene del registro más reciente en weight_record.
 // ==========================================
 model profile {
   id                INTEGER  @id @default(1) @check("= 1")                       // Siempre 1. Garantiza fila única.
   height_m          REAL     @notNull @check("> 0")                               // Altura en metros. Inmutable en la práctica (raramente cambia).
-  experience_level  TEXT     @notNull @check("IN ('BEGINNER','INTERMEDIATE','ADVANCED')")  // Nivel de experiencia declarado. Ver Enum ExperienceLevel.
   weekly_frequency  INTEGER  @notNull @default(6) @check(">= 4 AND <= 6")         // Objetivo de sesiones semanales: 4, 5 o 6. Denominador del KPI de Adherencia.
   plateau_base_threshold INTEGER @notNull @default(10) @check(">= 3 AND <= 15")    // Parámetro del sistema. Por defecto 10 desde HU-46 (antes 5: un umbral bajo generaba falsas alertas de meseta, CA-46.07). Sesiones consecutivas sin progresión que definen la meseta antes de aplicar la dificultad del ejercicio. Modela el ritmo de la persona (metabolismo, genética, condición corporal). Configurable desde Ajustes. Su cambio rige desde la siguiente evaluación: no recalcula estados de progresión ya asignados.
   created_at        TEXT     @notNull                                             // Fecha de creación del perfil ISO 8601. Inmutable.
@@ -190,7 +191,10 @@ model profile {
 // PROPÓSITO: Historial de registros de peso corporal.
 // Cada actualización desde el Perfil genera un nuevo
 // registro — los anteriores no se sobrescriben ni eliminan.
-// El peso actual = registro más reciente (ORDER BY date DESC LIMIT 1).
+// El peso actual = registro más reciente (ORDER BY date DESC, id DESC LIMIT 1):
+// varios registros del mismo día se desempatan por id (HU-48).
+// También lo alimenta el registro rápido de Métricas (G1-T5), que
+// crea la misma entrada que actualizar el peso desde el Perfil.
 // ==========================================
 model weight_record {
   id         INTEGER  @id @autoincrement        // PK. Identificador único.
@@ -559,12 +563,6 @@ model alert {
 *Conjuntos de valores estáticos predefinidos que limitan la entrada de datos, previniendo la entropía y asegurando la consistencia semántica. Implementados como TEXT con CHECK constraint en el esquema y como enum class en la capa de aplicación.*
 
 ```
-enum ExperienceLevel {
-  BEGINNER      // Principiante. Menos de 1 año de entrenamiento estructurado. Contexto de métricas de rendimiento.
-  INTERMEDIATE  // Intermedio. 1-3 años de entrenamiento estructurado.
-  ADVANCED      // Avanzado. Más de 3 años de entrenamiento estructurado con progresión documentada.
-}
-
 enum SessionStatus {
   IN_PROGRESS  // Sesión iniciada. El ejecutante está registrando series. Solo puede existir una a la vez.
   COMPLETED    // Sesión cerrada como completada. Todas las series de todos los ejercicios fueron registradas. Inmutable.

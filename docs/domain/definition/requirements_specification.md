@@ -9,7 +9,7 @@
 
 ### Módulo: Perfil del Ejecutante
 
-- **[RF-01] Registro de Perfil:** El sistema debe permitir registrar el perfil del ejecutante con los siguientes datos: peso corporal (Kg), altura (m) y nivel de experiencia (principiante, intermedio, avanzado).
+- **[RF-01] Registro de Perfil:** El sistema debe permitir registrar el perfil del ejecutante con los siguientes datos: peso corporal (Kg) y altura (m). El perfil no pide nivel de experiencia: se retiró en HU-48 porque ninguna regla, cálculo, métrica ni alerta lo leía.
 - **[RF-02] Actualización de Perfil:** El sistema debe permitir actualizar los datos del perfil del ejecutante en cualquier momento.
 - **[RF-03] Historial de Peso Corporal:** El sistema debe almacenar un historial de cambios del peso corporal con la fecha de cada actualización, permitiendo al ejecutante consultar su evolución de peso en el tiempo.
 

@@ -7,7 +7,6 @@ import com.estebancoloradogonzalez.tension.data.local.database.TensionDatabase
 import com.estebancoloradogonzalez.tension.data.local.entity.ProfileEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.RotationStateEntity
 import com.estebancoloradogonzalez.tension.data.local.entity.WeightRecordEntity
-import com.estebancoloradogonzalez.tension.domain.model.ExperienceLevel
 import com.estebancoloradogonzalez.tension.domain.model.Profile
 import com.estebancoloradogonzalez.tension.domain.model.WeightRecord
 import com.estebancoloradogonzalez.tension.domain.repository.ProfileRepository
@@ -29,7 +28,6 @@ class ProfileRepositoryImpl @Inject constructor(
     override suspend fun createProfile(
         weightKg: Double,
         heightM: Double,
-        experienceLevel: ExperienceLevel,
     ) {
         database.withTransaction {
             val now = LocalDate.now().toString()
@@ -37,7 +35,6 @@ class ProfileRepositoryImpl @Inject constructor(
                 ProfileEntity(
                     id = 1,
                     heightM = heightM,
-                    experienceLevel = experienceLevel.name,
                     weeklyFrequency = 6,
                     createdAt = now,
                 ),
@@ -61,7 +58,6 @@ class ProfileRepositoryImpl @Inject constructor(
                 Profile(
                     currentWeightKg = latestWeight.weightKg,
                     heightM = profileEntity.heightM,
-                    experienceLevel = ExperienceLevel.valueOf(profileEntity.experienceLevel),
                     weeklyFrequency = profileEntity.weeklyFrequency,
                     plateauBaseThreshold = profileEntity.plateauBaseThreshold,
                     createdAt = LocalDate.parse(profileEntity.createdAt),
@@ -72,17 +68,9 @@ class ProfileRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun updateProfile(
-        heightM: Double,
-        experienceLevel: ExperienceLevel,
-    ) {
+    override suspend fun updateProfile(heightM: Double) {
         val current = profileDao.getProfile().first() ?: return
-        profileDao.update(
-            current.copy(
-                heightM = heightM,
-                experienceLevel = experienceLevel.name,
-            ),
-        )
+        profileDao.update(current.copy(heightM = heightM))
     }
 
     override suspend fun updatePlateauBaseThreshold(value: Int) {

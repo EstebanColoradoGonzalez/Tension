@@ -13,20 +13,12 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -36,7 +28,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.estebancoloradogonzalez.tension.R
-import com.estebancoloradogonzalez.tension.domain.model.ExperienceLevel
 
 @Composable
 fun RegisterProfileScreen(
@@ -57,7 +48,6 @@ fun RegisterProfileScreen(
         uiState = uiState,
         onWeightChanged = viewModel::onWeightChanged,
         onHeightChanged = viewModel::onHeightChanged,
-        onExperienceLevelSelected = viewModel::onExperienceLevelSelected,
         onRegisterClick = viewModel::onRegisterClick,
     )
 }
@@ -67,7 +57,6 @@ private fun RegisterProfileContent(
     uiState: RegisterProfileUiState,
     onWeightChanged: (String) -> Unit,
     onHeightChanged: (String) -> Unit,
-    onExperienceLevelSelected: (ExperienceLevel) -> Unit,
     onRegisterClick: () -> Unit,
 ) {
     Column(
@@ -137,14 +126,6 @@ private fun RegisterProfileContent(
             modifier = Modifier.fillMaxWidth(),
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        ExperienceLevelDropdown(
-            selectedLevel = uiState.experienceLevel,
-            onLevelSelected = onExperienceLevelSelected,
-            modifier = Modifier.fillMaxWidth(),
-        )
-
         Spacer(modifier = Modifier.height(32.dp))
 
         Button(
@@ -166,57 +147,5 @@ private fun RegisterProfileContent(
         }
 
         Spacer(modifier = Modifier.height(24.dp))
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun ExperienceLevelDropdown(
-    selectedLevel: ExperienceLevel?,
-    onLevelSelected: (ExperienceLevel) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    var expanded by remember { mutableStateOf(false) }
-
-    val levels = listOf(
-        ExperienceLevel.BEGINNER to stringResource(R.string.experience_beginner),
-        ExperienceLevel.INTERMEDIATE to stringResource(R.string.experience_intermediate),
-        ExperienceLevel.ADVANCED to stringResource(R.string.experience_advanced),
-    )
-
-    val selectedText = levels.firstOrNull { it.first == selectedLevel }?.second ?: ""
-
-    ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = { expanded = it },
-        modifier = modifier,
-    ) {
-        OutlinedTextField(
-            value = selectedText,
-            onValueChange = {},
-            readOnly = true,
-            label = { Text(stringResource(R.string.experience_level_label)) },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
-            modifier = Modifier
-                .menuAnchor(MenuAnchorType.PrimaryNotEditable)
-                .fillMaxWidth(),
-        )
-
-        ExposedDropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-        ) {
-            levels.forEach { (level, label) ->
-                DropdownMenuItem(
-                    text = { Text(label) },
-                    onClick = {
-                        onLevelSelected(level)
-                        expanded = false
-                    },
-                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
-                )
-            }
-        }
     }
 }

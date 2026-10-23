@@ -15,6 +15,15 @@ enum class MetricUnit {
     PERCENTAGE,
     RIR,
     COUNT,
+
+    /** Body weight, to the tenth of a kilogram (HU-48). */
+    BODY_WEIGHT,
+
+    /** Signed change of the body weight over the period, to the tenth of a kilogram. */
+    BODY_WEIGHT_CHANGE,
+
+    /** Body mass index, to one decimal. A context datum without category. */
+    BMI,
 }
 
 /**
@@ -39,6 +48,9 @@ enum class MetricRequirementKind {
 
     /** Fully completed microcycles available in the history. */
     COMPLETE_MICROCYCLES,
+
+    /** A weight entry on or before the start of the period, plus a later one (HU-48). */
+    WEIGHT_REFERENCE,
 }
 
 /**
@@ -106,6 +118,9 @@ object MetricSufficiencyRules {
     /** Mirrors `GetMuscleGroupTrendUseCase`, which returns an empty list below 4 complete microcycles. */
     const val MIN_TREND_MICROCYCLES = 4
 
+    /** Mirrors `BodyWeightRule.variation`, which returns null without a usable reference. */
+    const val MIN_WEIGHT_REFERENCE = 1
+
     /** Progression rate of one exercise over the evaluation window. */
     fun progressionRate(rate: Double, observations: Int): MetricValue =
         if (observations < MIN_PROGRESSION_OBSERVATIONS) {
@@ -162,6 +177,17 @@ object MetricSufficiencyRules {
             MetricValue.Available(percentage, MetricUnit.PERCENTAGE)
         }
 
+    /**
+     * Change of the body weight over the period. A null [variationKg] is the absence of a
+     * reference and never becomes a zero; a computed zero travels as [MetricValue.Available].
+     */
+    fun weightVariation(variationKg: Double?): MetricValue =
+        if (variationKg == null) {
+            insufficient(MetricRequirementKind.WEIGHT_REFERENCE, 0, MIN_WEIGHT_REFERENCE)
+        } else {
+            MetricValue.Available(variationKg, MetricUnit.BODY_WEIGHT_CHANGE)
+        }
+
     /** Requirement of the tonnage evolution chart, or null when it can be drawn. */
     fun evolution(totalMicrocycles: Int): MetricRequirement? =
         requirementOrNull(
@@ -207,6 +233,9 @@ object MetricFormatRules {
         MetricUnit.COUNT -> integerFormat().format(amount.roundToLong())
         MetricUnit.RIR -> decimalFormat().format(amount)
         MetricUnit.KILOGRAM_PER_SESSION -> signed(amount)
+        MetricUnit.BODY_WEIGHT -> decimalFormat().format(amount)
+        MetricUnit.BODY_WEIGHT_CHANGE -> signed(amount)
+        MetricUnit.BMI -> decimalFormat().format(amount)
     }
 
     private fun signed(amount: Double): String {

@@ -2,7 +2,6 @@ package com.estebancoloradogonzalez.tension.ui.onboarding
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.estebancoloradogonzalez.tension.domain.model.ExperienceLevel
 import com.estebancoloradogonzalez.tension.domain.usecase.profile.CreateProfileUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -38,17 +37,10 @@ class RegisterProfileViewModel @Inject constructor(
         }
     }
 
-    fun onExperienceLevelSelected(level: ExperienceLevel) {
-        _uiState.update {
-            it.copy(experienceLevel = level)
-        }
-    }
-
     fun onRegisterClick() {
         val state = _uiState.value
         val weight = state.weightKg.toDoubleOrNull()
         val height = state.heightM.toDoubleOrNull()
-        val level = state.experienceLevel
 
         if (weight == null || weight <= 0) {
             _uiState.update { it.copy(showWeightError = true) }
@@ -58,11 +50,10 @@ class RegisterProfileViewModel @Inject constructor(
             _uiState.update { it.copy(showHeightError = true) }
             return
         }
-        if (level == null) return
 
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            createProfileUseCase(weight, height, level)
+            createProfileUseCase(weight, height)
                 .onSuccess {
                     _events.emit(RegisterProfileEvent.NavigateToHome)
                 }

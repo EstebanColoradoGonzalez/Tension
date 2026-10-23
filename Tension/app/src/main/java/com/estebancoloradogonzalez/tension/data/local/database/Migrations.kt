@@ -1244,6 +1244,9 @@ object Migrations {
      * sin migración (CA-39.11, CA-41.10, CA-42.08, CA-46.19). La 25 añade la categoría de
      * movimiento —`NOT NULL` y sin default— a `exercise` y a `routine`, y el conteo hacia la
      * subida a `exercise_progression` y `session_exercise_progression`.
+     *
+     * HU-48 takes the schema to 26, also without migration: it drops `profile.experience_level`,
+     * which no rule, calculation, metric or alert ever read.
      */
     const val LAST_MIGRATED_VERSION = 19
 

@@ -1,6 +1,5 @@
 package com.estebancoloradogonzalez.tension.ui.settings
 
-import com.estebancoloradogonzalez.tension.domain.model.ExperienceLevel
 import com.estebancoloradogonzalez.tension.domain.model.Profile
 import com.estebancoloradogonzalez.tension.domain.usecase.profile.GetProfileUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.profile.UpdatePlateauBaseThresholdUseCase
@@ -46,7 +45,6 @@ class SettingsViewModelTest {
     private fun profile(plateauBaseThreshold: Int) = Profile(
         currentWeightKg = 80.0,
         heightM = 1.80,
-        experienceLevel = ExperienceLevel.INTERMEDIATE,
         weeklyFrequency = 6,
         plateauBaseThreshold = plateauBaseThreshold,
         createdAt = LocalDate.of(2026, 1, 1),

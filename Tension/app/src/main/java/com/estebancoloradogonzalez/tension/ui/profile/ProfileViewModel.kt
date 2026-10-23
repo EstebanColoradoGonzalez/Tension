@@ -2,7 +2,6 @@ package com.estebancoloradogonzalez.tension.ui.profile
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.estebancoloradogonzalez.tension.domain.model.ExperienceLevel
 import com.estebancoloradogonzalez.tension.domain.usecase.profile.GetProfileUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.profile.UpdateProfileUseCase
 import com.estebancoloradogonzalez.tension.domain.usecase.profile.UpdateWeightUseCase
@@ -53,10 +52,8 @@ class ProfileViewModel @Inject constructor(
                         isLoading = false,
                         weightKg = weightStr,
                         heightM = heightStr,
-                        experienceLevel = profile.experienceLevel,
                         originalWeightKg = weightStr,
                         originalHeightM = heightStr,
-                        originalExperienceLevel = profile.experienceLevel,
                     )
                 }
             }
@@ -71,15 +68,10 @@ class ProfileViewModel @Inject constructor(
         _uiState.update { it.copy(heightM = height, showHeightError = false) }
     }
 
-    fun onExperienceLevelSelected(level: ExperienceLevel) {
-        _uiState.update { it.copy(experienceLevel = level) }
-    }
-
     fun onSaveClick() {
         val state = _uiState.value
         val weight = state.weightKg.toDoubleOrNull()
         val height = state.heightM.toDoubleOrNull()
-        val level = state.experienceLevel
 
         if (weight == null || weight <= 0) {
             _uiState.update { it.copy(showWeightError = true) }
@@ -89,7 +81,6 @@ class ProfileViewModel @Inject constructor(
             _uiState.update { it.copy(showHeightError = true) }
             return
         }
-        if (level == null) return
 
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true) }
@@ -104,14 +95,13 @@ class ProfileViewModel @Inject constructor(
                 }
             }
 
-            updateProfileUseCase(height, level)
+            updateProfileUseCase(height)
                 .onSuccess {
                     _uiState.update { s ->
                         s.copy(
                             isSaving = false,
                             originalWeightKg = state.weightKg,
                             originalHeightM = state.heightM,
-                            originalExperienceLevel = level,
                         )
                     }
                     _events.emit(ProfileEvent.SaveSuccess)

@@ -78,6 +78,10 @@ class BackupRepositoryImpl @Inject constructor(
          * de alcance la importacion de respaldos anteriores porque la beta se prueba siempre
          * desde una instalacion fresca. El conteo hacia la subida viaja solo: el mecanismo
          * vuelca columnas por cursor y ninguna tabla nueva entra en el orden.
+         *
+         * HU-48 does **not** bump the format even though `profile` loses `experience_level`:
+         * dropping a column forces nothing to be invented. An earlier 18 carries the extra key
+         * and the import discards it like any column that no longer exists (CA-48.08).
          */
         private val ACCEPTED_SCHEMA_VERSIONS = setOf(SCHEMA_VERSION)
 
@@ -296,9 +300,11 @@ class BackupRepositoryImpl @Inject constructor(
                 val rows = dataJson.optJSONArray(table) ?: JSONArray()
                 // A backup file carries the columns of the schema that produced it. Keys
                 // that no longer exist are dropped instead of handed to insert(), which
-                // would fail the whole restore with "no column named ...". The only such
-                // key today is session_exercise.original_exercise_id, retired in v16
-                // (HU-34), and its value was always NULL.
+                // would fail the whole restore with "no column named ...". Two such keys
+                // exist today: session_exercise.original_exercise_id, retired in v16 (HU-34),
+                // whose value was always NULL, and profile.experience_level, retired in
+                // schema 26 (HU-48), which nothing ever read. Dropping it is why a format 18
+                // file still restores whole and the backup format did not have to change.
                 val columns = columnsOf(db, table)
                 for (i in 0 until rows.length()) {
                     val row = rows.getJSONObject(i)

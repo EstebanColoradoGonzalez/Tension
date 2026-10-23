@@ -390,6 +390,8 @@ fun metricRequirementText(requirement: MetricRequirement): String = when (requir
         stringResource(R.string.metric_insufficient_microcycle_sessions)
     MetricRequirementKind.COMPLETE_MICROCYCLES ->
         stringResource(R.string.metric_insufficient_complete_microcycles, requirement.missing)
+    MetricRequirementKind.WEIGHT_REFERENCE ->
+        stringResource(R.string.metric_insufficient_weight_reference)
 }
 
 /** Symbol of the presentation unit, or null when the indicator is a bare count. */
@@ -400,4 +402,6 @@ fun metricUnitSymbol(unit: MetricUnit): String? = when (unit) {
     MetricUnit.PERCENTAGE -> stringResource(R.string.metric_unit_percentage)
     MetricUnit.RIR -> stringResource(R.string.metric_unit_rir)
     MetricUnit.COUNT -> null
+    MetricUnit.BODY_WEIGHT, MetricUnit.BODY_WEIGHT_CHANGE -> stringResource(R.string.metric_unit_kg)
+    MetricUnit.BMI -> stringResource(R.string.metric_unit_bmi)
 }

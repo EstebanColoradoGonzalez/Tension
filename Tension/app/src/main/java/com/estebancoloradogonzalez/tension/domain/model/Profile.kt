@@ -5,7 +5,6 @@ import java.time.LocalDate
 data class Profile(
     val currentWeightKg: Double,
     val heightM: Double,
-    val experienceLevel: ExperienceLevel,
     val weeklyFrequency: Int,
     val plateauBaseThreshold: Int,
     val createdAt: LocalDate,

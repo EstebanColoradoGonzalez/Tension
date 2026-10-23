@@ -1,6 +1,5 @@
 package com.estebancoloradogonzalez.tension.domain.usecase.profile
 
-import com.estebancoloradogonzalez.tension.domain.model.ExperienceLevel
 import com.estebancoloradogonzalez.tension.domain.model.Profile
 import com.estebancoloradogonzalez.tension.domain.repository.ProfileRepository
 import io.mockk.every
@@ -24,7 +23,6 @@ class GetProfileUseCaseTest {
         val profile = Profile(
             currentWeightKg = 80.0,
             heightM = 1.80,
-            experienceLevel = ExperienceLevel.ADVANCED,
             weeklyFrequency = 6,
             plateauBaseThreshold = 5,
             createdAt = LocalDate.of(2026, 1, 15),
@@ -36,7 +34,6 @@ class GetProfileUseCaseTest {
         assertNotNull(result)
         assertEquals(80.0, result!!.currentWeightKg, 0.01)
         assertEquals(1.80, result.heightM, 0.01)
-        assertEquals(ExperienceLevel.ADVANCED, result.experienceLevel)
     }
 
     @Test

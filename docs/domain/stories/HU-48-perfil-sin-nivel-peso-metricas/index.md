@@ -2,7 +2,7 @@
 story_number: 48
 title: "Perfil sin nivel de experiencia y peso corporal en Métricas"
 slug: "perfil-sin-nivel-peso-metricas"
-estado: "Borrador (PO)"
+estado: "Lista para Revisión"
 autor: "esteban.colorado"
 fecha_creacion: "2026-10-22"
 es_resultado_slicing: true
@@ -42,11 +42,11 @@ medicion_attempt_status:
 medicion_attempt_at:
 medicion_attempt_reason:
 normalization_contract_hash:
-dev_ia_session_minutes:
-dev_manual_minutes:
-dev_total_minutes:
-dev_responsable:
-dev_closed_at:
+dev_ia_session_minutes: 27
+dev_manual_minutes: 0
+dev_total_minutes: 27
+dev_responsable: "esteban.colorado"
+dev_closed_at: "2026-10-23 15:02"
 ---
 
 # Historia #48: Perfil sin nivel de experiencia y peso corporal en Métricas
@@ -62,7 +62,8 @@ dev_closed_at:
 | Análisis Arquitectónico | ⏳ Pendiente | | Arquitecto |
 | Refinamiento Técnico | ✅ Completada | 2026-10-23 | esteban.colorado |
 | Estimación | ⏳ Pendiente | | Developer |
-| Desarrollo | ⏳ Pendiente | | Developer |
+| Desarrollo | ✅ Completada (Dev-Rápido) | 2026-10-23 | esteban.colorado |
+| Revisión | ⏳ Pendiente | | |
 
 ## Archivos de esta Historia
 
@@ -85,7 +86,7 @@ dev_closed_at:
 | Fase        | Inicio                    | Fin |
 | ----------- | ------------------------- | --- |
 | Creación HU | 2026-10-22 18:47 | 2026-10-22 20:59 |
-| Desarrollo | 2026-10-23 14:35 | |
+| Desarrollo | 2026-10-23 14:35 | 2026-10-23 17:13 |
 
 ---
 
